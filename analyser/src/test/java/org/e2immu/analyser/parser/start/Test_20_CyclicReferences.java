@@ -86,31 +86,32 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 .build());
     }
 
+    // FIXME "b".equals(paramA)?"a".equals(paramA)? should not exist
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("methodB".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
-                                ? "<vp:boolean:container@Method_methodA;not_null@Method_methodA>"
-                                : "CyclicReferences_2.methodA(paramB)";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("CyclicReferences_2.methodA(paramB)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "!\"a\".equals(paramB)&&\"b\".equals(paramB)";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)",
+                                d.currentValue().toString());
                     }
                 }
             }
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        String expectValue = d.iteration() == 0 ? "<m:methodB>"
+                                : "\"a\".equals(paramA)?CyclicReferences_2.methodA(paramA):\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:equals>?<m:methodB>:<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        String expectValue = d.iteration() == 0
+                                ? "\"b\".equals(paramA)?<m:methodB>:\"a\".equals(paramA)"
+                                : "\"b\".equals(paramA)?\"a\".equals(paramA)?CyclicReferences_2.methodA(paramA):\"b\".equals(paramA):\"a\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -121,10 +122,11 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                // IMPROVE this cannot be correct... the state simply disappears
-                assertEquals("!\"a\".equals(paramB)&&\"b\".equals(paramB)",
-                        d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                String expected = "\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
 
             }
             if ("methodA".equals(d.methodInfo().name)) {
@@ -134,8 +136,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         };
 
         testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -145,20 +147,20 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodC".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "paramC".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<p:paramC>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 3 ? "<p:paramC>" : "nullable instance type String/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("\"b\".equals(paramC)?<p:paramC>:nullable instance type String/*@Identity*/",
+                        assertEquals("nullable instance type String/*@Identity*/",
                                 d.currentValue().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
-                        assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, DV.TRUE_DV, Property.IDENTITY);
+                        assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
             }
         };
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

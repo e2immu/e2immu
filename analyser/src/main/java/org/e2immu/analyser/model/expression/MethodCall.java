@@ -828,21 +828,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // return the formal value
         DV formal = methodAnalysis.getProperty(property);
         if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
-            DV fromConcrete = evaluationContext.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
 
+            DV adjusted;
             // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
             if (Property.IMMUTABLE == property) {
-                return dynamicImmutable(formal, methodAnalysis, evaluationContext).max(formal);
-            }
-            if (Property.INDEPENDENT == property) {
+                adjusted = dynamicImmutable(formal, methodAnalysis, evaluationContext).max(formal);
+            } else if (Property.INDEPENDENT == property) {
                 DV immutable = getProperty(evaluationContext, Property.IMMUTABLE, duringEvaluation);
                 if (immutable.isDelayed()) return immutable;
                 int immutableLevel = MultiLevel.level(immutable);
                 if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
-                    return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                    adjusted = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                } else {
+                    adjusted = formal;
                 }
+            } else {
+                adjusted = formal;
             }
-            return fromConcrete.max(formal);
+            // formal can be a @NotNull contracted annotation on the method; we cannot dismiss it
+            // problem is that it may have to be computed, which introduces an unresolved delay in the case of cyclic calls.
+            DV fromConcrete = evaluationContext.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
+            boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+            if (internalCycle) return fromConcrete.maxIgnoreDelay(adjusted).max(property.falseDv);
+            return fromConcrete.max(adjusted);
         }
         return formal;
     }
