@@ -15,12 +15,14 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.junit.jupiter.api.Test;
 
@@ -94,11 +96,11 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertFalse(errors.stream()
-                        .filter(m -> ((LocationImpl)m.location()).info != null)
-                        .anyMatch(m -> ((LocationImpl)m.location()).info.getTypeInfo().equals(typeInfo)),
+                        .filter(m -> ((LocationImpl) m.location()).info != null)
+                        .anyMatch(m -> ((LocationImpl) m.location()).info.getTypeInfo().equals(typeInfo)),
                 "Got: " + errors.stream()
-                        .filter(m -> ((LocationImpl)m.location()).info != null)
-                        .filter(m -> ((LocationImpl)m.location()).info.getTypeInfo().equals(typeInfo)).toList());
+                        .filter(m -> ((LocationImpl) m.location()).info != null)
+                        .filter(m -> ((LocationImpl) m.location()).info.getTypeInfo().equals(typeInfo)).toList());
     }
 
     @Test
@@ -266,6 +268,18 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     public void testMapCopyOf() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("copyOf", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testMapOf() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 2);
+        assertTrue(methodInfo.methodInspection.get().isStatic());
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));

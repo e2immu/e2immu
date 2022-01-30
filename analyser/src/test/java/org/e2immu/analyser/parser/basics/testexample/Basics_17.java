@@ -14,8 +14,11 @@
 
 package org.e2immu.analyser.parser.basics.testexample;
 
+import org.e2immu.annotation.NotNull;
+
 public class Basics_17 {
 
+    @NotNull
     private final String string;
 
     public Basics_17(String string) {
@@ -23,6 +26,7 @@ public class Basics_17 {
         if (string == null) throw new UnsupportedOperationException();
     }
 
+    @NotNull
     public String string() {
         return string;
     }

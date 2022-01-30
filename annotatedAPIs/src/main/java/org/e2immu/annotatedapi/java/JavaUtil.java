@@ -645,6 +645,12 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent1
         <KK, VV> Map<KK, VV> copyOf(@NotNull @Independent1 Map<? extends KK, ? extends VV> map);
 
+        @E2Container
+        @NotNull
+        @NotModified
+        @Independent1
+        <KK, VV> Map<KK, VV> of(@NotNull KK k, @NotNull VV v);
+
         default boolean size$Invariant$Size(int i) {
             return i >= 0;
         }

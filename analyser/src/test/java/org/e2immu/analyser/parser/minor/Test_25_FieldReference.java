@@ -15,10 +15,17 @@
 
 package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -49,33 +56,51 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 if ("cd".equals(d.variableName())) {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "properties".equals(fr.fieldInfo.name)) {
-                    if ("cd".equals(fr.scope.toString())) {
-                        assertEquals("cd", fr.scope.toString());
-                        assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
-                        if ("0.0.1.0.1".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<f:properties>" : "nullable instance type Map<String,Integer>";
-                            assertEquals(expected, d.currentValue().toString());
-                        }
-                    } else if ("changeData.get(\"abc\")".equals(fr.scope.toString())) {
-                        // this copy is allowed to live on! it cannot exist in iteration 0
-                        assertTrue(d.iteration() > 0);
-                        String expected = "nullable instance type Map<String,Integer>";
-                        assertEquals(expected, d.currentValue().toString());
-                    } else if ("<out of scope:cd:0>".equals(fr.scope.toString())) {
-                        String expected = d.iteration() == 0 ? "<f:properties>" : "nullable instance type Map<String,Integer>";
-                        assertEquals(expected, d.currentValue().toString());
-                    } else {
-                        assertTrue(d.iteration() > 0);
-                        String expected = "useEnnInsteadOfCnn?changeData.get(\"abc\"):<not yet assigned>";
-                        assertEquals(expected, fr.scope.toString());
-                    }
+                if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
+                    String expected = d.iteration() == 0 ? "<f:changeData>" : "nullable instance type Map<String,ChangeData>";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                 }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("changeData".equals(d.fieldInfo().name)) {
+                assertEquals("Map.of(\"X\",new ChangeData(Map.of(\"3\",3)))", d.fieldAnalysis().getValue().toString());
+
+                // MUTABLE because without A API
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() < 2 ? "<m:get>" : "properties.get(s)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("properties".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                String expected = d.iteration() == 0 ? "<m:properties>" : "properties";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ChangeData".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

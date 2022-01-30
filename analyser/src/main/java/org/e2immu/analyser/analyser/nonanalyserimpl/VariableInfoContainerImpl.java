@@ -418,6 +418,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 .forEach(e -> {
                     Property vp = e.getKey();
                     DV value = e.getValue();
+                    // other variables may refer to us, but we'll not be written by the clustering
                     if (GroupPropertyValues.PROPERTIES.contains(vp)) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
