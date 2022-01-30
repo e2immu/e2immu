@@ -32,7 +32,7 @@ differs from DelayedExpression in equality; this one is based on identifier.
 The identifier will be tied to the field reference, so that only one delayed scope, with different
 causes of delay, will exist.
 
-For the sake of translations, linkedVariables and parameterized type have to be in the equality as well.
+!! Parameterized type is part of the equality, linked variables is not.
 
 Primary example: InstanceOf_11
  */
@@ -63,12 +63,12 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
         if (o == null || getClass() != o.getClass()) return false;
         DelayedVariableOutOfScope that = (DelayedVariableOutOfScope) o;
         return identifier.equals(that.identifier)
-                && parameterizedType.equals(that.parameterizedType) && linkedVariables.equals(that.linkedVariables);
+                && parameterizedType.equals(that.parameterizedType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, parameterizedType, linkedVariables);
+        return Objects.hash(identifier, parameterizedType);
     }
 
     @Override
@@ -117,8 +117,9 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     @Override
     public Expression translate(TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(parameterizedType);
+        if (translatedType == parameterizedType) return this;
+        // we only translate if parameter type changes
         LinkedVariables translatedLv = linkedVariables.translate(translationMap);
-        if (translatedLv == linkedVariables && translatedType == parameterizedType) return this;
         return new DelayedVariableOutOfScope(identifier, translatedType, translatedLv, causesOfDelay);
     }
 

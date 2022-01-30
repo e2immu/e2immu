@@ -33,6 +33,11 @@ public interface Location extends Comparable<Location> {
         public String toDelayString() {
             return "NOT_YET_SET";
         }
+
+        @Override
+        public WithInspectionAndAnalysis getInfo() {
+            return null;
+        }
     };
 
     String toDelayString();
@@ -40,4 +45,6 @@ public interface Location extends Comparable<Location> {
     default String detailedLocation() {
         return toDelayString();
     }
+
+    WithInspectionAndAnalysis getInfo();
 }

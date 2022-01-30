@@ -173,7 +173,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 : "collection instanceof List<String>&&null!=collection?collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0):<return value>";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertEquals("return add:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectedLv = d.iteration() == 0 ? "collection:-1,return add:0" : "return add:0";
+                        assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -195,8 +196,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -344,8 +345,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("integer".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        final String DELAY = "object instanceof String&&null!=object?<p:object>:nullable instance type Object/*@Identity*//*(Integer)*/";
-
                         assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
@@ -688,7 +687,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
                                 : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
                         assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                        assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());

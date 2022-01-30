@@ -123,19 +123,46 @@ public class Test_25_FieldReference extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
-                if ("p0".equals(d.variableName())) {
-                    assertTrue(d.statementId().startsWith("2.0.0."), "Got: " + d.statementId());
-                    if ("2.0.0.1.0".equals(d.statementId())) {
-                        String expectLv = "p0:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+            if ("getProperty".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+            if ("copy".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, "cm@Parameter_setP;mom@Parameter_setP", 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
+            if ("setP".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
         };
-        testClass("FieldReference_3", 0, 0, new DebugConfiguration.Builder()
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("ParameterAnalysis".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                String delayed = d.iteration() == 0 ? "mom@Parameter_setP" : "break_mom_delay@Parameter_setP;cm@Parameter_setP;mom@Parameter_setP";
+                assertDv(d.p(0), delayed, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("setP".equals(d.fieldInfo().name)) {
+                assertDv(d, "cm@Parameter_setP;mom@Parameter_setP", 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        testClass("FieldReference_3", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

@@ -23,19 +23,23 @@ import java.util.Set;
 // fails miserably, however, now catches an infinite loop.
 
 // this code is semantic nonsense!!!
+
+// there is a nice circular dependency on the CONTEXT MODIFIED computation going between setP the field,
+// setP the parameter, and the 2nd statement in copy().
+
 public class FieldReference_3 {
     public static final String NOT_NULL_PARAMETER = "nnp";
 
     record DV(int v) {
     }
 
-    record ParameterAnalysis(Set<String> set) {
+    record ParameterAnalysis(Set<String> setP) {
         public DV getProperty(String s) {
-            return set.contains(s) ? new DV(3) : new DV(4);
+            return setP.contains(s) ? new DV(3) : new DV(4);
         }
 
         public ParameterAnalysis copy(String s) {
-            Set<String> newSet = new HashSet<>(set);
+            Set<String> newSet = new HashSet<>(setP);
             newSet.add(s);
             return new ParameterAnalysis(newSet);
         }
@@ -44,8 +48,8 @@ public class FieldReference_3 {
     static class AnalyserContext {
         private final ParameterAnalysis parameterAnalysis;
 
-        public AnalyserContext(Set<String> set) {
-            this.parameterAnalysis = new ParameterAnalysis(set);
+        public AnalyserContext(Set<String> setA) {
+            this.parameterAnalysis = new ParameterAnalysis(setA);
         }
 
         private ParameterAnalysis getParameterAnalysis(String s) {

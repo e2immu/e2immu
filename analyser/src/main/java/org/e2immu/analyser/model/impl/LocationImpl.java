@@ -107,4 +107,9 @@ public class LocationImpl implements Location {
         if (info == null) return "not_yet_set";
         return info.niceClassName() + "_" + info.name() + (statementIndexInMethod == null ? "" : "_" + statementIndexInMethod);
     }
+
+    @Override
+    public WithInspectionAndAnalysis getInfo() {
+        return info;
+    }
 }

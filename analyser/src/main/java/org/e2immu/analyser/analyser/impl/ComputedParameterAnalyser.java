@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
@@ -344,10 +345,20 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         }
                     } else {
                         propertiesDelayed.add(property);
-                        LOGGER.debug(
-                                "Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
+                        LOGGER.debug("Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
                                 property, fieldInfo.name, parameterInfo.name);
                         delays = delays.merge(inField.causesOfDelay());
+                        if (property == MODIFIED_OUTSIDE_METHOD) {
+                            // what if I'm the cause of the MOM delay? I need that data to progress!
+                            // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
+                            Stream<CauseOfDelay> vcs = findModifiedOutsideMethod(inField.causesOfDelay());
+                            if (vcs.findAny().isPresent()) {
+                                CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
+                                delays = delays.merge(breakDelay);
+                                // let's not forget to set the delay, so that the statement analyser picks it up
+                                parameterAnalysis.setProperty(property, delays);
+                            }
+                        }
                     }
                 }
 
@@ -416,6 +427,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // can be executed multiple times
         parameterAnalysis.resolveFieldDelays();
         return DONE;
+    }
+
+    private Stream<CauseOfDelay> findModifiedOutsideMethod(CausesOfDelay causes) {
+        return causes.causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD)
+                .filter(c -> c instanceof VariableCause v && v.variable() == parameterInfo ||
+                        c instanceof SimpleCause sc && sc.location().getInfo() == parameterInfo);
     }
 
     private static boolean isExternal(Property property) {
