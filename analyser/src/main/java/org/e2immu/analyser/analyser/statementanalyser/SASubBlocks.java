@@ -60,6 +60,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
 
             if (SAHelper.moveConditionToParameter(sharedState.evaluationContext(), assertion) == null) {
+                // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
+                // it turns out the condition will always be false. We really need the local condition manager for next
+                // statement to be delayed until we know the precondition can be accepted.
                 Expression translated = Objects.requireNonNullElse(
                         sharedState.evaluationContext().acceptAndTranslatePrecondition(assertion),
                         new BooleanConstant(statementAnalysis.primitives(), true));
@@ -74,13 +77,22 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (expressionIsDelayed) {
                 analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
             }
+            Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
+            if (assertCondition.isDelayed()) {
+                ConditionManager delayedLocalConditionManager = sharedState.localConditionManager().addState(assertCondition, assertCondition.causesOfDelay());
+                statementAnalysis.stateData().setLocalConditionManagerForNextStatement(delayedLocalConditionManager);
+            } else {
+                statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
+            }
+        } else {
+            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
         }
 
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
 
-        statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
+
         return analysisStatus;
     }
 

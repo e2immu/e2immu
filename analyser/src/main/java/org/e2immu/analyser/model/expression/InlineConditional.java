@@ -79,15 +79,8 @@ public class InlineConditional extends BaseExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         Expression tc = condition.translate(translationMap);
-        assert tc == condition || condition instanceof DelayedVariableExpression || condition instanceof DelayedExpression || !tc.equals(condition)
-                : "If equals, should be same object: " + condition.getClass() + ": " + condition;
         Expression tt = ifTrue.translate(translationMap);
-        assert tt == ifTrue || ifTrue instanceof DelayedVariableExpression || ifTrue instanceof DelayedExpression || !tt.equals(ifTrue)
-                : "If equals, should be same object: " + ifTrue.getClass() + ": " + ifTrue;
         Expression tf = ifFalse.translate(translationMap);
-        assert tf == ifFalse || ifFalse instanceof DelayedVariableExpression || ifFalse instanceof DelayedExpression || !tf.equals(ifFalse)
-                : "If equals, should be same object: " + ifFalse.getClass() + ": " + ifFalse;
-
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
         return new InlineConditional(identifier, inspectionProvider, tc, tt, tf);
     }

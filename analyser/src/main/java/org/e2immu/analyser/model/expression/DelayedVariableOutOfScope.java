@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
@@ -30,6 +31,8 @@ import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 differs from DelayedExpression in equality; this one is based on identifier.
 The identifier will be tied to the field reference, so that only one delayed scope, with different
 causes of delay, will exist.
+
+For the sake of translations, linkedVariables and parameterized type have to be in the equality as well.
 
 Primary example: InstanceOf_11
  */
@@ -59,12 +62,13 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DelayedVariableOutOfScope that = (DelayedVariableOutOfScope) o;
-        return identifier.equals(that.identifier);
+        return identifier.equals(that.identifier)
+                && parameterizedType.equals(that.parameterizedType) && linkedVariables.equals(that.linkedVariables);
     }
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return Objects.hash(identifier, parameterizedType, linkedVariables);
     }
 
     @Override
@@ -112,7 +116,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
+        ParameterizedType translatedType = translationMap.translateType(parameterizedType);
         LinkedVariables translatedLv = linkedVariables.translate(translationMap);
         if (translatedLv == linkedVariables && translatedType == parameterizedType) return this;
         return new DelayedVariableOutOfScope(identifier, translatedType, translatedLv, causesOfDelay);

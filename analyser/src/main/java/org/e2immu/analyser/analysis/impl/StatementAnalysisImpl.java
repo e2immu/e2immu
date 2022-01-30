@@ -889,9 +889,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Variable renamed = renameVariable(variable);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
-                    Expression ve = !(renamed instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(renamed)
-                            : DelayedVariableExpression.forVariable(renamed, fr.scope.causesOfDelay());
-                    translationMap.addVariableExpression(variable, ve);
+                    translationMap.addVariableExpression(variable, VariableExpression.of(renamed));
                     translationMap.put(variable, renamed);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
                             .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
@@ -912,7 +910,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 }
                 Variable renamed = renameVariable(ive.variable());
                 if (renamed == ive.variable()) return fr; // keep the same
-                return new FieldReference(fr, new VariableExpression(renamed));
+                return new FieldReference(fr, VariableExpression.of(renamed));
             }
             return variable;
         }

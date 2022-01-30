@@ -35,6 +35,15 @@ import java.util.Objects;
 @E2Container
 public final class VariableExpression extends CommonVariableExpression {
 
+    public static Expression of(Variable v) {
+        return !(v instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(v)
+                : DelayedVariableExpression.forVariable(v, fr.scope.causesOfDelay());
+    }
+    public static Expression of(Variable v, Suffix suffix) {
+        return !(v instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(v, suffix)
+                : DelayedVariableExpression.forVariable(v, fr.scope.causesOfDelay());
+    }
+
     public interface Suffix {
 
         default OutputBuilder output() {
@@ -122,7 +131,7 @@ public final class VariableExpression extends CommonVariableExpression {
         // removes all suffixes!
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
-            return new VariableExpression(translated, suffix);
+            return VariableExpression.of(translated, suffix);
         }
         Expression translated2 = translationMap.translateExpression(this);
         if (translated2 != this) {
@@ -137,7 +146,7 @@ public final class VariableExpression extends CommonVariableExpression {
             Expression translatedScope = fieldReference.scope.translate(translationMap);
             if (translatedScope != fieldReference.scope) {
                 ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
-                return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
+                return VariableExpression.of(new FieldReference(fieldReference.fieldInfo, translatedScope,
                         translatedType, fieldReference.isStatic, fieldReference.isDefaultScope), suffix);
             }
         }
