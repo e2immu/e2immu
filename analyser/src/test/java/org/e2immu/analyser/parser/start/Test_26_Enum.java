@@ -269,7 +269,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
                         case 1, 2 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<array-access:Enum_3>/*{L array:not_involved:0,array[i]:assigned:1}*/";
-                        case 3 -> "<array length>>instance type int?instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/:instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/";
+                        case 3 -> "array.length>instance type int?instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/:instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/";
                         default -> "instance type Enum_3";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -303,7 +303,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 2 ? "<loopIsNotEmptyCondition>" : "<array length>>i";
+                    String expectCondition = d.iteration() <= 2 ? "<loopIsNotEmptyCondition>" : "array.length>i";
                     assertEquals(expectCondition, d.condition().toString());
                     assertEquals(d.iteration() <= 2, d.condition().isDelayed());
                 }

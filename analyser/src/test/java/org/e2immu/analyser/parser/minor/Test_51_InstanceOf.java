@@ -113,7 +113,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:<return value>", d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("in/*(Number)*/ instanceof Integer&&in instanceof Number&&null!=in?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/", d.currentValue().toString());
+                        assertEquals("in/*(Number)*/ instanceof Integer&&null!=in/*(Number)*/?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertEquals("in instanceof Number&&null!=in?in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>", d.currentValue().toString());

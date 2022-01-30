@@ -100,7 +100,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // we do not want 0 here!
                         String expect = d.iteration() == 0
-                                ? "!<c:boolean>||!<loopIsNotEmptyCondition>?0:<c:boolean>&&<loopIsNotEmptyCondition>&&<c:boolean>&&<loopIsNotEmptyCondition>&&<c:boolean>?4:<return value>"
+                                ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:0"
                                 : "1==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
                         String expectVars = "[]";

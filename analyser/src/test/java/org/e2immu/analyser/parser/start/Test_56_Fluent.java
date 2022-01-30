@@ -53,8 +53,6 @@ public class Test_56_Fluent extends CommonTestRunner {
 
     /*
     for now, we raise a warning that there is a circular type dependency between a.IFluent_0 and Fluent_0
-
-    FIXME solution: do separate clustering for CONTEXT_MODIFIED, where this and return var are always in separate clusters
      */
     @Test
     public void test_0() throws IOException {
@@ -103,11 +101,11 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?<m:build>:<vp:instanceCopy:container@Class_Fluent_0;immutable@Class_Fluent_0;independent@Class_Fluent_0>/*(Fluent_0)*/";
-                            case 1 -> "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?<m:build>:<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;container@Class_Fluent_0;mm@Method_equals>/*(Fluent_0)*/";
-                            case 2 -> "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?<m:build>:<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0;initial@Field_value>/*(Fluent_0)*/";
-                            case 3, 4 -> "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?<m:build>:<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/";
-                            default -> "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?new Fluent_0(instance type Builder.value):instanceCopy/*(Fluent_0)*/";
+                            case 0 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:container@Class_Fluent_0;immutable@Class_Fluent_0;independent@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
+                            case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;container@Class_Fluent_0;mm@Method_equals>/*(Fluent_0)*/:<m:build>";
+                            case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0;initial@Field_value>/*(Fluent_0)*/:<m:build>";
+                            case 3, 4 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
+                            default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(instance type Builder.value)";
                         };
                         assertEquals(expect, d.currentValue().toString());
 
@@ -157,7 +155,8 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() <= 4 ? "<m:copyOf>" : "!(instanceCopy instanceof Fluent_0)||null==instanceCopy?new Fluent_0(instance type Builder.value):instanceCopy/*(Fluent_0)*/";
+                String expect = d.iteration() <= 4 ? "<m:copyOf>"
+                        : "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(instance type Builder.value)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
