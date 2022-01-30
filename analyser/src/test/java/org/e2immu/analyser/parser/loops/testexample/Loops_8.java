@@ -19,16 +19,14 @@ import java.util.List;
 import java.util.Set;
 
 /*
-for later: interaction of loops with companion methods
-
-while set is not assigned to in the loop, it is modified.
-There's currently no provision for that
+Erasing the companion info in the loop
  */
-public class Loops_8_TODO {
-    public static void method(List<String> list) {
+public class Loops_8 {
+    public static Set<String> method(List<String> list) {
         Set<String> set = new HashSet<>();
         for (String s : list) {
             set.add(s);
         }
+        return set;
     }
 }

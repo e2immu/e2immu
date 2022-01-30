@@ -156,6 +156,32 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
     }
 
     @Test
+    public void test_8() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("set".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:set>" : "instance type Set<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:set>"
+                                : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
     public void test_9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
@@ -169,11 +195,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 "strings.length>0?null:\"abc\"";
                         assertEquals(expect, d.currentValue().toString());
                     }
-                }
-                if ("node$1$1.0.0-E".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "strings.length>0?null:<v:node>"
-                            : "strings.length>0?null:node$1";
-                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
@@ -393,7 +414,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
                         // FIXME
-                        String expected =  "p>=0&&p<=9?4:3";
+                        String expected = "p>=0&&p<=9?4:3";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
