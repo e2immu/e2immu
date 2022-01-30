@@ -67,16 +67,19 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
             return index;
         }
 
-        public void setName(String name) {
+        public Builder setName(String name) {
             this.name = name;
+            return this;
         }
 
         public String getName() {
             return name;
         }
 
-        public void setParameterizedType(ParameterizedType parameterizedType) {
+
+        public Builder setParameterizedType(ParameterizedType parameterizedType) {
             this.parameterizedType = parameterizedType;
+            return this;
         }
 
         public ParameterizedType getParameterizedType() {

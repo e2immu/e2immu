@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.RangeData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.range.ConstantRange;
 import org.e2immu.analyser.analysis.range.NumericRange;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
@@ -102,8 +103,8 @@ public class RangeDataImpl implements RangeData {
                 return;
             }
         }
-        if (statement instanceof ForEachStatement) {
-            Range r = forEachConstantRange(statement, statementAnalysis, result);
+        if (statement instanceof ForEachStatement forEach) {
+            Range r = forEachConstantRange(forEach, statementAnalysis, result);
             if (r != null) {
                 if (r.isDelayed()) setDelayed(r);
                 else setRange(r);
@@ -115,9 +116,15 @@ public class RangeDataImpl implements RangeData {
 
     // for(String x: new String[] { ... }) ...
     // for(EnumType e: EnumType.values()) ...
-    private Range forEachConstantRange(Statement statement,
+    private Range forEachConstantRange(ForEachStatement statement,
                                        StatementAnalysis statementAnalysis,
                                        EvaluationResult result) {
+        if(result.value() instanceof ArrayInitializer ai) {
+            if (statement.structure.initialisers().get(0) instanceof LocalVariableCreation lvc) {
+                LocalVariableReference lvr = lvc.newLocalVariables().get(0);
+                return new ConstantRange(ai, new VariableExpression(lvr));
+            }
+        }
         return null;
     }
 

@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.loops;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,37 @@ public class Test_21_ConstantRange extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("s.equals(\"c\")", d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.0.0.0".equals(d.statementId())) {
+                    assertEquals("s.equals(\"c\")", d.condition().toString());
+                    assertEquals("false", d.absoluteState().toString());
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("s.equals(\"a\")||s.equals(\"b\")", d.condition().toString());
+                }
+            }
+        };
         testClass("ConstantRange_1", 2, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

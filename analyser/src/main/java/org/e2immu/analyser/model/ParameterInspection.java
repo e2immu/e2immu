@@ -44,9 +44,11 @@ public interface ParameterInspection extends Inspection {
         ParameterInfo build(MethodInfo methodInfo);
 
         @Modified
-        void setParameterizedType(ParameterizedType parameterizedType);
+        @Fluent
+        Builder setParameterizedType(ParameterizedType parameterizedType);
 
         @Modified
-        void setName(String name);
+        @Fluent
+        Builder setName(String name);
     }
 }

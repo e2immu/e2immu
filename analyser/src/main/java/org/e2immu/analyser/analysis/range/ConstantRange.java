@@ -16,16 +16,28 @@ package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.*;
 
 import java.util.Arrays;
+import java.util.List;
 
 public record ConstantRange(ArrayInitializer initializer, VariableExpression variableExpression) implements Range {
 
     @Override
     public Expression conditions(EvaluationContext evaluationContext) {
+        TypeInfo typeInfo = initializer.returnType().typeInfo;
+        assert typeInfo != null : "Cannot find typeInfo in " + initializer;
+        MethodInfo equalsMethodInfo = typeInfo.findUniqueMethod("equals", 1);
+        assert equalsMethodInfo != null : "Cannot find equals method in type " + typeInfo;
         return Or.or(evaluationContext, Arrays.stream(initializer.multiExpression.expressions())
-                .map(e -> Equals.equals(evaluationContext, variableExpression, e)).toList());
+                .map(e -> equals(equalsMethodInfo, variableExpression, e)).toList());
+    }
+
+    private Expression equals(MethodInfo equalsMethodInfo, VariableExpression variableExpression, Expression e) {
+        return new MethodCall(Identifier.generate(), variableExpression, equalsMethodInfo, List.of(e));
     }
 
     @Override

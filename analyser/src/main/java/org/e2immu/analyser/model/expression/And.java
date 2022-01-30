@@ -252,16 +252,6 @@ public class And extends ExpressionCanBeTooComplex {
             }
         }
 
-        // simplification of the OrValue
-
-        if (value instanceof Or orValue) {
-            if (orValue.expressions().size() == 1) {
-                newConcat.add(orValue.expressions().get(0));
-                return Action.SKIP;
-            }
-            return Action.ADD;
-        }
-
         // combinations with equality and inequality (GE)
 
         if (value instanceof GreaterThanZero gt0 && gt0.expression().variables(true).size() > 1) {
@@ -281,6 +271,11 @@ public class And extends ExpressionCanBeTooComplex {
             }
         }
 
+        // x.equals(y)
+        Action actionEqualsEquals = analyseEqualsEquals(prev, value);
+        if (actionEqualsEquals != null) return actionEqualsEquals;
+
+        // x == y
         Action actionEqEq = analyseEqEq(evaluationContext, prev, value);
         if (actionEqEq != null) return actionEqEq;
 
@@ -293,7 +288,70 @@ public class And extends ExpressionCanBeTooComplex {
         Action actionInstanceOf = analyseInstanceOf(evaluationContext, prev, value);
         if (actionInstanceOf != null) return actionInstanceOf;
 
+
+        // simplification of the OrValue
+
+        if (value instanceof Or orValue) {
+            if (orValue.expressions().size() == 1) {
+                newConcat.add(orValue.expressions().get(0));
+                return Action.SKIP;
+            }
+        }
+
         return Action.ADD;
+    }
+
+    private record LhsRhs(Expression lhs, Expression rhs) {
+    }
+
+    private static LhsRhs equalsMethodCall(Expression e) {
+        if (e instanceof MethodCall mc && mc.methodInfo.name.equals("equals") && mc.parameterExpressions.size() == 1) {
+            Expression rhs = mc.parameterExpressions.get(0);
+            if (rhs instanceof ConstantExpression) return new LhsRhs(rhs, mc.object);
+            return new LhsRhs(mc.object, rhs);
+        }
+        return null;
+    }
+
+    private Action analyseEqualsEquals(Expression prev, Expression value) {
+        LhsRhs ev1 = equalsMethodCall(prev);
+        if (ev1 != null && ev1.lhs instanceof ConstantExpression) {
+            Action a = equalsRhs(ev1, value);
+            if (a != null) return a;
+
+            if (value instanceof Or or) {
+                boolean allFalse = true;
+                for (Expression e : or.expressions()) {
+                    Action b = equalsRhs(ev1, e);
+                    if (b != Action.FALSE) {
+                        allFalse = false;
+                        break;
+                    }
+                }
+                if (allFalse) return Action.FALSE;
+            }
+        }
+        return null;
+    }
+
+    private Action equalsRhs(LhsRhs ev1, Expression value) {
+        LhsRhs ev2 = equalsMethodCall(value);
+        if (ev2 != null && ev2.lhs instanceof ConstantExpression) {
+            // "a".equals(s) && "b".equals(s)
+            if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                return Action.FALSE;
+            }
+        }
+
+        // EQ and NOT EQ
+        LhsRhs ev2b;
+        if (value instanceof Negation ne && ((ev2b = equalsMethodCall(ne.expression)) != null)) {
+            // "a".equals(s) && !"b".equals(s)
+            if (ev1.rhs.equals(ev2b.rhs) && !ev1.lhs.equals(ev2b.lhs)) {
+                return Action.SKIP;
+            }
+        }
+        return null;
     }
 
     private Action analyseEqEq(EvaluationContext evaluationContext, Expression prev, Expression value) {
