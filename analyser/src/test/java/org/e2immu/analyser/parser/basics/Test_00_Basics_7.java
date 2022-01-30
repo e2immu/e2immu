@@ -209,7 +209,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i";
+                        String expect = d.iteration() == 0 ? "<f:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));

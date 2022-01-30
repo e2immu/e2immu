@@ -27,5 +27,17 @@ public class IfStatement_0 {
         return a;
     }
 
+
+    @NotNull
+    @Identity(absent = true)
+    public static String method2(String a) {
+        if (a == null) {
+            return "b";
+        } else {
+            System.out.println(a);
+        }
+        return a;
+    }
+
 }
 

@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
@@ -213,7 +212,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         .map(ex -> new StatementAnalysisImpl.ConditionAndLastStatement(ex.condition,
                                 ex.startOfBlock.index(),
                                 ex.startOfBlock.lastStatement(),
-                                ex.startOfBlock.lastStatement().getStatementAnalysis().isEscapeAlwaysExecutedInCurrentBlock().valueIsTrue()))
+                                ex.startOfBlock.lastStatement().getStatementAnalysis().isReturnOrEscapeAlwaysExecutedInCurrentBlock(true).valueIsTrue(),
+                                ex.startOfBlock.lastStatement().getStatementAnalysis().isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue()))
                         .toList();
                 /*
                  See VariableField_0; because we don't know which sub-block gets executed, we cannot use either
@@ -290,7 +290,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return startingPointToLabels.entrySet().stream().map(e -> {
             StatementAnalyser lastStatement = startOfBlock.lastStatementOfSwitchOldStyle(e.getKey());
             boolean alwaysEscapes = statementAnalysis.flowData().alwaysEscapesViaException();
-            return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes);
+
+            // TODO not verified
+            boolean alwaysEscapesOrReturns = statementAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue();
+            return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes,
+                    alwaysEscapesOrReturns);
         }).toList();
     }
 
@@ -312,10 +316,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
 
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
-        if (statementAnalysis.statement() instanceof SwitchStatementOldStyle switchStatementOldStyle) {
+        Statement statement = statementAnalysis.statement();
+        if (statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }
-        if (statementAnalysis.statement() instanceof SynchronizedStatement) return true;
+        if (statement instanceof SynchronizedStatement || statement instanceof TryStatement) return true;
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
@@ -501,7 +506,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     conditionForSubStatement = null; // will not be executed anyway
                     conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
                 } else if (statement() instanceof TryStatement) { // catch
-                    conditionForSubStatement = Instance.forUnspecifiedCatchCondition(index(), statementAnalysis.primitives());
+                    // extract them from the condition of the main block; it's got to be the same Instance objects
+                    Expression condition = executions.get(0).conditionManager.condition();
+                    Expression negated = condition instanceof And and ? and.getExpressions().get(count - 1) : condition;
+                    conditionForSubStatement = Negation.negate(evaluationContext, negated);
                     conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
 
                 } else throw new UnsupportedOperationException();
@@ -552,6 +560,24 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                            Expression value,
                                                            CausesOfDelay valueIsDelayed) {
         Structure structure = statement().getStructure();
+
+        if (statement() instanceof TryStatement tryStatement) {
+            if (tryStatement.catchClauses.isEmpty()) {
+                return localConditionManager;
+            }
+            List<Expression> booleanVars = new ArrayList<>();
+            int cnt = 1;
+            for (Structure s : structure.subStatements()) {
+                if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
+                    String index = index() + "." + (cnt++) + ".0";
+                    booleanVars.add(Instance.forUnspecifiedCatchCondition(index, evaluationContext.getPrimitives()));
+                }
+            }
+            Expression condition = And.and(evaluationContext, booleanVars.stream()
+                    .map(v -> Negation.negate(evaluationContext, v)).toArray(Expression[]::new));
+            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
+                    condition.causesOfDelay());
+        }
         if (statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
@@ -608,7 +634,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
-        List<Expression> previousConditions = executions.stream().map(e -> e.condition).collect(Collectors.toList());
+        List<Expression> previousConditions = executions.stream().map(e -> e.condition).toList();
         if (previousConditions.isEmpty()) {
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }

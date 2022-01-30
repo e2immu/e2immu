@@ -134,7 +134,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("null", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("null", d.currentValue().toString());
+                        assertEquals("instance type boolean?<return value>:null", d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
@@ -146,7 +146,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("no interrupt=CONDITIONALLY:1,return=ALWAYS:2",
+                    assertEquals("no interrupt=CONDITIONALLY:1,return=CONDITIONALLY:1",
                             d.statementAnalysis().flowData().getInterruptsFlow().entrySet().stream()
                                     .map(Object::toString).sorted().collect(Collectors.joining(",")));
                 }
@@ -216,6 +216,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("e", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    }
+                    if("2".equals(d.statementId())) {
+                        assertEquals("instance type IOException", d.currentValue().toString());
                     }
                 }
             }

@@ -979,7 +979,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
-                                            boolean alwaysEscapes) {
+                                            boolean alwaysEscapes,
+                                            boolean alwaysEscapesOrReturns) {
     }
 
     /**
@@ -1059,24 +1060,30 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             assert overwriteValue == null || renamed == variable : "Overwrites do not go together with renames?";
 
             // use "variable" here rather than "renamed", this deals with data in the sub-blocks
+            boolean localAtLeastOneBlock;
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
                     inSwitchStatementOldStyle);
+            if (variable instanceof ReturnVariable) {
+                localAtLeastOneBlock = atLeastOneBlockExecuted && lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapes() ? 1 : 0).sum();
+            } else {
+                localAtLeastOneBlock = atLeastOneBlockExecuted;// && lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapesOrReturns() ? 1 : 0).sum();
+            }
             if (toMerge.size() > 0) {
                 try {
                     Merge merge = new Merge(evaluationContext, destination);
 
                     // the main merge operation
                     merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
-                            atLeastOneBlockExecuted, toMerge, groupPropertyValues, translationMap);
+                            localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
 
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .map(lv -> lv.translate(translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                     linkedVariablesMap.put(renamed, linkedVariables);
 
-                    if (atLeastOneBlockExecuted) variablesWhereMergeOverwrites.add(renamed);
+                    if (localAtLeastOneBlock) variablesWhereMergeOverwrites.add(renamed);
 
-                    if (atLeastOneBlockExecuted &&
+                    if (localAtLeastOneBlock &&
                             checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
                         assert variable == renamed : "Overwriting previous assignments doesn't go together with renames";
                         ensure(Message.newMessage(location, Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
@@ -1151,7 +1158,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .map(e2 -> {
                     VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
                     return new ConditionAndVariableInfo(e2.condition(),
-                            vic2.current(), e2.alwaysEscapes(),
+                            vic2.current(), e2.alwaysEscapes(), e2.alwaysEscapesOrReturns(),
                             vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
                             e2.lastStatement().getStatementAnalysis().index(),
                             index,
@@ -1160,6 +1167,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             evaluationContext);
                 })
                 .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
+    }
+
+    private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
+        if (inSwitchStatementOldStyle) {
+            assert cav.firstStatementIndexForOldStyleSwitch() != null;
+            // if the variable is assigned in the block, it has to be assigned after the first index
+            // "the block" is the switch statement; otherwise,
+            String cavLatest = cav.variableInfo().getAssignmentIds().getLatestAssignmentIndex();
+            if (cavLatest.compareTo(index) > 0) {
+                return cav.firstStatementIndexForOldStyleSwitch().compareTo(cavLatest) <= 0;
+            }
+            return cav.firstStatementIndexForOldStyleSwitch().compareTo(cav.variableInfo().getReadId()) <= 0;
+        }
+        return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
     private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext,
@@ -1249,20 +1270,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .merge(extContStatus).merge(cImmStatus).merge(cContStatus));
     }
 
-
-    private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
-        if (inSwitchStatementOldStyle) {
-            assert cav.firstStatementIndexForOldStyleSwitch() != null;
-            // if the variable is assigned in the block, it has to be assigned after the first index
-            // "the block" is the switch statement; otherwise,
-            String cavLatest = cav.variableInfo().getAssignmentIds().getLatestAssignmentIndex();
-            if (cavLatest.compareTo(index) > 0) {
-                return cav.firstStatementIndexForOldStyleSwitch().compareTo(cavLatest) <= 0;
-            }
-            return cav.firstStatementIndexForOldStyleSwitch().compareTo(cav.variableInfo().getReadId()) <= 0;
-        }
-        return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
-    }
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
                                                           VariableInfo initial,
@@ -1846,9 +1853,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
+    public DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly) {
+        if (!flowData().interruptsFlowIsSet()) {
+            return flowData().interruptStatus().causesOfDelay();
+        }
+        InterruptsFlow bestAlways = flowData().bestAlwaysInterrupt();
+        boolean escapes = !escapeOnly && bestAlways == InterruptsFlow.RETURN || bestAlways == InterruptsFlow.ESCAPE;
+        return DV.fromBoolDv(escapes);
+    }
+
+    @Override
     public DV isEscapeAlwaysExecutedInCurrentBlock() {
         if (!flowData().interruptsFlowIsSet()) {
-            LOGGER.debug("Delaying checking useless assignment in {}, because interrupt status unknown", index());
             return flowData().interruptStatus().causesOfDelay();
         }
         InterruptsFlow bestAlways = flowData().bestAlwaysInterrupt();

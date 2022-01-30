@@ -33,6 +33,20 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.LimitedStatementAnalysis.startOfBlock;
 
+/*
+The execution and condition values are similar to that of an IfElse
+
+if(!catch1 && !catch2) {
+   ...
+} else if(catch1) {
+   ...
+} else if(catch2) {
+  ...
+}
+{
+  finally
+}
+ */
 public class TryStatement extends StatementWithStructure {
     public final List<Expression> resources;
     public final List<Pair<CatchParameter, Block>> catchClauses;
@@ -59,7 +73,9 @@ public class TryStatement extends StatementWithStructure {
         Structure.Builder builder = new Structure.Builder()
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(resources)
-                .setStatementExecution(StatementExecution.ALWAYS)
+                // CONDITIONALLY: try is executed when not one of the catch-clauses is executed
+                // (there is one Instance-boolean per catch clause)
+                .setStatementExecution(StatementExecution.CONDITIONALLY)
                 .setBlock(tryBlock); //there's always the main block
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             builder.addSubStatement(new Structure.Builder()

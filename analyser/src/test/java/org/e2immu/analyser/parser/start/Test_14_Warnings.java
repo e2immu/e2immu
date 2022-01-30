@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -543,37 +542,6 @@ public class Test_14_Warnings extends CommonTestRunner {
         // assigning a variable to its current value
         // assigning to itself
         testClass("Warnings_11", 1, 1, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    @Test
-    public void test12() throws IOException {
-        // See also VariableScope_1, but this one focuses on the warnings
-        // re-assigning a variable
-        // throws declaration, but nothing thrown TODO
-
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("writeLine".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    if ("1.1.0".equals(d.statementId())) {
-                        assertEquals("<return value>", d.currentValue().toString());
-                    }
-                }
-                if ("e".equals(d.variableName())) {
-                    if ("1.1.0".equals(d.statementId())) {
-                        assertEquals("instance type IOException", d.currentValue().toString());
-                        assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(CONTAINER));
-                    }
-                }
-                if ("ioe".equals(d.variableName())) {
-                    if ("1.1.0".equals(d.statementId())) {
-                        assertEquals("e", d.currentValue().toString());
-                    }
-                }
-            }
-        };
-        testClass("Warnings_12", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

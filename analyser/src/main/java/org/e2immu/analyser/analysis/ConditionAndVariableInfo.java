@@ -17,12 +17,14 @@ package org.e2immu.analyser.analysis;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 public record ConditionAndVariableInfo(Expression condition,
                                        VariableInfo variableInfo,
                                        boolean alwaysEscapes,
+                                       boolean alwaysEscapesOrReturns,
                                        VariableNature variableNature,
                                        String firstStatementIndexForOldStyleSwitch,
                                        String indexOfLastStatement,
@@ -32,12 +34,16 @@ public record ConditionAndVariableInfo(Expression condition,
                                        EvaluationContext evaluationContext) {
     // for testing
     public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, EvaluationContext evaluationContext) {
-        this(condition, variableInfo, false, VariableNature.METHOD_WIDE,
+        this(condition, variableInfo, false, false, VariableNature.METHOD_WIDE,
                 null, "0", "-",
                 null, variableInfo.variable(), evaluationContext);
     }
 
     public Expression value() {
         return variableInfo.getValue();
+    }
+
+    public boolean keepInMerge() {
+        return variableInfo.variable() instanceof ReturnVariable ? !alwaysEscapes() : !alwaysEscapesOrReturns();
     }
 }

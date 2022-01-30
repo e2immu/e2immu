@@ -41,7 +41,25 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("null==a?\"b\":a", d.currentValue().toString());
+                    }
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "null==<p:a>?\"b\":<p:a>" : "null==a?\"b\":a";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
         testClass("IfStatement_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

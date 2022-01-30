@@ -163,6 +163,7 @@ public interface StatementAnalysis extends Analysis,
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 
+    DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly);
     DV isEscapeAlwaysExecutedInCurrentBlock();
      Variable obtainLoopVar();
     CausesOfDelay evaluationOfForEachVariable(Variable loopVar,

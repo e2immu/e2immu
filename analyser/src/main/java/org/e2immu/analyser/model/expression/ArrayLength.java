@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -110,5 +107,10 @@ public class ArrayLength extends BaseExpression implements Expression {
              builder.setExpression(this);
         }
         return builder.build();
+    }
+
+    @Override
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return ConstantExpression.propertyOfConstant(property);
     }
 }

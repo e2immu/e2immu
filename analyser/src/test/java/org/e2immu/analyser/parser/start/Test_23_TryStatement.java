@@ -18,7 +18,9 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.StringConcat;
@@ -191,6 +193,12 @@ public class Test_23_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
+                    if("1.0.0".equals(d.statementId())) {
+                        assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("instance type boolean?<return value>:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                    }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?null:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }

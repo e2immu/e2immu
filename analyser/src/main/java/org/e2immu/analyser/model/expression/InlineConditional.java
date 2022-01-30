@@ -249,7 +249,9 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
+        if (ifTrue.isNull() && ifFalse.isNull()) {
+            return inspectionProvider.getPrimitives().objectParameterizedType();
+        }
         if (ifTrue.isNull()) {
             return box(ifFalse.returnType());
         }
@@ -259,7 +261,9 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
+        if (ifTrue.isNull() && ifFalse.isNull()) {
+            return Set.of(inspectionProvider.getPrimitives().objectParameterizedType());
+        }
         if (ifTrue.isNull()) {
             return ifFalse.erasureTypes(typeContext);
         }

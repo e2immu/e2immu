@@ -50,6 +50,10 @@ public interface ConstantExpression<T> extends Expression {
 
     @Override
     default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return propertyOfConstant(property);
+    }
+
+    static DV propertyOfConstant(Property property) {
         switch (property) {
             case CONTAINER:
                 return MultiLevel.CONTAINER_DV;
@@ -64,7 +68,7 @@ public interface ConstantExpression<T> extends Expression {
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }
-        throw new UnsupportedOperationException("No info about " + property + " for value " + getClass());
+        throw new UnsupportedOperationException("No info about " + property);
     }
 
     static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {

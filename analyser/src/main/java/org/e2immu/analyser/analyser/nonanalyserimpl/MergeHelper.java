@@ -257,9 +257,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             return valueProperties();
         }
 
-        // here is the correct point to remove dead branches
-        List<ConditionAndVariableInfo> reduced =
-                mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).toList();
+        // here is the correct point to remove "dead" branches (guaranteed to throw exception, and for non-return
+        // variables, also guaranteed to return, so not continue after the merge)
+        List<ConditionAndVariableInfo> reduced = mergeSources.stream().filter(ConditionAndVariableInfo::keepInMerge).toList();
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav ->
                 currentValue.equals(cav.value()));
