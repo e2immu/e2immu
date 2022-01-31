@@ -272,11 +272,11 @@ public class And extends ExpressionCanBeTooComplex {
         }
 
         // x.equals(y)
-        Action actionEqualsEquals = analyseEqualsEquals(prev, value);
+        Action actionEqualsEquals = analyseEqualsEquals(evaluationContext, prev, value, newConcat);
         if (actionEqualsEquals != null) return actionEqualsEquals;
 
         // x == y
-        Action actionEqEq = analyseEqEq(evaluationContext, prev, value);
+        Action actionEqEq = analyseEqEq(evaluationContext, prev, value, newConcat);
         if (actionEqEq != null) return actionEqEq;
 
         Action actionGeNotEqual = analyseGeNotEq(evaluationContext, newConcat, prev, value);
@@ -313,23 +313,16 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseEqualsEquals(Expression prev, Expression value) {
+    private Action analyseEqualsEquals(EvaluationContext evaluationContext,
+                                       Expression prev,
+                                       Expression value,
+                                       ArrayList<Expression> newConcat) {
         LhsRhs ev1 = equalsMethodCall(prev);
         if (ev1 != null && ev1.lhs instanceof ConstantExpression) {
             Action a = equalsRhs(ev1, value);
             if (a != null) return a;
 
-            if (value instanceof Or or) {
-                boolean allFalse = true;
-                for (Expression e : or.expressions()) {
-                    Action b = equalsRhs(ev1, e);
-                    if (b != Action.FALSE) {
-                        allFalse = false;
-                        break;
-                    }
-                }
-                if (allFalse) return Action.FALSE;
-            }
+            return equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs);
         }
         return null;
     }
@@ -354,8 +347,10 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseEqEq(EvaluationContext evaluationContext, Expression prev, Expression value) {
+    private Action analyseEqEq(EvaluationContext evaluationContext, Expression prev, Expression value, ArrayList<Expression> newConcat) {
         if (prev instanceof Equals ev1) {
+            Action skip = equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs);
+            if (skip != null) return skip;
             if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
@@ -406,6 +401,64 @@ public class And extends ExpressionCanBeTooComplex {
         }
         return null;
     }
+
+    private Action equalsAndOr(EvaluationContext evaluationContext,
+                               Expression prev,
+                               Expression value,
+                               ArrayList<Expression> newConcat,
+                               Expression equalityRhs) {
+        if (value instanceof Or or) {
+            // do a check first -- should we expand?
+            if (safeToExpandOr(equalityRhs, or)) {
+                List<Expression> result = new ArrayList<>(or.expressions().size());
+                boolean foundTrue = false;
+                for (Expression disjunction : or.expressions()) {
+                    Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, prev, disjunction);
+                    if (and.isBoolValueTrue()) {
+                        foundTrue = true;
+                        break;
+                    }
+                    if (!and.isBoolValueFalse()) {
+                        result.add(and);
+                    }
+                }
+                if (foundTrue) {
+                    return Action.SKIP;
+                }
+                if (result.isEmpty()) {
+                    return Action.FALSE;
+                }
+                if (result.size() < or.expressions().size()) {
+                    Expression newOr = Or.or(evaluationContext, result);
+                    newConcat.set(newConcat.size() - 1, newOr); // full replace
+                    return Action.ADD_CHANGE;
+                }
+            }
+        }
+        return null;
+    }
+
+    // starting off with "x == a", we're looking for comparisons to "a", and equality with "a"
+    public static boolean safeToExpandOr(Expression rhs, Or or) {
+        for (Expression disjunction : or.expressions()) {
+            Expression e = extract(disjunction);
+            if (!e.equals(rhs)) return false;
+        }
+        return true;
+    }
+
+    private static Expression extract(Expression e) {
+        if (e instanceof Equals equals) return equals.rhs;
+        if (e instanceof GreaterThanZero gt0) {
+            return extract(gt0.expression());
+        }
+        if (e instanceof Negation negation) return extract(negation.expression);
+        if (e instanceof Sum sum && sum.lhs instanceof ConstantExpression) return extract(sum.rhs);
+        LhsRhs lhsRhs = equalsMethodCall(e);
+        if (lhsRhs != null) return lhsRhs.rhs;
+        return e;
+    }
+
 
     private Action analyseGeNotEq(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         //  GE and NOT EQ

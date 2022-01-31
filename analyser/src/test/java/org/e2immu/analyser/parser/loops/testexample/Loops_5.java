@@ -17,12 +17,13 @@ package org.e2immu.analyser.parser.loops.testexample;
 import org.e2immu.annotation.Constant;
 
 public class Loops_5 {
+    // picked up by NumericalRange: standard condition and increment, no extra write to loop variable
 
     // same as in 4, but with a different variable
     // now we know that i>=10 at the end of the loop, though
 
     @Constant(absent = true)
-    public static int method() {
+    public static int method1() {
         int i = 0;
         for (; i < 10; i++) {
             if (i == 1) return 5;

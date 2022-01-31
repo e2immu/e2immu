@@ -15,10 +15,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.visitor.CommonVisitorData;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -181,6 +179,20 @@ public abstract class VisitorTestSupport {
         } else {
             mustSee.remove(label);
         }
+    }
+
+    public Range assertRange(StatementAnalyserVisitor.Data d, String rangeExpected, String conditionExpected) {
+        if (d.iteration() == 0) {
+            CausesOfDelay causes = d.statementAnalysis().rangeData().getRange().causesOfDelay();
+            assertTrue(causes.isDelayed());
+            assertEquals(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT, causes.causesStream().findFirst().orElseThrow().cause());
+            return null;
+        }
+        Range range = d.statementAnalysis().rangeData().getRange();
+        assertEquals(rangeExpected, range.toString());
+        Expression conditions = range.conditions(d.evaluationContext());
+        assertEquals(conditionExpected, conditions.toString());
+        return range;
     }
 
 }

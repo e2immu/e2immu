@@ -36,7 +36,7 @@ public class Test_01_Loops_5 extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
+            if ("method1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     // if(i==1)...
                     String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i$1";
@@ -50,44 +50,70 @@ public class Test_01_Loops_5 extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (!"method".equals(d.methodInfo().name)) return;
-            if ("i".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                            assertEquals("1", v.statementIndex());
+                        } else fail();
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                 }
-                if ("1.0.0".equals(d.statementId())) {
-                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
-                        assertEquals("1", v.statementIndex());
-                    } else fail();
-                    String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
-                    assertEquals(expect, d.currentValue().toString());
-                }
-                if ("1".equals(d.statementId())) {
-                    assertTrue(d.variableInfoContainer().hasMerge());
-                    String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
-                    assertEquals(expect, d.currentValue().toString());
-                }
-                if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
-                    assertEquals(expect, d.currentValue().toString());
+                if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                    String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:<return value>" :
+                            "1==i$1?5:<return value>";
+                    assertEquals(expectReturn, d.currentValue().toString());
                 }
             }
-            if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:<return value>" :
-                        "1==i?5:<return value>";
-                assertEquals(expectReturn, d.currentValue().toString());
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
-                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$1]", "i$1<=9&&i$1>=0");
+
                     String expectState = d.iteration() == 0 ? "<s:boolean>&&(!<loopIsNotEmptyCondition>||1!=<v:i>)" : "1!=i&&(i>=10||i<=-1)";
                     assertEquals(expectState, d.state().toString());
                 }
             }
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expect = d.iteration() == 0
+                            ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)" : "1==i||i>=10||i<=-1";
+                    assertEquals(expect, d.state().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i||i>=10||i<=-1";
+                    assertEquals(expect, d.state().toString());
+                }
+            }
         };
         // expect: warning: always true in assert
-        testClass("Loops_5", 0, 1, new DebugConfiguration.Builder()
+        testClass("Loops_5", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

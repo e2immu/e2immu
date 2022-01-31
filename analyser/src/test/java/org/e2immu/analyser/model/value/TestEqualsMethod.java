@@ -17,7 +17,9 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestEqualsMethod extends CommonAbstractValue {
 
@@ -66,6 +69,8 @@ public class TestEqualsMethod extends CommonAbstractValue {
         assertEquals("s.equals(\"b\")", eq2.toString());
         Expression eq3 = eqMethod(s, newString("c"));
         assertEquals("s.equals(\"c\")", eq3.toString());
-        assertEquals("false", newAndAppend(eq1, newOrAppend(eq2, eq3)).toString());
+        Or or = (Or) newOrAppend(eq2, eq3);
+        assertTrue(And.safeToExpandOr(s, or));
+        assertEquals("false", newAndAppend(eq1, or).toString());
     }
 }

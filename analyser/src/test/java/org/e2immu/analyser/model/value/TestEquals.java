@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Equals;
-import org.e2immu.analyser.model.expression.Remainder;
-import org.e2immu.analyser.model.expression.Sum;
+import org.e2immu.analyser.model.expression.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -31,11 +28,15 @@ public class TestEquals extends CommonAbstractValue {
         CommonAbstractValue.beforeClass();
     }
 
+    private static Expression eq(Expression e1, Expression e2) {
+        return Equals.equals(minimalEvaluationContext, e1, e2);
+    }
+
     @Test
     public void test() {
         Expression int3 = newInt(3);
         Expression int5 = newInt(5);
-        assertEquals("false", Equals.equals(minimalEvaluationContext, int3, int5).toString());
+        assertEquals("false", eq(int3, int5).toString());
     }
 
     @Test
@@ -44,7 +45,7 @@ public class TestEquals extends CommonAbstractValue {
         Expression int5 = newInt(5);
         Expression left = Sum.sum(minimalEvaluationContext, int3, i);
         Expression right = Sum.sum(minimalEvaluationContext, int5, i);
-        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right).toString());
+        assertEquals("false", eq(left, right).toString());
     }
 
     @Test
@@ -52,7 +53,7 @@ public class TestEquals extends CommonAbstractValue {
         Expression int5 = newInt(5);
         Expression left = Sum.sum(minimalEvaluationContext, i, int5);
         Expression right = Sum.sum(minimalEvaluationContext, int5, i);
-        assertEquals("true", Equals.equals(minimalEvaluationContext, left, right).toString());
+        assertEquals("true", eq(left, right).toString());
     }
 
     @Test
@@ -60,33 +61,33 @@ public class TestEquals extends CommonAbstractValue {
         Expression int5 = newInt(5);
         Expression left = Sum.sum(minimalEvaluationContext, i, int5);
         Expression right = i;
-        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right).toString());
+        assertEquals("false", eq(left, right).toString());
     }
 
     @Test
     public void testSort() {
-        assertEquals("-4==i", Equals.equals(minimalEvaluationContext, newInt(-4), i).toString());
-        assertEquals("-4==i", Equals.equals(minimalEvaluationContext, newInt(4), negate(i)).toString());
+        assertEquals("-4==i", eq(newInt(-4), i).toString());
+        assertEquals("-4==i", eq(newInt(4), negate(i)).toString());
     }
 
     @Test
     public void test1() {
-        assertEquals("true", Equals.equals(minimalEvaluationContext, newInt(-4), newInt(-4)).toString());
-        assertEquals("0==i", Equals.equals(minimalEvaluationContext, i, negate(i)).toString());
+        assertEquals("true", eq(newInt(-4), newInt(-4)).toString());
+        assertEquals("0==i", eq(i, negate(i)).toString());
     }
 
     @Test
     public void test2() {
         Expression sum = Sum.sum(minimalEvaluationContext, i, j);
         assertEquals("i+j", sum.toString());
-        assertEquals("-4==i+j", Equals.equals(minimalEvaluationContext, sum, newInt(-4)).toString());
+        assertEquals("-4==i+j", eq(sum, newInt(-4)).toString());
     }
 
     @Test
     public void testModulo1() {
         Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
-        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
-        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(4), i);
+        Expression e1 = eq(newInt(1), iMod2);
+        Expression e2 = eq(newInt(4), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("4==i", e2.toString());
         assertTrue(i.compareTo(iMod2) > 0);
@@ -96,8 +97,8 @@ public class TestEquals extends CommonAbstractValue {
     @Test
     public void testModulo2() {
         Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
-        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
-        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(5), i);
+        Expression e1 = eq(newInt(1), iMod2);
+        Expression e2 = eq(newInt(5), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("5==i", e2.toString());
         assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
@@ -106,10 +107,22 @@ public class TestEquals extends CommonAbstractValue {
     @Test
     public void testModulo3() {
         Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
-        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
-        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(5), i);
+        Expression e1 = eq(newInt(1), iMod2);
+        Expression e2 = eq(newInt(5), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("5==i", e2.toString());
         assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
+    }
+
+    @Test
+    public void testEqualsOr() {
+        Expression eq1 = eq(newInt(1), i);
+        Expression ge10 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(10), true);
+        Expression leM1 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(-1), true);
+        // 1==i && (i >= 10 || i <= -1)
+        Or or = (Or) newOrAppend(ge10, leM1);
+        assertTrue(And.safeToExpandOr(i, or));
+        Expression joint = newAndAppend(eq1, or);
+        assertEquals("false", joint.toString());
     }
 }

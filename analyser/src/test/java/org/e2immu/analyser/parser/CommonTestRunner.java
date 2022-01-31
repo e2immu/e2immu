@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -23,14 +22,11 @@ import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
-import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.junit.jupiter.api.Assertions.*;
