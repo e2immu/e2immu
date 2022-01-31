@@ -187,29 +187,4 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             analyserComponents.getStatusesAsMap()));
         }
     }
-
-    public static EvaluationResult copyFromStateIntoValue(EvaluationResult initialResult,
-                                                          EvaluationContext evaluationContext,
-                                                          ConditionManager localConditionManager) {
-        if (localConditionManager.stateIsDelayed().isDone() && !localConditionManager.state().isBooleanConstant()) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-            List<LhsRhs> equalities = LhsRhs.extractEqualities(localConditionManager.state());
-            boolean changed = false;
-            for (LhsRhs lhsRhs : equalities) {
-                if (lhsRhs.rhs() instanceof VariableExpression ve && lhsRhs.lhs().isDone()) {
-                    Expression currentValue = evaluationContext.currentValue(ve.variable());
-                    if(currentValue instanceof Instance) {
-                        LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), lhsRhs.lhs());
-                        LinkedVariables linkedVariables = lhsRhs.lhs().linkedVariables(evaluationContext);
-                        builder.assignment(ve.variable(), lhsRhs.lhs(), linkedVariables);
-                        changed = true;
-                    }
-                }
-            }
-            if (changed) {
-                return builder.compose(initialResult).build();
-            }
-        }
-        return initialResult;
-    }
 }

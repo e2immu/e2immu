@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -44,7 +45,7 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     // assert i >= 10, with i == instance type int
-                    String expect = d.iteration() == 0 ? "<v:i>>=10" : "i>=10";
+                    String expect = d.iteration() == 0 ? "<v:i>>=10" : "true";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -68,15 +69,24 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        // this is SAHelper.copyFromStateIntoValue in action
-                        String expect = d.iteration() == 0 ? "<v:i>" : "10";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
+                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
+                        String expect2 = d.iteration() == 0 ? "<v:i>" : "10";
+                        assertEquals(expect2, accordingToState.toString());
                     }
                 }
-                if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:<return value>" :
-                            "1==i$1?5:<return value>";
-                    assertEquals(expectReturn, d.currentValue().toString());
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:<return value>" :
+                                "1==i$1?5:<return value>";
+                        assertEquals(expectReturn, d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:0" :
+                                "0";//   "1==i?5:0"; // FIXME structurally wrong
+                        assertEquals(expectReturn, d.currentValue().toString());
+                    }
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
@@ -87,11 +97,33 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
-                    if ("2".equals(d.statementId())) {
+                    if ("3".equals(d.statementId())) {
                         // however, after the assert statement, we must conclude that i==1,
                         // again  SAHelper.copyFromStateIntoValue in action
-                        String expect = d.iteration() == 0 ? "<v:i>" : "1";
-//FIXME                        assertEquals(expect, d.currentValue().toString());
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
+                        String expect2 = d.iteration() == 0 ? "<v:i>" : "1";
+                        assertEquals(expect2, accordingToState.toString());
+                    }
+                }
+            }
+            if ("method3".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("3".equals(d.statementId())) {
+                        // however, after the assert statement, we must conclude that i==1,
+                        // again  SAHelper.copyFromStateIntoValue in action
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
+                        String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect2, accordingToState.toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "i";
+                        assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }
             }
@@ -113,7 +145,21 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i";
-       //FIXME             assertEquals(expect, d.state().toString());
+                    assertEquals(expect, d.state().toString());
+                    String expectAbs = d.iteration() == 0 ? "1==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)" : "1==i";
+                    assertEquals(expectAbs, d.absoluteState().toString());
+                }
+            }
+            if ("method3".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expectAbs = d.iteration() == 0 ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)&&(1==<v:i>||10==<v:i>)"
+                            : "1==i||10==i";
+                    assertEquals(expectAbs, d.absoluteState().toString());
+                }
+                if ("3".equals(d.statementId())) {
+                    String expectAbs = d.iteration() == 0 ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)&&(1==<v:i>||10==<v:i>)"
+                            : "1==i||10==i";
+                    assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }
         };

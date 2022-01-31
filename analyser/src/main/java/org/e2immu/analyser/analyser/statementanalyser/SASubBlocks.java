@@ -77,12 +77,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
             }
             Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
-            if (assertCondition.isDelayed()) {
-                ConditionManager delayedLocalConditionManager = sharedState.localConditionManager().addState(assertCondition, assertCondition.causesOfDelay());
-                statementAnalysis.stateData().setLocalConditionManagerForNextStatement(delayedLocalConditionManager);
-            } else {
-                statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
-            }
+            ConditionManager cm = sharedState.localConditionManager().addState(assertCondition, assertCondition.causesOfDelay());
+            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
         } else {
             statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
         }

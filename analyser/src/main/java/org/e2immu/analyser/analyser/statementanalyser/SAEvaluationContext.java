@@ -26,6 +26,7 @@ import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -34,6 +35,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final StatementAnalyser statementAnalyser;
     private final AnalyserContext analyserContext;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
+
+    private final SetOnceMap<Variable, Expression> equalityAccordingToState = new SetOnceMap<>();
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -82,6 +86,20 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.analyserContext = analyserContext;
         this.statementAnalysis = statementAnalysis;
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
+
+        Expression absoluteState = conditionManager.absoluteState(this);
+        if (absoluteState.isDone()) {
+            List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
+            for (LhsRhs lhsRhs : equalities) {
+                if (lhsRhs.rhs() instanceof VariableExpression ve && lhsRhs.lhs().isDone() && !equalityAccordingToState.isSet(ve.variable())) {
+                    Expression currentValue = currentValue(ve.variable());
+                    if (currentValue instanceof Instance) {
+                        LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), lhsRhs.lhs());
+                        equalityAccordingToState.put(ve.variable(), lhsRhs.lhs());
+                    }
+                }
+            }
+        }
     }
 
     private MethodInfo methodInfo() {
@@ -694,6 +712,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         Expression value = variableInfo.getValue();
         Variable v = variableInfo.variable();
         boolean isInstance = value.isInstanceOf(Instance.class);
+
+        Expression valueFromState = equalityAccordingToState.getOrDefaultNull(v);
+        if (valueFromState != null) {
+            return valueFromState;
+        }
 
         // variable fields
 

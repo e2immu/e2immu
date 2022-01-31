@@ -28,7 +28,7 @@ public class Loops_5 {
         for (; i < 10; i++) {
             if (i == 1) return 5;
         }
-        assert i >= 10;
+        assert i >= 10; // IMPROVE should not even reach here, inconsistencies galore
         return 0;
     }
 
@@ -38,8 +38,8 @@ public class Loops_5 {
         for (; i < 10; i++) {
             if (i == 1) break;
         }
-        assert i == 1; // always true, but we do not see that; however, after the assert statement,
-        return i; // always equal to 1
+        assert i == 1; // IMPROVE always true, but we do not see that;
+        return i; // however, after the assert statement, always equal to 1
     }
 
     // more realistic -- do we know that the exit point has gone?
