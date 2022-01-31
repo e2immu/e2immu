@@ -314,7 +314,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Property.CONTEXT_MODIFIED, modified,
                 Property.CONTEXT_IMMUTABLE, immutableData.required,
                 Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true,
-                forwardEvaluationInfo.assignmentTarget()));
+                forwardEvaluationInfo.assignmentTarget(), true));
 
         // null scope
         Expression objectValue = objectResult.value();

@@ -93,7 +93,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
         EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
-                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value());
+                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value(), false);
         return builder.setExpression(res.value()).build();
     }
 
@@ -221,7 +221,7 @@ public class InlineConditional extends BaseExpression implements Expression {
             return builder.setExpression(inlineConditional).build();
         }
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
-                conditionAfterState, t, f);
+                conditionAfterState, t, f, forwardEvaluationInfo.complainInlineConditional());
         return builder.compose(cv).build();
     }
 
@@ -243,7 +243,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (useState) {
             return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();
         }
-        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f).getExpression();
+        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f, false).getExpression();
 
     }
 

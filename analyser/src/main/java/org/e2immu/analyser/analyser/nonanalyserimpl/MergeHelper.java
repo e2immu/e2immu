@@ -450,7 +450,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         }
 
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
-                condition, ifTrue.getValue(), ifFalse.getValue()));
+                condition, ifTrue.getValue(), ifFalse.getValue(), false));
         if (condition.isDelayed()) {
             CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(), CauseOfDelay.Cause.CONDITION));
             Properties delayed = Properties.ofWritable(EvaluationContext.VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> delay)));

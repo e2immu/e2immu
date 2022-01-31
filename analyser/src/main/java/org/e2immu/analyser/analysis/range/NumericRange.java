@@ -33,9 +33,15 @@ public record NumericRange(int startIncl,
         assert startIncl < endExcl && increment > 0 || startIncl > endExcl && increment < 0;
     }
 
-    // not relevant, because a real exit value is given
+    // exitValue is not used in the situation of "breaks" or "returns" in the loop
+    // we fall back on the exit state, but only for variables that exist after the loop
     @Override
     public Expression exitState(EvaluationContext evaluationContext) {
+        if(variableExpression.getSuffix() instanceof VariableExpression.VariableInLoop) {
+            Expression exitValue = exitValue(evaluationContext.getPrimitives(), variableExpression.variable());
+            assert exitValue != null;
+            return Equals.equals(evaluationContext, variableExpression, exitValue);
+        }
         return new BooleanConstant(evaluationContext.getPrimitives(), true);
     }
 

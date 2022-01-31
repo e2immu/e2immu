@@ -329,21 +329,24 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         EvaluationContext evaluationContext;
         Expression toEvaluate;
+        ForwardEvaluationInfo forwardEvaluationInfo;
         if (localConditionManager.state().isBoolValueTrue() || currentReturnValue instanceof UnknownExpression) {
             // default situation
             toEvaluate = structure.expression();
             evaluationContext = sharedState.evaluationContext();
+            forwardEvaluationInfo = structure.forwardEvaluationInfo();
         } else {
             // substitute <return value> for the current expression, rather than rely on condition manager in eval context
-            Expression returnExpression =  UnknownExpression.forReturnVariable(methodInfo().identifier,
+            Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, structure.expression()).build();
             toEvaluate = currentReturnValue.translate(tm);
             evaluationContext = sharedState.evaluationContext().dropConditionManager();
+            forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditional();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
-        return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
+        return assignment.evaluate(evaluationContext, forwardEvaluationInfo);
     }
 
     /*

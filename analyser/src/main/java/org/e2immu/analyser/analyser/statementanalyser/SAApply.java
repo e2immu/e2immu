@@ -70,8 +70,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
-        EvaluationResult evaluationResult = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
+        EvaluationResult evaluationResult1 = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
                 sharedState.evaluationContext());
+
+        // if the state says 1==i, and "i" currently is an "instance type int", add assignment "i=1"
+        EvaluationResult evaluationResult = SAHelper.copyFromStateIntoValue(evaluationResult1,
+                sharedState.evaluationContext(), sharedState.localConditionManager());
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 
@@ -471,7 +475,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!localConditionManager.state().isBoolValueTrue()) {
                 Expression state = localConditionManager.state();
 
-                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable, true);
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
                 Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);

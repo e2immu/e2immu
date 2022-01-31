@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -23,18 +24,21 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Filter;
+import org.e2immu.analyser.model.expression.Instance;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.Property.*;
 
 record SAHelper(StatementAnalysis statementAnalysis) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SAHelper.class);
 
     static Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
@@ -182,5 +186,30 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));
         }
+    }
+
+    public static EvaluationResult copyFromStateIntoValue(EvaluationResult initialResult,
+                                                          EvaluationContext evaluationContext,
+                                                          ConditionManager localConditionManager) {
+        if (localConditionManager.stateIsDelayed().isDone() && !localConditionManager.state().isBooleanConstant()) {
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            List<LhsRhs> equalities = LhsRhs.extractEqualities(localConditionManager.state());
+            boolean changed = false;
+            for (LhsRhs lhsRhs : equalities) {
+                if (lhsRhs.rhs() instanceof VariableExpression ve && lhsRhs.lhs().isDone()) {
+                    Expression currentValue = evaluationContext.currentValue(ve.variable());
+                    if(currentValue instanceof Instance) {
+                        LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), lhsRhs.lhs());
+                        LinkedVariables linkedVariables = lhsRhs.lhs().linkedVariables(evaluationContext);
+                        builder.assignment(ve.variable(), lhsRhs.lhs(), linkedVariables);
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                return builder.compose(initialResult).build();
+            }
+        }
+        return initialResult;
     }
 }

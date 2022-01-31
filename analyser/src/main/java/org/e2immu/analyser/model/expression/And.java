@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
+import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -301,46 +302,34 @@ public class And extends ExpressionCanBeTooComplex {
         return Action.ADD;
     }
 
-    private record LhsRhs(Expression lhs, Expression rhs) {
-    }
-
-    private static LhsRhs equalsMethodCall(Expression e) {
-        if (e instanceof MethodCall mc && mc.methodInfo.name.equals("equals") && mc.parameterExpressions.size() == 1) {
-            Expression rhs = mc.parameterExpressions.get(0);
-            if (rhs instanceof ConstantExpression) return new LhsRhs(rhs, mc.object);
-            return new LhsRhs(mc.object, rhs);
-        }
-        return null;
-    }
-
     private Action analyseEqualsEquals(EvaluationContext evaluationContext,
                                        Expression prev,
                                        Expression value,
                                        ArrayList<Expression> newConcat) {
-        LhsRhs ev1 = equalsMethodCall(prev);
-        if (ev1 != null && ev1.lhs instanceof ConstantExpression) {
+        LhsRhs ev1 = LhsRhs.equalsMethodCall(prev);
+        if (ev1 != null && ev1.lhs() instanceof ConstantExpression) {
             Action a = equalsRhs(ev1, value);
             if (a != null) return a;
 
-            return equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs);
+            return equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs());
         }
         return null;
     }
 
     private Action equalsRhs(LhsRhs ev1, Expression value) {
-        LhsRhs ev2 = equalsMethodCall(value);
-        if (ev2 != null && ev2.lhs instanceof ConstantExpression) {
+        LhsRhs ev2 = LhsRhs.equalsMethodCall(value);
+        if (ev2 != null && ev2.lhs() instanceof ConstantExpression) {
             // "a".equals(s) && "b".equals(s)
-            if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+            if (ev1.rhs().equals(ev2.rhs()) && !ev1.lhs().equals(ev2.lhs())) {
                 return Action.FALSE;
             }
         }
 
         // EQ and NOT EQ
         LhsRhs ev2b;
-        if (value instanceof Negation ne && ((ev2b = equalsMethodCall(ne.expression)) != null)) {
+        if (value instanceof Negation ne && ((ev2b = LhsRhs.equalsMethodCall(ne.expression)) != null)) {
             // "a".equals(s) && !"b".equals(s)
-            if (ev1.rhs.equals(ev2b.rhs) && !ev1.lhs.equals(ev2b.lhs)) {
+            if (ev1.rhs().equals(ev2b.rhs()) && !ev1.lhs().equals(ev2b.lhs())) {
                 return Action.SKIP;
             }
         }
@@ -412,8 +401,8 @@ public class And extends ExpressionCanBeTooComplex {
             if (safeToExpandOr(equalityRhs, or)) {
                 List<Expression> result = new ArrayList<>(or.expressions().size());
                 boolean foundTrue = false;
-                for (Expression disjunction : or.expressions()) {
-                    Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, prev, disjunction);
+                for (Expression clause : or.expressions()) {
+                    Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, prev, clause);
                     if (and.isBoolValueTrue()) {
                         foundTrue = true;
                         break;
@@ -440,11 +429,7 @@ public class And extends ExpressionCanBeTooComplex {
 
     // starting off with "x == a", we're looking for comparisons to "a", and equality with "a"
     public static boolean safeToExpandOr(Expression rhs, Or or) {
-        for (Expression disjunction : or.expressions()) {
-            Expression e = extract(disjunction);
-            if (!e.equals(rhs)) return false;
-        }
-        return true;
+        return or.expressions().stream().allMatch(clause -> extract(clause).equals(rhs));
     }
 
     private static Expression extract(Expression e) {
@@ -454,8 +439,8 @@ public class And extends ExpressionCanBeTooComplex {
         }
         if (e instanceof Negation negation) return extract(negation.expression);
         if (e instanceof Sum sum && sum.lhs instanceof ConstantExpression) return extract(sum.rhs);
-        LhsRhs lhsRhs = equalsMethodCall(e);
-        if (lhsRhs != null) return lhsRhs.rhs;
+        LhsRhs lhsRhs = LhsRhs.equalsMethodCall(e);
+        if (lhsRhs != null) return lhsRhs.rhs();
         return e;
     }
 
