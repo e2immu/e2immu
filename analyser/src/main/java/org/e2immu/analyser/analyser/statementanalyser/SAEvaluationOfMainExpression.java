@@ -90,6 +90,11 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state, state.isDelayed());
                 if (state.isDelayed()) return state.causesOfDelay();
+                Expression condition = sharedState.localConditionManager().condition();
+                if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(), Message.Label.INTERRUPT_IN_LOOP));
+                }
+
             } else if (statement() instanceof LocalClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
                 return apply.apply(sharedState, builder.build()).combinedStatus();
@@ -178,6 +183,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 eval_Switch(sharedState, value, switchStatement);
             } else if (statementAnalysis.statement() instanceof ReturnStatement) {
                 stateForLoop = addLoopReturnStatesToState(sharedState);
+                Expression condition = sharedState.localConditionManager().condition();
+                StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
+                if (correspondingLoop != null &&
+                        correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(), Message.Label.INTERRUPT_IN_LOOP));
+                }
             } else if (statement() instanceof ThrowStatement) {
                 value = noReturnValue();
                 // but, see also code above that changes the return variable's value; See SwitchExpression_4

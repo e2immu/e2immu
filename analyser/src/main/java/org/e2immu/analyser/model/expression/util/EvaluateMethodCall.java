@@ -123,7 +123,7 @@ public class EvaluateMethodCall {
         }
 
         // eval on constant, like "abc".length()
-        Expression evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue);
+        Expression evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue, parameters);
         if (evaluationOnConstant != null) {
             return builder.setExpression(evaluationOnConstant).build();
         }
@@ -485,12 +485,15 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private Expression computeEvaluationOnConstant(MethodInfo methodInfo, Expression objectValue) {
+    private Expression computeEvaluationOnConstant(MethodInfo methodInfo, Expression objectValue, List<Expression> params) {
         if (!objectValue.isConstant()) return null;
         StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
                 (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
             return new IntConstant(primitives, stringValue.constant().length());
+        }
+        if ("equals".equals(methodInfo.name) && params.size() == 1 && params.get(0) instanceof ConstantExpression ce) {
+            return new BooleanConstant(primitives, objectValue.equals(ce));
         }
         return null;
     }

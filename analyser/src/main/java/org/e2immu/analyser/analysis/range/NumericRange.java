@@ -21,7 +21,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
 /**
- * a proper range: start <= i < endExcl when i>0, and endExcl < i <= startExcl when i < 0
+ * a proper range: start <= i < endExcl when i>0, and endExcl < i <= startExcl when i < 0.
  */
 
 public record NumericRange(int startIncl,
@@ -33,11 +33,25 @@ public record NumericRange(int startIncl,
         assert startIncl < endExcl && increment > 0 || startIncl > endExcl && increment < 0;
     }
 
+    /**
+     * Reason for this system is that these exits play havoc with exitState() and the normal condition (see Range_4).
+     * Rather than try to program for it, we raise and error and ignore them semantically.
+     * I doubt these things appear in real code; if anything they're there for temporary testing.
+     *
+     * @param expression the condition of the interrupt, such as i==3
+     * @return true when this exit breaks the expected range, e.g. if the range is 0...20, then true for i==3 but false for i+unknown==3
+     */
+    public boolean generateErrorOnInterrupt(Expression expression) {
+        return expression instanceof Equals equals && variableExpression.equals(equals.rhs) && equals.lhs instanceof IntConstant;
+        // if the variable is not within the conditions, we'll get a different sort of error
+        // TODO can be more complex, but is this useful?
+    }
+
     // exitValue is not used in the situation of "breaks" or "returns" in the loop
     // we fall back on the exit state, but only for variables that exist after the loop
     @Override
     public Expression exitState(EvaluationContext evaluationContext) {
-        if(variableExpression.getSuffix() instanceof VariableExpression.VariableInLoop) {
+        if (variableExpression.getSuffix() instanceof VariableExpression.VariableInLoop) {
             Expression exitValue = exitValue(evaluationContext.getPrimitives(), variableExpression.variable());
             assert exitValue != null;
             return Equals.equals(evaluationContext, variableExpression, exitValue);

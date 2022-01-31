@@ -28,14 +28,14 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Test_01_Loops_5 extends CommonTestRunner {
+public class Test_21_Range_4 extends CommonTestRunner {
 
-    public Test_01_Loops_5() {
+    public Test_21_Range_4() {
         super(true);
     }
 
     @Test
-    public void test_5() throws IOException {
+    public void test() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
@@ -110,9 +110,12 @@ public class Test_01_Loops_5 extends CommonTestRunner {
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
+                        String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect2, accordingToState.toString());
+                    }
                     if ("3".equals(d.statementId())) {
-                        // however, after the assert statement, we must conclude that i==1,
-                        // again  SAHelper.copyFromStateIntoValue in action
                         String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
@@ -163,8 +166,9 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                 }
             }
         };
-        // expect: warning: always true in assert
-        testClass("Loops_5", 0, 2, new DebugConfiguration.Builder()
+
+        // 3x interrupt exits prematurely
+        testClass("Range_4", 4, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

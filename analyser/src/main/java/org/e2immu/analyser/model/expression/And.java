@@ -432,7 +432,7 @@ public class And extends ExpressionCanBeTooComplex {
         return or.expressions().stream().allMatch(clause -> extract(clause).equals(rhs));
     }
 
-    private static Expression extract(Expression e) {
+    public static Expression extract(Expression e) {
         if (e instanceof Equals equals) return equals.rhs;
         if (e instanceof GreaterThanZero gt0) {
             return extract(gt0.expression());

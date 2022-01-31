@@ -236,6 +236,12 @@ public class EvaluateInlineConditional {
             return ifTrue;
         }
 
+        LhsRhs eq = LhsRhs.equalsMethodCall(condition);
+        // a.equals(b) ? a : b ---> b
+        if (eq != null && ifTrue.equals(eq.lhs()) && ifFalse.equals(eq.rhs())) {
+            return ifFalse;
+        }
+
         // a == b ? a : b ---> b
         if (condition instanceof Equals equals && ifTrue.equals(equals.lhs) && ifFalse.equals(equals.rhs)) {
             return ifFalse;

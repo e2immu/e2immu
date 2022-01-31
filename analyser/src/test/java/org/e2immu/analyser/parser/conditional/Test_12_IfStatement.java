@@ -339,7 +339,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null!=<f:typeParameter>" : "true";
+                    String expected = d.iteration() == 0 ? "null!=<f:typeParameter>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1" : "NEVER:0";

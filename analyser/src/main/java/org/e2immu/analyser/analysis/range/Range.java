@@ -39,6 +39,10 @@ public interface Range {
         return CausesOfDelay.EMPTY;
     }
 
+    default boolean generateErrorOnInterrupt(Expression expression) {
+        return false;
+    }
+
     default boolean isDelayed() {
         return causesOfDelay().isDelayed();
     }

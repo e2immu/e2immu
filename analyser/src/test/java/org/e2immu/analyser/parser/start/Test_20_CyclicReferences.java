@@ -86,7 +86,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 .build());
     }
 
-    // FIXME "b".equals(paramA)?"a".equals(paramA)? should not exist
+    // TODO "a".equals("b") should be resolved?
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -104,14 +104,13 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodB>"
-                                : "\"a\".equals(paramA)?CyclicReferences_2.methodA(paramA):\"b\".equals(paramA)";
+                        String expectValue = d.iteration() == 0 ? "<m:methodB>" : "true";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
                                 ? "\"b\".equals(paramA)?<m:methodB>:\"a\".equals(paramA)"
-                                : "\"b\".equals(paramA)?\"a\".equals(paramA)?CyclicReferences_2.methodA(paramA):\"b\".equals(paramA):\"a\".equals(paramA)";
+                                : "\"a\".equals(paramA)||\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

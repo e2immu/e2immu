@@ -16,19 +16,17 @@ package org.e2immu.analyser.parser.loops.testexample;
 
 import org.e2immu.annotation.Constant;
 
-public class Loops_5 {
+public class Range_4 {
     // picked up by NumericalRange: standard condition and increment, no extra write to loop variable
+    // specifically testing to detect clean interrupts, which mess up the computations
 
-    // same as in 4, but with a different variable
-    // now we know that i>=10 at the end of the loop, though
-
-    @Constant(absent = true)
+    @Constant("0") // because the "return 5" is ignored, and the exit value says i==10
     public static int method1() {
         int i = 0;
         for (; i < 10; i++) {
-            if (i == 1) return 5;
+            if (i == 1) return 5; // ERROR: useless interrupt
         }
-        assert i >= 10; // IMPROVE should not even reach here, inconsistencies galore
+        assert i >= 10; // WARNING: i==10, so always true
         return 0;
     }
 
@@ -36,10 +34,10 @@ public class Loops_5 {
     public static int method2() {
         int i = 0;
         for (; i < 10; i++) {
-            if (i == 1) break;
+            if (i == 1) break; // ERROR: useless interrupt
         }
-        assert i == 1; // IMPROVE always true, but we do not see that;
-        return i; // however, after the assert statement, always equal to 1
+        assert i == 1; // i==1 or i==10, so not always true
+        return i; // but now, always true!
     }
 
     // more realistic -- do we know that the exit point has gone?
@@ -47,9 +45,9 @@ public class Loops_5 {
     public static int method3() {
         int i = 0;
         for (; i < 10; i++) {
-            if (i == 1) break;
+            if (i == 1) break; // ERROR: useless interrupt
         }
-        assert i == 1 || i == 10; // always true
-        return i;
+        assert i == 1 || i == 10; // WARNING: always true
+        return i; // cannot conclude
     }
 }

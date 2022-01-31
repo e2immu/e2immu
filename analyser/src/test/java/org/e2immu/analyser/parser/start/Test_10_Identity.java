@@ -207,31 +207,17 @@ public class Test_10_Identity extends CommonTestRunner {
             }
         };
 
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 1) {
-                Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
-                assertTrue(value instanceof PropertyWrapper);
-                Expression valueInside = ((PropertyWrapper) value).expression();
-                assertTrue(valueInside instanceof PropertyWrapper);
-                Expression valueInside2 = ((PropertyWrapper) valueInside).expression();
-                assertTrue(valueInside2 instanceof VariableExpression);
-                // check that isInstanceOf bypasses the wrappers
-                assertTrue(value.isInstanceOf(VariableExpression.class));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(value, Property.NOT_NULL_EXPRESSION));
-            }
-        };
-
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if (d.iteration() >= 1) {
                 if ("idem3".equals(d.methodInfo().name)) {
+                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
                     assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.IDENTITY));
                     assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
 
                     VariableInfo vi = d.getReturnAsVariable();
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
 
-                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
 
                     // combining both, we obtain:
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
@@ -247,7 +233,6 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_2", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)

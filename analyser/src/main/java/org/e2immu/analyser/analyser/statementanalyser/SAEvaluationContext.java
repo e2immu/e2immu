@@ -91,7 +91,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (absoluteState.isDone()) {
             List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
             for (LhsRhs lhsRhs : equalities) {
-                if (lhsRhs.rhs() instanceof VariableExpression ve && lhsRhs.lhs().isDone() && !equalityAccordingToState.isSet(ve.variable())) {
+                if (lhsRhs.rhs() instanceof VariableExpression ve
+                        && isPresent(ve.variable())
+                        && lhsRhs.lhs().isDone()
+                        && !equalityAccordingToState.isSet(ve.variable())) {
                     Expression currentValue = currentValue(ve.variable());
                     if (currentValue instanceof Instance) {
                         LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), lhsRhs.lhs());

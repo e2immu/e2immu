@@ -123,7 +123,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
             }
         };
 
-        testClass("Loops_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("Loops_4", 1, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

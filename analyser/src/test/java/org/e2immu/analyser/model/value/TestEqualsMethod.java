@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.junit.jupiter.api.Test;
 
@@ -72,5 +73,25 @@ public class TestEqualsMethod extends CommonAbstractValue {
         Or or = (Or) newOrAppend(eq2, eq3);
         assertTrue(And.safeToExpandOr(s, or));
         assertEquals("false", newAndAppend(eq1, or).toString());
+    }
+
+    private static Expression inline(Expression c, Expression t, Expression f) {
+        return EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
+                c, t, f, true).value();
+    }
+
+    @Test
+    public void testAeqBThenAElseB() {
+        Expression stringA = newString("a");
+        Expression eq1 = eqMethod(s, stringA);
+        assertEquals("s.equals(\"a\")", eq1.toString());
+
+        Expression inline = inline(eq1, stringA, s);
+        assertEquals(s, inline);
+
+        Expression eq2 = eqMethod(stringA, s);
+        assertEquals("\"a\".equals(s)", eq2.toString());
+        Expression inline2 = inline(eq2, stringA, s);
+        assertEquals(s, inline2);
     }
 }
