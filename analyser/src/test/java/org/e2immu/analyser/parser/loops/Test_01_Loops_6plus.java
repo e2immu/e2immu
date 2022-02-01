@@ -605,6 +605,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
     // Solution: DelayedExpression.translate()
+    // Later, this test solved a delicate bug in SAI.mergeAction, where the wrong VIC was put in ignore,
+    // causing a value to be overwritten (variable "key", overwrite in merge of statement 1, into value of 1.0.1).
     @Test
     public void test_19() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -612,18 +614,21 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo p && "readWithinMillis".equals(p.name)) {
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:contains>?instance type long:<p:readWithinMillis>"
-                                : "no idea yet";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<m:contains>?instance type long:<p:readWithinMillis>";
+                            case 2, 3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            default -> "instance type long";
+                        };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
 
             }
         };
 
-        testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

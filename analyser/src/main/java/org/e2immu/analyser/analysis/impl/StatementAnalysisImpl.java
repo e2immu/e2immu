@@ -932,7 +932,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // field references with a scope which needs to be removed, should equally be removed
         //
         // if recognized: remove (into remove+ignore), otherwise merge
-        // we must add the VIC of the current statement, if it exists!
+        // we must add the VIC of the current statement, if it exists! If not we still cannot use the one from "below",
+        // we must create a new one, but only if we're merging!
         Stream<VariableInfoContainer> fromSubBlocks = lastStatements.stream()
                 .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue))
                 .filter(vic -> vic.hasBeenAccessedInThisBlock(index));
@@ -961,14 +962,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                              Map<Variable, VariableInfoContainer> useVic) {
         stream.forEach(vic -> {
             Variable variable = vic.current().variable();
-            VariableInfoContainer vicToAdd = useVic == null ? vic : useVic.getOrDefault(variable, vic);
+            // vicToAdd is null when there is no VIC at this level. In the case a merge, we'll need to create one,
+            // and we can send on the current one. In the case of toIgnore, we must skip this variable!
+            // see Loops_19 as an example (variable "key", to be ignored in statement "1")
+            VariableInfoContainer vicToAdd = useVic == null ? vic : useVic.get(variable);
             if (seen.add(variable)) {
                 if (remove.test(vic.variableNature())) {
-                    prepareMerge.toIgnore.add(vicToAdd);
+                    if (vicToAdd != null) {
+                        prepareMerge.toIgnore.add(vicToAdd);
+                    }
                     prepareMerge.toRemove.add(variable);
                 } else if (mergeWhenNotRemove.test(variable)) {
-                    prepareMerge.toMerge.add(vicToAdd);
-                } else {
+                    VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
+                    prepareMerge.toMerge.add(vicMerge);
+                } else if (vicToAdd != null) {
                     prepareMerge.toIgnore.add(vicToAdd);
                 }
             }
