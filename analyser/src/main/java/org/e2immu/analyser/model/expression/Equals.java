@@ -35,6 +35,8 @@ public class Equals extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
+        Expression e = translationMap.translateExpression(this);
+        if(e != this) return e;
         Expression tl = lhs.translate(translationMap);
         Expression tr = rhs.translate(translationMap);
         if(tl == lhs && tr == rhs) return this;

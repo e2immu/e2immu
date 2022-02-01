@@ -730,4 +730,11 @@ public class And extends ExpressionCanBeTooComplex {
     public CausesOfDelay causesOfDelay() {
         return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
+
+    public Expression removePartsNotReferringTo(EvaluationContext evaluationContext, Variable variable) {
+        Expression[] filtered = this.expressions.stream()
+                .filter(e -> e.variables(true).contains(variable))
+                .toArray(Expression[]::new);
+        return And.and(evaluationContext, filtered);
+    }
 }

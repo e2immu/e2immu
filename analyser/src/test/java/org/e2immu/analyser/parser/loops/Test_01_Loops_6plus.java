@@ -400,6 +400,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 .build());
     }
 
+    // study a transfer of condition/state from loop variable to parameter
     @Test
     public void test_15() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -409,12 +410,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals("4", d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("i==p?4:3", d.currentValue().toString());
+                        // instead of in terms of i, we have an expression in terms of p: MergeHelper.rewriteConditionFromLoopVariableToParameter
+                        String expected = d.iteration() == 0 ? "<c:boolean>?4:3" : "p<=9&&p>=0&&i==p?4:3";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
-                        // FIXME
-                        String expected = "p>=0&&p<=9?4:3";
+                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:3"
+                                : "instance type int<=9&&instance type int>=0&&instance type int==p&&p<=9&&p>=0?4:3";
+                        // TODO ugly, but solvable; all instances are equal to each other
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -432,13 +436,33 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                var list = d.statementAnalysis().stateData().statesOfInterruptsStream().toList();
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    String condition = d.iteration() == 0 ? "<c:boolean>" : "i==p";
+                    assertEquals(condition, d.condition().toString());
+                    String absState = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>" : "i<=9&&i>=0&&i==p";
+                    assertEquals(absState, d.absoluteState().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    String condition = d.iteration() == 0 ? "<loopIsNotEmptyCondition>" : "i<=9&&i>=0";
+                    assertEquals(condition, d.condition().toString());
+                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&!<c:boolean>" : "i<=9&&i>=0&&i!=p";
+                    assertEquals(absState, d.absoluteState().toString());
+                }
                 if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    String absState = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>"
+                            // TODO ugly, but solvable
+                            : "instance type int<=9&&instance type int>=0&&instance type int==p";
+                    assertEquals(absState, d.absoluteState().toString());
+
+                    // check states of interrupt
+                    var list = d.statementAnalysis().stateData().statesOfInterruptsStream().toList();
                     assertEquals(1, list.size());
                     String breakStmtIndex = list.get(0).getKey();
                     assertEquals("1.0.0.0.1", breakStmtIndex);
                     Expression state = list.get(0).getValue().get();
-                    assertEquals("i<=9&&-1==i-p", state.toString());
+                    String expected = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>" : "i<=9&&i>=0&&i==p";
+                    assertEquals(expected, state.toString());
                 }
             }
         };

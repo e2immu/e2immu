@@ -113,6 +113,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                     StatementAnalyser startOfBlock,
                                     ConditionManager conditionManager,
                                     Expression condition,
+                                    Expression absoluteState,
                                     boolean isDefault,
                                     LocalVariableCreation catchVariable) {
 
@@ -206,6 +207,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 lastStatements = executions.stream()
                         .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.getStatementAnalysis().flowData().isUnreachable())
                         .map(ex -> new StatementAnalysisImpl.ConditionAndLastStatement(ex.condition,
+                                ex.absoluteState,
                                 ex.startOfBlock.index(),
                                 ex.startOfBlock.lastStatement(),
                                 ex.startOfBlock.lastStatement().getStatementAnalysis().isReturnOrEscapeAlwaysExecutedInCurrentBlock(true).valueIsTrue(),
@@ -289,7 +291,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             // TODO not verified
             boolean alwaysEscapesOrReturns = statementAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue();
-            return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes,
+            return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(),
+                    e.getValue(), // TODO not verified (absolute state == condition)
+                    e.getKey(), lastStatement, alwaysEscapes,
                     alwaysEscapesOrReturns);
         }).toList();
     }
@@ -517,10 +521,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
                             conditionForSubStatement, conditionForSubStatementIsDelayed);
+            Expression absoluteState = subCm == null ? null: subCm.absoluteState(evaluationContext);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,
-                    conditionForSubStatement, isDefault, catchVariable));
+                    conditionForSubStatement, absoluteState, isDefault, catchVariable));
         }
 
         return executions;
@@ -533,10 +538,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                          Expression value,
                                                          CausesOfDelay valueIsDelayed) {
         Expression condition;
+        Expression absoluteState;
         ConditionManager cm;
         if (firstBlockExecution.equals(FlowData.NEVER)) {
             cm = null;
             condition = null;
+            absoluteState = null;
         } else {
             Primitives primitives = statementAnalysis.primitives();
             cm = conditionManagerForFirstBlock(localConditionManager, evaluationContext, primitives, value, valueIsDelayed);
@@ -545,9 +552,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             } else {
                 condition = cm.condition();
             }
+            absoluteState = cm.absoluteState(evaluationContext);
         }
         return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
-                false, null);
+                absoluteState, false, null);
     }
 
     private ConditionManager conditionManagerForFirstBlock(ConditionManager localConditionManager,

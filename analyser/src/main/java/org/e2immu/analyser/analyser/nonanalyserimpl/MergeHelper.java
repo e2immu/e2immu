@@ -274,7 +274,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             if (atLeastOneBlockExecuted) {
                 return valueProperties(e.variableInfo());
             }
-            Merge.ExpressionAndProperties result = one(e.variableInfo(), stateOfDestination, e.condition());
+            Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(evaluationContext,
+                    e.condition(), e.absoluteState());
+            Merge.ExpressionAndProperties result = one(e.variableInfo(), stateOfDestination, reworkedCondition);
             if (result != null) return result;
         }
 

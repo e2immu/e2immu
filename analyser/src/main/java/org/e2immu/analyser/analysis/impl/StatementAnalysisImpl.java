@@ -977,6 +977,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     public record ConditionAndLastStatement(Expression condition,
+                                            Expression absoluteState,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
                                             boolean alwaysEscapes,
@@ -1155,7 +1156,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
                 .map(e2 -> {
                     VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
-                    return new ConditionAndVariableInfo(e2.condition(),
+                    return new ConditionAndVariableInfo(e2.condition(), e2.absoluteState(),
                             vic2.current(), e2.alwaysEscapes(), e2.alwaysEscapesOrReturns(),
                             vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
                             e2.lastStatement().getStatementAnalysis().index(),

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 public record ConditionAndVariableInfo(Expression condition,
+                                       Expression absoluteState,
                                        VariableInfo variableInfo,
                                        boolean alwaysEscapes,
                                        boolean alwaysEscapesOrReturns,
@@ -34,7 +35,7 @@ public record ConditionAndVariableInfo(Expression condition,
                                        EvaluationContext evaluationContext) {
     // for testing
     public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, EvaluationContext evaluationContext) {
-        this(condition, variableInfo, false, false, VariableNature.METHOD_WIDE,
+        this(condition, condition, variableInfo, false, false, VariableNature.METHOD_WIDE,
                 null, "0", "-",
                 null, variableInfo.variable(), evaluationContext);
     }
