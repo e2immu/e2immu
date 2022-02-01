@@ -104,8 +104,6 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (property == Property.NOT_NULL_EXPRESSION &&
-                parameterizedType.isPrimitiveExcludingVoid()) return EFFECTIVELY_NOT_NULL_DV;
         return causesOfDelay;
     }
 

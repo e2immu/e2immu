@@ -125,9 +125,6 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            if (returnType().isPrimitiveExcludingVoid()) {
-                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-            }
             EvaluationContext child = evaluationContext.child(condition);
             DV nneIfTrue = child.getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
@@ -252,10 +249,8 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (ifTrue.isNull() && ifFalse.isNull()) {
             return inspectionProvider.getPrimitives().objectParameterizedType();
         }
-        if (ifTrue.isNull()) {
-            return box(ifFalse.returnType());
-        }
-        if (ifFalse.isNull()) return box(ifTrue.returnType());
+        if (ifTrue.isNull()) return ifFalse.returnType().ensureBoxed(inspectionProvider.getPrimitives());
+        if (ifFalse.isNull()) return ifTrue.returnType().ensureBoxed(inspectionProvider.getPrimitives());
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
     }
 
@@ -269,13 +264,6 @@ public class InlineConditional extends BaseExpression implements Expression {
         }
         if (ifFalse.isNull()) return ifTrue.erasureTypes(typeContext);
         return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
-    }
-
-    private ParameterizedType box(ParameterizedType returnType) {
-        if (returnType.isPrimitiveExcludingVoid()) {
-            return returnType.toBoxed(inspectionProvider.getPrimitives()).asParameterizedType(inspectionProvider);
-        }
-        return returnType;
     }
 
     @Override

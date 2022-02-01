@@ -229,8 +229,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (property == Property.NOT_NULL_EXPRESSION &&
-                parameterizedType.isPrimitiveExcludingVoid()) return EFFECTIVELY_NOT_NULL_DV;
         DV priority = priorityProperties.getOrDefaultNull(property);
         if (priority != null) return priority;
         return causesOfDelay;

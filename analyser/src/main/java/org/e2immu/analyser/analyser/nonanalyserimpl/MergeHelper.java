@@ -114,7 +114,12 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
 
         // TODO do post-process and replace local variables change the value properties?
-        vi.setValue(mergedValue); // copy the delayed value
+        try {
+            vi.setValue(mergedValue); // copy the delayed value
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Problem overwriting!");
+            throw ise;
+        }
         mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
         assert mergedValue.isDelayed() || allValuePropertiesSet();
 
@@ -227,8 +232,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
         SimpleSet causes = new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.VALUES);
-        Map<Property, DV> delayedProperties = EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
+        Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
         Expression value = new DelayedWrappedExpression(Identifier.generate(), vi, causes);
         return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
     }
@@ -455,7 +459,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                 condition, ifTrue.getValue(), ifFalse.getValue(), false));
         if (condition.isDelayed()) {
             CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(), CauseOfDelay.Cause.CONDITION));
-            Properties delayed = Properties.ofWritable(EvaluationContext.VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> delay)));
+            Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);
         }
         if (safe.equals(ifTrue.getValue())) {

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -457,5 +458,9 @@ public interface EvaluationContext {
 
     default Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
         return variableInfo.getValue();
+    }
+
+    static Map<Property, DV> delayedValueProperties(CausesOfDelay causes) {
+        return VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
     }
 }

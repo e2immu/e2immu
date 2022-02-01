@@ -101,9 +101,6 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
-            return causesOfDelay;
-        }
         return variableInfo.getProperty(property);
     }
 

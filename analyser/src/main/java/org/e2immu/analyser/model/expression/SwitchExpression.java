@@ -158,9 +158,6 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (returnType.isPrimitiveExcludingVoid()) {
-            return UnknownExpression.primitiveGetProperty(property);
-        }
         return expressions.getProperty(evaluationContext, property, duringEvaluation);
     }
 

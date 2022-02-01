@@ -157,9 +157,6 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (Property.NOT_NULL_EXPRESSION == property && variable.parameterizedType().isPrimitiveExcludingVoid()) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        }
         return causesOfDelay;
     }
 
