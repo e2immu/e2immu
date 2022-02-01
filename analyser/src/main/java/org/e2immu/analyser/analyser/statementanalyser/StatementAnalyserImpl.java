@@ -27,6 +27,7 @@ import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Message;
@@ -235,7 +236,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(evaluationContext, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
-                        .withCondition(evaluationContext, switchCondition, forwardAnalysisInfo.switchSelectorIsDelayed()));
+                        .withCondition(evaluationContext, switchCondition));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo);
@@ -438,8 +439,15 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             if (startOfNewBlock) {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
-                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(previous, forwardAnalysisInfo.conditionManager().condition(),
-                        forwardAnalysisInfo.switchSelectorIsDelayed());
+                Expression condition;
+                if (forwardAnalysisInfo.switchSelectorIsDelayed().isDelayed()) {
+                    CausesOfDelay causes = forwardAnalysisInfo.conditionManager().condition().causesOfDelay()
+                            .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
+                    condition = DelayedExpression.forSwitchSelector(statementAnalysis.primitives(), causes);
+                } else {
+                    condition = forwardAnalysisInfo.conditionManager().condition();
+                }
+                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(previous, condition);
             }
 
             EvaluationContext evaluationContext = new SAEvaluationContext(

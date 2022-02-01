@@ -41,11 +41,8 @@ Default value: true
 Concerning delays: only condition and state are recursively combined, precondition is not.
  */
 public record ConditionManager(Expression condition,
-                               CausesOfDelay conditionIsDelayed,
                                Expression state,
-                               CausesOfDelay stateIsDelayed,
                                Precondition precondition,
-                               CausesOfDelay preconditionIsDelayed,
                                ConditionManager parent) {
 
     public static final int LIMIT_ON_COMPLEXITY = 200;
@@ -54,19 +51,18 @@ public record ConditionManager(Expression condition,
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
         Objects.requireNonNull(precondition);
-        Objects.requireNonNull(conditionIsDelayed);
-        Objects.requireNonNull(stateIsDelayed);
-        Objects.requireNonNull(preconditionIsDelayed);
     }
 
     public boolean isDelayed() {
-        return stateIsDelayed.isDelayed() || conditionIsDelayed.isDelayed() || preconditionIsDelayed.isDelayed();
+        return condition.isDelayed() || state.isDelayed() || precondition.expression().isDelayed()
+                || (parent != null && parent.isDelayed());
     }
 
     public boolean isReasonForDelay(Variable variable) {
-        return stateIsDelayed.contains(variable)
-                || conditionIsDelayed.contains(variable)
-                || preconditionIsDelayed.contains(variable);
+        return state.causesOfDelay().contains(variable)
+                || condition.causesOfDelay().contains(variable)
+                || precondition.expression().causesOfDelay().contains(variable)
+                || (parent != null && parent().isReasonForDelay(variable));
     }
 
     /*
@@ -82,14 +78,14 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, CausesOfDelay.EMPTY, TRUE, CausesOfDelay.EMPTY,
-                Precondition.empty(TRUE), CausesOfDelay.EMPTY, null);
+        return new ConditionManager(TRUE, TRUE,
+                Precondition.empty(TRUE), null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, CausesOfDelay.EMPTY, FALSE, CausesOfDelay.EMPTY,
-                new Precondition(FALSE, List.of()), CausesOfDelay.EMPTY, null);
+        return new ConditionManager(FALSE, FALSE,
+                new Precondition(FALSE, List.of()), null);
     }
 
     /*
@@ -97,61 +93,52 @@ public record ConditionManager(Expression condition,
      */
     public ConditionManager newAtStartOfNewBlock(Primitives primitives,
                                                  Expression condition,
-                                                 CausesOfDelay conditionIsDelayed,
-                                                 Precondition precondition,
-                                                 CausesOfDelay preconditionIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed,
-                new BooleanConstant(primitives, true), CausesOfDelay.EMPTY,
-                precondition, preconditionIsDelayed, this);
+                                                 Precondition precondition) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
     }
 
 
     /* does not add a new layer */
-    public ConditionManager replaceState(Expression state, CausesOfDelay stateIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, precondition, preconditionIsDelayed, parent);
+    public ConditionManager replaceState(Expression state) {
+        return new ConditionManager(condition, state, precondition, parent);
     }
 
     /*
     we guarantee a parent so that the condition counts!
      */
-    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition, CausesOfDelay switchExpressionIsDelayed) {
+    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition) {
         return new ConditionManager(combine(evaluationContext, condition, switchCondition),
-                conditionIsDelayed.merge(switchExpressionIsDelayed),
-                state, stateIsDelayed, precondition, preconditionIsDelayed, this);
+                state, precondition, this);
     }
 
     /*
     adds a new layer (parent this)
     */
-    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, CausesOfDelay conditionIsDelayed) {
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition) {
         return new ConditionManager(condition,
-                conditionIsDelayed.merge(this.conditionIsDelayed),
                 new BooleanConstant(primitives, true),
-                stateIsDelayed, precondition, preconditionIsDelayed, this);
+                precondition, this);
     }
 
     /*
     adds a new layer (parent this)
     */
-    public ConditionManager addState(Expression state, CausesOfDelay stateIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed,
-                precondition, preconditionIsDelayed, this);
+    public ConditionManager addState(Expression state) {
+        return new ConditionManager(condition, state, precondition, this);
     }
 
     /*
     stays at the same level (parent parent)
      */
-    public ConditionManager withPrecondition(Precondition combinedPrecondition, CausesOfDelay combinedPreconditionIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, combinedPrecondition,
-                combinedPreconditionIsDelayed, parent);
+    public ConditionManager withPrecondition(Precondition combinedPrecondition) {
+        return new ConditionManager(condition, state, combinedPrecondition, parent);
     }
 
     /*
     stays at the same level
      */
     public ConditionManager withoutState(Primitives primitives) {
-        return new ConditionManager(condition, conditionIsDelayed, new BooleanConstant(primitives, true),
-                CausesOfDelay.EMPTY, precondition, preconditionIsDelayed, parent);
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, parent);
     }
 
     /*
@@ -162,9 +149,7 @@ public record ConditionManager(Expression condition,
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
-        return new ConditionManager(condition, conditionIsDelayed, newState,
-                newState.causesOfDelay().merge(stateIsDelayed),
-                precondition, preconditionIsDelayed, parent);
+        return new ConditionManager(condition, newState, precondition, parent);
     }
 
     public Expression absoluteState(EvaluationContext evaluationContext) {
@@ -343,22 +328,20 @@ public record ConditionManager(Expression condition,
     }
 
     public CausesOfDelay stateDelayedOrPreconditionDelayed() {
-        return stateIsDelayed.merge(preconditionIsDelayed);
+        return state.causesOfDelay().merge(precondition.expression().causesOfDelay());
     }
 
     public CausesOfDelay causesOfDelay() {
-        return conditionIsDelayed.merge(stateIsDelayed).merge(preconditionIsDelayed);
+        CausesOfDelay mine = condition.causesOfDelay().merge(state.causesOfDelay()).merge(precondition.expression().causesOfDelay());
+        return parent == null ? mine : mine.merge(parent.causesOfDelay());
     }
 
     @Override
     public String toString() {
         return "CM{" +
                 (condition.isBoolValueTrue() ? "" : "condition=" + condition + ";") +
-                (conditionIsDelayed.isDone() ? "" : "cdelay=" + conditionIsDelayed + ";") +
                 (state.isBoolValueTrue() ? "" : "state=" + state + ";") +
-                (stateIsDelayed.isDone() ? "" : "sdelay=" + stateIsDelayed + ";") +
                 (precondition.isEmpty() ? "" : "pc=" + precondition + ";") +
-                (preconditionIsDelayed.isDone() ? "" : "pcdelay=" + preconditionIsDelayed + ";") +
                 (parent == null ? "" : "parent=" + parent) + '}';
     }
 

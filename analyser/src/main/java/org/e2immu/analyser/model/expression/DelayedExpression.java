@@ -120,6 +120,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
     }
 
+    public static Expression forSwitchSelector(Primitives primitives, CausesOfDelay causes) {
+        String msg = brackets("switch-selector");
+        return new DelayedExpression(msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
+    }
+
+
     public static Expression forInstanceOf(Primitives primitives,
                                            ParameterizedType parameterizedType,
                                            LinkedVariables linkedVariables,

@@ -373,10 +373,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
-                        if (cm.stateIsDelayed().isDelayed()) {
+                        if (cm.state().isDelayed()) {
                             LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);
-                            return cm.stateIsDelayed();
+                            return cm.state().causesOfDelay();
                         }
                         Expression state = cm.state();
                         if (!state.isBoolValueTrue()) {
@@ -978,8 +978,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
-                    Precondition.empty(getPrimitives()), null);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+                    Precondition.empty(getPrimitives()));
             return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 

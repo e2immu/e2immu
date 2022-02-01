@@ -475,13 +475,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
         @Override
         public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             return new EvaluationContextImpl(this,
-                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(),
-                            condition, condition.causesOfDelay()));
+                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition));
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            return new EvaluationContextImpl(this, conditionManager.addState(state, state.causesOfDelay()));
+            return new EvaluationContextImpl(this, conditionManager.addState(state));
         }
 
         @Override

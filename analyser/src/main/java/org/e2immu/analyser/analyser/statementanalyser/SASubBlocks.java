@@ -77,7 +77,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
             }
             Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
-            ConditionManager cm = sharedState.localConditionManager().addState(assertCondition, assertCondition.causesOfDelay());
+            ConditionManager cm = sharedState.localConditionManager().addState(assertCondition);
             statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
         } else {
             statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
@@ -481,7 +481,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         for (int count = start; count < startOfBlocks.size(); count++) {
             Structure subStatements = structure.subStatements().get(count - start);
             Expression conditionForSubStatement;
-            CausesOfDelay conditionForSubStatementIsDelayed;
 
             boolean isDefault;
             DV statementsExecution = subStatements.statementExecution().apply(value, evaluationContext);
@@ -489,7 +488,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (statementsExecution.equals(FlowData.DEFAULT_EXECUTION)) {
                 isDefault = true;
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
-                conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
                 if (conditionForSubStatement.isBoolValueFalse()) newExecution = FlowData.NEVER;
                 else if (conditionForSubStatement.isBoolValueTrue()) newExecution = FlowData.ALWAYS;
                 else if (conditionForSubStatement.isDelayed())
@@ -499,19 +497,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (statement() instanceof SwitchStatementNewStyle newStyle) {
                     SwitchEntry switchEntry = newStyle.switchEntries.get(count);
                     conditionForSubStatement = switchEntry.structure.expression();
-                    conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
                 } else if (statementsExecution.equals(FlowData.ALWAYS)) {
                     conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
-                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
+                    assert conditionForSubStatement.isDone();
                 } else if (statementsExecution.equals(FlowData.NEVER)) {
                     conditionForSubStatement = null; // will not be executed anyway
-                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
                 } else if (statement() instanceof TryStatement) { // catch
                     // extract them from the condition of the main block; it's got to be the same Instance objects
                     Expression condition = executions.get(0).conditionManager.condition();
                     Expression negated = condition instanceof And and ? and.getExpressions().get(count - 1) : condition;
                     conditionForSubStatement = Negation.negate(evaluationContext, negated);
-                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
+                    assert conditionForSubStatement.isDone();
 
                 } else throw new UnsupportedOperationException();
                 newExecution = statementsExecution;
@@ -521,7 +517,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
-                            conditionForSubStatement, conditionForSubStatementIsDelayed);
+                            conditionForSubStatement);
             Expression absoluteState = subCm == null ? null : subCm.absoluteState(evaluationContext);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
@@ -580,8 +576,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             Expression condition = And.and(evaluationContext, booleanVars.stream()
                     .map(v -> Negation.negate(evaluationContext, v)).toArray(Expression[]::new));
-            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
-                    condition.causesOfDelay());
+            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition);
         }
         if (statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
@@ -589,26 +584,23 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         DelayedExpression.forUnspecifiedLoopCondition(primitives.booleanParameterizedType(),
-                                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay),
-                        causesOfDelay);
+                                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay));
             }
 
             if (range != Range.NO_RANGE) {
                 Expression condition = statementAnalysis.rangeData().extraState(evaluationContext);
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
-                        condition, condition.causesOfDelay());
+                        condition);
             }
             if (statement() instanceof ForEachStatement) {
                 // the expression is not a condition; however, we add one to ensure that the content is not empty
                 Expression condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
-                return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
-                        condition.causesOfDelay());
+                return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition);
             }
         }
         // there are loop statements which are not forEach, and do not have a range, but do have a condition!
         if (structure.expressionIsCondition()) {
-            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value,
-                    value.causesOfDelay());
+            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value);
         }
         return localConditionManager;
     }

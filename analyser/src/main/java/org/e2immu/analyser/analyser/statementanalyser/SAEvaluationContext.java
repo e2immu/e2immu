@@ -173,7 +173,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration,
-                conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, condition.causesOfDelay()),
+                conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
                 closure,
                 disableEvaluationOfMethodCallsUsingCompanionMethods, false);
     }
@@ -189,7 +189,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public EvaluationContext childState(Expression state) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager.addState(state, state.causesOfDelay()), closure,
+                iteration, conditionManager.addState(state), closure,
                 false, false);
     }
 

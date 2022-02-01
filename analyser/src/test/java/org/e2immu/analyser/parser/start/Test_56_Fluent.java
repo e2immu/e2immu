@@ -210,8 +210,6 @@ public class Test_56_Fluent extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        int BIG = 20;
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
@@ -267,7 +265,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
 
                     // STEP 5: check preconditionIsDelayed in previous statement, that's OK
-                    assertTrue(d.conditionManagerForNextStatement().preconditionIsDelayed().isDone());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().expression().isDone());
                     // STEP 5bis: combined precondition never becomes final
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                 }

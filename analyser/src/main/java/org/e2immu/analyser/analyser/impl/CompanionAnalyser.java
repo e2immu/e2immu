@@ -182,14 +182,14 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
-                    Precondition.empty(getPrimitives()), CausesOfDelay.EMPTY);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+                    Precondition.empty(getPrimitives()));
             return new EvaluationContextImpl(iteration, cm);
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            ConditionManager cm = conditionManager.addState(state, state.causesOfDelay());
+            ConditionManager cm = conditionManager.addState(state);
             return new EvaluationContextImpl(iteration, cm);
         }
 

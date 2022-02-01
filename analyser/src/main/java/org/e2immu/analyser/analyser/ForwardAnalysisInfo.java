@@ -52,6 +52,19 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
                                                  StatementAnalyser previousStatement,
                                                  Expression previous,
                                                  StatementAnalysis statementAnalysis) {
+        Expression expression = computeConditionInSwitchStatement(evaluationContext, previousStatement, previous,
+                statementAnalysis);
+        if (switchSelectorIsDelayed.isDelayed()) {
+            return DelayedExpression.forSwitchSelector(evaluationContext.getPrimitives(),
+                    switchSelector.causesOfDelay().merge(expression.causesOfDelay()));
+        }
+        return expression;
+    }
+
+    private Expression computeConditionInSwitchStatement(EvaluationContext evaluationContext,
+                                                         StatementAnalyser previousStatement,
+                                                         Expression previous,
+                                                         StatementAnalysis statementAnalysis) {
         if (switchIdToLabels() != null) {
             Statement statement = previousStatement == null ? null : previousStatement.statement();
             Expression startFrom;

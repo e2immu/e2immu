@@ -100,6 +100,7 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     }
 
     public static Precondition forDelayed(Expression expression) {
+        assert expression.isDelayed();
         return new Precondition(expression, List.of());
     }
 }

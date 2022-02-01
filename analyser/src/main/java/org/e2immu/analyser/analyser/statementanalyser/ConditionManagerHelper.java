@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -32,19 +33,18 @@ class ConditionManagerHelper {
         3- condition, can be updated in case of SwitchOldStyle
          */
     static ConditionManager makeLocalConditionManager(StatementAnalysis previous,
-                                                      Expression condition,
-                                                      CausesOfDelay conditionIsDelayed) {
+                                                      Expression condition) {
         Primitives primitives = previous.primitives();
         Precondition combinedPrecondition;
-        CausesOfDelay combinedPreconditionIsDelayed;
         if (previous.methodLevelData().combinedPrecondition.isFinal()) {
             combinedPrecondition = previous.methodLevelData().combinedPrecondition.get();
-            combinedPreconditionIsDelayed = CausesOfDelay.EMPTY;
+            assert combinedPrecondition.expression().isDone();
         } else {
-            combinedPreconditionIsDelayed = Objects.requireNonNullElseGet(
-                    previous.methodLevelData().combinedPreconditionIsDelayedSet(),()->
-                    previous.methodAnalysis().getMethodInfo().delay(CauseOfDelay.Cause.UNREACHABLE));
-            combinedPrecondition = Precondition.empty(primitives);
+            CausesOfDelay causes = Objects.requireNonNullElseGet(
+                    previous.methodLevelData().combinedPreconditionIsDelayedSet(), () ->
+                            previous.methodAnalysis().getMethodInfo().delay(CauseOfDelay.Cause.UNREACHABLE));
+            Expression delayedExpression = DelayedExpression.forPrecondition(primitives, causes);
+            combinedPrecondition = Precondition.forDelayed(delayedExpression);
         }
 
         ConditionManager previousCm = previous.stateData().getConditionManagerForNextStatement();
@@ -53,11 +53,9 @@ class ConditionManagerHelper {
             return ConditionManager.impossibleConditionManager(primitives);
         }
         if (previousCm.condition().equals(condition)) {
-            return previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
+            return previousCm.withPrecondition(combinedPrecondition);
         }
         // swap condition for the one from forwardAnalysisInfo
-        return new ConditionManager(condition, conditionIsDelayed, previousCm.state(),
-                previousCm.stateIsDelayed(), combinedPrecondition,
-                combinedPreconditionIsDelayed, previousCm.parent());
+        return new ConditionManager(condition, previousCm.state(), combinedPrecondition, previousCm.parent());
     }
 }
