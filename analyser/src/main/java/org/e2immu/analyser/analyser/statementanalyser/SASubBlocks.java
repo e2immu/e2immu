@@ -52,7 +52,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
         }
 
-        if (statementAnalysis.statement() instanceof AssertStatement) {
+        if (statement() instanceof AssertStatement) {
             Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
             boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
             // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
@@ -199,7 +199,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // note that isEscapeAlwaysExecuted cannot be delayed (otherwise, it wasn't ALWAYS?)
             List<StatementAnalysisImpl.ConditionAndLastStatement> lastStatements;
             int maxTime;
-            if (statementAnalysis.statement() instanceof SwitchStatementOldStyle switchStatementOldStyle) {
+            if (statement() instanceof SwitchStatementOldStyle switchStatementOldStyle) {
                 lastStatements = composeLastStatements(evaluationContext, switchStatementOldStyle, executions.get(0).startOfBlock);
                 maxTime = executions.get(0).startOfBlock == null ? statementAnalysis.flowData().getTimeAfterEvaluation() :
                         executions.get(0).startOfBlock.lastStatement().getStatementAnalysis().flowData().getTimeAfterSubBlocks();
@@ -316,7 +316,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
 
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
-        Statement statement = statementAnalysis.statement();
+        Statement statement = statement();
         if (statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }
@@ -329,7 +329,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private Set<Variable> addToContextNotNullAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
-        if (statementAnalysis.statement() instanceof IfElseStatement) {
+        if (statement() instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesWithPrecondition()) {
@@ -365,7 +365,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
         BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
-        if (statementAnalysis.statement() instanceof TryStatement) {
+        Statement statement = statement();
+        if (statement instanceof TryStatement) {
             ExecutionOfBlock main = list.get(0);
             if (main.escapesAlways()) {
                 Expression[] conditionsWithoutEscape = list.stream()
@@ -382,7 +383,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     .toArray(Expression[]::new);
             return And.and(evaluationContext, conditionsWithEscape);
         }
-        if (statementAnalysis.statement() instanceof IfElseStatement) {
+        if (statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesAlwaysButNotWithPrecondition()) {
@@ -412,7 +413,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         // a switch statement has no primary block, only subStructures, one per SwitchEntry
 
         // make an And of NOTs for all those conditions where the switch entry escapes
-        if (statementAnalysis.statement() instanceof HasSwitchLabels) {
+        if (statement instanceof HasSwitchLabels) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition)
                     .map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
@@ -421,9 +422,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         /*
         loop statements: result should be !condition || <any exit of exactly this loop, no return> ...
-        forEach loop does not have an exit condition.
+        forEach loop does not have an exit condition, however it can have exit FIXME
          */
-        if (statementAnalysis.statement() instanceof LoopStatement loopStatement) {
+        if (statement instanceof LoopStatement loopStatement) {
             Expression negatedConditionOrExitState;
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
@@ -432,17 +433,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             } else {
                 // at the moment there is no Range which does not return a boolean constant
                 Expression exit = range.exitState(evaluationContext);
-                if (!exit.isBooleanConstant()) {
-                    negatedConditionOrExitState = exit;
-                } else {
+                if (exit.isBooleanConstant() && !(statement instanceof ForEachStatement)) {
                     negatedConditionOrExitState = Negation.negate(evaluationContext, list.get(0).condition);
+                } else {
+                    negatedConditionOrExitState = exit;
                 }
             }
             return statementAnalysis.stateData()
                     .combineInterruptsAndExit(loopStatement, negatedConditionOrExitState, evaluationContext);
         }
 
-        if (statementAnalysis.statement() instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
+        if (statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
             Expression lastState = list.get(0).startOfBlock.lastStatement()
                     .getStatementAnalysis().stateData().getConditionManagerForNextStatement().state();
             return evaluationContext.replaceLocalVariables(lastState);
@@ -457,14 +458,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         Expression value = statementAnalysis.stateData().valueOfExpression.get();
         CausesOfDelay valueIsDelayed = statementAnalysis.stateData().valueOfExpressionIsDelayed();
         assert value.isDone() || valueIsDelayed.isDelayed(); // sanity check
-        Structure structure = statementAnalysis.statement().getStructure();
+        Structure structure = statement().getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext();
 
         // main block
 
         // some loops are never executed, and we can see that
         int start;
-        if (statementAnalysis.statement() instanceof SwitchStatementNewStyle) {
+        if (statement() instanceof SwitchStatementNewStyle) {
             start = 0;
         } else {
             DV firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
@@ -521,7 +522,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
                             conditionForSubStatement, conditionForSubStatementIsDelayed);
-            Expression absoluteState = subCm == null ? null: subCm.absoluteState(evaluationContext);
+            Expression absoluteState = subCm == null ? null : subCm.absoluteState(evaluationContext);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,

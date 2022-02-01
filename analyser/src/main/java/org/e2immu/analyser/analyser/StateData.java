@@ -165,11 +165,13 @@ public class StateData {
                                                EvaluationContext evaluationContext) {
 
         List<Expression> ors = new ArrayList<>();
-        statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
-                ors.add(evaluationContext.replaceLocalVariables(e.get())));
-        if (loopStatement.hasExitCondition() && !negatedConditionOrExitState.isBoolValueFalse()) {
-            // the exit condition cannot contain local variables
-            ors.add(evaluationContext.replaceLocalVariables(negatedConditionOrExitState));
+        if (loopStatement.hasExitCondition()) {
+            statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
+                    ors.add(evaluationContext.replaceLocalVariables(e.get())));
+            if (!negatedConditionOrExitState.isBoolValueFalse()) {
+                // the exit condition cannot contain local variables
+                ors.add(evaluationContext.replaceLocalVariables(negatedConditionOrExitState));
+            }
         }
         List<Expression> ands = new ArrayList<>();
         statesOfReturnInLoop.stream().map(Map.Entry::getValue).forEach(e ->

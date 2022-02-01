@@ -417,7 +417,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
                         String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:3"
-                                : "instance type int<=9&&instance type int>=0&&instance type int==p&&p<=9&&p>=0?4:3";
+                                : "instance type int<=9&&instance type int>=0&&p<=9&&p>=0&&instance type int==p?4:3";
                         // TODO ugly, but solvable; all instances are equal to each other
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -450,10 +450,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String absState = d.iteration() == 0 ? "<c:boolean>&&<loopIsNotEmptyCondition>"
-                            // TODO ugly, but solvable
-                            : "instance type int<=9&&instance type int>=0&&instance type int==p";
-                    assertEquals(absState, d.absoluteState().toString());
+                    assertEquals("true", d.absoluteState().toString());
 
                     // check states of interrupt
                     var list = d.statementAnalysis().stateData().statesOfInterruptsStream().toList();
@@ -477,16 +474,32 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("9==entry.getValue()?4:3", d.currentValue().toString());
+                    }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "map.entrySet().isEmpty()?3:<merge:int>"
                                 : "map.entrySet().isEmpty()?3:instance type int";
-                        assertEquals(expected, d.currentValue().toString());
+                        //       assertEquals(expected, d.currentValue().toString());
                     }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("!map.entrySet().isEmpty()", d.condition().toString());
+                    assertEquals("!map.entrySet().isEmpty()&&9!=entry.getValue()", d.absoluteState().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    assertEquals("true", d.state().toString());
                 }
             }
         };
         testClass("Loops_16", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -496,8 +509,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:entrySet>.isEmpty()?3:<merge:int>"
-                                : "map$0.entrySet().isEmpty()?3:instance type int";
+                        String expected = d.iteration() <= 1 ? "<m:entrySet>.isEmpty()||9!=<m:getValue>?3:4"
+                                : "map$0.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?3:4";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
