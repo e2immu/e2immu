@@ -46,7 +46,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-//                        assertEquals("null==a?\"b\":a", d.currentValue().toString());
+                        assertEquals("null==a?\"b\":a", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "a".equals(p.name)) {
@@ -71,8 +71,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                //    String value = d.statementAnalysis().stateData().equalityAccordingToStateStream().findAny().orElseThrow().getValue().toString();
-                 //   assertEquals("null", value);
+                    assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
@@ -328,7 +327,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<m:isEmpty>?<s:int>:8+(<v:fromTypeBounds>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<v:min>?<f:MAX_VALUE>:<m:size>)"
-                                : "8+(fromTypeBounds$4.0.3.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3?2147483647:instance type ParameterizedType.typeInfo.length())";
+                                : "8+(fromTypeBounds$4.0.3.0.0.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3.0.0?2147483647:instance type ParameterizedType.typeInfo.length())";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
@@ -348,9 +347,13 @@ public class Test_12_IfStatement extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-                        assertEquals("4.0.3", outside.statementIndex());
-                        assertTrue(outside.previousVariableNature() instanceof VariableNature.NormalLocalVariable);
-                        assertTrue(d.statementId().startsWith("4.0.3"));
+                        if (d.statementId().startsWith("4.0.3.0.0")) {
+                            assertEquals("4.0.3.0.0", outside.statementIndex(), "In " + d.statementId());
+                        } else {
+                            assertEquals("4.0.3", outside.statementIndex(), "In " + d.statementId());
+                            assertTrue(outside.previousVariableNature() instanceof VariableNature.NormalLocalVariable);
+                            assertTrue(d.statementId().startsWith("4.0.3"));
+                        }
                     } else fail();
                 }
             }

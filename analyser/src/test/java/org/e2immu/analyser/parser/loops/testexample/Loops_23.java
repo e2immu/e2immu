@@ -14,24 +14,33 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-// double loop, check that VariableNature moves correctly
-// semantic nonsense
+// very similar to Var_2 in code, tests the same issues as Loops_21 and _22.
 
-public class Loops_21 {
+import java.util.Collection;
 
-    public static String[][] method(int n, int m) {
-        String outer = "abc";
-        String[][] array = new String[n][m];
+public class Loops_23<X> {
 
-        for (int i = 0; i < n - 1; i++) { // 2
+    public final Collection<X> xes;
 
-            String inner = "xzy";
-            for (int j = i; j < m; j++) { // 2.0.1
-                int outerMod = i % outer.length(); // 2.0.1.0.0
-                int innerMod = j % inner.length();
-                array[i][j] = outer.charAt(outerMod) + "->" + inner.charAt(innerMod);
-            }
+    public Loops_23(Collection<X> xes) {
+        assert xes != null;
+        this.xes = xes;
+    }
+
+    public String method() {
+        StringBuilder all = new StringBuilder();
+        for (int i : new int[]{1, 2, 3}) {
+            all.append(i);
         }
-        return array;
+        System.out.println("Intermediate statement, all should have VN Normal again");
+        for (String s : new String[]{"abc", "def"}) {
+            all.append(s);
+        }
+        // Collection<E> implements Iterable<E> directly
+        for (X x : xes) {
+            all.append(x.toString());
+        }
+        System.out.println("Intermediate statement, all should have VN Normal again");
+        return all.toString();
     }
 }

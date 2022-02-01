@@ -61,16 +61,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /*
+    StatementIndex null means: later iterations, not the creation of VICs.
+    See Loops_23 for an example to motivate the while() loop.
      */
     private static VariableNature potentiallyRevertVariableDefinedOutsideLoop(VariableInfoContainer previous,
                                                                               String statementIndex) {
-        if (statementIndex != null &&
-                previous.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop inLoop &&
-                !statementIndex.startsWith(inLoop.statementIndex())) {
-            // we go back out
-            return inLoop.previousVariableNature();
+        VariableNature previousVariableNature = previous.variableNature();
+        if (statementIndex != null) {
+            VariableNature vn = previousVariableNature;
+            while (vn instanceof VariableNature.VariableDefinedOutsideLoop inLoop && !statementIndex.startsWith(inLoop.statementIndex())) {
+                vn = inLoop.previousVariableNature();
+            }
+            return vn;
         }
-        return previous.variableNature();
+        return previousVariableNature;
     }
 
     /*

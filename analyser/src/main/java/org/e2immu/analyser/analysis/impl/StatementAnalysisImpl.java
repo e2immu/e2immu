@@ -559,7 +559,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic, navigationData.hasSubBlocks(), newValue);
         } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
-        } else if (conditionsToMoveVariableInsideLoop(variable, vic)) {
+        } else if (conditionsToMoveVariableInsideLoop(variable)) {
             // move a local variable, not defined in this loop, inside the loop
             // the result is a va
             newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
@@ -590,10 +590,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return false;
     }
 
-    private boolean conditionsToMoveVariableInsideLoop(Variable variable,
-                                                       VariableInfoContainer vic) {
+    private boolean conditionsToMoveVariableInsideLoop(Variable variable) {
         if (!(statement instanceof LoopStatement)) return false; // we must move inside a loop
-        return variable.isLocal() && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
+        return variable.isLocal();
     }
 
     /**

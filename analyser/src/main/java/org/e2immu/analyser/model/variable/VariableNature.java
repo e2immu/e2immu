@@ -208,6 +208,24 @@ public interface VariableNature {
         public VariableExpression.Suffix suffix() {
             return new VariableExpression.VariableInLoop(statementIndex());
         }
+
+        /*
+         normally, we'd say "false" here: the variable is defined outside, so we don't remove it.
+         However, if the statement index is finer than the index, we look for a previous one with the index,
+         as shown in Loops_21, where we exit successive loops and there is no chance for the variable to switch variable
+         nature to its previous value.
+         */
+        @Override
+        public boolean removeInSubBlockMerge(String index) {
+            VariableNature vn = this;
+            while (vn instanceof VariableDefinedOutsideLoop vdol && vdol.statementIndex.startsWith(index + ".")) {
+                vn = vdol.previousVariableNature;
+            }
+            if (vn != null && vn != this) {
+                return vn.removeInSubBlockMerge(index);
+            }
+            return false;
+        }
     }
 
     /*

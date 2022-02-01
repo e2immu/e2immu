@@ -572,9 +572,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -649,9 +649,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

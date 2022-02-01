@@ -41,15 +41,15 @@ public class IfStatement_9 {
         if (from.typeInfo != null) {
             return 6;
         }
-        if (from.typeParameter != null) {
+        if (from.typeParameter != null) { // 4
             List<ParameterizedType> fromTypeBounds = from.getTypeBounds();
             if (fromTypeBounds.isEmpty()) {  // because of **, this can never be true
                 return 7; // unreachable code
             }
             // we both have type bounds; we go for the best combination
             int min = Integer.MAX_VALUE;
-            for (ParameterizedType myBound : targetTypeBounds) {
-                for (ParameterizedType otherBound : fromTypeBounds) {
+            for (ParameterizedType myBound : targetTypeBounds) { // 4.0.3
+                for (ParameterizedType otherBound : fromTypeBounds) {  // 4.0.3.0.0
                     int value = otherBound.size(); // potential null pointer on typeInfo, method expansion
                     if (value < min) min = value;
                 }

@@ -14,10 +14,9 @@
 
 package org.e2immu.analyser.parser.loops.testexample;
 
-// double loop, check that VariableNature moves correctly
-// semantic nonsense
+// identical to Loops_21, except there is a 2.0.2 statement
 
-public class Loops_21 {
+public class Loops_22 {
 
     public static String[][] method(int n, int m) {
         String outer = "abc";
@@ -31,6 +30,7 @@ public class Loops_21 {
                 int innerMod = j % inner.length();
                 array[i][j] = outer.charAt(outerMod) + "->" + inner.charAt(innerMod);
             }
+            System.out.println(inner); // 2.0.2
         }
         return array;
     }
