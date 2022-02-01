@@ -70,8 +70,22 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
-        EvaluationResult evaluationResult = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
+        EvaluationResult evaluationResult1 = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
                 sharedState.evaluationContext());
+
+        // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
+        // part 1 is in the constructor of SAEvaluationContext
+        // the data is stored in the state data of statement analysis
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
+        statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
+            EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(e.getKey());
+            if (cd != null && cd.isMarkedRead()) {
+                LinkedVariables lv = e.getValue().linkedVariables(sharedState.evaluationContext());
+                builder.assignment(e.getKey(), e.getValue(), lv);
+            }
+        });
+        EvaluationResult evaluationResult = builder.compose(evaluationResult1).build();
+        // ***
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 

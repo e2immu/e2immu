@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -45,7 +46,16 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("null==a?\"b\":a", d.currentValue().toString());
+//                        assertEquals("null==a?\"b\":a", d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo p && "a".equals(p.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        // the value "null" from  equalityAccordingToState is not written because "a" is not read
+                        assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
                     }
                 }
             }
@@ -58,8 +68,27 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                //    String value = d.statementAnalysis().stateData().equalityAccordingToStateStream().findAny().orElseThrow().getValue().toString();
+                 //   assertEquals("null", value);
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
+                }
+                // state should say "a!=null"
+                if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    assertEquals("null!=a", d.state().toString());
+                    assertEquals("null!=a", d.absoluteState().toString());
+                    assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
+                }
+            }
+        };
         testClass("IfStatement_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

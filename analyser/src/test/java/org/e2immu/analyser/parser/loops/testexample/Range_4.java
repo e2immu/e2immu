@@ -40,14 +40,13 @@ public class Range_4 {
         return i; // but now, always true!
     }
 
-    // more realistic -- do we know that the exit point has gone?
-    @Constant(absent = true)
+    @Constant("10")
     public static int method3() {
         int i = 0;
         for (; i < 10; i++) {
             if (i == 1) break; // ERROR: useless interrupt
         }
-        assert i == 1 || i == 10; // WARNING: always true
-        return i; // cannot conclude
+        assert i == 10; // WARNING: always true
+        return i;
     }
 }

@@ -15,10 +15,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
@@ -38,6 +38,23 @@ public class StateData {
         conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
     }
 
+    private final SetOnceMap<Variable, Expression> equalityAccordingToState = new SetOnceMap<>();
+
+    public boolean equalityAccordingToStateIsSet(Variable variable) {
+        return equalityAccordingToState.isSet(variable);
+    }
+
+    public void equalityAccordingToStatePut(Variable variable, Expression lhs) {
+        equalityAccordingToState.put(variable, lhs);
+    }
+
+    public Stream<Map.Entry<Variable, Expression>> equalityAccordingToStateStream() {
+        return equalityAccordingToState.stream();
+    }
+
+    public Expression equalityAccordingToStateGetOrDefaultNull(Variable v) {
+        return equalityAccordingToState.getOrDefaultNull(v);
+    }
 
     /*
      precondition = conditions that cause an escape

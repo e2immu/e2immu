@@ -69,7 +69,9 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                     }
 
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
+                        assertFalse(d.variableInfoContainer().hasEvaluation());
+                        String expected =  "instance type int";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("instance type int", d.currentValue().toString());

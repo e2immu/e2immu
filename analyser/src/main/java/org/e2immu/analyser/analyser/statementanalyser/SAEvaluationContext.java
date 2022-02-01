@@ -35,7 +35,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +55,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final AnalyserContext analyserContext;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
 
-    private final SetOnceMap<Variable, Expression> equalityAccordingToState = new SetOnceMap<>();
-
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
                         StatementAnalyser statementAnalyser,
@@ -67,9 +64,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         ConditionManager conditionManager,
                         EvaluationContext closure) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager, closure, false);
+                iteration, conditionManager, closure, false, true);
     }
 
+    // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
+    // created to compute inline conditions, short-circuit operators, etc.
+    
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
                         StatementAnalyser statementAnalyser,
@@ -78,7 +78,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         int iteration,
                         ConditionManager conditionManager,
                         EvaluationContext closure,
-                        boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+                        boolean disableEvaluationOfMethodCallsUsingCompanionMethods,
+                        boolean base) {
         super(iteration, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
@@ -87,18 +88,25 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.statementAnalysis = statementAnalysis;
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
 
-        Expression absoluteState = conditionManager.absoluteState(this);
-        if (absoluteState.isDone()) {
-            List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
-            for (LhsRhs lhsRhs : equalities) {
-                if (lhsRhs.rhs() instanceof VariableExpression ve
-                        && isPresent(ve.variable())
-                        && lhsRhs.lhs().isDone()
-                        && !equalityAccordingToState.isSet(ve.variable())) {
-                    Expression currentValue = currentValue(ve.variable());
-                    if (currentValue instanceof Instance) {
-                        LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), lhsRhs.lhs());
-                        equalityAccordingToState.put(ve.variable(), lhsRhs.lhs());
+        // part 1 of the work: all evaluations will get to read the new value
+        // part 2 is at the start of SAApply, where the value will be assigned
+        if(base) {
+            Expression absoluteState = conditionManager.absoluteState(this);
+            if (absoluteState.isDone()) {
+                List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
+                for (LhsRhs lhsRhs : equalities) {
+                    if (lhsRhs.rhs() instanceof VariableExpression ve
+                            && isPresent(ve.variable())
+                            && !lhsRhs.lhs().isInstanceOf(IsVariableExpression.class) // do not assign to other variable!
+                            && !statementAnalysis.stateData().equalityAccordingToStateIsSet(ve.variable())) {
+                        VariableInfoContainer vic = statementAnalysis.getVariable(ve.variable().fullyQualifiedName());
+                        Expression value = lhsRhs.lhs();
+                        assert value.isDone();
+                        // we want to ensure that no values can be written unless the state is done
+                        if (!vic.hasEvaluation() || vic.best(EVALUATION).isDelayed()) {
+                            LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), value);
+                            statementAnalysis.stateData().equalityAccordingToStatePut(ve.variable(), value);
+                        }
                     }
                 }
             }
@@ -167,7 +175,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 iteration,
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, condition.causesOfDelay()),
                 closure,
-                disableEvaluationOfMethodCallsUsingCompanionMethods);
+                disableEvaluationOfMethodCallsUsingCompanionMethods, false);
     }
 
     @Override
@@ -175,14 +183,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods);
+                iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false);
     }
 
     public EvaluationContext childState(Expression state) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager.addState(state, state.causesOfDelay()), closure,
-                false);
+                false, false);
     }
 
         /*
@@ -297,7 +305,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (ignoreStateInConditionManager) {
             EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                    iteration, conditionManager.withoutState(getPrimitives()), closure);
+                    iteration, conditionManager.withoutState(getPrimitives()), closure, false, false);
             return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
         }
 
@@ -716,7 +724,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         Variable v = variableInfo.variable();
         boolean isInstance = value.isInstanceOf(Instance.class);
 
-        Expression valueFromState = equalityAccordingToState.getOrDefaultNull(v);
+        Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(v);
         if (valueFromState != null) {
             return valueFromState;
         }

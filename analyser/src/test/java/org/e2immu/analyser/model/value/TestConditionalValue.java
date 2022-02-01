@@ -251,4 +251,11 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression inline2 = inline(equals(i, j), j, i);
         assertEquals(i, inline2);
     }
+
+    // just to check that s==null ? null: s === s
+    @Test
+    public void aIsNull() {
+        Expression inline = inline(equals(s, NullConstant.NULL_CONSTANT), NullConstant.NULL_CONSTANT, s);
+        assertEquals("s", inline.toString());
+    }
 }

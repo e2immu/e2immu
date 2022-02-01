@@ -69,11 +69,8 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "10";
                         assertEquals(expect, d.currentValue().toString());
-                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
-                        String expect2 = d.iteration() == 0 ? "<v:i>" : "10";
-                        assertEquals(expect2, accordingToState.toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -100,11 +97,8 @@ public class Test_21_Range_4 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         // however, after the assert statement, we must conclude that i==1,
                         // again  SAHelper.copyFromStateIntoValue in action
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "1";
                         assertEquals(expect, d.currentValue().toString());
-                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
-                        String expect2 = d.iteration() == 0 ? "<v:i>" : "1";
-                        assertEquals(expect2, accordingToState.toString());
                     }
                 }
             }
@@ -116,16 +110,13 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expect2, accordingToState.toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "10";
                         assertEquals(expect, d.currentValue().toString());
-                        Expression accordingToState = d.evaluationContext().getVariableValue(d.variable(), d.variableInfo());
-                        String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
-                        assertEquals(expect2, accordingToState.toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "i";
+                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "10";
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }
@@ -138,6 +129,11 @@ public class Test_21_Range_4 extends CommonTestRunner {
 
                     String expectState = d.iteration() == 0 ? "<s:boolean>&&(!<loopIsNotEmptyCondition>||1!=<v:i>)" : "10==i";
                     assertEquals(expectState, d.state().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? "Optional.empty" : "Optional[i=10]";
+                    String entry = d.statementAnalysis().stateData().equalityAccordingToStateStream().findAny().toString();
+                    assertEquals(expect, entry);
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
@@ -155,20 +151,20 @@ public class Test_21_Range_4 extends CommonTestRunner {
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0 ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)&&(1==<v:i>||10==<v:i>)"
-                            : "1==i||10==i";
+                    String expectAbs = d.iteration() == 0 ? "10==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)"
+                            : "10==i";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0 ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)&&(1==<v:i>||10==<v:i>)"
-                            : "1==i||10==i";
+                    String expectAbs = d.iteration() == 0 ? "10==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)"
+                            : "10==i";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }
         };
 
         // 3x interrupt exits prematurely
-        testClass("Range_4", 4, 2, new DebugConfiguration.Builder()
+        testClass("Range_4", 3, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
