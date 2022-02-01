@@ -606,6 +606,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private Expression isNotEmpty(EvaluationContext evaluationContext, Expression value, boolean valueIsDelayed) {
+        if (valueIsDelayed) {
+            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType(),
+                    value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
+        }
         if (value instanceof ArrayInitializer ai) {
             return new BooleanConstant(evaluationContext.getPrimitives(), ai.multiExpression.expressions().length > 0);
         }
@@ -622,10 +626,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 return Negation.negate(evaluationContext, new MethodCall(Identifier.generate(), false, value, isEmpty,
                         isEmpty.returnType(), List.of()));
             }
-        }
-        if (valueIsDelayed) {
-            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType(),
-                    value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
         }
         return Instance.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());
     }

@@ -326,7 +326,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<m:isEmpty>?7:8+(<v:fromTypeBounds>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<v:min>?<f:MAX_VALUE>:<m:size>)"
+                                ? "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<f:MAX_VALUE>)"
                                 : "8+(fromTypeBounds$4.0.3.0.0.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3.0.0?2147483647:instance type ParameterizedType.typeInfo.length())";
                         assertEquals(expected, d.currentValue().toString());
                     }

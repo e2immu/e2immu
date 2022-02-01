@@ -70,7 +70,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "<v:prefix>.length>0?<m:toByteArray>:<return value>"
+                                ? "<loopIsNotEmptyCondition>?<m:toByteArray>:<return value>"
                                 : "prefix$1.length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = "return loadBytes:0";

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.loops;
 
+import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.FlowData;
@@ -509,7 +510,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:entrySet>.isEmpty()||9!=<m:getValue>?3:4"
+                        String expected = d.iteration() <= 1 ? "<loopIsNotEmptyCondition>&&9==<m:getValue>?4:3"
                                 : "map$0.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?3:4";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -529,7 +530,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "kvStore$0.entrySet()";
+                String expectValue = d.iteration() <= 1 ? "<m:entrySet>" : "kvStore$0.entrySet()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1.0.0".equals(d.statementId())) {
@@ -543,10 +544,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<m:entrySet>.isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>"
+                                ? "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<v:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/"
                                 : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectVars = d.iteration() == 0 ? "[entry, key, kvStore, result]" : "[kvStore$0]";
+                        String expectVars = d.iteration() == 0 ? "[<out of scope:container:1.0.1>.read, container, entry, key, kvStore, result]" : "[kvStore$0]";
                         assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
                     }
                 }
@@ -564,17 +565,32 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
+                        assertEquals("CM{condition=<loopIsNotEmptyCondition>;parent=CM{condition=<loopIsNotEmptyCondition>;parent=CM{parent=CM{}}}}",
+                                cm.toString());
+                        assertTrue(cm.condition().isDelayed());
+                        assertTrue(cm.isDelayed());
+                    }
+                }
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
-                assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
         };
 
         testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -649,9 +665,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
