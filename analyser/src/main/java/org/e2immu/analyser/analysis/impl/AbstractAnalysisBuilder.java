@@ -309,11 +309,11 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             String markValue = mark.extract("value", "");
             writeEventual(markValue, true, null, null);
         } else if (only != null) {
-            String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
             String after = only.extract("after", "");
             boolean isAfter = before.isEmpty();
             String onlyMark = isAfter ? after : before;
+            String markValue = mark == null ? null : mark.extract("value", "");
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
@@ -325,7 +325,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         } else if (testMark != null) {
             String markValue = testMark.extract("value", "");
             boolean before = testMark.extract("before", false);
-            writeEventual(markValue, false, null, before);
+            boolean test = !before; // default == after==true == before==false
+            writeEventual(markValue, false, null, test);
         }
         return messages;
     }

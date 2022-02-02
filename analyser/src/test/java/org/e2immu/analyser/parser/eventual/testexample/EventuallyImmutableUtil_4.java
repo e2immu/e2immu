@@ -14,23 +14,33 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.annotation.Container;
 import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.TestMark;
+import org.junit.jupiter.api.Test;
 
 /*
-Use types in util to become an eventually immutable type
-
+Obviously, when one field does not play along...
+Note that we do have a @TestMark, though
  */
-@E2Container(after = "bool,string")
+@Container
 public class EventuallyImmutableUtil_4 {
 
     public final SetOnce<String> string = new SetOnce<>();
-    public final SetOnce<Boolean> bool = new SetOnce<>();
+    private int i;
 
-    @TestMark("bool,string")
+    public void setI(int i) {
+        this.i = i;
+    }
+
+    public int getI() {
+        return i;
+    }
+
+    @TestMark(value = "string")
     public boolean isReady() {
-        return string.isSet() && bool.isSet();
+        return string.isSet();
     }
 
 }

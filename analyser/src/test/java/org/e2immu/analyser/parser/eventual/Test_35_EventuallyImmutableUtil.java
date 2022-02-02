@@ -16,6 +16,8 @@
 package org.e2immu.analyser.parser.eventual;
 
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
@@ -25,10 +27,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.eventual.testexample.*;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.Freezable;
@@ -46,8 +45,9 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         super(true);
     }
 
+    // CONTRACTED (only parse the test, read annotations from FlipSwitch)
     @Test
-    public void test_0() throws IOException {
+    public void test_0_1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isSet".equals(d.methodInfo().name)) {
                 String expect = d.iteration() == 0 ? "<m:isSet>" : "isSet$0";
@@ -66,62 +66,72 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        TypeContext typeContext = testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_0.class, FlipSwitch.class),
-                0, 0, new DebugConfiguration.Builder()
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo flipSwitch = typeMap.get(FlipSwitch.class);
+            MethodInfo isSet = flipSwitch.findUniqueMethod("isSet", 0);
+            assertSame(Analysis.AnalysisMode.CONTRACTED, isSet.methodAnalysis.get().analysisMode());
+            assertFalse(flipSwitch.typeResolution.get().hasOneKnownGeneratedImplementation());
+            assertTrue(flipSwitch.typeResolution.get().circularDependencies().isEmpty());
+            assertTrue(flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
+            MethodAnalysis isSetAnalysis = isSet.methodAnalysis.get();
+            assertEquals("@TestMark: [isSet]", isSetAnalysis.getEventual().toString());
+        };
+
+        testClass("EventuallyImmutableUtil_0", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addTypeMapVisitor(typeMapVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
+    }
 
+    // COMPUTED: also compute FlipSwitch
+    @Test
+    public void test_0_2() throws IOException {
+        TypeContext typeContext = testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_0.class, FlipSwitch.class),
+                0, 0, new DebugConfiguration.Builder().build());
         TypeInfo flipSwitch = typeContext.getFullyQualified(FlipSwitch.class);
         MethodInfo isSet = flipSwitch.findUniqueMethod("isSet", 0);
         assertSame(Analysis.AnalysisMode.COMPUTED, isSet.methodAnalysis.get().analysisMode());
-        assertFalse(flipSwitch.typeResolution.get().hasOneKnownGeneratedImplementation());
-        assertTrue(flipSwitch.typeResolution.get().circularDependencies().isEmpty());
-        assertTrue(flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
-
-        TypeInfo eventually = typeContext.getFullyQualified(EventuallyImmutableUtil_0.class);
-        MethodInfo isReady = eventually.findUniqueMethod("isReady", 0);
-        assertSame(Analysis.AnalysisMode.COMPUTED, isReady.methodAnalysis.get().analysisMode());
-        assertFalse(eventually.typeResolution.get().hasOneKnownGeneratedImplementation());
-        assertTrue(eventually.typeResolution.get().circularDependencies().isEmpty());
-        assertTrue(eventually.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
+        MethodAnalysis isSetAnalysis = isSet.methodAnalysis.get();
+        assertEquals("@TestMark: [isSet]", isSetAnalysis.getEventual().toString());
     }
 
+    // contracted is the norm for this test suite
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_1.class, FlipSwitch.class, SetOnce.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .build());
+        testClass("EventuallyImmutableUtil_1",
+                0, 0, new DebugConfiguration.Builder().build());
     }
 
     @Test
     public void test_2() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("set2".equals(d.methodInfo().name)) {
-                String expectPre = switch (d.iteration()) {
-                    case 0 -> "<precondition>";
-                    case 1 -> "null==<f:t>";
-                    default -> "null==value.t";
-                };
-                assertEquals(expectPre, d.statementAnalysis().stateData().getPrecondition().expression().toString());
-                assertEquals(d.iteration() > 1, d.statementAnalysis().stateData().preconditionIsFinal());
-            }
-        };
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectEvImm = d.iteration() <= 1 ? "[]" : "[value]";
+                String expectEvImm = d.iteration() == 0 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{value.t=null==value.t}";
-                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
 
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_2.class, FlipSwitch.class, SetOnce.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .build());
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo setOnce = typeMap.get(SetOnce.class);
+            MethodInfo set = setOnce.findUniqueMethod("set", 1);
+            assertSame(Analysis.AnalysisMode.CONTRACTED, set.methodAnalysis.get().analysisMode());
+            MethodAnalysis setAnalysis = set.methodAnalysis.get();
+            assertEquals("@Mark: [t]", setAnalysis.getEventual().toString());
+
+            MethodInfo get = setOnce.findUniqueMethod("get", 0);
+            assertSame(Analysis.AnalysisMode.CONTRACTED, get.methodAnalysis.get().analysisMode());
+            MethodAnalysis getAnalysis = get.methodAnalysis.get();
+            assertEquals("@Only after: [t]", getAnalysis.getEventual().toString());
+        };
+
+        testClass("EventuallyImmutableUtil_2", 2, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
     }
 
     @Test
@@ -139,18 +149,16 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_3.class, FlipSwitch.class, SetOnce.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .build());
+        testClass("EventuallyImmutableUtil_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 
     @Test
     public void test_4() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_4.class, FlipSwitch.class, SetOnce.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .build());
+        testClass("EventuallyImmutableUtil_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
     @Test

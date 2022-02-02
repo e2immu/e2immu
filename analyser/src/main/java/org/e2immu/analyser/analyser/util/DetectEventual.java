@@ -231,7 +231,9 @@ public record DetectEventual(MethodInfo methodInfo,
                 }
                 fields = Set.of(selected);
             } else return MethodAnalysis.NOT_EVENTUAL;
-            return new MethodAnalysis.Eventual(fields, false, null, testMark ^ negated);
+            // test == true corresponds to isSet, after==true, no negation; remains true if there is no negation
+            boolean test = testMark ^ negated; // 1^0==0^1==1; 0^0==1^1==0
+            return new MethodAnalysis.Eventual(fields, false, null, test);
         }
         return MethodAnalysis.NOT_EVENTUAL;
     }

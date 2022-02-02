@@ -125,7 +125,7 @@ public interface MethodAnalysis extends Analysis {
                     Set<FieldInfo> fields,
                     boolean mark,
                     Boolean after, // null for a @Mark without @Only
-                    Boolean test) { // true for isSet (before==false), false for !isSet (before==true), null for absent
+                    Boolean test) { // true for isSet (before==false, after==true), false for !isSet (before==true, after==false), null for absent
 
         public Eventual {
             assert !fields.isEmpty() || !mark && after == null && test == null;
@@ -141,10 +141,9 @@ public interface MethodAnalysis extends Analysis {
                 return "[DelayedEventual:" + causesOfDelay + "]";
             }
             if (mark) return "@Mark: " + fields;
-            if (test != null) return "@TestMark: " + fields;
+            if (test != null) return "@TestMark: " + (test ? "" : "!") + fields;
             if (after == null) {
                 if (this == NOT_EVENTUAL) return "NOT_EVENTUAL";
-                //     if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
                 throw new UnsupportedOperationException();
             }
             return "@Only " + (after ? "after" : "before") + ": " + fields;
@@ -156,13 +155,6 @@ public interface MethodAnalysis extends Analysis {
 
         public boolean consistentWith(Eventual other) {
             return fields.equals(other.fields);
-        }
-
-        public boolean notMarkOrBefore() {
-            if (mark) return false;
-            if (test != null) return true;
-            if (after == null) return true;
-            return after;
         }
     }
 
