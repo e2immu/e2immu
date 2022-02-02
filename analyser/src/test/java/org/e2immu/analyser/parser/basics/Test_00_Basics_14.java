@@ -52,7 +52,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
                     }
                     // now comes the assignment this.t = t;
@@ -88,7 +88,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     } else {
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
@@ -234,7 +235,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
 
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
-            Set<Variable> setCnnVariables = addToContextNotNullAfterStatement(evaluationContext, executions);
+            Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(evaluationContext, executions);
 
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
@@ -258,7 +259,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             Expression postProcessState = new BooleanConstant(statementAnalysis.primitives(), true);
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime, Set.of());
+                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime, Map.of());
             analysisStatus = analysisStatus.combine(copyStatus);
         }
 
@@ -328,14 +329,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         && e.startOfBlock != null);
     }
 
-    private Set<Variable> addToContextNotNullAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+    private Map<Variable, DV> addToContextNotNullAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
         if (statement() instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesWithPrecondition()) {
                     return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
                 }
-                return Set.of();
+                return Map.of();
             }
             if (list.size() == 2) {
                 ExecutionOfBlock e1 = list.get(1);
@@ -343,7 +344,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (e0.escapesAlwaysButNotWithPrecondition()) {
                     if (escape1) {
                         // both if and else escape; no point!
-                        return Set.of();
+                        return Map.of();
                     }
                     // if escapes
                     return findNotNullVariablesInRejectMode(evaluationContext, list.get(1).condition);
@@ -352,15 +353,20 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     // else escapes
                     return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
                 }
-                return Set.of();
+                return Map.of();
             }
             throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
         }
-        return Set.of();
+        return Map.of();
     }
 
-    private Set<Variable> findNotNullVariablesInRejectMode(EvaluationContext evaluationContext, Expression condition) {
-        return ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
+    private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationContext evaluationContext, Expression condition) {
+        Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
+        if (condition.isDelayed()) {
+            List<Variable> variables = statement().getStructure().expression().variables(false);
+            return variables.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
+        }
+        return set.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> MultiLevel.EFFECTIVELY_NOT_NULL_DV));
     }
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {

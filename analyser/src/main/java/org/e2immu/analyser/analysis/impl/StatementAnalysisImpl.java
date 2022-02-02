@@ -1005,13 +1005,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                       List<ConditionAndLastStatement> lastStatements,
                                                       boolean atLeastOneBlockExecuted,
                                                       int statementTime,
-                                                      Set<Variable> setCnnVariables) {
+                                                      Map<Variable, DV> setCnnVariables) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables);
+        PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         for (Variable toRemove : prepareMerge.toRemove) {
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
@@ -1193,7 +1193,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Map<Variable, LinkedVariables> linkedVariablesMap,
                                                      Set<Variable> variablesWhereMergeOverwrites,
                                                      PrepareMerge prepareMerge,
-                                                     Set<Variable> setCnnVariables,
+                                                     Map<Variable, DV> setCnnVariables,
                                                      TranslationMap translationMap) {
         // then, per cluster of variables
         // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
@@ -1239,8 +1239,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
         Map<Variable, DV> cnnMap = groupPropertyValues.getMap(CONTEXT_NOT_NULL);
-        for (Variable setCnn : setCnnVariables) {
-            cnnMap.merge(setCnn, MultiLevel.EFFECTIVELY_NOT_NULL_DV, DV::max);
+        for (Map.Entry<Variable, DV> e : setCnnVariables.entrySet()) {
+            cnnMap.merge(e.getKey(), e.getValue(), DV::max);
         }
         CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 cnnMap);

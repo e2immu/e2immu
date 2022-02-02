@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -425,6 +426,10 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void setProperty(Property property, DV i) {
             assert ACCEPTED.contains(property) : "Do not accept " + property + " on types";
             super.setProperty(property, i);
+        }
+
+        public boolean approvedPreconditionsForNonFinalFields(List<FieldReference> nonFinalFields) {
+            return nonFinalFields.stream().allMatch(approvedPreconditionsE1::isSet);
         }
     }
 }

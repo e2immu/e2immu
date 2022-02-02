@@ -899,8 +899,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 typeAnalysis.setProperty(ALT_IMMUTABLE, approvedDelays);
                 return approvedDelays;
             }
-
-            boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
+            List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
+                    .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
+                    .map(fa -> new FieldReference(analyserContext, fa.getFieldInfo())).toList();
+            boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsForNonFinalFields(nonFinalFields);
             if (!isEventuallyE1 && parentEffective != MultiLevel.Effective.EVENTUAL) {
                 LOGGER.debug("Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(ALT_IMMUTABLE, MultiLevel.MUTABLE_DV);

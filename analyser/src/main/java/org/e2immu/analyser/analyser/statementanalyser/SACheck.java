@@ -59,6 +59,9 @@ public record SACheck(StatementAnalysis statementAnalysis) {
     /*
     Not-null escapes should not contribute to preconditions.
     All the rest should.
+
+    This method is not presented with the == null, != null expressions, they are marked in
+    SASubBlocks.addToContextNotNullAfterStatement, CONTEXT_NOT_NULL is set by StatementAnalysisImpl
      */
     AnalysisStatus checkNotNullEscapesAndPreconditions(StatementAnalyserSharedState sharedState) {
         if (statementAnalysis.statement() instanceof AssertStatement) return DONE; // is dealt with in subBlocks
@@ -67,10 +70,10 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
         if (!escapeAlwaysExecuted.valueIsFalse()) {
             if (escapeAlwaysExecuted.valueIsTrue()) {
-                // escapeCondition should filter out all != null, == null clauses
                 Expression precondition = statementAnalysis.stateData().getConditionManagerForNextStatement()
                         .precondition(sharedState.evaluationContext());
                 CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
+                // is this an expression in terms of fields and parameters?
                 Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
                     LOGGER.debug("Escape with precondition {}", translated);
