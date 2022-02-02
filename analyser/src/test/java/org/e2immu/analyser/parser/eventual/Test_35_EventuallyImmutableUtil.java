@@ -188,7 +188,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        testClass("EventuallyImmutableUtil_6", 0, 1, new DebugConfiguration.Builder()
+        testClass("EventuallyImmutableUtil_6", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -208,6 +208,20 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_9() throws IOException {
         testClass("EventuallyImmutableUtil_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+    // eventually e2immutable, even though its parent is Freezable/eventually ER
+    @Test
+    public void test_10() throws IOException {
+        testClass("EventuallyImmutableUtil_10",
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    // mutable, even though its parent is Freezable/eventually ER
+    @Test
+    public void test_11() throws IOException {
+        testClass("EventuallyImmutableUtil_11", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

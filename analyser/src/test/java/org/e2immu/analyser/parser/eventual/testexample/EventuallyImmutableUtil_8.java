@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.support.Freezable;
-import org.e2immu.annotation.E2Container;
 
 /*
-This one tests inheritance from Freezable
+This one tests inheritance from Freezable (same as _7, but with a method)
  */
-@E2Container(after = "frozen")
+@ERContainer(after = "frozen")
 public class EventuallyImmutableUtil_8 extends Freezable {
 
     public static boolean someMethod(String s) {

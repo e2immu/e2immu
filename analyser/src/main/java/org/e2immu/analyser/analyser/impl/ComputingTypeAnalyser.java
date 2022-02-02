@@ -903,13 +903,24 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
                     .map(fa -> new FieldReference(analyserContext, fa.getFieldInfo())).toList();
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsForNonFinalFields(nonFinalFields);
-            if (!isEventuallyE1 && parentEffective != MultiLevel.Effective.EVENTUAL) {
+            if (!isEventuallyE1) {
                 LOGGER.debug("Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(ALT_IMMUTABLE, MultiLevel.MUTABLE_DV);
                 return ALT_DONE;
             }
             myWhenEXFails = MultiLevel.EVENTUALLY_E1IMMUTABLE_DV;
             eventual = true;
+
+            if (parentEffective == MultiLevel.Effective.EVENTUAL) {
+                TypeAnalysis parentTypeAnalysis = analyserContext.getTypeAnalysis(parentClass.typeInfo);
+                Set<FieldInfo> parentFields = parentTypeAnalysis.getEventuallyImmutableFields();
+                assert parentFields != null && !parentFields.isEmpty(); // otherwise, not eventual!
+                parentFields.forEach(fieldInfo -> {
+                    if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
+                        typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
+                    }
+                });
+            }
         } else {
             CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(true);
             if (approvedDelays.isDelayed()) {

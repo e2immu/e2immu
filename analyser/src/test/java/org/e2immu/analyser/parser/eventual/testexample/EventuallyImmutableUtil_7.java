@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.support.Freezable;
-import org.e2immu.annotation.E2Container;
 
 /*
 This one tests inheritance from Freezable, in the most trivial way
  */
-@E2Container(after = "frozen")
+@ERContainer(after = "frozen")
 public class EventuallyImmutableUtil_7 extends Freezable {
 
 }

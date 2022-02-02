@@ -192,7 +192,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
         AnnotationExpression testMark = null;
-        boolean eventual = false;
+        String eventual = null;
 
         Property modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? Property.MODIFIED_VARIABLE
@@ -298,9 +298,12 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
-            DV value = eventual ? MultiLevel.eventuallyImmutable(levelImmutable.level)
+            DV value = eventual != null ? MultiLevel.eventuallyImmutable(levelImmutable.level)
                     : MultiLevel.effectivelyImmutable(levelImmutable.level);
             setProperty(Property.IMMUTABLE, value);
+            if(eventual != null) {
+                writeTypeEventualFields(eventual);
+            }
         }
         if (notNull != null) {
             setProperty(analyserIdentification.notNull, notNull);
@@ -331,12 +334,16 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         return messages;
     }
 
-    private boolean isEventual(AnnotationExpression annotationExpression) {
+    private String isEventual(AnnotationExpression annotationExpression) {
         String after = annotationExpression.extract("after", "");
-        return after != null && !after.isBlank();
+        return after == null || after.isBlank() ? null: after.trim();
     }
 
     protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void writeTypeEventualFields(String after) {
         throw new UnsupportedOperationException();
     }
 }

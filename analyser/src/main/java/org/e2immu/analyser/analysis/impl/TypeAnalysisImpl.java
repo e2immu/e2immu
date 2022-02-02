@@ -23,6 +23,8 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalysisImpl.class);
 
     private final TypeInfo typeInfo;
     private final Map<FieldReference, Expression> approvedPreconditionsE1;
@@ -209,6 +212,19 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             immutableCanBeIncreasedByTypeParameters = new VariableFirstThen<>(initialDelay);
             approvedPreconditionsE2Delays = initialDelay;
             approvedPreconditionsE1Delays = initialDelay;
+        }
+
+        @Override
+        protected void writeTypeEventualFields(String after) {
+            for (String fieldName : after.split(",")) {
+                FieldInfo fieldInfo = getTypeInfo().getFieldByName(fieldName.trim(), false);
+                if (fieldInfo != null) {
+                    eventuallyImmutableFields.add(fieldInfo);
+                } else {
+                    LOGGER.warn("Could not find field {} in type {}, is supposed to be eventual", fieldName,
+                            typeInfo.fullyQualifiedName);
+                }
+            }
         }
 
         @Override
@@ -393,6 +409,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void setTransparentTypes(SetOfTypes setOfTypes) {
             hiddenContentTypes.set(setOfTypes);
         }
+
         public void setHiddenContentTypesDelay(CausesOfDelay causes) {
             hiddenContentTypes.setFirst(causes);
         }

@@ -14,24 +14,23 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.support.AddOnceSet;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.Container;
+import org.e2immu.support.Freezable;
 
 /*
-Use types in util to become an eventually immutable type;
-this one also tests the companion objects.
+This one tests inheritance from Freezable
+There is no guarantee that child classes are still eventually recursively immutable!
  */
-@ERContainer(after = "set")
-public class EventuallyImmutableUtil_6 {
+@Container
+public class EventuallyImmutableUtil_11 extends Freezable {
 
-    public final AddOnceSet<String> set = new AddOnceSet<>();
+    private int i;
 
+    public void setI(int i) {
+        this.i = i;
+    }
 
-    public int size() { return set.size(); }
-
-    @TestMark("set")
-    public boolean isFrozen() { return set.isFrozen(); }
-
+    public int getI() {
+        return i;
+    }
 }
