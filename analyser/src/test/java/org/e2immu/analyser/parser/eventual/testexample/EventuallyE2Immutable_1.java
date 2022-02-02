@@ -14,9 +14,14 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent1;
+
 /*
 similar to setOnce, to detect errors
  */
+@Container
+@Independent1
 //@E2Container(after = "t")
 public class EventuallyE2Immutable_1<T> {
 

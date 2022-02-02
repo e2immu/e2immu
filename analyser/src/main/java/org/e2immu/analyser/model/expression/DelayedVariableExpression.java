@@ -111,7 +111,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     @Override
     public boolean isNumeric() {
-        return variable.parameterizedType().typeInfo.isNumeric();
+        return variable.parameterizedType().isNumeric();
     }
 
     @Override

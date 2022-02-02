@@ -59,18 +59,30 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
      * Precondition is inherited from a method with a precondition itself
      */
     public record MethodCallCause(MethodInfo methodInfo, Expression scopeObject) implements PreconditionCause {
+        @Override
+        public String toString() {
+            return "methodCall:" + methodInfo.name;
+        }
     }
 
     /**
      * Precondition is based on an escape such as if(x) throw new IllegalStateException or assert x;
      */
     public static class EscapeCause implements PreconditionCause {
+        @Override
+        public String toString() {
+            return "escape";
+        }
     }
 
     /**
      * Precondition is based on the state caused by a return statement; see Lazy.get()
      */
     public static class StateCause implements PreconditionCause {
+        @Override
+        public String toString() {
+            return "state";
+        }
     }
 
     public Precondition {

@@ -21,7 +21,6 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,15 +138,15 @@ public interface AnalysisProvider {
         return DV.fromBoolDv(hiddenContentTypes.contains(parameterizedType));
     }
 
-    default DV canBeModifiedInThisClass(ParameterizedType parameterizedType) {
+    default DV cannotBeModifiedInThisClass(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType == null) return DV.FALSE_DV;
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) return DV.FALSE_DV;
         DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
-        return DV.fromBoolDv(canBeModified);
+        boolean cannotBeModified = MultiLevel.isAtLeastEffectivelyE2Immutable(immutable);
+        return DV.fromBoolDv(cannotBeModified);
     }
 
 
