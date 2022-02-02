@@ -59,9 +59,7 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    default Precondition getPreconditionForEventual() {
-        return null;
-    }
+    Precondition getPreconditionForEventual();
 
     /**
      * @return never null; can be delayed
@@ -115,8 +113,6 @@ public interface MethodAnalysis extends Analysis {
 
     Eventual NOT_EVENTUAL = new Eventual(CausesOfDelay.EMPTY, Set.of(), false, null, null);
 
-    CausesOfDelay preconditionForEventualStatus();
-
     CausesOfDelay eventualStatus();
 
     CausesOfDelay preconditionStatus();
@@ -141,6 +137,9 @@ public interface MethodAnalysis extends Analysis {
 
         @Override
         public String toString() {
+            if (causesOfDelay.isDelayed()) {
+                return "[DelayedEventual:" + causesOfDelay + "]";
+            }
             if (mark) return "@Mark: " + fields;
             if (test != null) return "@TestMark: " + fields;
             if (after == null) {

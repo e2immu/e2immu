@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ContractMark;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -27,7 +28,7 @@ import java.util.Objects;
 
 /**
  * A precondition is normally an Expression object.
- * However to facilitate eventual (@Mark, @Only) computations, it is helpful
+ * However, to facilitate eventual (@Mark, @Only) computations, it is helpful
  * to record the cause of the precondition.
  * <p>
  * This can be a method call (e.g., setOnce.set(value)), with set being a @Mark method) or
@@ -36,6 +37,19 @@ import java.util.Objects;
  * An empty precondition is represented by the boolean constant TRUE.
  */
 public record Precondition(Expression expression, List<PreconditionCause> causes) {
+
+    public static Precondition forDelayed(CausesOfDelay causesOfDelay, Primitives primitives) {
+        Expression de = DelayedExpression.forPrecondition(primitives, causesOfDelay);
+        return new Precondition(de, List.of());
+    }
+
+    public boolean isDelayed() {
+        return expression.isDelayed();
+    }
+
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
+    }
 
     public interface PreconditionCause {
 
@@ -63,7 +77,7 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
         boolean acceptWithoutBoolean = expression.isUnknown() || expression instanceof ContractMark;
         if (!acceptWithoutBoolean && expression.returnType().isNotBooleanOrBoxedBoolean()) {
             throw new UnsupportedOperationException("Need an unknown or boolean value in a precondition, got "
-                    + expression+" of type "+expression.returnType());
+                    + expression + " of type " + expression.returnType());
         }
         Objects.requireNonNull(causes);
     }

@@ -322,6 +322,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
+        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
@@ -354,6 +355,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
+        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);

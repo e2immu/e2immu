@@ -432,7 +432,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Set<MethodAnalyser> assigningMethods = determineAssigningMethods();
 
         CausesOfDelay delays = assigningMethods.stream()
-                .map(methodAnalyser -> methodAnalyser.getMethodAnalysis().preconditionForEventualStatus())
+                .map(methodAnalyser -> methodAnalyser.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delays.isDelayed()) {
             LOGGER.debug("Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
@@ -546,7 +546,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         CausesOfDelay preconditionForEventualDelays = myMethodAnalysersExcludingSAMs.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD).valueIsTrue())
-                .map(ma -> ma.getMethodAnalysis().preconditionForEventualStatus())
+                .map(ma -> ma.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (preconditionForEventualDelays.isDelayed()) {
             LOGGER.debug("Not all precondition preps on modifying methods have been set in {}",

@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
@@ -60,9 +59,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
         assert methodAnalysis.analysisMode == Analysis.AnalysisMode.AGGREGATED;
 
         // TODO improve!
-        methodAnalysis.precondition.setFinal(Precondition.empty(analyserContextInput.getPrimitives()));
-        methodAnalysis.preconditionForEventual.set(Optional.empty());
-        methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
+        methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
 
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)

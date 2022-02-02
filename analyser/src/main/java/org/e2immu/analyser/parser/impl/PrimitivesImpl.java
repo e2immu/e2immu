@@ -691,6 +691,7 @@ public class PrimitivesImpl implements Primitives {
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, parameterAnalyses);
+        builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
         return (MethodAnalysis) builder.build();
     }
 }

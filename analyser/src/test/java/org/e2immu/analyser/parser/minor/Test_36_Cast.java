@@ -97,7 +97,7 @@ public class Test_36_Cast extends CommonTestRunner {
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0;container@Class_Counter;identity:this.t@Method_getTAsCounter_0;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0>/*(Counter)*/";
-                    case 1 -> "<vp:t:initial@Method_increment>/*(Counter)*/";
+                    case 1 -> "<vp:t:final@Field_i>/*(Counter)*/";
                     default -> "t/*(Counter)*/";
                 };
                 assertEquals(expected, d.currentValue().toString());

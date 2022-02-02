@@ -34,6 +34,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,8 +146,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer())
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
-                .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
+                .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
+                .add(ANNOTATE_EVENTUAL, this::annotateEventual)
                 .add(COMPUTE_INDEPENDENT, this::computeIndependent);
 
         analyserComponents = builder.build();
@@ -255,7 +256,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private AnalysisStatus annotateEventual(SharedState sharedState) {
-        assert !methodAnalysis.eventualIsSet();
+        if(methodAnalysis.eventualIsSet()) return DONE;
+        if(methodInfo.isConstructor) {
+            // don't write to annotations
+            return DONE;
+        }
 
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis, typeAnalysis, analyserContext);
         MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
@@ -275,7 +280,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private AnalysisStatus eventualPrepWork(SharedState sharedState) {
-        assert !methodAnalysis.preconditionForEventual.isSet();
+        if (!methodAnalysis.getPreconditionForEventual().isDelayed()) {
+            return DONE;
+        }
+        if (methodInfo.isConstructor) {
+            methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
+            return DONE;
+        }
+        Primitives primitives = methodAnalysis.primitives;
+        ;
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()
@@ -290,6 +303,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (finalOverFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
+                methodAnalysis.setPreconditionForEventual(
+                        Precondition.forDelayed(finalOverFields.causesOfDelay(), primitives));
                 return finalOverFields.causesOfDelay();
             }
             if (finalOverFields.valueIsFalse()) {
@@ -315,7 +330,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
-
+                methodAnalysis.setPreconditionForEventual(
+                        Precondition.forDelayed(haveEventuallyImmutableFields.causesOfDelay(), primitives));
                 return haveEventuallyImmutableFields.causesOfDelay();
             }
             if (haveEventuallyImmutableFields.valueIsTrue()) {
@@ -339,6 +355,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (haveContentChangeableField.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
+                methodAnalysis.setPreconditionForEventual(
+                        Precondition.forDelayed(haveContentChangeableField.causesOfDelay(), primitives));
                 return haveContentChangeableField.causesOfDelay();
             }
             if (haveContentChangeableField.valueIsTrue()) {
@@ -350,7 +368,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (parentClass.isJavaLangObject()) {
                 LOGGER.debug("No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
-                methodAnalysis.preconditionForEventual.set(Optional.empty());
+                methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
                 return DONE;
             }
             typeInfo = parentClass.bestTypeInfo();
@@ -359,14 +377,16 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         if (methodAnalysis.precondition.isVariable()) {
+            assert methodAnalysis.preconditionStatus().isDelayed();
             LOGGER.debug("Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
-            return methodAnalysis.precondition.get().expression().causesOfDelay();
+            methodAnalysis.setPreconditionForEventual(methodAnalysis.precondition.get());
+            return methodAnalysis.precondition.get().causesOfDelay();
         }
         Precondition precondition = methodAnalysis.precondition.get();
         if (precondition.isEmpty()) {
 
             // code to detect the situation as in Lazy
-            Precondition combinedPrecondition = null;
+            Precondition combinedPrecondition = Precondition.empty(methodAnalysis.primitives);
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
                     FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
@@ -376,6 +396,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         if (cm.state().isDelayed()) {
                             LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);
+                            methodAnalysis.setPreconditionForEventual(
+                                    Precondition.forDelayed(cm.state().causesOfDelay(), primitives));
                             return cm.state().causesOfDelay();
                         }
                         Expression state = cm.state();
@@ -386,11 +408,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                             Expression inResult = filterResult.accepted().get(fr);
                             if (inResult != null) {
                                 Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
-                                if (combinedPrecondition == null) {
-                                    combinedPrecondition = pc;
-                                } else {
-                                    combinedPrecondition = combinedPrecondition.combine(sharedState.evaluationContext, pc);
-                                }
+                                combinedPrecondition = combinedPrecondition.combine(sharedState.evaluationContext, pc);
                             }
                         }
                     }
@@ -398,7 +416,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             LOGGER.debug("No @Mark @Only annotation in {} from precondition, found {} from assignment",
                     methodInfo.distinguishingName(), combinedPrecondition);
-            methodAnalysis.preconditionForEventual.set(Optional.ofNullable(combinedPrecondition));
+            methodAnalysis.setPreconditionForEventual(combinedPrecondition);
             return DONE;
         }
 
@@ -412,15 +430,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (filterResult.accepted().isEmpty()) {
             LOGGER.debug("No @Mark/@Only annotation in {}: found no individual field preconditions",
                     methodInfo.distinguishingName());
-            methodAnalysis.preconditionForEventual.set(Optional.empty());
+            methodAnalysis.setPreconditionForEventual(Precondition.empty(methodAnalysis.primitives));
             return DONE;
         }
         Expression[] preconditionExpressions = filterResult.accepted().values().toArray(Expression[]::new);
-        LOGGER.debug("Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
+        LOGGER.debug("Did prep work for @Only, @Mark, found precondition {} on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
 
         Expression and = And.and(sharedState.evaluationContext, preconditionExpressions);
-        methodAnalysis.preconditionForEventual.set(Optional.of(new Precondition(and, precondition.causes())));
+        methodAnalysis.setPreconditionForEventual(new Precondition(and, precondition.causes()));
         return DONE;
     }
 

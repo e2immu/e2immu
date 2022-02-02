@@ -31,11 +31,13 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
-import org.e2immu.support.VariableFirstThen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
@@ -141,11 +143,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public CausesOfDelay preconditionForEventualStatus() {
-        return CausesOfDelay.EMPTY;
-    }
-
-    @Override
     public CausesOfDelay eventualStatus() {
         return CausesOfDelay.EMPTY;
     }
@@ -178,10 +175,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final AnalysisProvider analysisProvider;
         private final InspectionProvider inspectionProvider;
 
-        // the value here (size will be one)
-        public final VariableFirstThen<CausesOfDelay, Optional<Precondition>> preconditionForEventual;
+        private final EventuallyFinal<Precondition> preconditionForEventual = new EventuallyFinal<>();
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
-
         public final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
 
         // ************** PRECONDITION
@@ -213,9 +208,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return eventual.isFinal();
         }
 
-        @Override
-        public CausesOfDelay preconditionForEventualStatus() {
-            return preconditionForEventual.isSet() ? CausesOfDelay.EMPTY : preconditionForEventual.getFirst();
+        public void setPreconditionForEventual(Precondition precondition) {
+            assert precondition != null;
+            if (precondition.isDelayed()) {
+                preconditionForEventual.setVariable(precondition);
+            } else {
+                preconditionForEventual.setFinal(precondition);
+            }
         }
 
         @Override
@@ -244,7 +243,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.returnType = methodInfo.returnType();
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.empty(primitives));
-            preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
+            Expression delayedPreconditionForEventual = DelayedExpression.forPrecondition(primitives, initialDelay(methodInfo));
+            preconditionForEventual.setVariable(Precondition.forDelayed(delayedPreconditionForEventual));
             eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));
             if (!methodInfo.hasReturnValue()) {
                 UnknownExpression u = UnknownExpression.forNoReturnValue(methodInfo.identifier,
@@ -271,7 +271,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                             .map(parameterAnalysis -> parameterAnalysis instanceof ParameterAnalysisImpl.Builder builder ?
                                     (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
-                    preconditionForEventual.getOrDefault(Optional.empty()).orElse(null),
+                    preconditionForEventual.get(),
                     eventual.get(),
                     precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
                     analysisMode(),
@@ -361,7 +361,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         protected void writeEventual(Eventual eventual) {
             ContractMark contractMark = new ContractMark(eventual.fields());
-            preconditionForEventual.set(Optional.of(new Precondition(contractMark, List.of())));
+            preconditionForEventual.setFinal(new Precondition(contractMark, List.of()));
             this.eventual.setFinal(eventual);
         }
 
@@ -389,7 +389,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Precondition getPreconditionForEventual() {
-            return preconditionForEventual.getOrDefault(Optional.empty()).orElse(null);
+            return preconditionForEventual.get();
         }
 
         @Override
@@ -426,6 +426,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             } else {
                 precondition.setFinal(pc);
             }
+        }
+
+        public void ensureIsNotEventualUnlessOtherwiseAnnotated() {
+            if (!precondition.isFinal()) setPrecondition(Precondition.empty(primitives));
+            if (!preconditionForEventual.isFinal()) setPreconditionForEventual(Precondition.empty(primitives));
+            if (!eventual.isFinal()) setEventual(MethodAnalysis.NOT_EVENTUAL);
         }
     }
 

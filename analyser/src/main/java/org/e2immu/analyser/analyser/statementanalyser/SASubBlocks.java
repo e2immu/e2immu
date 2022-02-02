@@ -364,7 +364,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
         if (condition.isDelayed()) {
             List<Variable> variables = statement().getStructure().expression().variables(false);
-            return variables.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
+            return variables.stream().distinct().collect(Collectors.toUnmodifiableMap(e -> e, e -> condition.causesOfDelay()));
         }
         return set.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> MultiLevel.EFFECTIVELY_NOT_NULL_DV));
     }

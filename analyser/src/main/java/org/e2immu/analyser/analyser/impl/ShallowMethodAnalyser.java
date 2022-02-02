@@ -30,7 +30,6 @@ import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -78,10 +77,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 true, annotations, e2));
 
         // IMPROVE reading preconditions from AnnotatedAPIs...
-        methodAnalysis.setPrecondition(Precondition.empty(analyserContext.getPrimitives()));
-        if (!methodAnalysis.preconditionForEventual.isSet()) {
-            methodAnalysis.preconditionForEventual.set(Optional.empty());
-        }
+        methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
+
         if (explicitlyEmpty) {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);

@@ -131,21 +131,32 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertNotNull(d.methodAnalysis().getPreconditionForEventual());
-                    assertEquals("null==string",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                    if (d.iteration() > 3) {
-                        MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                        assertNotNull(eventual);
-                        assertEquals("string", eventual.markLabel());
-                    }
+            if ("setString".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<precondition>";
+                    case 1 -> "!<c:boolean>&&null==<f*:string>";
+                    default -> "null==string";
+                };
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                if (d.iteration() > 3) {
+                    MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
+                    assertNotNull(eventual);
+                    assertEquals("string", eventual.markLabel());
                 }
             }
-
+            if ("setString2".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<precondition>";
+                    case 1 -> "null==<f*:string>";
+                    default -> "null==string";
+                };
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                if (d.iteration() > 3) {
+                    MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
+                    assertNotNull(eventual);
+                    assertEquals("string", eventual.markLabel());
+                }
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -197,35 +208,18 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertNotNull(d.methodAnalysis().getPreconditionForEventual());
-                    assertEquals("null==string",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                    if (d.iteration() > 3) {
-                        MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                        assertNotNull(eventual);
-                        assertEquals("string", eventual.markLabel());
-                    }
-                }
-            }
-        };
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_3".equals(d.typeInfo().simpleName)) {
-                int expectSize = d.iteration() <= 1 ? 0 : 1;
-                assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
-                assertEquals(0, d.typeAnalysis().getApprovedPreconditionsE2().size());
+                String expectE1 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
+                assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
+                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         testClass("EventuallyE1Immutable_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

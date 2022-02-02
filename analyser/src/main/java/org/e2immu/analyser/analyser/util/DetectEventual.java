@@ -57,7 +57,7 @@ public record DetectEventual(MethodInfo methodInfo,
             LOGGER.debug("Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(modified.causesOfDelay());
         }
-        CausesOfDelay delaysPc = methodAnalysis.preconditionForEventualStatus();
+        CausesOfDelay delaysPc = methodAnalysis.getPreconditionForEventual().causesOfDelay();
         if (delaysPc.isDelayed()) {
             LOGGER.debug("Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(delaysPc);
@@ -188,7 +188,9 @@ public record DetectEventual(MethodInfo methodInfo,
             Set<FieldInfo> fields = new HashSet<>();
             for (Expression part : and.getExpressions()) {
                 MethodAnalysis.Eventual eventual = singleTestMark(part);
-                if (eventual.causesOfDelay().isDelayed()) return eventual;
+                if (eventual.causesOfDelay().isDelayed()) {
+                    return eventual;
+                }
                 if (eventual == MethodAnalysis.NOT_EVENTUAL || eventual.test() == Boolean.FALSE) {
                     return MethodAnalysis.NOT_EVENTUAL;
                 }

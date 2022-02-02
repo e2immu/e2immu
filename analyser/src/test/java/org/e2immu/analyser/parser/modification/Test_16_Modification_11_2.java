@@ -125,7 +125,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         case 0 -> "initial:c.set@Method_example1_2;initial:localD.set@Method_example1_2";
                         case 1 -> "cnn@Parameter_c;cnn@Parameter_d";
                         // when all goes well:
-                        case 2 -> "initial@Method_add";
+                        case 2 -> "initial@Field_set";
                         // otherwise: cm@Parameter_string;container@Class_C1;initial@Method_add
                         default -> "";
                     };
