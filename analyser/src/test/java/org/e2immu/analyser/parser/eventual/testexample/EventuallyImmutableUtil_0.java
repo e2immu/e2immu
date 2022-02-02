@@ -12,15 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.support.Freezable;
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
+import org.e2immu.support.FlipSwitch;
+import org.e2immu.annotation.TestMark;
 
 /*
-This one tests inheritance from Freezable, in the most trivial way
- */
-@E2Container(after = "frozen")
-public class EventuallyImmutableUtil_7 extends Freezable {
+Use types in util to become an eventually immutable type
 
+ */
+@ERContainer(after = "flipSwitch")
+public class EventuallyImmutableUtil_0 {
+
+    public final FlipSwitch flipSwitch = new FlipSwitch();
+
+    @TestMark("flipSwitch")
+    public boolean isReady() {
+        return flipSwitch.isSet();
+    }
 }

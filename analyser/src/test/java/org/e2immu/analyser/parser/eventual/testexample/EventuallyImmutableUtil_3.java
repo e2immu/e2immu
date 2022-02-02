@@ -12,37 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.support.SetOnce;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.TestMark;
 
 /*
 Use types in util to become an eventually immutable type
 
  */
-@ERContainer(after = "value")
-public class EventuallyImmutableUtil_2 {
+@E2Container(after = "bool,string")
+public class EventuallyImmutableUtil_3 {
 
-    private final SetOnce<String> value = new SetOnce<>();
+    public final SetOnce<String> string = new SetOnce<>();
+    public final SetOnce<Boolean> bool = new SetOnce<>();
 
-    @TestMark("value")
+    @TestMark("bool,string")
     public boolean isReady() {
-        return value.isSet();
+        return string.isSet() && bool.isSet();
     }
 
-    @Mark("value")
-    public void set2(String p) {
-        this.value.set(p);
-    }
-
-    @NotModified
-    public String getOrNull2() {
-        return value.getOrDefaultNull();
-    }
-
-    @Only(after = "value")
-    public String get2() {
-        return value.get();
-    }
 }

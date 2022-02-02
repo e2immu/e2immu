@@ -12,25 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.Mark;
 
 /*
-Use types in util to become an eventually immutable type
+non-constructor version of Singleton_1
 
  */
-@E2Container(after = "bool,string")
-public class EventuallyImmutableUtil_3 {
+@E2Container(after = "created")
+public class EventuallyE2Immutable_10 {
+    private final int k;
+    private boolean created;
 
-    public final SetOnce<String> string = new SetOnce<>();
-    public final SetOnce<Boolean> bool = new SetOnce<>();
-
-    @TestMark("bool,string")
-    public boolean isReady() {
-        return string.isSet() && bool.isSet();
+    public EventuallyE2Immutable_10(int k) {
+        this.k = k;
     }
 
+    @Mark("created")
+    public void start() {
+        if (created) throw new UnsupportedOperationException();
+        created = true;
+    }
+
+    public int multiply(int i) {
+        return k * i;
+    }
 }

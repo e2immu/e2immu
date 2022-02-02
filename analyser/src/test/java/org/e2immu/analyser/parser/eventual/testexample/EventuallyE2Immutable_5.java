@@ -12,17 +12,41 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
 
 /*
-similar to setOnce, to detect errors: with ObjectFlows
+Two fields
  */
-@E2Immutable(after = "t")
-public class EventuallyE2Immutable_4<T> {
+@E2Container(after = "b,t")
+public class EventuallyE2Immutable_5<T> {
 
     private T t;
+    private boolean b;
+
+    @Mark("b")
+    public void setB() {
+        if (this.b) throw new UnsupportedOperationException();
+        this.b = true;
+    }
+
+    @TestMark("b")
+    public boolean isB() {
+        return b;
+    }
+
+    @Only(after = "b")
+    public void goAfter() {
+        if (!b) throw new UnsupportedOperationException();
+        // do something
+    }
+
+    @Only(before = "b")
+    public void goBefore() {
+        if (b) throw new UnsupportedOperationException();
+        // do something
+    }
 
     @Mark("t")
     public void setT(T t) {
@@ -37,20 +61,13 @@ public class EventuallyE2Immutable_4<T> {
         return t;
     }
 
-    /*
-    the first statement requires null==this.t, but leaves null!=this.t as
-    a state. The second statement requires null==this.t again.
-     */
-    public void error3(T t) {
-        setT(t);
-        setT(t); // error
+    @TestMark("t")
+    public boolean isSetT() {
+        return t != null;
     }
 
-    /*
-    Same, but now with other.
-    */
-    public void error4(@Modified EventuallyE2Immutable_4<T> other) {
-        other.setT(getT());
-        other.setT(getT()); // error
+    @TestMark("b,t")
+    public boolean isReady() {
+        return b && t != null;
     }
 }

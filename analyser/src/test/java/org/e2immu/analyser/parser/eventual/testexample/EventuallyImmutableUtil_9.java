@@ -12,24 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.support.SetOnce;
+import org.e2immu.support.Freezable;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.TestMark;
 
 /*
-Use types in util to become an eventually immutable type
-
+This one tests inheritance from Freezable
  */
-@ERContainer(after = "value")
-public class EventuallyImmutableUtil_1 {
+@E2Container(after = "frozen")
+public class EventuallyImmutableUtil_9 extends Freezable {
 
-    public final SetOnce<String> value = new SetOnce<>();
-
-    @TestMark("value")
+    @TestMark("frozen")
     public boolean isReady() {
-        return value.isSet();
+        return isFrozen();
     }
-
 }

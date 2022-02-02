@@ -12,15 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
 
 /*
-similar to setOnce, to detect errors
+similar to setOnce, to detect errors: with ObjectFlows
  */
 @E2Immutable(after = "t")
-public class EventuallyE2Immutable_3<T> {
+public class EventuallyE2Immutable_4<T> {
 
     private T t;
 
@@ -37,36 +37,6 @@ public class EventuallyE2Immutable_3<T> {
         return t;
     }
 
-    @TestMark("t")
-    public boolean isSet() {
-        return t != null;
-    }
-
-    @TestMark(value = "t", before = true)
-    public boolean isNotYetSet() {
-        return t == null;
-    }
-
-    /*
-    other.getT() requires the precondition null!=other.t
-    while !other.isSet() provides null==other.t
-     */
-    public void error1(EventuallyE2Immutable_3<T> other) {
-        if (!other.isSet()) {
-            setT(other.getT()); // should cause an error!
-        }
-    }
-
-    /*
-    other.getT() requires the precondition null!=other.t
-    while isNotYetSet() provides null==other.t
-    */
-    public void error2(EventuallyE2Immutable_3<T> other) {
-        if (other.isNotYetSet()) {
-            setT(other.getT()); // should cause an error!
-        }
-    }
-
     /*
     the first statement requires null==this.t, but leaves null!=this.t as
     a state. The second statement requires null==this.t again.
@@ -79,7 +49,7 @@ public class EventuallyE2Immutable_3<T> {
     /*
     Same, but now with other.
     */
-    public void error4(@Modified EventuallyE2Immutable_3<T> other) {
+    public void error4(@Modified EventuallyE2Immutable_4<T> other) {
         other.setT(getT());
         other.setT(getT()); // error
     }

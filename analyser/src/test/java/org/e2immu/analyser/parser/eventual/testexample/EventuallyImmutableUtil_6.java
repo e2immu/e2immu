@@ -12,31 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.support.AddOnceSet;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.TestMark;
 
 /*
-non-constructor version of Singleton_1
-
+Use types in util to become an eventually immutable type;
+this one also tests the companion objects.
  */
-@E2Container(after = "created")
-public class EventuallyE2Immutable_10 {
-    private final int k;
-    private boolean created;
+@E2Container(after = "set")
+public class EventuallyImmutableUtil_6 {
 
-    public EventuallyE2Immutable_10(int k) {
-        this.k = k;
-    }
+    public final AddOnceSet<String> set = new AddOnceSet<>();
 
-    @Mark("created")
-    public void start() {
-        if (created) throw new UnsupportedOperationException();
-        created = true;
-    }
 
-    public int multiply(int i) {
-        return k * i;
-    }
+    public int size() { return set.size(); }
+
+    @TestMark("set")
+    public boolean isFrozen() { return set.isFrozen(); }
+
 }

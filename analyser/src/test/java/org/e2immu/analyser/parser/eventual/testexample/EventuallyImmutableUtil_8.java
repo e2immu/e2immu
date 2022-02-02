@@ -12,20 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.support.Freezable;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
 
 /*
 This one tests inheritance from Freezable
  */
 @E2Container(after = "frozen")
-public class EventuallyImmutableUtil_9 extends Freezable {
+public class EventuallyImmutableUtil_8 extends Freezable {
 
-    @TestMark("frozen")
-    public boolean isReady() {
-        return isFrozen();
+    public static boolean someMethod(String s) {
+        return s.length() == 3;
     }
 }

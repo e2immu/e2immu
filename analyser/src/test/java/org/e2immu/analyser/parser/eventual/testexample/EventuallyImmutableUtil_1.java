@@ -12,25 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.support.AddOnceSet;
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
+import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.TestMark;
 
 /*
-Use types in util to become an eventually immutable type;
-this one also tests the companion objects.
+Use types in util to become an eventually immutable type
+
  */
-@E2Container(after = "set")
-public class EventuallyImmutableUtil_6 {
+@ERContainer(after = "value")
+public class EventuallyImmutableUtil_1 {
 
-    public final AddOnceSet<String> set = new AddOnceSet<>();
+    public final SetOnce<String> value = new SetOnce<>();
 
-
-    public int size() { return set.size(); }
-
-    @TestMark("set")
-    public boolean isFrozen() { return set.isFrozen(); }
+    @TestMark("value")
+    public boolean isReady() {
+        return value.isSet();
+    }
 
 }

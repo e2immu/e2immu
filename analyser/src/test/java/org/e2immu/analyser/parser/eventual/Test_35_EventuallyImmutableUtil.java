@@ -13,18 +13,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.eventual;
 
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.failing.testexample.*;
+import org.e2immu.analyser.parser.eventual.testexample.*;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -50,17 +50,20 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_0() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isSet".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("isSet$0", d.methodAnalysis().getSingleReturnValue().toString());
+                String expect = d.iteration() == 0 ? "<m:isSet>" : "isSet$0";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("isSet$0", inlinedMethod.expression().toString());
                         if (inlinedMethod.expression() instanceof VariableExpression variableExpression) {
-                            // TODO
+                            assertEquals("isSet", variableExpression.variable().simpleName());
                         } else fail();
                     } else fail();
                 }
+            }
+            if ("isReady".equals(d.methodInfo().name)) {
+                String expect = d.iteration() == 0 ? "<m:isReady>" : "flipSwitch.isSet()";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         TypeContext typeContext = testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_0.class, FlipSwitch.class),
@@ -107,7 +110,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectEvImm = d.iteration()<= 1 ? "[]": "[value]";
+                String expectEvImm = d.iteration() <= 1 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{value.t=null==value.t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
@@ -176,7 +179,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_6() throws IOException {
         testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_6.class, AddOnceSet.class, Freezable.class),
-                 0, 1, new DebugConfiguration.Builder()
+                0, 1, new DebugConfiguration.Builder()
                         .build());
     }
 

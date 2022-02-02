@@ -12,46 +12,42 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Mark;
 import org.e2immu.annotation.Only;
 import org.e2immu.annotation.TestMark;
 
-/*
-Similar to setOnce, to detect errors.
- */
-@E2Container(after = "t")
-public class EventuallyE2Immutable_0<T> {
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
-    private T t;
+@E2Container(after = "set")
+public class EventuallyE2Immutable_7<T> {
 
-    @Mark("t")
-    public void setT(T t) {
-        if (t == null) throw new NullPointerException();
-        if (this.t != null) throw new UnsupportedOperationException();
-        this.t = t;
+    private final Set<T> set = new HashSet<>();
+
+    @Mark("set")
+    public void initialize(Set<T> data) {
+        if (set.size() > 0) throw new IllegalStateException();
+        if (data.size() <= 0) throw new IllegalArgumentException();
+        set.addAll(data);
     }
 
-    @Only(after = "t")
-    public T getT() {
-        if (t == null) throw new UnsupportedOperationException();
-        return t;
+    @Only(after = "set")
+    public Stream<T> stream() {
+        if (set.size() <= 0) throw new IllegalStateException();
+        return set.stream();
     }
 
-    @TestMark("t")
-    public boolean isSet() {
-        return t != null;
+    public int size() {
+        return set.size();
     }
 
-    @TestMark(value = "t", before = true)
-    public boolean isNotYetSet() {
-        return t == null;
-    }
-
-    @Mark("t")
-    public void set2(T t) {
-        setT(t);
+    @TestMark("set")
+    public boolean hasBeenInitialised() {
+        return set.size() > 0;
     }
 }
+

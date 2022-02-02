@@ -12,42 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
+import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
 import org.e2immu.annotation.TestMark;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Stream;
+/*
+Use types in util to become an eventually immutable type
 
-@E2Container(after = "set")
-public class EventuallyE2Immutable_7<T> {
+ */
+@E2Container(after = "bool,string")
+public class EventuallyImmutableUtil_4 {
 
-    private final Set<T> set = new HashSet<>();
+    public final SetOnce<String> string = new SetOnce<>();
+    public final SetOnce<Boolean> bool = new SetOnce<>();
 
-    @Mark("set")
-    public void initialize(Set<T> data) {
-        if (set.size() > 0) throw new IllegalStateException();
-        if (data.size() <= 0) throw new IllegalArgumentException();
-        set.addAll(data);
+    @TestMark("bool,string")
+    public boolean isReady() {
+        return string.isSet() && bool.isSet();
     }
 
-    @Only(after = "set")
-    public Stream<T> stream() {
-        if (set.size() <= 0) throw new IllegalStateException();
-        return set.stream();
-    }
-
-    public int size() {
-        return set.size();
-    }
-
-    @TestMark("set")
-    public boolean hasBeenInitialised() {
-        return set.size() > 0;
-    }
 }
-

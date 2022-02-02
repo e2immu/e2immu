@@ -12,41 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.Only;
+import org.e2immu.annotation.TestMark;
 
 /*
-Two fields
+Similar to setOnce, to detect errors.
  */
-@E2Container(after = "b,t")
-public class EventuallyE2Immutable_5<T> {
+@E2Container(after = "t")
+public class EventuallyE2Immutable_0<T> {
 
     private T t;
-    private boolean b;
-
-    @Mark("b")
-    public void setB() {
-        if (this.b) throw new UnsupportedOperationException();
-        this.b = true;
-    }
-
-    @TestMark("b")
-    public boolean isB() {
-        return b;
-    }
-
-    @Only(after = "b")
-    public void goAfter() {
-        if (!b) throw new UnsupportedOperationException();
-        // do something
-    }
-
-    @Only(before = "b")
-    public void goBefore() {
-        if (b) throw new UnsupportedOperationException();
-        // do something
-    }
 
     @Mark("t")
     public void setT(T t) {
@@ -62,12 +41,17 @@ public class EventuallyE2Immutable_5<T> {
     }
 
     @TestMark("t")
-    public boolean isSetT() {
+    public boolean isSet() {
         return t != null;
     }
 
-    @TestMark("b,t")
-    public boolean isReady() {
-        return b && t != null;
+    @TestMark(value = "t", before = true)
+    public boolean isNotYetSet() {
+        return t == null;
+    }
+
+    @Mark("t")
+    public void set2(T t) {
+        setT(t);
     }
 }

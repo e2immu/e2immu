@@ -850,7 +850,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             assert parentClass != null;
             TypeInfo parentType = parentClass.typeInfo;
             DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(Property.IMMUTABLE);
-            parentEffective = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.Level.IMMUTABLE_1);
+            parentEffective = MultiLevel.effectiveAtLevel1Immutable(parentImmutable);
         }
 
         Property ALT_IMMUTABLE;
@@ -957,7 +957,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
             DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
+            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(fieldImmutable);
             if (fieldImmutable.isDelayed()) {
                 if (fieldIsOfOwnOrInnerClassType(fieldInfo)) {
                     TypeInfo ownOrInner = fieldInfo.type.typeInfo;
@@ -973,7 +973,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             typeAnalysis.setProperty(ALT_IMMUTABLE, fieldImmutable);
                             return fieldImmutable.causesOfDelay();
                         }
-                        fieldE2Immutable = MultiLevel.effectiveAtLevel(partial, MultiLevel.Level.IMMUTABLE_2);
+                        fieldE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(partial);
                     }
                 } else {
                     // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
@@ -1098,7 +1098,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     return returnTypeImmutable.causesOfDelay();
                 }
                 // FIXME while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
-                MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
+                MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(returnTypeImmutable);
                 if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
                     // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
                     DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);

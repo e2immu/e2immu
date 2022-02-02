@@ -33,10 +33,18 @@ public class MultiLevel {
 
     public static final int MAX_LEVEL = 100;
 
-    public static Effective effectiveAtLevel(DV dv, Level target) {
+    public static Effective effectiveAtLevel1Immutable(DV dv) {
         int level = MultiLevel.level(dv);
-        if (level < target.level) return FALSE;
-        return level > target.level ? MultiLevel.Effective.EFFECTIVE : MultiLevel.effective(dv);
+        if (level < IMMUTABLE_1.level) return FALSE;
+        // IMPROVE this is the place to add code like "return level > target.level ? MultiLevel.Effective.EFFECTIVE : MultiLevel.effective(dv);"
+        // in case we want to implement types that are eventually level 2 but effectively level 1
+        return MultiLevel.effective(dv);
+    }
+
+    public static Effective effectiveAtLevel2PlusImmutable(DV dv) {
+        int level = MultiLevel.level(dv);
+        if (level < IMMUTABLE_2.level) return FALSE;
+        return MultiLevel.effective(dv);
     }
 
     public static int oneLevelMoreFrom(DV dv) {
