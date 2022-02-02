@@ -118,7 +118,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
                             if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
-                                assertEquals(1, inlinedMethod.variables(true).size()); // x, x.k
+                                assertEquals(2, inlinedMethod.variables(true).size()); // x, x.k
                                 assertFalse(inlinedMethod.containsVariableFields());
                             } else fail("Class " + d.currentValue().getClass());
                         }

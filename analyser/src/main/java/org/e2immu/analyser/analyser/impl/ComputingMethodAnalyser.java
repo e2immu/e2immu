@@ -288,7 +288,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return DONE;
         }
         Primitives primitives = methodAnalysis.primitives;
-        ;
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()

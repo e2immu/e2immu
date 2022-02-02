@@ -15,22 +15,21 @@
 
 package org.e2immu.analyser.parser.eventual;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.eventual.testexample.*;
+import org.e2immu.analyser.parser.eventual.testexample.EventuallyImmutableUtil_0;
 import org.e2immu.analyser.visitor.*;
-import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.Freezable;
 import org.e2immu.support.SetOnce;
 import org.junit.jupiter.api.Test;
 
@@ -164,51 +163,51 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            final String expectedT = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
-            final String expected = "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
-
-            if ("isReady1".equals(d.methodInfo().name) && d.iteration() > 6) {
-                assertEquals(expectedT, d.methodAnalysis().getSingleReturnValue().toString());
-            }
-            if ("isReady2".equals(d.methodInfo().name) && d.iteration() > 5) {
-                assertEquals(expectedT, d.methodAnalysis().getSingleReturnValue().toString());
+            if ("isTReady".equals(d.methodInfo().name)) {
+                String expectT = d.iteration() <= 3 ? "<m:isTReady>" : "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
+                assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
-            if ("isTReady".equals(d.methodInfo().name) && d.iteration() > 4) {
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            final String expected12 = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
+            if ("isReady1".equals(d.methodInfo().name)) {
+                String expected1 = d.iteration() <= 4 ? "<m:isReady1>" : expected12;
+                assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if ("isReady2".equals(d.methodInfo().name)) {
+                String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : expected12;
+                assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_5.class, FlipSwitch.class, SetOnce.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .build());
+        testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 
     @Test
     public void test_6() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_6.class, AddOnceSet.class, Freezable.class),
-                0, 1, new DebugConfiguration.Builder()
-                        .build());
+        testClass("EventuallyImmutableUtil_6", 0, 1, new DebugConfiguration.Builder()
+                .build());
     }
 
     @Test
     public void test_7() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_7.class, Freezable.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .build());
+        testClass("EventuallyImmutableUtil_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
     @Test
     public void test_8() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_8.class, Freezable.class),
+        testClass("EventuallyImmutableUtil_8",
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_9() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_9.class, Freezable.class),
-                0, 0, new DebugConfiguration.Builder()
-                        .build());
+        testClass("EventuallyImmutableUtil_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 }

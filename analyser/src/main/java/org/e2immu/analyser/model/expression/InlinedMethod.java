@@ -206,7 +206,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return variablesOfExpression.stream().map(VariableExpression::variable).toList();
+        return variablesOfExpression.stream().flatMap(ve -> ve.variables(descendIntoFieldReferences).stream()).toList();
     }
 
     public boolean canBeApplied(EvaluationContext evaluationContext) {
@@ -261,7 +261,17 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
                 boolean scopeIsThis = fieldReference.scopeIsThis();
                 if (!staticField && !scopeIsThis) {
-                    replace = false;
+                    if (scope instanceof VariableExpression ve && !(ve.variable() instanceof This)
+                            && fieldReference.scope instanceof VariableExpression veScope
+                            && veScope.variable() instanceof FieldReference frScope) {
+                        // we'll need to replace the scope of this field reference
+                        FieldReference newScopeFr = new FieldReference(inspectionProvider, frScope.fieldInfo, scope);
+                        Expression newScope = new VariableExpression(newScopeFr);
+                        FieldReference replacementFr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, newScope);
+                        replacement = new VariableExpression(replacementFr);
+                    } else {
+                        replace = false;
+                    }
                     // the variables of the scope are dealt with separately
                 } else if (visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
                     // maybe the final field is linked to a parameter, and we have a value for that parameter?
@@ -377,8 +387,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                                    MethodInfo constructor,
                                                    FieldInfo fieldInfo) {
         int i = 0;
-        List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                .getParameterAnalyses(constructor).collect(Collectors.toList());
+        List<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(constructor).toList();
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                 return -2; // delays
