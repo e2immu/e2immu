@@ -290,7 +290,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d.p(1), MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 

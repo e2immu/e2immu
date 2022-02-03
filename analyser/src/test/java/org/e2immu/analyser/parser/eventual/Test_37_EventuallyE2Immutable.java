@@ -273,7 +273,60 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("EventuallyE2Immutable_4", 2, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("error4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:other>"
+                                : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:other>"
+                                : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setT".equals(d.methodInfo().name)) {
+                if (d.iteration() >= 3) {
+                    assertEquals("Precondition[expression=null==t, causes=[escape]]", d.methodAnalysis().getPreconditionForEventual().toString());
+                }
+            }
+            if ("error4".equals(d.methodInfo().name)) {
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expectPc = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<precondition>&&<precondition>&&<precondition>&&<precondition>, causes=[]]";
+                    // why has other. gone from the preconditions???? in <f:t>
+                    case 2 -> "Precondition[expression=null!=t&&null==<f:t>&&null==<f:t>, causes=[methodCall:getT, methodCall:getT]]";
+                    default -> "Precondition[expression=null!=t, causes=[methodCall:setT, methodCall:getT, methodCall:setT]]";
+                };
+                assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().toString());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyE2Immutable_4".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        testClass("EventuallyE2Immutable_4", 1, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -485,11 +538,10 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
-
     // continuation of _3
     @Test
     public void test_11() throws IOException {
-        testClass("EventuallyE2Immutable_11", 1, 0, new DebugConfiguration.Builder()
+        testClass("EventuallyE2Immutable_11", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

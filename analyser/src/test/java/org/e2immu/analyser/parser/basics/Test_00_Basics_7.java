@@ -99,7 +99,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {

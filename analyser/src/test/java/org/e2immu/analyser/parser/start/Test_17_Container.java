@@ -75,7 +75,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals(VALUE_OF_P, d.currentValue().toString());
 
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("0-E", d.variableInfo().getReadId());
@@ -84,7 +84,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals(VALUE_OF_P, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 } else if (d.variable() instanceof ParameterInfo p && "toAdd".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
@@ -100,13 +100,13 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("p", d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:s>" : VALUE_OF_P;
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 } else if (S0.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -147,7 +147,7 @@ public class Test_17_Container extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d.p(0), MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -301,7 +301,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                assertEquals(d.iteration() >1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 

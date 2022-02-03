@@ -80,7 +80,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
-                assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
 
             /*
@@ -95,7 +95,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
                 assertDvInitial(d, "ext_not_null@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                assertDvInitial(d, "ext_imm@Parameter_p1", 1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                assertDvInitial(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertFalse(d.variableInfoContainer().hasEvaluation());
                 assertFalse(d.variableInfoContainer().hasMerge());
             }

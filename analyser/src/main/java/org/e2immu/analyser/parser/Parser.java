@@ -178,7 +178,8 @@ public class Parser {
                 return; // already done, or started
             }
             URL url = Objects.requireNonNull(urls.get(typeInfo),
-                    "Cannot find URL for " + typeInfo.fullyQualifiedName + " in " + urls);
+                    "Cannot find URL for " + typeInfo.fullyQualifiedName + "; inspection state " + typeInspectionBuilder.getInspectionState() + "; in\n" +
+                            urls.values().stream().map(Object::toString).collect(Collectors.joining("\n")) + "\n");
             try {
                 LOGGER.debug("Starting Java parser inspection of '{}'", url);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);

@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.eventual.testexample;
 import org.e2immu.annotation.*;
 
 /*
-similar to setOnce, to detect errors: with ObjectFlows
+Same as _3, but now on a parameter rather than on "this"
  */
 @E2Immutable(after = "t")
 public class EventuallyE2Immutable_4<T> {
@@ -37,18 +37,6 @@ public class EventuallyE2Immutable_4<T> {
         return t;
     }
 
-    /*
-    the first statement requires null==this.t, but leaves null!=this.t as
-    a state. The second statement requires null==this.t again.
-     */
-    public void error3(T t) {
-        setT(t);
-        setT(t); // error
-    }
-
-    /*
-    Same, but now with other.
-    */
     public void error4(@Modified EventuallyE2Immutable_4<T> other) {
         other.setT(getT());
         other.setT(getT()); // error

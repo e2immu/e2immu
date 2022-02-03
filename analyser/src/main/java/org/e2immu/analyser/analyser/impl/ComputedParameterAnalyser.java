@@ -77,6 +77,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
                     .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
                     .add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
+                    .add("followExtImm", this::followExternalImmutable)
                     .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
@@ -402,8 +403,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         for (Property property : PROPERTIES) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
-                if (isExternal(property) && notAssignedToField) {
+                if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL) {
                     v = property.valueWhenAbsent();
+                } else if (property == EXTERNAL_IMMUTABLE) {
+                    v = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
+                    // do not let this stop "resolve field delays"; we're not linked to a field so no worries
+                    // followExternalImmutable will ensure that a value is given at some point
                 } else {
                     v = property.falseDv;
                 }
@@ -416,7 +421,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
-                parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
+             //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
                 parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER);
 
         if (delays.isDelayed()) {
@@ -427,6 +432,16 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // can be executed multiple times
         parameterAnalysis.resolveFieldDelays();
         return DONE;
+    }
+
+    private AnalysisStatus followExternalImmutable(SharedState sharedState) {
+        DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
+        if(extImm.isDone()) {
+            return DONE;
+        }
+        DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
+        parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
+        return AnalysisStatus.of(dv);
     }
 
     private Stream<CauseOfDelay> findModifiedOutsideMethod(CausesOfDelay causes) {

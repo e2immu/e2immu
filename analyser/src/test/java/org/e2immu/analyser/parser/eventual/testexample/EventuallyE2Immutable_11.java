@@ -14,16 +14,13 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
 Like EventuallyE2Immutable_3, with different types of errors.
-Problematic is that they break/used to break eventuality.
+The two "error" methods break the eventually immutable type restrictions, as they are modifying without precondition.
  */
-@E2Immutable(after = "t")
+@Container
 public class EventuallyE2Immutable_11<T> {
 
     private T t;
@@ -51,7 +48,7 @@ public class EventuallyE2Immutable_11<T> {
         return t == null;
     }
 
-
+    @Modified
     public void error1(EventuallyE2Immutable_11<T> other) {
         if (!other.isSet()) {
             setT(other.getT()); // should cause an error!
@@ -62,6 +59,7 @@ public class EventuallyE2Immutable_11<T> {
     other.getT() requires the precondition null!=other.t
     while isNotYetSet() provides null==other.t
     */
+    @Modified
     public void error2(EventuallyE2Immutable_11<T> other) {
         if (other.isNotYetSet()) {
             setT(other.getT()); // should cause an error!

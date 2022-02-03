@@ -455,7 +455,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
                     : DV.FALSE_DV;
             if (!ignoreContentModifications.valueIsTrue()) {
-                LOGGER.debug("Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
                 if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
@@ -464,23 +463,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         setProperty(variable, Property.CONTEXT_MODIFIED, modified);
                     }
                 }
-                    /*
-                    The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
-                    which does not play nice with the copying rules that copy when never read/assigned to.
-                    We must rely on normal MethodLevelData linking computation
-                    if (value instanceof VariableExpression redirect) {
-                        setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
-                        markRead(redirect.variable());
-                    }
-                    */
-            } else {
-                LOGGER.debug("Skip marking method object as context modified: {}", variable.fullyQualifiedName());
             }
         }
 
         /*
         parameters and fields use EXT_CONTAINER to raise errors; they do not wait for a valid value property.
-
          */
         public void variableOccursInContainerContext(Variable variable, DV containerRequired) {
             assert evaluationContext != null;
