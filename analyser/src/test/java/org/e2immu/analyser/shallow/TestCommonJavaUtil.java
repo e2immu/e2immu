@@ -373,6 +373,22 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
     }
 
+
+    @Test
+    public void testObjectsHash() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Objects.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("hash", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.IDENTITY));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
+        ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        //! IMPORTANT ! an array is @Container, but a varargs parameter is not seen as an array for the purpose of enforcing @Container
+        // see code in ParameterAnalysis.getParameterProperty
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+    }
+
+
     @Test
     public void testIterator() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Iterator.class);

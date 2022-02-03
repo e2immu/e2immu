@@ -125,9 +125,12 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
 
         classes.forEach(clazz -> builder.addRestrictSourceToPackages(clazz.getCanonicalName()));
 
-        AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
-                .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS)
-                .build();
+        // IMPORTANT: when analysing SetOnce or EventuallyFinal, we cannot parse the AnnotatedAPI file OrgE2ImmuSupport.java as well.
+        AnnotatedAPIConfiguration.Builder b = new AnnotatedAPIConfiguration.Builder().addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
+        if (!withAnnotatedAPIs) {
+            b.addReadAnnotatedAPIPackages("org.e2immu.annotatedapi.java");
+        }
+        AnnotatedAPIConfiguration annotatedAPIConfiguration = b.build();
 
         Configuration configuration = new Configuration.Builder()
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)

@@ -52,7 +52,8 @@ public interface ParameterAnalysis extends Analysis {
 
 
         // some absolutely trivial cases
-        DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property);
+        boolean varArgs = parameterInfo.parameterInspection.get().isVarArgs();
+        DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property, varArgs);
         if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
 
         switch (property) {

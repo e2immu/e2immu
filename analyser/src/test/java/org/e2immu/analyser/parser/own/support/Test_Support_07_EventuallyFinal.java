@@ -35,8 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
 
+    // cannot be set to true because there is a OrgE2ImmuSupport.java A API file which refers to this type.
+    // we currently cannot have both at the same time
     public Test_Support_07_EventuallyFinal() {
-        super(true);
+        super(false);
     }
 
     @Test

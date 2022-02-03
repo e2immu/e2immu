@@ -17,11 +17,11 @@ package org.e2immu.analyser.parser.own.support;
 
 import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.Negation;
@@ -37,12 +37,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Support_02_SetOnce extends CommonTestRunner {
 
+    // cannot be set to true because there is a OrgE2ImmuSupport.java A API file which refers to this type.
+    // we currently cannot have both at the same time
     public Test_Support_02_SetOnce() {
-        super(true);
+        super(false);
     }
 
     @Test
@@ -61,16 +64,16 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                String expectValues = d.iteration() == 0 ? "[null, <s:T>]" : "[null, t]";
-                assertEquals(expectValues,
-                        ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
-                                .map(ValueAndPropertyProxy::getValue).toList().toString());
-
+                String expectValues = d.iteration() == 1 ? "[null, break initialization delay]" : "[null, t]";
+                if (d.iteration() > 0) {
+                    assertEquals(expectValues,
+                            ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
+                                    .map(ValueAndPropertyProxy::getValue).toList().toString());
+                }
                 assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
-                String expectLinked = "setOnce.t:0,t:0";
-                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("t:0", d.fieldAnalysis().getLinkedVariables().toString());
 
                 assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
@@ -91,12 +94,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
             }
             if ("getOrDefault".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
-                assertEquals(d.iteration() >= 1,
-                        d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 assertEquals("true", d.state().toString());
                 String expectCondition = switch (d.iteration()) {
-                    case 0 -> "<m:isSet>";
-                    case 1 -> "null!=<f:t>";
+                    case 0, 1 -> "<m:isSet>";
                     default -> "null!=t";
                 };
                 assertEquals(expectCondition, d.condition().toString());
@@ -108,8 +109,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
                     String expectCondition = switch (d.iteration()) {
-                        case 0 -> "<m:isSet>";
-                        case 1 -> "null!=<f:t>";
+                        case 0, 1 -> "<m:isSet>";
                         default -> "null!=t";
                     };
                     assertEquals(expectCondition, cm.condition().toString());
@@ -124,8 +124,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
                     String expectCondition = switch (d.iteration()) {
-                        case 0 -> "<m:isSet>";
-                        case 1 -> "null!=<f:t>";
+                        case 0, 1 -> "<m:isSet>";
                         default -> "null!=other.t";
                     };
                     assertEquals(expectCondition, cm.condition().toString());
@@ -150,9 +149,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
-                        String expectValue = d.iteration() == 0 ? "<f:t>" : T0;
+                        String expectValue = d.iteration() <= 1 ? "<f:t>" : T0;
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 0);
@@ -172,8 +171,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // the return variable is not a parameter, so has no CONTEXT_DEPENDENT value
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<m:get>";
-                            case 1 -> "<f:t>";
+                            case 0, 1 -> "<m:get>";
                             default -> "t";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -185,16 +183,14 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     }
                     if ("0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<m:isSet>?<m:get>:<return value>";
-                            case 1 -> "null==<f:t>?<return value>:<f:t>";
+                            case 0, 1 -> "<m:isSet>?<m:get>:<return value>";
                             default -> "null==t?<return value>:t";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<m:isSet>?<m:get>:null";
-                            case 1 -> "null==<f:t>?null:<f:t>";
+                            case 0, 1 -> "<m:isSet>?<m:get>:null";
                             default -> "t$0"; // nice summary!
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -211,23 +207,22 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<m:get>";
-                            case 1 -> "<f:t>";
+                            case 0, 1 -> "<m:get>";
                             default -> "t";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                     if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                         assertTrue(d.iteration() > 0);
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 1);
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
@@ -235,8 +230,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<m:isSet>?<m:get>:<return value>";
-                            case 1 -> "null==<f:t>?<return value>:<f:t>";
+                            case 0, 1 -> "<m:isSet>?<m:get>:<return value>";
                             default -> "null==t?<return value>:t";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -245,8 +239,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<m:isSet>?<m:get>:alternative/*@NotNull*/";
-                            case 1 -> "null==<f:t>?alternative/*@NotNull*/:<f:t>";
+                            case 0, 1 -> "<m:isSet>?<m:get>:alternative/*@NotNull*/";
                             default -> "null==t$0?alternative/*@NotNull*/:t$0";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -257,14 +250,22 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                    assertEquals("null==t", d.methodAnalysis().getPrecondition().expression().toString());
-                }
+                String expectPc = switch (d.iteration()) {
+                    case 0 -> "<precondition>";
+                    case 1 -> "null==<f*:t>";
+                    default -> "null==t";
+                };
+                assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+
+                String expected = switch (d.iteration()) {
+                    case 0 -> "null==<f:t>";
+                    case 1 -> "null==<f*:t>";
+                    default -> "null==t";
+                };
+                assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
+
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
@@ -276,19 +277,21 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
 
                 // void method, no return value
-                assertNull(d.methodAnalysis().getSingleReturnValue());
+                assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
             }
 
             // there are 2 get methods; one with a message parameter, the other without
 
-            if ("get".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("null!=t", d.methodAnalysis().getPreconditionForEventual()
-                            .expression().toString());
-                    assertEquals("t$0", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("get".equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().isEmpty()) {
+                String expectedPc = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=null!=<vp:t:initial:this.t@Method_set_1.0.0;state:this.t@Method_set_1.0.1;values:this.t@Field_t>, causes=[escape]]";
+                    default -> "Precondition[expression=null!=t, causes=[escape]]";
+                };
+                assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
+                String expectedSrv = d.iteration() <= 1 ? "<m:get>" : "t$0";
+                assertEquals(expectedSrv, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertTrue(inlinedMethod.containsVariableFields());
                     } else fail();
@@ -296,7 +299,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
-                assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
+                assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
 
 
@@ -309,20 +312,17 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             }
 
             if ("copy".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("null==t",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                }
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPrecondition());
-                } else {
-                    assertEquals("null==t||null==other.t",
-                            d.methodAnalysis().getPrecondition().expression().toString());
-                }
-                assertEquals(d.iteration() >= 1,
-                        d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                String expectedPc = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
+                    default -> "Precondition[expression=null==t, causes=[methodCall:set]]";
+                };
+                assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
+
+                String expected = d.iteration() <= 1 ? "<precondition>&&<precondition>" : "null==t||null==other.t";
+                assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
+
+                assertEquals(d.iteration() >= 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
@@ -333,21 +333,27 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
             }
 
-
             if ("toString".equals(d.methodInfo().name)) {
-                assertNull(d.methodAnalysis().getPreconditionForEventual());
+                String expectedPc = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
 
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
 
             if ("isSet".equals(d.methodInfo().name)) {
-                assertNull(d.methodAnalysis().getPreconditionForEventual());
-                if (d.iteration() > 0) {
-                    assertEquals("null!=t$0", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0
+                        ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expected,
+                        d.methodAnalysis().getPreconditionForEventual().toString());
+                String srv = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
                         assertTrue(im.expression() instanceof Negation);
                         assertTrue(im.containsVariableFields());
-                    }
+                    } else fail();
                 }
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("Precondition[expression=true, causes=[]]",
@@ -355,22 +361,22 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             }
 
             if ("getOrDefault".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                }
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+
+                String expected = d.iteration() <= 1 ? "<m:getOrDefault>" : "null==t$0?alternative/*@NotNull*/:t$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+
                 // because not @Final, we get NOT_INVOLVED
-                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
 
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    // this should simply be t?
-                    assertEquals("t$0", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+
+                // this should simply be t?
+                String expected = d.iteration() <= 1 ? "<m:getOrDefaultNull>" : "t$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+
                 assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };

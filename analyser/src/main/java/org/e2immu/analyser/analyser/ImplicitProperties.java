@@ -38,7 +38,12 @@ public class ImplicitProperties {
         };
     }
 
-    public static DV fromType(ParameterizedType parameterizedType, Property property) {
+    public static DV fromType(ParameterizedType parameterizedType, Property property, boolean varArgs) {
+        if (varArgs) {
+            ParameterizedType withoutArrays = parameterizedType.copyWithOneFewerArrays();
+            return fromType(withoutArrays, property, false);
+        }
+        // non-recursion
         if (parameterizedType.arrays > 0) {
             DV arrayPropertyValue = arrayProperties(property);
             if (arrayPropertyValue != DV.MIN_INT_DV) return arrayPropertyValue;

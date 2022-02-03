@@ -57,7 +57,7 @@ public interface FieldAnalysis extends Analysis {
                                 FieldInfo fieldInfo,
                                 TypeInfo bestType,
                                 Property property) {
-        DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, property);
+        DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, property, false);
         if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
 
         switch (property) {
