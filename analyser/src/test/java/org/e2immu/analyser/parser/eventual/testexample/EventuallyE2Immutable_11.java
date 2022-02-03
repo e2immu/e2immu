@@ -14,13 +14,17 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.Only;
+import org.e2immu.annotation.TestMark;
 
 /*
-similar to setOnce, to detect errors
+Like EventuallyE2Immutable_3, with different types of errors.
+Problematic is that they break/used to break eventuality.
  */
-@E2Container(after = "t")
-public class EventuallyE2Immutable_3<T> {
+@E2Immutable(after = "t")
+public class EventuallyE2Immutable_11<T> {
 
     private T t;
 
@@ -47,8 +51,20 @@ public class EventuallyE2Immutable_3<T> {
         return t == null;
     }
 
-    public void error3(T t) {
-        setT(t);
-        setT(t); // error, based on CONTEXT_IMMUTABLE (EvaluationResult.variableOccursInEventuallyImmutableContext)
+
+    public void error1(EventuallyE2Immutable_11<T> other) {
+        if (!other.isSet()) {
+            setT(other.getT()); // should cause an error!
+        }
+    }
+
+    /*
+    other.getT() requires the precondition null!=other.t
+    while isNotYetSet() provides null==other.t
+    */
+    public void error2(EventuallyE2Immutable_11<T> other) {
+        if (other.isNotYetSet()) {
+            setT(other.getT()); // should cause an error!
+        }
     }
 }

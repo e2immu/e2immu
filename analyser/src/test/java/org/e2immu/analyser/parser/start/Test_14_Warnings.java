@@ -544,4 +544,11 @@ public class Test_14_Warnings extends CommonTestRunner {
         testClass("Warnings_11", 1, 1, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test12() throws IOException {
+        // empty method with @Modified parameter
+        testClass("Warnings_12", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

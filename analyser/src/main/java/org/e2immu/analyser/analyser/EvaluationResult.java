@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -398,14 +397,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
-            if (requiredImmutable.equals(MultiLevel.MUTABLE_DV) || requiredImmutable == DV.MIN_INT_DV) return;
+            if (requiredImmutable.equals(MultiLevel.MUTABLE_DV) || requiredImmutable.equals(MultiLevel.NOT_INVOLVED_DV)) {
+                return;
+            }
             if (requiredImmutable.isDelayed()) {
-                setProperty(variable, Property.CONTEXT_IMMUTABLE, requiredImmutable);
+              //  setProperty(variable, Property.EXTERNAL_IMMUTABLE, requiredImmutable);
                 return;
             }
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
-            DV currentImmutable = getPropertyFromInitial(variable, Property.CONTEXT_IMMUTABLE);
+            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
             if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
                 if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable)
                         && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
@@ -416,7 +417,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 }
             }
             // everything proceeds as normal
-            setProperty(variable, Property.CONTEXT_IMMUTABLE, nextImmutable);
+          //  setProperty(variable, Property.EXTERNAL_IMMUTABLE, nextImmutable);
         }
 
         /**

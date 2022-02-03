@@ -128,12 +128,47 @@ public class Test_04_Precondition extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                    String expected = d.iteration() == 0
+                            ? "CM{pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}"
+                            : "CM{pc=Precondition[expression=i>=0, causes=[escape]];parent=CM{}}";
+                    assertEquals(expected, d.localConditionManager().toString());
+                }
+            }
+            if ("setPositive2".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = "CM{pc=Precondition[expression=j1>=0, causes=[escape]];parent=CM{}}";
+                    assertEquals(expected, d.localConditionManager().toString());
+                }
+            }
+            if ("setPositive5".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "Precondition[expression=<f:i>>=0, causes=[escape]]"
+                            : "Precondition[expression=i>=0, causes=[escape]]";
+                    assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPrecondition.get().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "CM{pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}"
+                            : "CM{pc=Precondition[expression=i>=0, causes=[escape]];parent=CM{}}";
+                    assertEquals(expected, d.localConditionManager().toString());
+                }
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setPositive5".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    // TODO I'd expect "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
+                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<=-1" : "i$0>=0&&j2<=-1";
+                    assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
         };
 
         testClass("Precondition_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

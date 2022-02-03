@@ -17,10 +17,10 @@ package org.e2immu.analyser.parser.eventual.testexample;
 import org.e2immu.annotation.*;
 
 /*
-similar to setOnce, to detect errors
+Variant on _3
  */
-@E2Container(after = "t")
-public class EventuallyE2Immutable_3<T> {
+@E2Immutable(after = "t")
+public class EventuallyE2Immutable_12<T> {
 
     private T t;
 
@@ -47,8 +47,10 @@ public class EventuallyE2Immutable_3<T> {
         return t == null;
     }
 
-    public void error3(T t) {
-        setT(t);
-        setT(t); // error, based on CONTEXT_IMMUTABLE (EvaluationResult.variableOccursInEventuallyImmutableContext)
+    // causes self-reference, infinite loop
+
+    public void error4(@Modified EventuallyE2Immutable_12<T> other) {
+        other.setT(getT());
+        other.setT(getT()); // error
     }
 }

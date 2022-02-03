@@ -41,7 +41,7 @@ public class AssignmentIncompatibleWithPrecondition {
      * <p>
      * Possible situations:
      * <ul>
-     * <li>recondition does null check
+     * <li>precondition does null check
      * <li>precondition is of boolean nature
      * <li>precondition is of integer nature, compares with Equals or GreaterThanZero
      * <li>precondition is cause by method call to other internal @Mark/@Only method

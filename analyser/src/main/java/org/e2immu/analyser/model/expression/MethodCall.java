@@ -521,16 +521,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Only(before) goes from BEFORE to BEFORE
     @Only(after) goes from AFTER to AFTER
      */
-    private record ImmutableData(CausesOfDelay causes, DV required, DV next) {
+    private record ImmutableData(DV required, DV next) {
     }
 
-    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(CausesOfDelay.EMPTY, DV.MIN_INT_DV, DV.MIN_INT_DV);
+    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(MultiLevel.NOT_INVOLVED_DV, MultiLevel.NOT_INVOLVED_DV);
 
+    // delays travel to EXTERNAL_IMMUTABLE via variableOccursInEventuallyImmutableContext
     private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
         DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
                 .getProperty(Property.IMMUTABLE);
         if (formalTypeImmutable.isDelayed()) {
-            return new ImmutableData(formalTypeImmutable.causesOfDelay(), DV.MIN_INT_DV, DV.MIN_INT_DV);
+            return new ImmutableData(formalTypeImmutable.causesOfDelay(), formalTypeImmutable.causesOfDelay());
         }
         MultiLevel.Effective effective = MultiLevel.effective(formalTypeImmutable);
         if (effective != MultiLevel.Effective.EVENTUAL) {
@@ -538,18 +539,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
         if (eventual.causesOfDelay().isDelayed()) {
-            return new ImmutableData(eventual.causesOfDelay(), DV.MIN_INT_DV, DV.MIN_INT_DV);
+            return new ImmutableData(eventual.causesOfDelay(), eventual.causesOfDelay());
         }
 
         int formalLevel = MultiLevel.level(formalTypeImmutable);
         if (eventual.mark()) {
-            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
+            return new ImmutableData(MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
         }
         if (eventual.after() != null) {
             if (eventual.after()) {
-                return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.afterImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
+                return new ImmutableData(MultiLevel.afterImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
             }
-            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.beforeImmutableDv(formalLevel));
+            return new ImmutableData(MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.beforeImmutableDv(formalLevel));
         }
         return NOT_EVENTUAL;
     }

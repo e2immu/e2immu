@@ -203,7 +203,11 @@ public class MultiLevel {
     }
 
     public static boolean isAtLeastEffectivelyE2Immutable(DV dv) {
-        return dv.ge(EFFECTIVELY_E2IMMUTABLE_DV);
+        if (dv.ge(EFFECTIVELY_E2IMMUTABLE_DV)) {
+            Effective effective = effective(dv);
+            return effective == EFFECTIVE;
+        }
+        return false;
     }
 
     public static boolean isEffectivelyNotNull(DV dv) {

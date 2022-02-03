@@ -46,13 +46,11 @@ public class EvaluatePreconditionFromMethod {
             if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
         } else if (!precondition.expression().isBooleanConstant()) {
             if (scopeObject.isDelayed()) {
-                builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
+                builder.addDelayOnPrecondition(precondition.expression().causesOfDelay().merge(scopeObject.causesOfDelay()));
                 return;
             }
             // there is a precondition, and we have a list of values... let's see what we can learn
             // the precondition is using parameter info's as variables so we'll have to substitute
-            // IMPROVE when a variable field is the target of the translation map, reEvaluation may change this value
-            // into a local copy, which will cause problems. We'll need a flag?
             Map<Expression, Expression> translationMap = translationMap(evaluationContext.getAnalyserContext(),
                     methodInfo, parameterValues, scopeObject);
             Expression reEvaluated;

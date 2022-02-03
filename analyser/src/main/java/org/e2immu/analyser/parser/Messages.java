@@ -67,4 +67,8 @@ public class Messages {
         m.messages.addAll(other.messages);
         return new Messages(Set.copyOf(messages));
     }
+
+    public boolean isEmpty() {
+        return messages.isEmpty();
+    }
 }

@@ -67,7 +67,13 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     annotations, e2));
             if (explicitlyEmpty) {
-                builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
+                DV modified = builder.getProperty(Property.MODIFIED_VARIABLE);
+                if (modified.valueIsTrue()) {
+                    analyserResultBuilder.add(Message.newMessage(builder.location, Message.Label.CONTRADICTING_ANNOTATIONS,
+                            "Empty method cannot modify its parameters"));
+                } else {
+                    builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
+                }
                 builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             }
         });
