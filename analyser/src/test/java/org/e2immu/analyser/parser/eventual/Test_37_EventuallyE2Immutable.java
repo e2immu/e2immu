@@ -118,7 +118,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     assertTrue(d.iteration() > 0);
 
-                    String expected = d.iteration() <= 2 ? "<f:t>" : "nullable instance type T";
+                    String expected = d.iteration() <= 1 ? "<f:t>" : "nullable instance type T";
                     assertEquals(expected, d.currentValue().toString());
                     String expectedDelay = d.iteration() == 1 ? "?" : "this.t:0";
                     assertEquals(expectedDelay, d.variableInfo().getLinkedVariables().toString());
@@ -246,6 +246,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("error3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
                     }

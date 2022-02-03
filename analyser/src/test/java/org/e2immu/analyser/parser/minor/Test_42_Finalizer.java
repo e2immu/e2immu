@@ -56,7 +56,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 }
             }

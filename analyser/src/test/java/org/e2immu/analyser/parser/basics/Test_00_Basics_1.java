@@ -111,13 +111,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
-                    assertTrue(d.iteration() < 2);
+                    assertDv(d, 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertTrue(d.iteration() <= 2);
                     assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
+                    assertDv(d, 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
             }
         }

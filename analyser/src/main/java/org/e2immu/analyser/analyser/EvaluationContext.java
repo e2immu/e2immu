@@ -220,7 +220,7 @@ public interface EvaluationContext {
     default Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
         if (value instanceof NullConstant) {
             assert formalType != null : "Use other call!";
-            return valuePropertiesOfFormalType(formalType);
+            return valuePropertiesOfNullConstant(formalType);
         }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
@@ -238,6 +238,16 @@ public interface EvaluationContext {
                 IDENTITY, DV.FALSE_DV));
         assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
         return properties;
+    }
+
+    default Properties valuePropertiesOfNullConstant(ParameterizedType formalType) {
+        AnalyserContext analyserContext = getAnalyserContext();
+        return Properties.ofWritable(Map.of(
+                IMMUTABLE, analyserContext.defaultImmutable(formalType, false),
+                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
+                CONTAINER, analyserContext.defaultContainer(formalType),
+                IDENTITY, DV.FALSE_DV));
     }
 
     /*
@@ -272,10 +282,6 @@ public interface EvaluationContext {
 
     default Expression replaceLocalVariables(Expression expression) {
         return expression;
-    }
-
-    default Expression removeVariablesFromValue(Expression value, Set<Variable> toRemove) {
-        return value;
     }
 
     default Expression acceptAndTranslatePrecondition(Expression rest) {

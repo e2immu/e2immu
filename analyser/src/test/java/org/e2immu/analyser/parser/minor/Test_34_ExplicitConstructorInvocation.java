@@ -111,9 +111,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

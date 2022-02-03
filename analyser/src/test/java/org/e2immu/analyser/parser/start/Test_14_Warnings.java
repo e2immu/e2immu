@@ -56,7 +56,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 Message message = d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE);
                 assertNotNull(message);
                 assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
-                assertDv(d, 1, AnalysisStatus.DONE, d.result().analysisStatus());
+                assertDv(d, 2, AnalysisStatus.DONE, d.result().analysisStatus());
             }
         };
 
@@ -109,8 +109,8 @@ public class Test_14_Warnings extends CommonTestRunner {
                 LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
                 assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_1.Warnings_1()",
                         location.info.fullyQualifiedName());
-
-                assertEquals(AnalysisStatus.DONE, analysisStatus);
+                // 1 rather than 0 because EXT_IMMUTABLE on "this"
+                assertDv(d, 1, AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
@@ -318,7 +318,7 @@ public class Test_14_Warnings extends CommonTestRunner {
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name) && d.iteration() > 2) {
+            if ("add".equals(d.methodInfo().name) && d.iteration() > 3) {
                 assertNotNull(d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED));
             }
         };

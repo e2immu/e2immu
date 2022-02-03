@@ -57,6 +57,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Expression value,
                                List<Expression> storedValues,
                                CausesOfDelay causesOfDelay,
+                               CausesOfDelay eventualDelays,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
@@ -164,6 +165,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private final EvaluationContext evaluationContext;
         private final Messages messages = new Messages();
         private CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        private CausesOfDelay eventualDelays = CausesOfDelay.EMPTY;
         private Expression value;
         private List<Expression> storedExpressions;
         private int statementTime;
@@ -229,6 +231,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
                 }
             }
+
+            eventualDelays = eventualDelays.merge(evaluationResult.eventualDelays);
         }
 
         public void incrementStatementTime() {
@@ -272,6 +276,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay,
+                    eventualDelays,
                     messages,
                     valueChanges,
                     precondition,
@@ -393,20 +398,34 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newVcd);
         }
 
+        /*
+        idea: EXT_IMM goes from statement to statement, starting with the value of field analyser (fields, params linked to fields) / type analyser (this)
+        we modify along the way if the variable calls a method that changes from BEFORE to AFTER
+         */
+
         public void variableOccursInEventuallyImmutableContext(Identifier identifier,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
+            // no reason, not a method call that changed state
             if (requiredImmutable.equals(MultiLevel.MUTABLE_DV) || requiredImmutable.equals(MultiLevel.NOT_INVOLVED_DV)) {
                 return;
             }
+            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
+            // not_involved: local variables, any type that has no real EXTERNAL_IMMUTABLE value FIXME but local variables can also go through this progression? let's do params and fields first
+            // mutable: fields can be mutable before the immutability type is known (public, not explicitly final)
+            if (currentImmutable.equals(MultiLevel.MUTABLE_DV) || currentImmutable.equals(MultiLevel.NOT_INVOLVED_DV)) {
+                return; // not relevant to this topic
+            }
+            // but when it matters, the delay on required/next is the same as the delay on EXT_IMM
+            assert !requiredImmutable.isDelayed() || currentImmutable.isDelayed();
             if (requiredImmutable.isDelayed()) {
-              //  setProperty(variable, Property.EXTERNAL_IMMUTABLE, requiredImmutable);
+                // this is just a marker to ensure that SAApply/SAEvaluationOfMainExpression does not reach DONE in this iteration
+                // markEventualDelay(requiredImmutable.causesOfDelay());
                 return;
             }
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
-            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
             if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
                 if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable)
                         && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
@@ -416,8 +435,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }
-            // everything proceeds as normal
-          //  setProperty(variable, Property.EXTERNAL_IMMUTABLE, nextImmutable);
+            // everything proceeds as normal, we change EXTERNAL_IMMUTABLE
+            assert nextImmutable.isDone();
+            setProperty(variable, Property.EXTERNAL_IMMUTABLE, nextImmutable);
+        }
+
+        private void markEventualDelay(CausesOfDelay causesOfDelay) {
+            assert causesOfDelay.isDelayed();
+            this.eventualDelays = this.eventualDelays.merge(causesOfDelay);
         }
 
         /**

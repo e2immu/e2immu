@@ -16,8 +16,8 @@
 package org.e2immu.analyser.parser.own.support;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -55,10 +55,10 @@ public class Test_38_FirstThen extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("first".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-
-                String expectValues = d.iteration() == 0 ? "[ALL_CONSTR:first/*@NotNull*/, ALL_CONSTR:<s:>]"
-                        : "[ALL_CONSTR:null, ALL_CONSTR:first/*@NotNull*/]";
-                assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
+                if (d.iteration() > 0) {
+                    String expectValues = "[CONSTRUCTION:first/*@NotNull*/, break-delay proxy]";
+                    assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
+                }
             }
         };
 
@@ -68,7 +68,8 @@ public class Test_38_FirstThen extends CommonTestRunner {
             }
         };
 
-        testClass("FirstThen_0", 0, 0, new DebugConfiguration.Builder()
+        // code in set() always produces an error
+        testClass("FirstThen_0", 2, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

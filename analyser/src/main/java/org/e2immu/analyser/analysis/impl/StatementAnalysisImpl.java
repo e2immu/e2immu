@@ -620,6 +620,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (variableInfo.variable() instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
                 }
+                if(variableInfo.variable() instanceof This thisVar) {
+                    TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(thisVar.typeInfo);
+                    DV immutable = typeAnalysis.getProperty(IMMUTABLE);
+                    vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
+                }
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -1363,7 +1368,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             initializeReturnVariable(vic, returnVariable);
 
         } else if (variable instanceof This thisVar) {
-            initializeThis(vic, thisVar);
+            initializeThis(vic, evaluationContext, thisVar);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             initializeParameter(vic, evaluationContext, parameterInfo);
@@ -1507,7 +1512,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
-    private void initializeThis(VariableInfoContainer vic, This thisVar) {
+    private void initializeThis(VariableInfoContainer vic, EvaluationContext evaluationContext, This thisVar) {
         // context properties
         Properties properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
@@ -1518,10 +1523,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
-        // external: not relevant
+        // external: not relevant, except for external immutable, used for tracking the before/after state on the object
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType, false);
+        properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
         vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);

@@ -130,9 +130,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("parent2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);
-                assertEquals("[null,parent2Param]", d.fieldAnalysis().getValue().toString());
+                String expected = d.iteration() == 0 ? "<f:parent2>" : "[null,parent2Param]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("level2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);

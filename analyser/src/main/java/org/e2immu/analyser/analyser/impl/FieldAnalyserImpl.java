@@ -961,6 +961,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             public boolean validValueProperties() {
                 return false;
             }
+
+            @Override
+            public String toString() {
+                return "break-delay proxy";
+            }
         };
     }
 

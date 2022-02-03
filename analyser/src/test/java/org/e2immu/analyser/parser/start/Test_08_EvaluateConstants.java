@@ -70,6 +70,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
+                    assertTrue(d.result().analysisStatus().isProgress());
+                } else if (d.iteration() == 2) {
+                    // one more iteration because EXT_IMMUTABLE on "this"
                     assertSame(DONE, d.result().analysisStatus());
                 } else fail();
             }
@@ -153,7 +156,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("print2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
                     assertNotNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                    assertSame(DONE, d.result().analysisStatus());
                 }
             }
         };

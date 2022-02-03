@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -69,7 +70,6 @@ public class Test_00_Basics_6 extends CommonTestRunner {
 
                 if ("v1".equals(d.variableName()) && "0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<f:field>" : "field$0";
-                    // FIXME here we start
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("v2".equals(d.variableName()) && "2".equals(d.statementId())) {
@@ -154,7 +154,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof This) {
-                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
+                    assertDv(d, 2, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -93,7 +94,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 }
                 if (d.variable() instanceof This) {
-                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
+                    assertDv(d, 2, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {

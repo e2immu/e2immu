@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -38,12 +37,17 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.DV.FALSE_DV;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+import static org.e2immu.analyser.model.MultiLevel.NULLABLE_DV;
 
 class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAEvaluationContext.class);
@@ -69,7 +73,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
     // created to compute inline conditions, short-circuit operators, etc.
-    
+
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
                         StatementAnalyser statementAnalyser,
@@ -90,7 +94,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
-        if(base) {
+        if (base) {
             Expression absoluteState = conditionManager.absoluteState(this);
             if (absoluteState.isDone()) {
                 List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
@@ -310,7 +314,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
 
         DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
-        if (directNN.equals(MultiLevel.NULLABLE_DV)) {
+        if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate(),
                     this, value, NullConstant.NULL_CONSTANT, false);
             Expression evaluation = conditionManager.evaluate(this, valueIsNull);
@@ -336,7 +340,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return cnnInMap;
         }
         boolean cmNn = notNullAccordingToConditionManager(variable);
-        return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV);
+        return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV);
     }
 
     @Override
@@ -525,21 +529,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public int getFinalStatementTime() {
         return statementAnalysis.flowData().getTimeAfterSubBlocks();
-    }
-
-
-    // we replace the variable by their best value
-    // this best value should never have been merged, because we're removing variables only at the point where
-    // they go out of scope, which is always exactly one block (rather than multiple blocks -- even with "TRY"!)
-    @Override
-    public Expression removeVariablesFromValue(Expression value, Set<Variable> toRemove) {
-        TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
-        toRemove.stream()
-                .map(v -> statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()))
-                .filter(Objects::nonNull)
-                .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
-        if (translationMap.isEmpty()) return value;
-        return value.translate(translationMap.build());
     }
 
     /*

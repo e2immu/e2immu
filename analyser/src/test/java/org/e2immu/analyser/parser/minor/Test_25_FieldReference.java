@@ -145,6 +145,20 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
+            if ("method".equals(d.methodInfo().name)) {
+                if ("notNull".equals(d.variableName())) {
+                    if ("2.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        // assigned the null constant, yet we have no idea about its value properties
+                        String aNull = switch (d.iteration()) {
+                            case 0 -> "<vp::container@Record_DV;immutable@Record_DV;independent@Record_DV>";
+                            case 1 -> "<vp::initial@Field_v>";
+                            default -> "null";
+                        };
+                        assertEquals(aNull, d.currentValue().toString());
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("ParameterAnalysis".equals(d.methodInfo().name)) {
@@ -159,10 +173,16 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertDv(d, "cm@Parameter_setP;mom@Parameter_setP", 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("DV".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
         testClass("FieldReference_3", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }
