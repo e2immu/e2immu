@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
@@ -451,6 +453,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
+        Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
         for (MethodAnalyser methodAnalyser : assigningMethods) {
             Precondition precondition = methodAnalyser.getMethodAnalysis().getPreconditionForEventual();
             if (precondition != null) {
@@ -470,10 +473,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 (fieldToCondition.fieldReference.fieldInfo.newLocation(),
                                         Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                     }
+                    methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
+                            (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                 }
             }
         }
         tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, false));
+
+        findPiggyBackingVariables(tempApproved, methodsForApprovedField);
 
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE1);
@@ -566,6 +573,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
+        Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
             if (modified.valueIsTrue()) {
@@ -586,17 +594,53 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
                                     Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
                         }
+                        methodsForApprovedField.merge(fieldToCondition.fieldReference, Set.of(methodAnalyser.getMethodInfo()),
+                                (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toUnmodifiableSet()));
                     }
                 }
             }
         }
         tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, true));
+        findPiggyBackingVariables(tempApproved, methodsForApprovedField);
 
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE2);
         typeAnalysis.freezeApprovedPreconditionsE2();
         LOGGER.debug("Approved preconditions {} in {}, type can now be @E2Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
+    }
+
+    private void findPiggyBackingVariables(Map<FieldReference, Expression> tempApproved, Map<FieldReference, Set<MethodInfo>> methodsForApprovedField) {
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
+            FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
+            if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()
+                    && !fieldInfo.isPublic()
+                    && !tempApproved.containsKey(fieldReference)) {
+                // we have a variable field, without preconditions. Can it piggyback on a field with preconditions?
+                // see e.g. EventuallyFinal, where value is only written while covered by the preconditions of isFinal
+                Set<MethodInfo> methodsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
+                Optional<FieldReference> piggy = methodsForApprovedField.entrySet().stream()
+                        .filter(e -> e.getValue().equals(methodsAssigned))
+                        .map(Map.Entry::getKey)
+                        .findFirst();
+                if (piggy.isPresent()) {
+                    Expression expressionOfPiggy = tempApproved.get(piggy.get());
+                    tempApproved.put(fieldReference, expressionOfPiggy);
+                    LOGGER.debug("Field {} joins the preconditions of field {} in type {}", fieldInfo.name,
+                            piggy.get().fieldInfo.name, typeInfo.fullyQualifiedName);
+                }
+            }
+        }
+    }
+
+    private Set<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
+        return myMethodAnalysers.stream()
+                .filter(ma -> !ma.getMethodInfo().isConstructor
+                        && ma.getMethodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream().anyMatch(VariableInfo::isAssigned))
+                .map(MethodAnalyser::getMethodInfo)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private record HandlePrecondition(List<FieldToCondition> fieldToConditions, CausesOfDelay causesOfDelay) {
@@ -904,7 +948,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .map(fa -> new FieldReference(analyserContext, fa.getFieldInfo())).toList();
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsForNonFinalFields(nonFinalFields);
             if (!isEventuallyE1) {
-                LOGGER.debug("Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                LOGGER.debug("Type {} is not eventually level 1 immutable, not all @Variable fields have preconditions",
+                        typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(ALT_IMMUTABLE, MultiLevel.MUTABLE_DV);
                 return ALT_DONE;
             }

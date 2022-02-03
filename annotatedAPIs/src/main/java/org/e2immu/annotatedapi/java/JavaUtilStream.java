@@ -83,6 +83,9 @@ public class JavaUtilStream {
     interface Stream$<T> {
 
         @NotNull
+        <TT> Stream<TT> concat(@NotNull Stream<? extends TT> s1, @NotNull Stream<? extends TT> s2);
+
+        @NotNull
         @ERContainer
         <TT> Stream<TT> empty();
 

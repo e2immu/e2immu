@@ -15,21 +15,23 @@
 
 package org.e2immu.analyser.parser.own.support;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.EventuallyFinal;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,42 +45,35 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("EventuallyFinal".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param T]", d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-        };
-
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("value".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
+            }
+            if ("isFinal".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
             }
         };
 
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("setFinal".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo value && "value".equals(value.name)) {
-                    assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
-                    assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyFinal".equals(d.typeInfo().simpleName)) {
+                if (d.iteration() >= 1) {
+                    Map<FieldReference, Expression> map = d.typeAnalysis().getApprovedPreconditionsE1();
+                    assertEquals("isFinal=!isFinal,value=!isFinal",
+                            map.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
+                                    .map(Object::toString).collect(Collectors.joining(",")));
+                    Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditionsE2();
+                    assertEquals("isFinal=!isFinal,value=!isFinal",
+                            map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
+                                    .map(Object::toString).collect(Collectors.joining(",")));
                 }
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
-                    if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<s:T>" : "value";
-                        assertEquals(expectValue, d.currentValue().toString());
-                    }
-                }
-                if (d.variable() instanceof This) {
-                    assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                }
+                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         testSupportAndUtilClasses(List.of(EventuallyFinal.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

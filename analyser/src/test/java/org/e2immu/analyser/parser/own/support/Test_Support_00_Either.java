@@ -51,7 +51,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(Property.CONTAINER));
+                    assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(Property.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
