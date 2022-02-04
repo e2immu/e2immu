@@ -549,4 +549,19 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .build());
     }
 
+    // See also ECInContext_0
+    @Test
+    public void test_14() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
+              //  assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+
+        // 2x potential null ptr
+        testClass("E2Immutable_14", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
 }

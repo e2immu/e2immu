@@ -12,32 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.IgnoreModifications;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@E2Container
-public class StaticSideEffects_4<K> {
-    private final K k;
+// no static side effects: inside type; modification and assignment inside constructor
+@Container
+public class StaticSideEffects_1<K> {
+    public final K k;
+    public final int count;
+    @Modified
+    @Variable
+    @Nullable
+    private static AtomicInteger counter;
 
-    @IgnoreModifications
-    private static final AtomicInteger counter = new AtomicInteger();
-
-    public StaticSideEffects_4(K k) {
+    public StaticSideEffects_1(K k) {
         this.k = k;
-    }
-
-    @NotModified
-    public K getK() {
-        counter.getAndIncrement();
-        return k;
-    }
-
-    public static int countAccessToK() {
-        return counter.get();
+        if (counter == null) {
+            counter = new AtomicInteger();
+        }
+        count = counter.getAndIncrement();
     }
 }

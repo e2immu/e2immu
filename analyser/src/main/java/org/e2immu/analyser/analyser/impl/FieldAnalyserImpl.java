@@ -815,12 +815,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private DV correctForExposureBefore(DV immutable) {
-        if (!immutable.equals(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV) &&
-                !immutable.equals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV)) {
-            return immutable;
-        }
-        DV corrected = immutable.equals(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV) ? MultiLevel.EVENTUALLY_E1IMMUTABLE_DV :
-                MultiLevel.EVENTUALLY_E2IMMUTABLE_DV;
+        if (immutable.isDelayed()) return immutable;
+        MultiLevel.Effective effective = MultiLevel.effective(immutable);
+        if (effective != MultiLevel.Effective.EVENTUAL_BEFORE) return immutable;
+
+        DV corrected = MultiLevel.eventuallyImmutable(MultiLevel.level(immutable));
         if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
             return corrected;
         }

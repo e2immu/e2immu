@@ -13,15 +13,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.eventual;
 
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -40,11 +41,18 @@ public class Test_41_E2InContext extends CommonTestRunner {
         super(true);
     }
 
+    /*
+
+            // we want the best immutable value here; in case of "SetOnce<String> setOnce = new SetOnce<>();" we
+            // need eventually recursively immutable (rather than eventually level 2 for the formal type.)
+            DV dynamicImmutable = analyserContext.defaultImmutable(fieldInfo.type, false);
+            minLevel = Math.min(minLevel, MultiLevel.level(dynamicImmutable));
+     */
     @Test
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Eventually".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -52,15 +60,32 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("error".equals(d.methodInfo().name)) {
                 if ("eventually".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
                     }
                 }
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("notYetSet".equals(d.methodInfo().name)) {
+                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+            }
+            if ("error".equals(d.methodInfo().name)) {
+                // FIXME is this the correct one?
+                if (d.iteration() > 2) {
+                    assertNotNull(d.haveError(Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
+                }
+            }
+        };
+
+        // error expected in the "error" method
         testClass("E2InContext_0", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -87,7 +112,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectLinked = d.iteration() <= 2 ? "?" : "this.eventually";
+                    String expectLinked = d.iteration() <= 2 ? "" : "this.eventually";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

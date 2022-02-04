@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.BeforeMark;
 import org.e2immu.annotation.E2Container;
@@ -21,9 +21,9 @@ import org.e2immu.annotation.TestMark;
 
 /*
 Testing the immutability properties as statements progress: create an eventually immutable object,
-modify it, and cause an error by modifying again.
+and set its final value in the constructor
  */
-public class E2InContext_0 {
+public class E2InContext_2 {
 
     @E2Container(after = "t")
     public static class Eventually<T> {
@@ -42,24 +42,17 @@ public class E2InContext_0 {
         }
     }
 
-    @BeforeMark
-    public static Eventually<String> notYetSet() {
-        return new Eventually<>();
+    @E2Container //after mark!
+    @BeforeMark(absent = true)
+    private final Eventually<String> eventually = new Eventually<>();
+
+    public E2InContext_2(String input) {
+        eventually.set(input);
     }
 
+    @BeforeMark(absent = true)
     @E2Container
-    public static Eventually<String> alreadySet() {
-        Eventually<String> eventually = new Eventually<>();
-        eventually.set("hello");
+    public Eventually<String> getEventually() {
         return eventually;
     }
-
-    @E2Container
-    public static Eventually<String> error() {
-        Eventually<String> eventually = new Eventually<>();
-        eventually.set("hello");
-        eventually.set("there");
-        return eventually;
-    }
-
 }

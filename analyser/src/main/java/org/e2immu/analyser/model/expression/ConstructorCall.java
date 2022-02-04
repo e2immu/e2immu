@@ -232,7 +232,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-            case INDEPENDENT, IDENTITY, IMMUTABLE, CONTAINER -> analyserContext.defaultValueProperty(property, pt);
+            case INDEPENDENT, IDENTITY, CONTAINER -> analyserContext.defaultValueProperty(property, pt);
+            case IMMUTABLE -> {
+                DV dv = analyserContext.defaultImmutable(parameterizedType, false);
+                if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
+                    yield MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
+                }
+                yield dv;
+            }
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };

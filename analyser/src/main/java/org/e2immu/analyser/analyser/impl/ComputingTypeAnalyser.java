@@ -997,6 +997,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return approvedDelays;
         }
 
+        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
+
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
             FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
@@ -1056,7 +1058,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             // that needs to follow the additional rules
             boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
 
-            if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL) {
+            if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL || fieldE2Immutable == MultiLevel.Effective.EVENTUAL_BEFORE) {
                 eventual = true;
                 if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
                     typeAnalysis.addEventuallyImmutableField(fieldInfo);
@@ -1102,8 +1104,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         }
-        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
-
 
         for (MethodAnalyser constructor : myConstructors) {
             for (ParameterAnalysis parameterAnalysis : constructor.getParameterAnalyses()) {

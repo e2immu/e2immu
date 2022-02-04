@@ -132,14 +132,15 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-                //.addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

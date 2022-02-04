@@ -12,31 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.*;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
-@E1Container
-public class StaticSideEffects_3<K> {
-    private final K k;
+// remains E2, even if there is no getter!
+@E2Container
+public class E2Immutable_14<T> {
+    private T t;
 
-    @Modified
-    private static final AtomicInteger counter = new AtomicInteger();
-
-    public StaticSideEffects_3(K k) {
-        this.k = k;
+    public E2Immutable_14(T t) {
+        if (t == null) throw new IllegalArgumentException();
+        this.t = t;
     }
-
-    @Modified
-    public K getK() {
-        counter.getAndIncrement();
-        return k;
-    }
-
-    @NotModified
-    public static int countAccessToK() {
-        return counter.get();
+    
+    public boolean isSet() {
+        return t != null;
     }
 }

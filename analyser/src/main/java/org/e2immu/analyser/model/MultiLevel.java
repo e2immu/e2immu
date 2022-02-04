@@ -215,7 +215,7 @@ public class MultiLevel {
     }
 
     public static boolean isAtLeastE2Immutable(DV dv) {
-        return dv.ge(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV);
+        return dv.ge(EVENTUALLY_E2IMMUTABLE_DV);
     }
 
     public static DV effectivelyImmutable(int level) {

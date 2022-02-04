@@ -21,7 +21,6 @@ Minimal clone of SetOnce; to detect infinite loops when there are self-reference
 All is green until the copy() method comes into play.
  */
 @E2Container(after = "t")
-@Independent1
 public class Basics_21<T> {
 
     @Final(after = "t")
