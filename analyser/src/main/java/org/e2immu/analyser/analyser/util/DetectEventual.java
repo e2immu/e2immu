@@ -46,7 +46,7 @@ public record DetectEventual(MethodInfo methodInfo,
             LOGGER.debug("No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(delaysE1);
         }
-        CausesOfDelay delaysE2 = typeAnalysis.approvedPreconditionsStatus(false);
+        CausesOfDelay delaysE2 = typeAnalysis.approvedPreconditionsStatus(true);
         if (delaysE2.isDelayed()) {
             LOGGER.debug("No decision on approved E2 preconditions yet for {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(delaysE2);

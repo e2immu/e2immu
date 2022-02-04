@@ -17,7 +17,9 @@ package org.e2immu.analyser.parser.eventual;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Qualification;
@@ -29,6 +31,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -376,6 +379,14 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("stream".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<precondition>" : "!set.isEmpty()";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
+                String expectEventual = switch (d.iteration()) {
+                    case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
+                    case 1 -> "[DelayedEventual:final@Field_set]";
+                    case 2 -> "[DelayedEventual:initial@Field_set]";
+                    default -> "@Only after: [set]";
+                };
+                assertEquals(expectEventual, eventual.toString());
             }
             if ("initialize".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<precondition>" : "set.isEmpty()";
@@ -393,11 +404,27 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            // E1 approved preconditions is empty: all fields explicitly final
+            assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
+            if ("EventuallyE2Immutable_6".equals(d.typeInfo().simpleName)) {
+                if (d.iteration() < 2) {
+                    String expected = d.iteration() == 0 ? "final@Field_set" : "initial@Field_set";
+                    assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
+                } else {
+                    // E2 approved preconditions must contain "set"
+                    Map<FieldReference, Expression> map = d.typeAnalysis().getApprovedPreconditions(true);
+                    assertEquals("{set=set.isEmpty()}", map.toString());
+                }
+            }
+        };
+
         testClass("EventuallyE2Immutable_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -440,21 +467,12 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("set.size()>=1",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                }
+                String expect = d.iteration() <= 1 ? "<precondition>" : "set.size()>=1";
+                assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
             if ("initialize".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    // need to wait for transparent types
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("set.size()<=0",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                }
+                String expect = d.iteration() <= 1 ? "<precondition>" : "set.size()<=0";
+                assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };
 
@@ -499,21 +517,13 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("0!=set.size()",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                }
+                String expected = d.iteration() <= 1 ? "<precondition>" : "0!=set.size()";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+
             }
             if ("initialize".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    // need to wait for transparent types
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("0==set.size()",
-                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                }
+                String expected = d.iteration() <= 1 ? "<precondition>" : "0==set.size()";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };
 
