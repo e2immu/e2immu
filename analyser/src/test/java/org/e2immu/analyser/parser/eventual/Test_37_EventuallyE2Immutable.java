@@ -31,7 +31,9 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -405,9 +407,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            // E1 approved preconditions is empty: all fields explicitly final
-            assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
             if ("EventuallyE2Immutable_6".equals(d.typeInfo().simpleName)) {
+                // E1 approved preconditions is empty: all fields explicitly final
+                assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
                 if (d.iteration() < 2) {
                     String expected = d.iteration() == 0 ? "final@Field_set" : "initial@Field_set";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
@@ -537,7 +539,31 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
     @Test
     public void test_9() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyE2Immutable_9".equals(d.typeInfo().simpleName)) {
+                if (d.iteration() < 2) {
+                    String expected = d.iteration() == 0 ? "mm@Method_setFinalAllowEquals"
+                            : "initial:this.isFinal@Method_setFinal_0;initial:this.isFinal@Method_setVariable_0;values:this.value@Field_value";
+                    assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
+                } else {
+                    // we expect "value" to have piggybacked on isFinal (ComputingTypeAnalyser.findPiggyBackingVariables)
+                    String expected = "isFinal=!isFinal,value=!isFinal";
+                    // E1 approved preconditions
+                    Map<FieldReference, Expression> map1 = d.typeAnalysis().getApprovedPreconditions(false);
+                    assertEquals(expected, map1.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
+                            .map(Object::toString).collect(Collectors.joining(",")));
+
+                    // E2 approved preconditions, should be identical to those of E1
+                    Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditions(true);
+                    assertEquals(expected, map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
+                            .map(Object::toString).collect(Collectors.joining(",")));
+                }
+            }
+        };
+
         testClass("EventuallyE2Immutable_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

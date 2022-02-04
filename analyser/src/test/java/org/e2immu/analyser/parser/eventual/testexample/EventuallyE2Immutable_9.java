@@ -24,7 +24,7 @@ import java.util.Objects;
 /*
 Variant on EventuallyFinal in the support classes
  */
-@E2Container(after = "isFinal")
+@E2Container(after = "isFinal,value")
 public class EventuallyE2Immutable_9<T> {
 
     private T value;

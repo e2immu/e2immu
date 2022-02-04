@@ -619,16 +619,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     && !tempApproved.containsKey(fieldReference)) {
                 // we have a variable field, without preconditions. Can it piggyback on a field with preconditions?
                 // see e.g. EventuallyFinal, where value is only written while covered by the preconditions of isFinal
+                // conditions are: it must be assigned in some method, and the methods it is assigned in must be
+                // contained in those of the field with preconditions
                 Set<MethodInfo> methodsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
-                Optional<FieldReference> piggy = methodsForApprovedField.entrySet().stream()
-                        .filter(e -> e.getValue().equals(methodsAssigned))
-                        .map(Map.Entry::getKey)
-                        .findFirst();
-                if (piggy.isPresent()) {
-                    Expression expressionOfPiggy = tempApproved.get(piggy.get());
-                    tempApproved.put(fieldReference, expressionOfPiggy);
-                    LOGGER.debug("Field {} joins the preconditions of field {} in type {}", fieldInfo.name,
-                            piggy.get().fieldInfo.name, typeInfo.fullyQualifiedName);
+                if(!methodsAssigned.isEmpty()) {
+                    Optional<FieldReference> piggy = methodsForApprovedField.entrySet().stream()
+                            .filter(e -> e.getValue().containsAll(methodsAssigned))
+                            .map(Map.Entry::getKey)
+                            .findFirst();
+                    if (piggy.isPresent()) {
+                        Expression expressionOfPiggy = tempApproved.get(piggy.get());
+                        tempApproved.put(fieldReference, expressionOfPiggy);
+                        LOGGER.debug("Field {} joins the preconditions of field {} in type {}", fieldInfo.name,
+                                piggy.get().fieldInfo.name, typeInfo.fullyQualifiedName);
+                    }
                 }
             }
         }
