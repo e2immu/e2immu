@@ -622,7 +622,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // conditions are: it must be assigned in some method, and the methods it is assigned in must be
                 // contained in those of the field with preconditions
                 Set<MethodInfo> methodsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
-                if(!methodsAssigned.isEmpty()) {
+                if (!methodsAssigned.isEmpty()) {
                     Optional<FieldReference> piggy = methodsForApprovedField.entrySet().stream()
                             .filter(e -> e.getValue().containsAll(methodsAssigned))
                             .map(Map.Entry::getKey)
@@ -963,10 +963,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (parentEffective == MultiLevel.Effective.EVENTUAL) {
                 TypeAnalysis parentTypeAnalysis = analyserContext.getTypeAnalysis(parentClass.typeInfo);
                 Set<FieldInfo> parentFields = parentTypeAnalysis.getEventuallyImmutableFields();
-                assert parentFields != null && !parentFields.isEmpty(); // otherwise, not eventual!
+                assert !parentFields.isEmpty() ||
+                        !parentTypeAnalysis.getApprovedPreconditionsE1().isEmpty() ||
+                        !parentTypeAnalysis.getApprovedPreconditionsE2().isEmpty();
                 parentFields.forEach(fieldInfo -> {
-                    if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
-                        typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
+                    if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
+                        typeAnalysis.addEventuallyImmutableField(fieldInfo);
                     }
                 });
             }
@@ -1056,8 +1058,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
             if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL) {
                 eventual = true;
-                if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
-                    typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
+                if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
+                    typeAnalysis.addEventuallyImmutableField(fieldInfo);
                 }
             } else if (!isPrimitive) {
                 boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()

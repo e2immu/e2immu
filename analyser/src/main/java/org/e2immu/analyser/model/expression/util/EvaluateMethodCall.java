@@ -309,7 +309,7 @@ public class EvaluateMethodCall {
 
                     int i = 0;
                     List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                            .getParameterAnalyses(constructorCall.constructor()).collect(Collectors.toList());
+                            .getParameterAnalyses(constructorCall.constructor()).toList();
                     for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),

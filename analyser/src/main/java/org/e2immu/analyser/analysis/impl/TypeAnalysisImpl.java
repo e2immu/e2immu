@@ -177,7 +177,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
-        public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
+        private final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
         private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
         private final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
@@ -259,6 +259,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldReference) {
+            assert fieldReference != null;
             return e2 ? (approvedPreconditionsE2.isSet(fieldReference) ? CausesOfDelay.EMPTY :
                     fieldReference.fieldInfo.delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
                     (approvedPreconditionsE1.isSet(fieldReference) ? CausesOfDelay.EMPTY :
@@ -281,6 +282,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         public void putInApprovedPreconditionsE1(FieldReference fieldReference, Expression expression) {
+            assert fieldReference != null;
+            assert expression != null;
             approvedPreconditionsE1.put(fieldReference, expression);
         }
 
@@ -289,6 +292,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         public void putInApprovedPreconditionsE2(FieldReference fieldReference, Expression expression) {
+            assert fieldReference != null;
+            assert expression != null;
             approvedPreconditionsE2.put(fieldReference, expression);
         }
 
@@ -447,6 +452,15 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public boolean approvedPreconditionsForNonFinalFields(List<FieldReference> nonFinalFields) {
             return nonFinalFields.stream().allMatch(approvedPreconditionsE1::isSet);
+        }
+
+        public boolean eventuallyImmutableFieldNotYetSet(FieldInfo fieldInfo) {
+            return !eventuallyImmutableFields.contains(fieldInfo);
+        }
+
+        public void addEventuallyImmutableField(FieldInfo fieldInfo) {
+            assert fieldInfo != null;
+            eventuallyImmutableFields.add(fieldInfo);
         }
     }
 }

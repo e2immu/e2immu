@@ -24,6 +24,7 @@ import org.e2immu.annotation.Nullable;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -76,8 +77,10 @@ public interface TypeAnalysis extends Analysis {
      */
     default Set<FieldInfo> marksRequiredForImmutable() {
         Set<FieldInfo> res = new HashSet<>(getEventuallyImmutableFields());
-        getApprovedPreconditionsE1().keySet().stream().map(this::translateToVisibleField).forEach(res::add);
-        getApprovedPreconditionsE2().keySet().stream().map(this::translateToVisibleField).forEach(res::add);
+        getApprovedPreconditionsE1().keySet().stream()
+                .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
+        getApprovedPreconditionsE2().keySet().stream()
+                .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
         return res;
     }
 

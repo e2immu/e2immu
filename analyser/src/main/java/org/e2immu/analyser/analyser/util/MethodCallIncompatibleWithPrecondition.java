@@ -54,11 +54,17 @@ public class MethodCallIncompatibleWithPrecondition {
         for (FieldInfo fieldInfo : fields) {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
+            if (variableInfo == null) {
+                LOGGER.debug("While field {} is visible, it is not present in last statement of {};" +
+                                " skipping this method of detection",
+                        fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
+                continue;
+            }
             if (!variableInfo.valueIsSet()) {
                 LOGGER.debug("Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
-                return new SimpleSet(new VariableCause(variableInfo.variable(),
-                        statementAnalysis.location(), CauseOfDelay.Cause.VALUE));
+                return new SimpleSet(new VariableCause(fieldReference, statementAnalysis.location(),
+                        CauseOfDelay.Cause.VALUE));
             }
             if (evaluationContext.hasState(variableInfo.getValue())) {
                 Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);

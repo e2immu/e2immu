@@ -17,7 +17,11 @@ package org.e2immu.analyser.parser.own.support;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -32,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
@@ -51,7 +55,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param V]", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param V", d.typeAnalysis().getTransparentTypes().toString());
 
                 assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 if (d.iteration() >= 2) {
@@ -65,20 +69,13 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("!frozen", d.methodAnalysis()
-                            .getPreconditionForEventual().expression().toString());
-                }
+                String expected = d.iteration() <= 1 ? "<precondition>" : "!frozen";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                assertEquals(d.iteration() <= 2, d.methodAnalysis().eventualStatus().isDelayed());
             }
             if ("ensureNotFrozen".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("!frozen", d.methodAnalysis()
-                            .getPreconditionForEventual().expression().toString());
-                }
+                String expected = d.iteration() == 0 ? "<precondition>" : "!frozen";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };
 
@@ -86,6 +83,11 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("add$Modification$Size".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if("add".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo.name)) {
+                    fail("In statement: "+d.statementId());
                 }
             }
         };
