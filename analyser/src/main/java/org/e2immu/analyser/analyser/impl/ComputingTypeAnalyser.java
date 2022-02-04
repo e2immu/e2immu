@@ -1129,11 +1129,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
             DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
             // in the eventual case, we only need to look at the non-modifying methods
             // calling a modifying method will result in an error
             if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
+                if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
                 DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
 
                 ParameterizedType returnType;
@@ -1185,6 +1185,28 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     minLevel = Math.min(minLevel, independentLevel);
                 } else {
                     minLevel = Math.min(minLevel, MultiLevel.level(returnTypeImmutable));
+                }
+            } else if (modified.valueIsTrue() && typeAnalysis.isEventual()) {
+                // code identical to that of constructors
+                for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
+                    DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                    if (independent.isDelayed()) {
+                        if (parameterAnalysis.getParameterInfo().parameterizedType.typeInfo == typeInfo) {
+                            continue;
+                        }
+                        LOGGER.debug("Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
+                                methodAnalyser.getMethodInfo().distinguishingName());
+                        typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
+                        return independent.causesOfDelay(); //not decided
+                    }
+                    if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                        LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
+                                typeInfo.fullyQualifiedName);
+                        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
+                        return ALT_DONE;
+                    }
+                    int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
+                    minLevel = Math.min(minLevel, independentLevel);
                 }
             }
         }

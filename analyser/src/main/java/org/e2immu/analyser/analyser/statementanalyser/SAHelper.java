@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -24,16 +23,16 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
 
@@ -66,7 +65,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             Map<Property, DV> previous,
             Map<Property, DV> changeData,
             GroupPropertyValues groupPropertyValues,
-            boolean allowValueProperties) {
+            boolean valuePropertiesFromPrevious) {
         Set<Property> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
         both.addAll(GroupPropertyValues.PROPERTIES);
@@ -93,10 +92,11 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 switch (k) {
                     // value properties are copied from previous, only when the value from previous is copied as well
                     case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
-                        if (allowValueProperties) res.put(k, prev);
+                        if (valuePropertiesFromPrevious) res.put(k, prev);
                     }
                     // all other properties are copied from change data
-                    default -> res.put(k, change);
+                    default -> { // no need, change data already present
+                    }
                 }
             }
         });

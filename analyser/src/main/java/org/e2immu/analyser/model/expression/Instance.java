@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -54,6 +53,11 @@ public final class Instance extends BaseExpression implements Expression {
                         Property.IDENTITY, DV.FALSE_DV)));
     }
 
+    public Expression copyWithImmutable(DV immutable) {
+        Properties p = valueProperties.writableCopy().overwrite(Property.IMMUTABLE, immutable);
+        return new Instance(identifier, parameterizedType, p);
+    }
+
     public static Expression forMethodResult(Identifier identifier,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {
@@ -61,8 +65,8 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Expression forMerge(Identifier identifier,
-                                             ParameterizedType parameterizedType,
-                                             Properties valueProperties) {
+                                      ParameterizedType parameterizedType,
+                                      Properties valueProperties) {
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
@@ -198,7 +202,7 @@ public final class Instance extends BaseExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         ParameterizedType translated = translationMap.translateType(this.parameterizedType);
-        if(translated == this.parameterizedType) return this;
+        if (translated == this.parameterizedType) return this;
         return new Instance(identifier, translated, valueProperties);
     }
 

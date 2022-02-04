@@ -71,8 +71,9 @@ public class Properties {
         return dv;
     }
 
-    public void overwrite(Property property, DV dv) {
+    public Properties overwrite(Property property, DV dv) {
         map.put(property, dv);
+        return this;
     }
 
     public void put(Property property, DV dv) {
@@ -177,5 +178,9 @@ public class Properties {
         Map<Property, DV> merged = new HashMap<>(map);
         valueProperties.stream().forEach(e -> merged.merge(e.getKey(), e.getValue(), DV::min));
         return of(merged);
+    }
+
+    public Properties writableCopy() {
+        return new Properties(new HashMap<>(map));
     }
 }
