@@ -405,7 +405,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
+            Property property;
+            if (variable instanceof This || variable instanceof ParameterInfo) {
+                property = Property.EXTERNAL_IMMUTABLE;
+            } else if (variable instanceof FieldReference fr) {
+                property = hasBeenAssigned(fr) ? Property.CONTEXT_IMMUTABLE : Property.EXTERNAL_IMMUTABLE;
+            } else {
+                property = Property.CONTEXT_IMMUTABLE;
+            }
             if (requiredImmutable.isDelayed()) {
+                if (property == Property.CONTEXT_IMMUTABLE) {
+                    setProperty(variable, property, requiredImmutable.causesOfDelay());
+                }
                 return;
             }
             MultiLevel.Effective requiredEffective = MultiLevel.effective(requiredImmutable);
@@ -413,8 +424,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // no reason, not a method call that changed state
                 return;
             }
-            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
+            DV currentImmutable = getPropertyFromInitial(variable, property);
             if (currentImmutable.isDelayed()) {
+                if (property == Property.CONTEXT_IMMUTABLE) {
+                    setProperty(variable, property, currentImmutable.causesOfDelay());
+                }
                 return; // let's wait
             }
             MultiLevel.Effective currentEffective = MultiLevel.effective(currentImmutable);
@@ -432,8 +446,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if ((currentEffective == EVENTUAL_BEFORE || currentEffective == MultiLevel.Effective.EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
                 // switch from before or unknown, to after
                 DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
-                setProperty(variable, Property.EXTERNAL_IMMUTABLE, extImm);
+                setProperty(variable, property, extImm);
             }
+        }
+
+        private boolean hasBeenAssigned(FieldReference fr) {
+            ChangeData changeData = valueChanges.get(fr);
+            if (changeData != null && changeData.markAssignment) return true;
+            return evaluationContext.hasBeenAssigned(fr);
         }
 
         /**

@@ -620,7 +620,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Variable variable = variableInfo.variable();
                 if (variable instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
-                } else if (variable instanceof This || variable.isLocal()) {
+                } else if (variable instanceof This) {
                     DV immutable = evaluationContext.getAnalyserContext()
                             .defaultImmutable(variable.parameterizedType(), false);
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
@@ -1419,8 +1419,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
-        properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
+        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         Identifier identifier = Identifier.generate();
         Expression initialValue;

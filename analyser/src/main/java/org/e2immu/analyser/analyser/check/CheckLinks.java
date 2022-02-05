@@ -100,7 +100,12 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     }
 
     public record AnnotationKV(Function<AnnotationExpression, String> extractInspected,
-                               String computedValue) {
+                               String computedValue,
+                               boolean haveComputedValueCheckPresence) {
+        public AnnotationKV(Function<AnnotationExpression, String> extractInspected,
+                            String computedValue) {
+            this(extractInspected, computedValue, computedValue != null && !computedValue.isBlank());
+        }
     }
 
     // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
@@ -126,7 +131,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         boolean verifyAbsent = annotation.e2ImmuAnnotationParameters().isVerifyAbsent();
 
         if (verifyAbsent) {
-            boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.computedValue != null && !kv.computedValue.isBlank());
+            boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.haveComputedValueCheckPresence);
 
             if (haveComputedValue || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
                 assert inAnalysis != null;

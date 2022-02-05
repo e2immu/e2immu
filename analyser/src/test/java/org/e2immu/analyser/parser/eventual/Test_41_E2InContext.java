@@ -53,17 +53,17 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
                         assertEquals(expect, d.currentValue().toString());
+                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.EXTERNAL_IMMUTABLE);
-
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "instance type Eventually<String>";
                         assertEquals(expect, d.currentValue().toString());
                         // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                        // the change is reflected in the EXTERNAL_IMMUTABLE
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                        // the change is reflected in the CONTEXT_IMMUTABLE
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }
@@ -148,17 +148,18 @@ public class Test_41_E2InContext extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("E2InContext_2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if ("E2InContext_2".equals(d.methodInfo().name)) {
+                assert "0".equals(d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
                     assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                    assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventually".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+//                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -187,34 +188,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("getEventually".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
-                    assertDvInitial(d, "?", 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-
-                    String expectValue = d.iteration() <= 2 ? "<f:eventually>" : INSTANCE_TYPE_EVENTUALLY_STRING;
-                    assertEquals(expectValue, d.currentValue().toString());
-                }
-                if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-
-                    String expectValue = d.iteration() <= 2 ? "<f:eventually>" : "eventually";
-                    assertEquals(expectValue, d.currentValue().toString());
-                }
-            }
-        };
-
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("getEventually".equals(d.methodInfo().name)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-        };
-
         testClass("E2InContext_3", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Filter;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -124,6 +125,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     There is no overlap between valueProps and variableProps
      */
     static Properties mergeAssignment(Variable variable,
+                                      boolean typeOfVariableIsMyself,
                                       Properties valueProps,
                                       Properties changeData,
                                       GroupPropertyValues groupPropertyValues) {
@@ -132,23 +134,17 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        DV extImm;
-        if (variable.isLocal()) {
-            // local variables use EXT_IMM in a different way than fields + parameters.
-            extImm = res.get(IMMUTABLE);
-            assert extImm != null; // but can obviously be delayed
-        } else {
-            extImm = EXTERNAL_IMMUTABLE.valueWhenAbsent();
-        }
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         groupPropertyValues.set(EXTERNAL_CONTAINER, variable, EXTERNAL_CONTAINER.valueWhenAbsent());
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
-        DV cImm = res.remove(CONTEXT_IMMUTABLE);
-        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
+        //DV cImm = res.remove(CONTEXT_IMMUTABLE);
+        DV imm =  typeOfVariableIsMyself || variable instanceof ReturnVariable ?  MultiLevel.MUTABLE_DV: valueProps.get(IMMUTABLE);
+        // trying this out
+        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, imm);
         DV cCont = res.remove(CONTEXT_CONTAINER);
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);
 

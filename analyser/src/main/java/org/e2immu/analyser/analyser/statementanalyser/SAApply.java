@@ -167,9 +167,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
 
                 Properties changeDataProperties = Properties.of(changeData.properties());
-                Properties merged = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties, groupPropertyValues);
-                // LVs start empty, the changeData.linkedVariables will be added later
                 boolean myself = sharedState.evaluationContext().isMyself(variable);
+                Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
+                        groupPropertyValues);
+                // LVs start empty, the changeData.linkedVariables will be added later
                 Properties combined;
                 if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
                     // captures self-referencing instance fields (but not static fields, as in Enum_)

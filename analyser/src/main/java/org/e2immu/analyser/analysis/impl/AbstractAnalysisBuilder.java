@@ -352,6 +352,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void writeTypeEventualFields(String after) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not implemented in "+getClass());
     }
 }

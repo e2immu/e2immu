@@ -191,6 +191,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
+        protected void writeTypeEventualFields(String after) {
+            // do nothing here -- see EventuallyImmutable_6, where we write the after="frozen" for the result of
+            //org.e2immu.support.AddOnceSet.toImmutableSet()
+            // IMPROVE should we write something?
+        }
+
+        @Override
         public AnalysisMode analysisMode() {
             return analysisMode;
         }

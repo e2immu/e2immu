@@ -60,7 +60,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                         String expected = d.iteration() <= 1 ? "<s:T>" : "t";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
