@@ -34,8 +34,8 @@ public class TestImport extends CommonTest {
     public static final String A = "org.e2immu.analyser.resolver.testexample.a";
 
     /**
-     * The point of tests 0 and 1 is that Level. is ALWAYS the one in importhelper, and never the one in MultiLevel,
-     * because MultiLevel itself has not been imported (only some of the fields of its nested type, in a static way).
+     * The point of tests 0 and 1 is that Level. is ALWAYS the one in IMPORT_HELPER, and never the one in MultiLevel,
+     * because MultiLevel itself has not been imported (only some fields of its nested type, in a static way).
      */
     @Test
     public void test_0() throws IOException {
@@ -95,5 +95,11 @@ public class TestImport extends CommonTest {
     @Test
     public void test_9() throws IOException {
         inspectAndResolve(Import_9.class);
+    }
+
+
+    @Test
+    public void test_10() throws IOException {
+        inspectAndResolve(Import_10.class, IMPORT_HELPER);
     }
 }

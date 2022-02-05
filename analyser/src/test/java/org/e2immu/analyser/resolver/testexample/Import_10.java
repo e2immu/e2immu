@@ -12,18 +12,33 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver.testexample.importhelper;
+package org.e2immu.analyser.resolver.testexample;
 
-public class MultiLevel {
+// IMPORTANT: keep this import static...* statement!
+import org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel;
 
-    public enum Effective {
-        E1, E2;
+import java.util.Set;
 
-        public static Effective of(int index) {
-            return index == 1 ? E1: E2;
-        }
+import static org.e2immu.analyser.resolver.testexample.importhelper.MultiLevel.Effective.*;
+
+public class Import_10 {
+
+    record ChangeData(Set<Integer> statementTimes) {
+
     }
-    public enum Level {
-        ONE, TWO, THREE
+
+    public void method1(int statementTime) {
+        ChangeData changeData = new ChangeData(Set.of(statementTime));
+    }
+
+    // completely irrelevant but here we use the enum constants
+    public Boolean method2(MultiLevel.Effective effective) {
+        if(effective == E1) {
+            return true;
+        }
+        if(effective == E2) {
+            return false;
+        }
+        return null;
     }
 }

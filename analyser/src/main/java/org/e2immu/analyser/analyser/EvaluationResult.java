@@ -33,8 +33,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_AFTER;
 import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_BEFORE;
 
-//import static org.e2immu.analyser.model.MultiLevel.Effective.*;
-
 /*
 Contains all side effects of analysing an expression.
 The 'apply' method of the analyser executes them.
