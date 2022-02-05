@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.MultiLevel.Effective.*;
+
 /*
 Contains all side effects of analysing an expression.
 The 'apply' method of the analyser executes them.
@@ -407,42 +409,37 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
-            // no reason, not a method call that changed state
-            if (requiredImmutable.equals(MultiLevel.MUTABLE_DV) || requiredImmutable.equals(MultiLevel.NOT_INVOLVED_DV)) {
-                return;
-            }
-            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
-            // not_involved: local variables, any type that has no real EXTERNAL_IMMUTABLE value FIXME but local variables can also go through this progression? let's do params and fields first
-            // mutable: fields can be mutable before the immutability type is known (public, not explicitly final)
-            if (currentImmutable.equals(MultiLevel.MUTABLE_DV) || currentImmutable.equals(MultiLevel.NOT_INVOLVED_DV)) {
-                return; // not relevant to this topic
-            }
-            // but when it matters, the delay on required/next is the same as the delay on EXT_IMM
-            assert !requiredImmutable.isDelayed() || currentImmutable.isDelayed();
             if (requiredImmutable.isDelayed()) {
                 // this is just a marker to ensure that SAApply/SAEvaluationOfMainExpression does not reach DONE in this iteration
                 // markEventualDelay(requiredImmutable.causesOfDelay());
                 return;
             }
-            // context immutable starts at 1, but this code only kicks in once it has received a value
-            // before that value (before the first eventual call, the precondition system reigns
-            if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
-                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable)
-                        && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
-                    raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
-                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable)
-                        && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable)) {
-                    raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
-                }
+            MultiLevel.Effective requiredEffective = MultiLevel.effective(requiredImmutable);
+            if (requiredEffective != EVENTUAL_BEFORE && requiredEffective != EVENTUAL_AFTER) {
+                // no reason, not a method call that changed state
+                return;
             }
+            DV currentImmutable = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
+            if (currentImmutable.isDelayed()) {
+                return; // let's wait
+            }
+            MultiLevel.Effective currentEffective = MultiLevel.effective(currentImmutable);
+
+            // raise error if direction of change wring
+            if (requiredEffective == EVENTUAL_BEFORE && currentEffective == EVENTUAL_AFTER) {
+                raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
+            } else if (requiredEffective == EVENTUAL_AFTER && currentEffective == EVENTUAL_BEFORE) {
+                raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
+            }
+
             // everything proceeds as normal, we change EXTERNAL_IMMUTABLE
             assert nextImmutable.isDone();
-            setProperty(variable, Property.EXTERNAL_IMMUTABLE, nextImmutable);
-        }
-
-        private void markEventualDelay(CausesOfDelay causesOfDelay) {
-            assert causesOfDelay.isDelayed();
-            this.eventualDelays = this.eventualDelays.merge(causesOfDelay);
+            MultiLevel.Effective nextEffective = MultiLevel.effective(nextImmutable);
+            if ((currentEffective == EVENTUAL_BEFORE || currentEffective == EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
+                // switch from before or unknown, to after
+                DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
+                setProperty(variable, Property.EXTERNAL_IMMUTABLE, extImm);
+            }
         }
 
         /**

@@ -193,7 +193,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
             } else {
                 if (changeData.value() != null) {
-                    // a modifying method caused an updated instance value
+                    // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
+                    assert changeData.value().isDone();
 
                     Map<Property, DV> merged = SAHelper.mergePreviousAndChange(sharedState.evaluationContext(),
                             variable, vi1.getProperties(),

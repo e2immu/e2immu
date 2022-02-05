@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -41,13 +38,6 @@ public class Test_41_E2InContext extends CommonTestRunner {
         super(true);
     }
 
-    /*
-
-            // we want the best immutable value here; in case of "SetOnce<String> setOnce = new SetOnce<>();" we
-            // need eventually recursively immutable (rather than eventually level 2 for the formal type.)
-            DV dynamicImmutable = analyserContext.defaultImmutable(fieldInfo.type, false);
-            minLevel = Math.min(minLevel, MultiLevel.level(dynamicImmutable));
-     */
     @Test
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -63,12 +53,26 @@ public class Test_41_E2InContext extends CommonTestRunner {
                         String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "new Eventually<>()";
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "instance type Eventually<String>";
                         assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+                        // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                        // the change is reflected in the EXTERNAL_IMMUTABLE
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
                     }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("error".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals(d.iteration() < 4, null == d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
+                    mustSeeIteration(d, 4);
                 }
             }
         };
@@ -77,18 +81,13 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("notYetSet".equals(d.methodInfo().name)) {
                 assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
             }
-            if ("error".equals(d.methodInfo().name)) {
-                // FIXME is this the correct one?
-                if (d.iteration() > 2) {
-//                    assertNotNull(d.haveError(Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
-                }
-            }
         };
 
         // error expected in the "error" method
         testClass("E2InContext_0", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

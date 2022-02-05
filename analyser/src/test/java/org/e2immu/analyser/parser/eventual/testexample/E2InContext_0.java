@@ -46,12 +46,12 @@ public class E2InContext_0 {
     public static Eventually<String> notYetSet() {
         return new Eventually<>();
     }
-
+/*
     public static Eventually<String> alreadySet() {
         Eventually<String> eventually = new Eventually<>();
         eventually.set("hello");
         return eventually;
-    }
+    }*/
 
     public static Eventually<String> error() {
         Eventually<String> eventually = new Eventually<>();

@@ -241,7 +241,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 yield dv;
             }
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
-            default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
+            default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
     }
 

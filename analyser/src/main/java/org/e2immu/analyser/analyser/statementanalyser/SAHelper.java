@@ -132,7 +132,15 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        DV extImm;
+        if (variable.isLocal()) {
+            // local variables use EXT_IMM in a different way than fields + parameters.
+            extImm = res.get(IMMUTABLE);
+            assert extImm != null; // but can obviously be delayed
+        } else {
+            extImm = EXTERNAL_IMMUTABLE.valueWhenAbsent();
+        }
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm);
         groupPropertyValues.set(EXTERNAL_CONTAINER, variable, EXTERNAL_CONTAINER.valueWhenAbsent());
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);

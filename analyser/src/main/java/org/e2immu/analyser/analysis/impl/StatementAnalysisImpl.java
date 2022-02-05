@@ -617,12 +617,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         variables.toImmutableMap().values().forEach(vic -> {
             VariableInfo variableInfo = vic.current();
             if (vic.isInitial()) {
-                if (variableInfo.variable() instanceof FieldReference fieldReference) {
+                Variable variable = variableInfo.variable();
+                if (variable instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
-                }
-                if(variableInfo.variable() instanceof This thisVar) {
-                    TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(thisVar.typeInfo);
-                    DV immutable = typeAnalysis.getProperty(IMMUTABLE);
+                } else if (variable instanceof This || variable.isLocal()) {
+                    DV immutable = evaluationContext.getAnalyserContext()
+                            .defaultImmutable(variable.parameterizedType(), false);
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
             } else {
@@ -1419,7 +1419,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
+        properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         Identifier identifier = Identifier.generate();
         Expression initialValue;

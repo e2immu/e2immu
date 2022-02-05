@@ -242,7 +242,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                             : "CM{pc=Precondition[expression=null==t, causes=[methodCall:setT]];parent=CM{}}";
                     assertEquals(expected, d.localConditionManager().toString());
                     assertEquals("true", d.absoluteState().toString()); // the absolute state does not take precondition into account
-                    if (d.iteration() >= 4) assertNotNull(d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
+                    assertEquals(d.iteration() < 3, null == d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
+                    mustSeeIteration(d, 3);
                 }
             }
         };
