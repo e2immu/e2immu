@@ -21,7 +21,6 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -1585,8 +1584,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression initializerValue = fieldAnalysis.getInitializerValue();
             if (initializerValue == null) {
                 immutable = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
-            } else if (initializerValue instanceof NullConstant) {
-                immutable = MUTABLE_DV;
             } else {
                 ParameterizedType pt = initializerValue.returnType();
                 immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false);
@@ -2071,7 +2068,6 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
 
         vic.ensureEvaluation(location, assignmentIds, readId, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) {
-            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
             vic.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV, EVALUATION);
         }
     }

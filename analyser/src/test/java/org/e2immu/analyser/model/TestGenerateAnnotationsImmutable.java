@@ -80,9 +80,9 @@ public class TestGenerateAnnotationsImmutable {
         assertTrue(generate(EVENTUALLY_E1IMMUTABLE_DV, MultiLevel.NOT_CONTAINER_DV, false, false, "mark", false).isEmpty());
         assertTrue(generate(EVENTUALLY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, false, "mark", false).isEmpty());
 
-        assertEquals(Map.of(E2Container.class, TRUE),
+        assertEquals(Map.of(E2Container.class, Map.of("after", "mark2")),
                 generate(EVENTUALLY_E2IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, false, "mark2", true));
-        assertEquals(Map.of(ERContainer.class, TRUE),
+        assertEquals(Map.of(ERContainer.class, Map.of("after", "mark2")),
                 generate(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.CONTAINER_DV, false, false, "mark2", true));
     }
 
