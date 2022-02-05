@@ -654,7 +654,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV dynamic = variableInfo.getProperty(IMMUTABLE);
         DV dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-        return formalImmutable.max(dynamic).max(dynamicExt);
+        DV dynamicCtx = variableInfo.getProperty(CONTEXT_IMMUTABLE);
+        return formalImmutable.max(dynamic).max(dynamicExt).max(dynamicCtx);
     }
 
     /*

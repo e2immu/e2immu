@@ -40,7 +40,7 @@ public class CheckImmutable {
 
         Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", "");
         String value1 = analysis.markLabelFromType();
-        // do not use the after=""... as a marker to check the presence
+        // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
         kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1, false));
 
         if (recursive) {

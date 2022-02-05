@@ -44,6 +44,7 @@ public class E2InContext_0 {
         return new Eventually<>();
     }
 
+    @BeforeMark(absent = true)
     @ERContainer // because better than E2; no after= because in AFTER state
     public static Eventually<String> error() {
         Eventually<String> eventually = new Eventually<>();
