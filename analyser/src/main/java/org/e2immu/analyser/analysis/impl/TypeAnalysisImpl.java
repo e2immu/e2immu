@@ -462,5 +462,10 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             assert fieldInfo != null;
             eventuallyImmutableFields.add(fieldInfo);
         }
+
+        @Override
+        protected String markLabelFromType() {
+            return markLabel();
+        }
     }
 }

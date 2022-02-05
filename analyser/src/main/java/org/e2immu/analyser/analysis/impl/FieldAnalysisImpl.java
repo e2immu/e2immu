@@ -148,6 +148,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             isOfTransparentType.setVariable(initialDelay);
         }
 
+        @Override
+        protected String markLabelFromType() {
+            return typeAnalysisOfOwner.markLabel();
+        }
+
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {
             return fieldInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }

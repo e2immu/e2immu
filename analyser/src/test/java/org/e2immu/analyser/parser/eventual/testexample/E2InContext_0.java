@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.BeforeMark;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
 Testing the immutability properties as statements progress: create an eventually immutable object,
@@ -46,13 +43,8 @@ public class E2InContext_0 {
     public static Eventually<String> notYetSet() {
         return new Eventually<>();
     }
-/*
-    public static Eventually<String> alreadySet() {
-        Eventually<String> eventually = new Eventually<>();
-        eventually.set("hello");
-        return eventually;
-    }*/
 
+    @ERContainer // because better than E2; no after= because in AFTER state
     public static Eventually<String> error() {
         Eventually<String> eventually = new Eventually<>();
         eventually.set("hello");

@@ -39,13 +39,16 @@ public class E2InContext_1 {
         }
     }
 
+    @Constant(absent = true) // because eventual
     @BeforeMark(absent = true)
-    @E2Container(absent = true)
+    @ERContainer(after = "eventually")
+    // @ERContainer because better than @E2Container; the "after=" signifies that it is plainly eventual
     private final Eventually<String> eventually = new Eventually<>();
 
     // whilst correct the very first time around, the state of eventually can be changed outside this class
     @BeforeMark(absent = true)
-    @E2Container(absent = true)
+    @ERContainer(after = "eventually")
+    @Constant(absent = true)
     public Eventually<String> getEventually() {
         return eventually;
     }

@@ -843,7 +843,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .anyMatch(ma -> {
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
-                        if (linkedVariables.value(me) == LinkedVariables.DEPENDENT_DV) return true;
+                        DV link = linkedVariables.value(me);
+                        if (link != null && link.le( LinkedVariables.DEPENDENT_DV)) return true;
                     }
                     return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
@@ -1235,7 +1236,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         DV recursivelyConstant;
-        if (!fieldOfOwnType && !MultiLevel.isAtLeastEventuallyE2Immutable(immutable))
+        if (!fieldOfOwnType && !MultiLevel.isAtLeastEffectivelyE2Immutable(immutable))
             recursivelyConstant = DV.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {

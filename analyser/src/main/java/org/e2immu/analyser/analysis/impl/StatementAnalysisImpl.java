@@ -165,6 +165,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
+    protected String markLabelFromType() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String fullyQualifiedName() {
         return methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
     }

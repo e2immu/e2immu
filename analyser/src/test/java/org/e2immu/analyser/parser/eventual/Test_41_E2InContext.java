@@ -28,7 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_41_E2InContext extends CommonTestRunner {
 
@@ -96,45 +97,43 @@ public class Test_41_E2InContext extends CommonTestRunner {
     public void test_1() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventually".equals(d.fieldInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getValue());
-                } else {
-                    assertEquals(INSTANCE_TYPE_EVENTUALLY_STRING,
-                            d.fieldAnalysis().getValue().toString());
-                }
-                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                String expected = d.iteration() <= 2 ? "<f:eventually>" : "new Eventually<>()";//FIXME check this
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+
+                // value is corrected because of exposure via getEventually(); see FieldAnalyserImpl.correctForExposureBefore
+                assertDv(d, 3, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getEventually".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
 
-                    String expectValue = d.iteration() <= 2 ? "<f:eventually>" : INSTANCE_TYPE_EVENTUALLY_STRING;
+                    // FIXME check this
+                    String expectValue = d.iteration() <= 3 ? "<f:eventually>" : "instance type Eventually<String>/*new Eventually<>()*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectLinked = d.iteration() <= 2 ? "" : "this.eventually";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getEventually:0,this.eventually:0", d.variableInfo().getLinkedVariables().toString());
 
-                    assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEventually".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("set".equals(d.methodInfo().name)) {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() <= 1) {
+                if (d.iteration() <= 2) {
                     assertTrue(eventual.causesOfDelay().isDelayed());
                 } else {
-                    assertTrue(eventual.mark());
+                    assertEquals("@Mark: [t]", eventual.toString());
                 }
             }
         };

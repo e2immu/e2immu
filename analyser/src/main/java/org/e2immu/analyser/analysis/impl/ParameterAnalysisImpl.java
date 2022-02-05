@@ -68,6 +68,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             this.analysisProvider = analysisProvider;
         }
 
+        @Override
+        protected String markLabelFromType() {
+            return analysisProvider.getTypeAnalysis(parameterInfo.getTypeInfo()).markLabel();
+        }
+
         public ParameterInfo getParameterInfo() {
             return parameterInfo;
         }

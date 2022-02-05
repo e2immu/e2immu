@@ -118,13 +118,21 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
+    /*
+    Convention:
+    - when better than formal, we show the immutability value.
+    - when eventual, we show @BeforeMark for the before state, after="" for the eventual state (but only
+      if better than formal), and no extra info for the after state.
+     */
+
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, DV container, boolean betterThanFormal) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysis) this).getTypeInfo().isInterface();
-        boolean eventual = isType && ((TypeAnalysis) this).isEventual();
-        if (eventual) {
-            eventualFieldNames = ((TypeAnalysis) this).markLabel();
+        boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
+                || immutable.isDone() && MultiLevel.effective(immutable) == MultiLevel.Effective.EVENTUAL;
+        if (showFieldNames) {
+            eventualFieldNames = markLabelFromType();
         } else {
             eventualFieldNames = "";
         }
@@ -142,6 +150,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             annotations.put(expression, true);
         }
     }
+
+    protected abstract String markLabelFromType();
 
     protected void doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
         AnnotationExpression expression;
@@ -301,7 +311,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             DV value = eventual != null ? MultiLevel.eventuallyImmutable(levelImmutable.level)
                     : MultiLevel.effectivelyImmutable(levelImmutable.level);
             setProperty(Property.IMMUTABLE, value);
-            if(eventual != null) {
+            if (eventual != null) {
                 writeTypeEventualFields(eventual);
             }
         }
@@ -336,7 +346,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
     private String isEventual(AnnotationExpression annotationExpression) {
         String after = annotationExpression.extract("after", "");
-        return after == null || after.isBlank() ? null: after.trim();
+        return after == null || after.isBlank() ? null : after.trim();
     }
 
     protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {

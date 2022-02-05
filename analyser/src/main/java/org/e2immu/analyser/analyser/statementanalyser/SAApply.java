@@ -404,7 +404,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager()));
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
-                .merge(anyExtImm).merge(extContStatus).merge(anyExtCont).merge(evaluationResult.eventualDelays());
+                .merge(anyExtImm).merge(extContStatus).merge(anyExtCont);
 
         boolean progress = statementAnalysis.latestDelay(delay);
         return new ApplyStatusAndEnnStatus(delay, externalDelay, progress);

@@ -30,7 +30,10 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.MultiLevel.Effective.*;
+import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_AFTER;
+import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_BEFORE;
+
+//import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
 /*
 Contains all side effects of analysing an expression.
@@ -46,7 +49,7 @@ It contains:
 - a list of error messages
 - a list of object flows (for later)
 
-Critically, the apply method will effect the value changes before executing the modifications.
+Critically, the apply method will execute the value changes before executing the modifications.
 Important value changes are:
 - a variable has been read at a given statement time
 - a variable has been assigned a value
@@ -59,7 +62,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Expression value,
                                List<Expression> storedValues,
                                CausesOfDelay causesOfDelay,
-                               CausesOfDelay eventualDelays,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
@@ -167,7 +169,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private final EvaluationContext evaluationContext;
         private final Messages messages = new Messages();
         private CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-        private CausesOfDelay eventualDelays = CausesOfDelay.EMPTY;
         private Expression value;
         private List<Expression> storedExpressions;
         private int statementTime;
@@ -233,8 +234,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
                 }
             }
-
-            eventualDelays = eventualDelays.merge(evaluationResult.eventualDelays);
         }
 
         public void incrementStatementTime() {
@@ -278,7 +277,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay,
-                    eventualDelays,
                     messages,
                     valueChanges,
                     precondition,
@@ -410,8 +408,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
             if (requiredImmutable.isDelayed()) {
-                // this is just a marker to ensure that SAApply/SAEvaluationOfMainExpression does not reach DONE in this iteration
-                // markEventualDelay(requiredImmutable.causesOfDelay());
                 return;
             }
             MultiLevel.Effective requiredEffective = MultiLevel.effective(requiredImmutable);
@@ -435,7 +431,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // everything proceeds as normal, we change EXTERNAL_IMMUTABLE
             assert nextImmutable.isDone();
             MultiLevel.Effective nextEffective = MultiLevel.effective(nextImmutable);
-            if ((currentEffective == EVENTUAL_BEFORE || currentEffective == EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
+            if ((currentEffective == EVENTUAL_BEFORE || currentEffective == MultiLevel.Effective.EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
                 // switch from before or unknown, to after
                 DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
                 setProperty(variable, Property.EXTERNAL_IMMUTABLE, extImm);
