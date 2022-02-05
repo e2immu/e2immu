@@ -640,8 +640,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     private Set<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
         return myMethodAnalysers.stream()
-                .filter(ma -> !ma.getMethodInfo().isConstructor
-                        && ma.getMethodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                .filter(ma -> !ma.getMethodInfo().inConstruction())
                 .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream().anyMatch(VariableInfo::isAssigned))
                 .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());

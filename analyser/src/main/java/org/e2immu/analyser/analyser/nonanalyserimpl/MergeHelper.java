@@ -491,8 +491,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
                     // we have a field whose values cannot be determined; this is causing issues right now
                     // do not do this during construction; for that purpose, use the break system of SAEvaluationContext.initialValueForReading
-                    return !methodInfo.isConstructor || methodInfo.methodResolution.get().partOfConstruction()
-                            != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+                    return !methodInfo.inConstruction();
                 }
             }
         }

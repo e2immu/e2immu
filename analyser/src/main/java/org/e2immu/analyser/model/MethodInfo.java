@@ -371,8 +371,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      */
     public boolean isAccessibleOutsidePrimaryType() {
         MethodInspection inspection = methodInspection.get();
-        if(inspection.isPrivate()) return false;
+        if (inspection.isPrivate()) return false;
         // we could still be in a private type
         return !typeInfo.isPrivateOrEnclosingIsPrivate();
+    }
+
+    public boolean inConstruction() {
+        return isConstructor || methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 }

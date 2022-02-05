@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -378,6 +379,11 @@ public interface EvaluationContext {
                 NOT_NULL_EXPRESSION, NOT_NULL_EXPRESSION.falseDv));
         // combine overwrites
         return existing.combine(p);
+    }
+
+    default boolean inConstruction() {
+        MethodAnalyser ma = getCurrentMethod();
+        return ma != null && ma.getMethodInfo().inConstruction();
     }
 
     /*

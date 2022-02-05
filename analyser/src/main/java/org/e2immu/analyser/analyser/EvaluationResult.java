@@ -409,7 +409,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This || variable instanceof ParameterInfo) {
                 property = Property.EXTERNAL_IMMUTABLE;
             } else if (variable instanceof FieldReference fr) {
-                property = hasBeenAssigned(fr) ? Property.CONTEXT_IMMUTABLE : Property.EXTERNAL_IMMUTABLE;
+                // assignment, or in constructor, part of construction
+                property = hasBeenAssigned(fr) || evaluationContext.inConstruction() ? Property.CONTEXT_IMMUTABLE
+                        : Property.EXTERNAL_IMMUTABLE;
             } else {
                 property = Property.CONTEXT_IMMUTABLE;
             }

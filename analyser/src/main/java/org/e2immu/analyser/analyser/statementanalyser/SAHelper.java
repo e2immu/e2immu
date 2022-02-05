@@ -141,9 +141,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
-        //DV cImm = res.remove(CONTEXT_IMMUTABLE);
         DV imm =  typeOfVariableIsMyself || variable instanceof ReturnVariable ?  MultiLevel.MUTABLE_DV: valueProps.get(IMMUTABLE);
-        // trying this out
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, imm);
         DV cCont = res.remove(CONTEXT_CONTAINER);
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);

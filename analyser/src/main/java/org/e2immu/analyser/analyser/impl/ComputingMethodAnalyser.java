@@ -96,8 +96,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             firstStatementAnalyser = null;
         } else {
             boolean inSyncBlock = methodInfo.isSynchronized()
-                    || methodInfo.isConstructor
-                    || methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
+                    || methodInfo.inConstruction()
                     || methodInfo.methodInspection.get().isStaticBlock();
             firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements(), "", true, inSyncBlock);
@@ -543,7 +542,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
          */
         DV externalNotNull;
         if (analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
-                methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION) {
+                methodInfo.inConstruction()) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);

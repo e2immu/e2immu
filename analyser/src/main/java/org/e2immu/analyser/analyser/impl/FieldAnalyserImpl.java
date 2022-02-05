@@ -568,8 +568,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         DV bestOverContext = allMethodsAndConstructors(true)
-                .filter(m -> computeContextPropertiesOverAllMethods ||
-                        m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                .filter(m -> computeContextPropertiesOverAllMethods || m.getMethodInfo().inConstruction())
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
@@ -773,8 +772,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
         if (MultiLevel.isBefore(worstOverValues)) {
             DV bestOverContext = myMethodsAndConstructors.stream()
-                    .filter(m -> m.getMethodInfo().isConstructor || m.getMethodInfo().methodResolution.get().partOfConstruction()
-                            == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                    .filter(m -> m.getMethodInfo().inConstruction())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .map(vi -> vi.getProperty(Property.CONTEXT_IMMUTABLE))
                     .reduce(MultiLevel.MUTABLE_DV, DV::max);
@@ -891,8 +889,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         throw new UnsupportedOperationException("Method " + methodInfo.fullyQualifiedName + ": " +
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
-                    ValueAndPropertyProxy.Origin origin = methodInfo.methodResolution.get().partOfConstruction()
-                            == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
+                    ValueAndPropertyProxy.Origin origin = methodInfo.inConstruction()
                             ? ValueAndPropertyProxy.Origin.CONSTRUCTION : ValueAndPropertyProxy.Origin.METHOD;
                     ValueAndPropertyProxy proxy;
 

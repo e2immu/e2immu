@@ -754,6 +754,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
+        if (!evaluationContext.isMyself(fieldReference) && evaluationContext.inConstruction()) {
+            DV immutable = map.getOrDefault(EXTERNAL_IMMUTABLE, MUTABLE_DV);
+            DV ctx = contextImmutable(vic, evaluationContext, fieldAnalysis, immutable);
+            map.overwrite(CONTEXT_IMMUTABLE, ctx);
+        }
+
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet; the initial field value is only visible in constructors
             // and then only to direct references (this.field)
@@ -772,6 +778,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
         valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
+
         CausesOfDelay causesOfDelay = valueMap.delays();
         if (causesOfDelay.isDelayed() && initialValue.isDone()) {
             initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
@@ -1418,6 +1425,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                     EvaluationContext evaluationContext) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
+  /*      if (!evaluationContext.isMyself(variable)) {
+            DV defaultImmutable = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
+            properties.overwrite(CONTEXT_IMMUTABLE, defaultImmutable);
+        }*/
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
@@ -1550,6 +1561,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // the value and its properties are taken from the field analyser
             Properties valueProps = evaluationContext.getValueProperties(value);
             combined = properties.combine(valueProps);
+            if (evaluationContext.inConstruction() && !myself) {
+                DV immutable = contextImmutable(vic, evaluationContext, fieldAnalysis, valueProps.get(IMMUTABLE));
+                properties.overwrite(CONTEXT_IMMUTABLE, immutable);
+            }
         }
         // the external properties
         DV extNotNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
@@ -1559,6 +1574,27 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV extCont = fieldAnalysis.getProperty(EXTERNAL_CONTAINER);
         combined.put(EXTERNAL_CONTAINER, extCont);
         vic.setValue(value, LinkedVariables.EMPTY, combined, true);
+    }
+
+    private DV contextImmutable(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldAnalysis fieldAnalysis, DV valueProperty) {
+        DV immutable;
+        if (vic.getPreviousOrInitial().isAssigned()) {
+            // if there has been an assignment use:
+            immutable = valueProperty;
+        } else if (fieldAnalysis.getFieldInfo().owner.primaryType().equals(evaluationContext.getCurrentType().primaryType())) {
+            Expression initializerValue = fieldAnalysis.getInitializerValue();
+            if (initializerValue == null) {
+                immutable = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
+            } else if (initializerValue instanceof NullConstant) {
+                immutable = MUTABLE_DV;
+            } else {
+                ParameterizedType pt = initializerValue.returnType();
+                immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false);
+            }
+        } else {
+            immutable = MUTABLE_DV; // not relevant to this computation, like System.out
+        }
+        return immutable;
     }
 
     private void initializeParameter(VariableInfoContainer vic, EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
@@ -1607,9 +1643,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         if (variable instanceof FieldReference fieldReference) {
-            boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
-                    MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
-            if (inPartOfConstruction) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+            if (methodAnalysis.getMethodInfo().inConstruction()) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
 
             DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(Property.FINAL);
             if (effectivelyFinal.isDelayed()) {

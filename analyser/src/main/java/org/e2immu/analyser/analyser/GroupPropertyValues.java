@@ -93,7 +93,7 @@ public class GroupPropertyValues {
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(statementAnalysis, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
         addToMap(statementAnalysis, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
-        addToMap(statementAnalysis, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
+        addToMap(statementAnalysis, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, false);
         addToMap(statementAnalysis, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
         addToMap(statementAnalysis, CONTEXT_CONTAINER, x -> MultiLevel.NOT_CONTAINER_DV, true);
     }
