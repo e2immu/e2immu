@@ -844,7 +844,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
                         DV link = linkedVariables.value(me);
-                        if (link != null && link.le( LinkedVariables.DEPENDENT_DV)) return true;
+                        if (link != null && link.le(LinkedVariables.DEPENDENT_DV)) return true;
                     }
                     return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
@@ -1468,11 +1468,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // dynamic type annotations
             check(Container.class, e2.container);
 
-            check(E1Immutable.class, e2.e1Immutable);
-            check(E1Container.class, e2.e1Container);
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false));
-            check(ERContainer.class, e2.eRContainer);
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Immutable.class, e2.e1Immutable, fieldAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E1Container.class, e2.e1Container, fieldAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, true, true));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, true, false));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, ERContainer.class, e2.eRContainer, fieldAnalysis, false, false));
 
             check(Modified.class, e2.modified);
             check(Nullable.class, e2.nullable);

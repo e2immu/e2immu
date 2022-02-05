@@ -158,12 +158,12 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                     check(Identity.class, e2.identity);
                     check(Container.class, e2.container);
 
-                    check(E1Immutable.class, e2.e1Immutable);
-                    check(E1Container.class, e2.e1Container);
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true));
-                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Immutable.class, e2.e1Immutable, methodAnalysis, false, false));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E1Container.class, e2.e1Container, methodAnalysis, false, false));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, true, true));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Container.class, e2.e2Container, methodAnalysis, true, false));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, ERContainer.class, e2.eRContainer, methodAnalysis, false, false));
                     check(BeforeMark.class, e2.beforeMark);
-                    check(ERContainer.class, e2.eRContainer);
 
                     analyserResultBuilder.add(checkConstant.checkConstantForMethods(methodInfo, methodAnalysis));
 

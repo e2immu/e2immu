@@ -69,7 +69,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        protected String markLabelFromType() {
+        public String markLabelFromType() {
             return analysisProvider.getTypeAnalysis(parameterInfo.getTypeInfo()).markLabel();
         }
 

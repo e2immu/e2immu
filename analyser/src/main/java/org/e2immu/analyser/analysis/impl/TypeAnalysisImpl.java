@@ -464,8 +464,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        protected String markLabelFromType() {
-            return markLabel();
+        public String markLabelFromType() {
+            return isEventual() ? markLabel() : "";
         }
     }
 }

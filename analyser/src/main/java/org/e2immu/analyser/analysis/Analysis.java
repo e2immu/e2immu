@@ -188,4 +188,8 @@ public interface Analysis {
     default boolean isNotContracted() {
         return analysisMode() != AnalysisMode.CONTRACTED;
     }
+
+    default String markLabelFromType() {
+        throw new UnsupportedOperationException();
+    }
 }

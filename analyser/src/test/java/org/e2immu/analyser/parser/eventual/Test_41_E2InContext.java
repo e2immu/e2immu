@@ -150,25 +150,35 @@ public class Test_41_E2InContext extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2InContext_2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                    assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
                 }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("eventually".equals(d.fieldInfo().name)) {
+                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() <= 1) {
+                if (d.iteration() <= 2) {
                     assertTrue(eventual.causesOfDelay().isDelayed());
                 } else {
                     assertTrue(eventual.mark());
                 }
             }
+            if ("getEventually".equals(d.methodInfo().name)) {
+                assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+            }
         };
 
         testClass("E2InContext_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

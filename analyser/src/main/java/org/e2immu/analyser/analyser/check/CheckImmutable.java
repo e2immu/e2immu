@@ -17,13 +17,11 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,18 +33,14 @@ public class CheckImmutable {
                                 Class<?> annotation,
                                 AnnotationExpression annotationExpression,
                                 Analysis analysis,
-                                boolean after,
                                 boolean level,
                                 boolean recursive) {
         List<CheckLinks.AnnotationKV> kvs = new ArrayList<>(3);
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
-        if (after) {
-            TypeAnalysis typeAnalysis = (TypeAnalysis) analysis;
-            Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", null);
-            String value1 = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
-            kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1));
-        }
+        Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", "");
+        String value1 = analysis.markLabelFromType();
+        kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1));
 
         if (recursive) {
             Function<AnnotationExpression, String> extractInspected3 = ae -> {

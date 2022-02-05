@@ -49,7 +49,7 @@ public class GenerateAnnotationsImmutable {
 
         // EVENTUAL
         if (effective == MultiLevel.Effective.EVENTUAL) {
-            if (isType) {
+            if (isType || betterThanFormal && !mark.isBlank()) {
                 return map(level, haveContainer, Map.of("after", mark));
             }
             if (betterThanFormal) {

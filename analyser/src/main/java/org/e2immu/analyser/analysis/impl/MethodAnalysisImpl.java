@@ -186,7 +186,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final AnalysisMode analysisMode;
 
         @Override
-        protected String markLabelFromType() {
+        public String markLabelFromType() {
             return analysisProvider.getTypeAnalysis(methodInfo.typeInfo).markLabel();
         }
 

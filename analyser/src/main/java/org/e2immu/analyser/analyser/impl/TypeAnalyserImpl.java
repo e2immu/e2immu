@@ -136,11 +136,11 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             analyserResultBuilder.add(CheckIndependent.checkLevel(typeInfo, Independent1.class, e2.independent1, typeAnalysis));
 
             check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false));
-            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Container.class, e2.e1Container, typeAnalysis, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, false, false));
         }
     }
 

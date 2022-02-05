@@ -149,7 +149,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        protected String markLabelFromType() {
+        public String markLabelFromType() {
             return typeAnalysisOfOwner.markLabel();
         }
 

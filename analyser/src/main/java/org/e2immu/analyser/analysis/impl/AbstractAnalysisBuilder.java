@@ -151,8 +151,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected abstract String markLabelFromType();
-
     protected void doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
         AnnotationExpression expression;
 
