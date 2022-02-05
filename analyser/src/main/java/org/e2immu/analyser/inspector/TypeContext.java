@@ -308,8 +308,9 @@ public class TypeContext implements TypeAndInspectionProvider {
             }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
+        // if the method is static, we must be talking about the same type (See Import_10).
         for (TypeInfo typeInfo : importStaticAsterisk) {
-            if (!visited.contains(typeInfo)) {
+            if (!visited.contains(typeInfo) && (scopeNature != Scope.ScopeNature.STATIC || typeInfo == typeOfObject.bestTypeInfo())) {
                 visited.add(typeInfo);
                 resolveOverloadedMethodsSingleType(typeInfo, true, scopeNature, methodName,
                         parametersPresented, decrementWhenNotStatic, typeMap, result, visited, distance + 1);

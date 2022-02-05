@@ -27,6 +27,7 @@ public class Import_10 {
 
     }
 
+    // Purpose of the test: the "of" method has to belong to "Set" and not to Effective.
     public void method1(int statementTime) {
         ChangeData changeData = new ChangeData(Set.of(statementTime));
     }
