@@ -100,7 +100,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
     public void test_1() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventually".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<f:eventually>" : "new Eventually<>()";//FIXME check this
+                String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance type Eventually<String>";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
                 // value is corrected because of exposure via getEventually(); see FieldAnalyserImpl.correctForExposureBefore
@@ -112,9 +112,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("getEventually".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-
-                    // FIXME check this
-                    String expectValue = d.iteration() <= 3 ? "<f:eventually>" : "instance type Eventually<String>/*new Eventually<>()*/";
+                    String expectValue = d.iteration() <= 3 ? "<f:eventually>" : "instance type Eventually<String>";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {

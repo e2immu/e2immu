@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_AFTER;
-import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_BEFORE;
+import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
 /*
 Contains all side effects of analysing an expression.
@@ -448,6 +447,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if ((currentEffective == EVENTUAL_BEFORE || currentEffective == MultiLevel.Effective.EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
                 // switch from before or unknown, to after
                 DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
+                setProperty(variable, property, extImm);
+            } else if(currentEffective == EVENTUAL && nextEffective == EVENTUAL_BEFORE) {
+                DV extImm = MultiLevel.beforeImmutableDv(MultiLevel.level(currentImmutable));
                 setProperty(variable, property, extImm);
             }
         }

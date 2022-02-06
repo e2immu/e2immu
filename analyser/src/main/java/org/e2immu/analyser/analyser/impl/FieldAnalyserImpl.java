@@ -785,16 +785,26 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             finalImmutable = worstOverValues;
         }
 
+        // in accordance with the code that changes a ConstructorCall with an Instance in analyseFinalValue,
+        // we remove BEFORE in favor of the neutral EVENTUAL
+        DV correctedImmutable1;
+        MultiLevel.Effective effective = MultiLevel.effective(finalImmutable);
+        if (effective == MultiLevel.Effective.EVENTUAL_BEFORE) {
+            correctedImmutable1 = MultiLevel.eventuallyImmutable(MultiLevel.level(finalImmutable));
+        } else {
+            correctedImmutable1 = finalImmutable;
+        }
+
         // See E2InContext_0,1 (field is not private, so if it's before, someone else can change it into after)
-        DV correctedImmutable = correctForExposureBefore(finalImmutable);
-        if (correctedImmutable.isDelayed()) {
+        DV correctedImmutable2 = correctForExposureBefore(correctedImmutable1);
+        if (correctedImmutable2.isDelayed()) {
             LOGGER.debug("Delay @Immutable on {}, waiting for exposure to decide on @BeforeMark", fqn);
             // still, we're already marking
-            fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, correctedImmutable);
-            return correctedImmutable.causesOfDelay();
+            fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, correctedImmutable2);
+            return correctedImmutable2.causesOfDelay();
         }
-        LOGGER.debug("Set immutable on field {} to value {}", fqn, correctedImmutable);
-        fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable);
+        LOGGER.debug("Set immutable on field {} to value {}", fqn, correctedImmutable2);
+        fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable2);
 
         return DONE;
     }
@@ -1164,18 +1174,18 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
                 DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-                //if (immutable.isDelayed()) { FIXME ignoring for now
-                //    // see analyseImmutable, @BeforeMark
-                //    immutable = fieldAnalysis.getProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE);
-                //}
                 boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
                 if (immutable.isDelayed() && !fieldOfOwnType) {
-                    LOGGER.debug("Waiting with effectively final value  until decision on @E2Immutable for {}", fqn);
-                    //fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY, Level.TRUE);
+                    LOGGER.debug("Waiting with effectively final value  until decision on immutable for {}", fqn);
                     return immutable.causesOfDelay();
                 }
-                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
+                // the fact that any level 2+ eventually immutable field's initialiser gets downgraded is maybe a little
+                // too strong -- it may in fact never change its state. But what's the point in that?
+                // NOTE: analyseImmutable reflects this decision!
+                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType &&
+                        (MultiLevel.level(immutable) == 0
+                                || MultiLevel.effective(immutable) != MultiLevel.Effective.EFFECTIVE);
                 if (downgradeFromNewInstanceWithConstructor) {
                     Properties valueProperties = Properties.of(Map.of(
                             Property.NOT_NULL_EXPRESSION, proxy.getProperty(Property.NOT_NULL_EXPRESSION),
