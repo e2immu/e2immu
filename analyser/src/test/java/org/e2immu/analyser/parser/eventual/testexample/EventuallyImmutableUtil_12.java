@@ -12,43 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.minor.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
 import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
-@E1Immutable(after = "eventuallyFinal")
-public class Finalizer_1 {
+// simply wrap EventuallyFinal; test propagation of @Only and @Mark
 
-    /*
-    the goal is to have a class that "finishes" a certain eventually immutable object.
-    It receives it in the @BeforeMark state, and returns it finally in the final state.
-    In the meantime, it gets modified (finished), while there is other temporary data around.
-    Once the final state is reached, we try to guarantee that the temporary data is destroyed
-    by severely limiting the scope of the finisher object.
-     */
+@ERContainer(after = "eventuallyFinal")
+public class EventuallyImmutableUtil_12 {
 
-    private int count;
-    @BeforeMark
-    private final EventuallyFinal<String> eventuallyFinal;
-
-    public Finalizer_1(@BeforeMark(contract = true) EventuallyFinal<String> eventuallyFinal) {
-        this.eventuallyFinal = eventuallyFinal;
-    }
+    private final EventuallyFinal<String> eventuallyFinal = new EventuallyFinal<>();
 
     @Modified
     @Only(before = "eventuallyFinal")
     public void set(String s) {
         eventuallyFinal.setVariable(s);
-        count++;
     }
 
-    @Finalizer
-    @ERContainer
     @Mark("eventuallyFinal")
-    public EventuallyFinal<String> done(String last) {
-        eventuallyFinal.setFinal(last + "; tried " + count);
-        return eventuallyFinal;
+    public void done(String last) {
+        eventuallyFinal.setFinal(last);
+    }
+
+    public String get() {
+        return eventuallyFinal.get();
     }
 }
 

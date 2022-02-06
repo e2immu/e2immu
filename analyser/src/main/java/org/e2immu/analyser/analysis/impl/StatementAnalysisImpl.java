@@ -757,6 +757,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV immutable = map.getOrDefault(EXTERNAL_IMMUTABLE, MUTABLE_DV);
             DV ctx = contextImmutable(vic, evaluationContext, fieldAnalysis, immutable);
             map.overwrite(CONTEXT_IMMUTABLE, ctx);
+        } else {
+            assert MUTABLE_DV.equals(map.get(CONTEXT_IMMUTABLE));
         }
 
         if (!viInitial.valueIsSet()) {
@@ -1563,6 +1565,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (evaluationContext.inConstruction() && !myself) {
                 DV immutable = contextImmutable(vic, evaluationContext, fieldAnalysis, valueProps.get(IMMUTABLE));
                 properties.overwrite(CONTEXT_IMMUTABLE, immutable);
+            } else{
+                assert MUTABLE_DV.equals(properties.get(CONTEXT_IMMUTABLE));
             }
         }
         // the external properties

@@ -17,10 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -29,10 +26,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public record DetectEventual(MethodInfo methodInfo,
                              MethodAnalysis methodAnalysis,
@@ -66,52 +60,17 @@ public record DetectEventual(MethodInfo methodInfo,
         boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
         if (modified.valueIsFalse() && methodInfo.returnType().isBoolean()) {
-
-            /*
-            @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark
-            themselves.
-            */
-
-            if (precondition != null && precondition.isEmpty()) {
-                Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv.isDelayed()) {
-                    LOGGER.debug("Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
-                    return MethodAnalysis.delayedEventual(srv.causesOfDelay());
-                }
-                if (srv instanceof InlinedMethod inlinedMethod) {
-                    MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
-                    if (eventual.causesOfDelay().isDelayed()) {
-                        return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
-                    }
-                    if (eventual != MethodAnalysis.NOT_EVENTUAL) {
-                        return eventual;
-                    }
-                }
-            }
-
-            /*
-            @TestMark second situation: we require approvedPreconditions; still non-modifying
-
-            From the preconditions, we extract the approved fields, which have their associated precondition==after state.
-            We join up those, either all in after state, or all in before state.
-
-            The outcome is either @TestMark("fields") (all conditions true: field1 && field2 && ...
-            or @TestMark("fields", before="true") which means all conditions false: !field1 && !field2 && ...
-
-            */
-            Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
-                FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression(), true);
-                if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
-                return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);
-            }
+            MethodAnalysis.Eventual eventual = testMark(evaluationContext, precondition, e2);
+            if (eventual != null) return eventual;
         }
 
         /*
         @Mark("label")
         @Only(before="label"), @Only(after="label")
          */
-        if (precondition == null || precondition.isEmpty()) return MethodAnalysis.NOT_EVENTUAL;
+        if (precondition == null || precondition.isEmpty()) {
+            return eventualFromEventuallyImmutableFields(evaluationContext, modified);
+        }
 
         FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.expression(), false);
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
@@ -145,6 +104,119 @@ public record DetectEventual(MethodInfo methodInfo,
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
         return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, false, null);
+    }
+
+    /*
+    See e.g. EventuallyImmutableUtil_2, _12, _13.
+    When a method accesses one or more eventually immutable fields in a consistent way, this can be propagated,
+    e.g.
+
+    @Modified
+    @Only(before = "eventuallyFinal")   // modified + eventuallyFinal remains in BEFORE state
+    public void set(String s) {
+        eventuallyFinal.setVariable(s);
+    }
+
+    @Mark("eventuallyFinal")            // modified + in AFTER state
+    public void done(String last) {
+        eventuallyFinal.setFinal(last);
+    }
+     */
+    private MethodAnalysis.Eventual eventualFromEventuallyImmutableFields(EvaluationContext evaluationContext, DV modified) {
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        Map<FieldInfo, MultiLevel.Effective> map = new HashMap<>();
+        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
+            TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+            if(bestType == null) continue; // unbound type parameter, is never eventual
+            TypeAnalysis bestTypeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(bestType);
+            DV immutableType = bestTypeAnalysis.getProperty(Property.IMMUTABLE);
+            if (immutableType.isDelayed()) {
+                causes = causes.merge(immutableType.causesOfDelay());
+            } else if (bestTypeAnalysis.approvedPreconditionsStatus(false).isDelayed()) {
+                causes = causes.merge(bestTypeAnalysis.approvedPreconditionsStatus(false));
+            } else if (bestTypeAnalysis.approvedPreconditionsStatus(true).isDelayed()) {
+                causes = causes.merge(bestTypeAnalysis.approvedPreconditionsStatus(true));
+            } else if (bestTypeAnalysis.isEventual()) {
+                for (VariableInfo vi : methodAnalysis().getFieldAsVariable(fieldInfo)) {
+                    // currently, only looking at EXT_IMM: no assignment on this field!!
+                    DV immutableField = vi.getProperty(Property.EXTERNAL_IMMUTABLE);
+                    if (immutableField.isDelayed()) {
+                        causes = causes.merge(immutableField.causesOfDelay());
+                    } else {
+                        MultiLevel.Effective effective = MultiLevel.effective(immutableField);
+                        if (effective == MultiLevel.Effective.EVENTUAL_BEFORE && modified.valueIsTrue()) {
+                            LOGGER.debug("Detect @Only before={} in @Modified method {}", fieldInfo.name, methodInfo.fullyQualifiedName);
+                            map.put(fieldInfo, effective);
+                        } else if (effective == MultiLevel.Effective.EVENTUAL_AFTER && modified.valueIsFalse()) {
+                            LOGGER.debug("Detect @Only after={} in @NotModified method {}", fieldInfo.name, methodInfo.fullyQualifiedName);
+                            map.put(fieldInfo, effective);
+                        } else if (effective == MultiLevel.Effective.EVENTUAL_AFTER && modified.valueIsTrue()) {
+                            LOGGER.debug("Detect @Mark({}) in @Modified method {}", fieldInfo.name, methodInfo.fullyQualifiedName);
+                            map.put(fieldInfo, MultiLevel.Effective.EVENTUAL);
+                        }
+                    }
+                }
+            }
+        }
+        if (causes.isDelayed()) {
+            return MethodAnalysis.delayedEventual(causes);
+        }
+        if (!map.isEmpty()) {
+            MultiLevel.Effective effective = map.values().stream().reduce(MultiLevel.Effective.DELAY,
+                    (e1, e2) -> e1 == MultiLevel.Effective.DELAY ? e2 : e2 == MultiLevel.Effective.DELAY ? e1 :
+                            e1 != e2 ? MultiLevel.Effective.FALSE : e1);
+            if (effective != MultiLevel.Effective.FALSE) {
+                Set<FieldInfo> fields = map.keySet();
+                return switch (effective) {
+                    case EVENTUAL -> new MethodAnalysis.Eventual(fields, true, null, null);
+                    case EVENTUAL_BEFORE -> new MethodAnalysis.Eventual(fields, false, false, null);
+                    case EVENTUAL_AFTER -> new MethodAnalysis.Eventual(fields, false, true, null);
+                    default -> MethodAnalysis.NOT_EVENTUAL;
+                };
+            }
+        }
+        return MethodAnalysis.NOT_EVENTUAL;
+    }
+
+    private MethodAnalysis.Eventual testMark(EvaluationContext evaluationContext, Precondition precondition, boolean e2) {
+        /*
+        @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark
+        themselves.
+        */
+        if (precondition != null && precondition.isEmpty()) {
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            if (srv.isDelayed()) {
+                LOGGER.debug("Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
+                return MethodAnalysis.delayedEventual(srv.causesOfDelay());
+            }
+            if (srv instanceof InlinedMethod inlinedMethod) {
+                MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
+                if (eventual.causesOfDelay().isDelayed()) {
+                    return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
+                }
+                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                    return eventual;
+                }
+            }
+        }
+
+        /*
+        @TestMark second situation: we require approvedPreconditions; still non-modifying
+
+        From the preconditions, we extract the approved fields, which have their associated precondition==after state.
+        We join up those, either all in after state, or all in before state.
+
+        The outcome is either @TestMark("fields") (all conditions true: field1 && field2 && ...
+        or @TestMark("fields", before="true") which means all conditions false: !field1 && !field2 && ...
+
+        */
+        Expression srv = methodAnalysis.getSingleReturnValue();
+        if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
+            FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression(), true);
+            if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
+            return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);
+        }
+        return null;
     }
 
     public AnnotationExpression makeAnnotation(MethodAnalysis.Eventual eventual) {

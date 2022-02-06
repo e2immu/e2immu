@@ -32,7 +32,6 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -823,10 +822,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         // check exposed via return values of methods
         // FIXME ignoreMyConstructors is a delay breaking measure, needs re-implementing
-        CausesOfDelay delayLinkedVariables = myMethodsAndConstructors.stream()
-                .filter(ma -> ma instanceof ComputingMethodAnalyser)
-                .filter(ma -> !ma.getMethodInfo().isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())
+        CausesOfDelay delayLinkedVariables = filterForExposure(myMethodsAndConstructors.stream())
                 .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayLinkedVariables.isDelayed()) {
@@ -834,10 +830,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return delayLinkedVariables;
         }
         FieldReference me = new FieldReference(analyserContext, fieldInfo);
-        boolean linkedToMe = myMethodsAndConstructors.stream()
-                .filter(ma -> ma instanceof ComputingMethodAnalyser)
-                .filter(ma -> !ma.getMethodInfo().isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())
+        boolean linkedToMe = filterForExposure(myMethodsAndConstructors.stream())
                 .anyMatch(ma -> {
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
@@ -851,6 +844,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return linkedToMe ? corrected : immutable;
     }
 
+    private static Stream<MethodAnalyser> filterForExposure(Stream<MethodAnalyser> stream) {
+        return stream
+                .filter(ma -> !ma.getMethodInfo().isPrivate() && ma.getMethodInfo().hasReturnValue())
+                .filter(ma -> ma instanceof ComputingMethodAnalyser cma && cma.methodLevelData() != null)
+                .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue());
+    }
 
     record OccursAndDelay(boolean occurs, int occurrenceCountForError, CausesOfDelay delay) {
     }

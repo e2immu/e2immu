@@ -15,20 +15,24 @@
 
 package org.e2immu.analyser.parser.eventual;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.eventual.testexample.EventuallyImmutableUtil_0;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.junit.jupiter.api.Test;
@@ -108,7 +112,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectEvImm = d.iteration() <= 2 ? "[]" : "[value]";
+                String expectEvImm = d.iteration() < 2 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
@@ -210,6 +214,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         testClass("EventuallyImmutableUtil_9", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
     // eventually e2immutable, even though its parent is Freezable/eventually ER
     @Test
     public void test_10() throws IOException {
@@ -222,6 +227,91 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_11() throws IOException {
         testClass("EventuallyImmutableUtil_11", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_12() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 2, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                }
+            }
+            if ("done".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 2, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                // there are no preconditions
+                String expect = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
+                // but eventual will pick up the restrictions in EXT_IMM/CTX_IMM
+                if (d.iteration() >= 3) {
+                    assertEquals("@Only before: [eventuallyFinal]", d.methodAnalysis().getEventual().toString());
+                } else {
+                    assertTrue(d.methodAnalysis().getEventual().causesOfDelay().isDelayed());
+                }
+            }
+            if ("done".equals(d.methodInfo().name)) {
+                // there are no preconditions
+                String expect = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
+                // but eventual will pick up the restrictions in EXT_IMM/CTX_IMM
+                if (d.iteration() >= 3) {
+                    assertEquals("@Mark: [eventuallyFinal]", d.methodAnalysis().getEventual().toString());
+                } else {
+                    assertTrue(d.methodAnalysis().getEventual().causesOfDelay().isDelayed());
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            Expression initializerValue = d.fieldAnalysis().getInitializerValue();
+            assertEquals("new EventuallyFinal<>()", initializerValue.toString());
+
+            // before mark because the value is a ConstructorCall
+            DV concrete = initializerValue.getProperty(d.evaluationContext(), Property.IMMUTABLE, true);
+            assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, concrete);
+
+            DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType(),
+                    false);
+            assertEquals(MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, formally);
+
+            String expect = d.iteration() == 0 ? "<f:eventuallyFinal>" : "new EventuallyFinal<>()";
+            assertEquals(expect, d.fieldAnalysis().getValue().toString());
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyImmutableUtil_12".equals(d.typeInfo().simpleName)) {
+                String expected = d.iteration() <= 1 ? "[]" : "[eventuallyFinal]";
+                assertEquals(expected, d.typeAnalysis().getEventuallyImmutableFields().toString());
+            }
+        };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo eventuallyFinal = typeMap.get(EventuallyFinal.class);
+            MethodInfo setVariable = eventuallyFinal.findUniqueMethod("setVariable", 1);
+            MethodAnalysis setVariableAnalysis = setVariable.methodAnalysis.get();
+            assertEquals("@Only before: [isFinal]", setVariableAnalysis.getEventual().toString());
+        };
+        testClass("EventuallyImmutableUtil_12", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        testClass("EventuallyImmutableUtil_13", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }
