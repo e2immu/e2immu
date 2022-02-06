@@ -17,21 +17,22 @@ package org.e2immu.analyser.parser.eventual.testexample;
 import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
-// complication of _12, precursor to Finalizer_1
-// test whether the "piggybacking" (making use of the constraints on eventuallyFinal to restrict the use of "count") works
+import java.util.concurrent.atomic.AtomicInteger;
+
+// variant on _13, now with modification rather than assignment
 
 @ERContainer(after = "eventuallyFinal")
-public class EventuallyImmutableUtil_13 {
+public class EventuallyImmutableUtil_14 {
 
     @Final(after = "eventuallyFinal")
-    private int count;
+    private final AtomicInteger count = new AtomicInteger();
     private final EventuallyFinal<String> eventuallyFinal = new EventuallyFinal<>();
 
     @Modified
     @Only(before = "eventuallyFinal")
     public void set(String s) {
         eventuallyFinal.setVariable(s);
-        count++;
+        count.incrementAndGet();
     }
 
     @ERContainer
@@ -46,7 +47,7 @@ public class EventuallyImmutableUtil_13 {
     }
 
     public int getCount() {
-        return count;
+        return count.get();
     }
 }
 

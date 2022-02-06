@@ -450,8 +450,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             super.setProperty(property, i);
         }
 
-        public boolean approvedPreconditionsForNonFinalFields(List<FieldReference> nonFinalFields) {
-            return nonFinalFields.stream().allMatch(approvedPreconditionsE1::isSet);
+        public Set<FieldInfo> nonFinalFieldsNotApproved(List<FieldReference> nonFinalFields) {
+            return nonFinalFields.stream()
+                    .filter(fr -> !approvedPreconditionsE1.isSet(fr))
+                    .map(fr -> fr.fieldInfo)
+                    .collect(Collectors.toUnmodifiableSet());
         }
 
         public boolean eventuallyImmutableFieldNotYetSet(FieldInfo fieldInfo) {

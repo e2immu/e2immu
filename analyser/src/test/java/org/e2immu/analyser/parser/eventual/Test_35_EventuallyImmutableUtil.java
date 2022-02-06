@@ -319,4 +319,10 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         testClass("EventuallyImmutableUtil_13", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_14() throws IOException {
+        testClass("EventuallyImmutableUtil_14", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

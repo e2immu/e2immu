@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -384,7 +383,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         // first, determine the types of fields, methods and constructors
 
-        // FIXME ensure we have all methods, constructors and fields of inner (non-static) nested classes
+        // IMPROVE ensure we have all methods, constructors and fields of inner (non-static) nested classes
         Set<ParameterizedType> allTypes = typeInspection.typesOfFieldsMethodsConstructors(analyserContext);
 
         // add all type parameters of these types
@@ -504,10 +503,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     /*
     all non-private methods which assign a field, or can reach a method that assigns a field
-
-    TODO may be slow, we should cache this?
-
-    Rather not, if we're extending without!
      */
     private Set<MethodAnalyser> determineAssigningMethods() {
         Set<MethodInfo> assigningMethods = myMethodAnalysersExcludingSAMs.stream()
@@ -936,6 +931,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
 
+        Set<FieldInfo> fieldsThatMustPiggyback = new HashSet<>();
+
         DV myWhenEXFails;
         boolean eventual;
         if (allMyFieldsFinal.valueIsFalse() || parentEffective != MultiLevel.Effective.EFFECTIVE) {
@@ -949,14 +946,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
                     .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
                     .map(fa -> new FieldReference(analyserContext, fa.getFieldInfo())).toList();
-            boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsForNonFinalFields(nonFinalFields);
-            if (!isEventuallyE1) {
-                LOGGER.debug("Type {} is not eventually level 1 immutable, not all @Variable fields have preconditions",
-                        typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(ALT_IMMUTABLE, MultiLevel.MUTABLE_DV);
-                return ALT_DONE;
+            Set<FieldInfo> fieldsNotE1 = typeAnalysis.nonFinalFieldsNotApproved(nonFinalFields);
+            if (!fieldsNotE1.isEmpty()) {
+                myWhenEXFails = MultiLevel.MUTABLE_DV;
+                fieldsThatMustPiggyback.addAll(fieldsNotE1);
+            } else {
+                myWhenEXFails = MultiLevel.EVENTUALLY_E1IMMUTABLE_DV;
             }
-            myWhenEXFails = MultiLevel.EVENTUALLY_E1IMMUTABLE_DV;
             eventual = true;
 
             if (parentEffective == MultiLevel.Effective.EVENTUAL) {
@@ -1079,17 +1075,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         if (!typeAnalysis.containsApprovedPreconditionsE2(thisFieldInfo)) {
                             LOGGER.debug("For {} to become eventually E2Immutable, modified field {} can only be modified in methods marked @Mark or @Only(before=)",
                                     typeInfo.fullyQualifiedName, fieldInfo.name);
-                            //checkThatTheOnlyModifyingMethodsHaveBeenMarked = true;
                         }
                     } else {
-                        LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
-                                typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                        return ALT_DONE;
+                        fieldsThatMustPiggyback.add(fieldInfo);
                     }
                 }
 
-                // RULE 2: ALL @SupportData FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
+                // RULE 2: ALL NON-TRANSPARENT NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
                         LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
@@ -1158,7 +1150,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     typeAnalysis.setProperty(Property.IMMUTABLE, marked);
                     return returnTypeImmutable.causesOfDelay();
                 }
-                // FIXME while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
+                // TODO while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
                 MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(returnTypeImmutable);
                 if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
                     // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
@@ -1210,11 +1202,42 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
 
+        if (!fieldsThatMustPiggyback.isEmpty()) {
+            // check that these fields occur only in tandem to eventually immutable fields; if not, return failure
+            Set<FieldInfo> eventuallyImmutable = typeAnalysis.getEventuallyImmutableFields();
+            if (!eventuallyImmutable.isEmpty()) {
+                Map<FieldInfo, Set<MethodInfo>> methodsOfEventuallyImmutableFields =
+                        eventuallyImmutable.stream().collect(Collectors.toUnmodifiableMap(f -> f, f -> methodsOf(f)));
+                fieldsThatMustPiggyback.removeIf(f -> {
+                    Set<MethodInfo> methodsOfField = methodsOf(f);
+                    return methodsOfEventuallyImmutableFields.values().stream().anyMatch(
+                            ev -> ev.containsAll(methodsOfField));
+                });
+            }
+            if (!fieldsThatMustPiggyback.isEmpty()) {
+                LOGGER.debug("Set @Immutable of type {} to {}, fieldsThatMustPiggyback not empty", typeInfo.fullyQualifiedName,
+                        myWhenEXFails);
+                typeAnalysis.setProperty(ALT_IMMUTABLE, myWhenEXFails);
+                return ALT_DONE;
+            }
+        }
+
         MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));
         LOGGER.debug("Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
         typeAnalysis.setProperty(ALT_IMMUTABLE, finalValue);
         return ALT_DONE;
+    }
+
+    private Set<MethodInfo> methodsOf(FieldInfo fieldInfo) {
+        return myMethodAnalysers.stream()
+                .filter(ma -> ma.getFieldAsVariableStream(fieldInfo).anyMatch(vi -> isModified(vi)))
+                .map(MethodAnalyser::getMethodInfo)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static boolean isModified(VariableInfo vi) {
+        return vi.isAssigned() || vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue();
     }
 
     private TypeInfo initializerAssignedToAnonymousType(FieldInfo fieldInfo) {
