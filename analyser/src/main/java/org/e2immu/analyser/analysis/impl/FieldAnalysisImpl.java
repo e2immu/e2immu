@@ -279,6 +279,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }
+
+            DV beforeMark = getProperty(Property.BEFORE_MARK);
+            if (beforeMark.valueIsTrue()) {
+                annotations.put(e2ImmuAnnotationExpressions.beforeMark, true);
+            }
         }
 
         private DV typeImmutable() {

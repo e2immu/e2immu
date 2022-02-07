@@ -55,8 +55,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.NOT_YET_EXECUTED;
-import static org.e2immu.analyser.analyser.Property.CONTAINER;
-import static org.e2immu.analyser.analyser.Property.EXTERNAL_CONTAINER;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 
 public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser {
@@ -77,6 +76,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public static final String FIELD_ERRORS = "fieldErrors";
     public static final String ANALYSE_VALUES = "analyseValues";
     public static final String ANALYSE_CONSTANT = "analyseConstant";
+    public static final String ANALYSE_BEFORE_MARK = "analyseBeforeMark";
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -144,6 +144,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
+                .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -830,6 +831,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
             return corrected;
         }
+        DV linkedToMe = exposureViaMethods();
+        return linkedToMe.isDelayed() ? linkedToMe : linkedToMe.valueIsTrue() ? corrected : immutable;
+    }
+
+    private DV exposureViaMethods() {
         // check exposed via return values of methods
         // FIXME ignoreMyConstructors is a delay breaking measure, needs re-implementing
         CausesOfDelay delayLinkedVariables = filterForExposure(myMethodsAndConstructors.stream())
@@ -851,7 +857,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
                             .anyMatch(vi -> vi.getLinkedVariables().contains(me));
                 });
-        return linkedToMe ? corrected : immutable;
+        return DV.fromBoolDv(linkedToMe);
     }
 
     private static Stream<MethodAnalyser> filterForExposure(Stream<MethodAnalyser> stream) {
@@ -1437,6 +1443,46 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return contextModifications;
     }
 
+
+    private AnalysisStatus analyseBeforeMark() {
+        if (fieldAnalysis.getProperty(Property.BEFORE_MARK).isDone()) return DONE;
+        DV immutable = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
+        if (immutable.isDelayed()) {
+            fieldAnalysis.setProperty(BEFORE_MARK, immutable.causesOfDelay());
+            return immutable.causesOfDelay();
+        }
+        if (MultiLevel.effective(immutable) != MultiLevel.Effective.EVENTUAL) {
+            LOGGER.debug("Field {} cannot be @BeforeMark: it is not eventual", fqn);
+            fieldAnalysis.setProperty(BEFORE_MARK, DV.FALSE_DV);
+            return DONE;
+        }
+        CausesOfDelay eventualDelay = myMethodsAndConstructors.stream()
+                .filter(ma -> !ma.getMethodInfo().inConstruction())
+                .map(ma -> ma.getMethodAnalysis().eventualStatus())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (eventualDelay.isDelayed()) {
+            fieldAnalysis.setProperty(BEFORE_MARK, eventualDelay.causesOfDelay());
+            return eventualDelay.causesOfDelay();
+        }
+        boolean exposed;
+        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
+            exposed = true;
+        } else {
+            DV exposedViaMethods = exposureViaMethods();
+            if(exposedViaMethods.isDelayed()) {
+                fieldAnalysis.setProperty(BEFORE_MARK, exposedViaMethods.causesOfDelay());
+                return exposedViaMethods.causesOfDelay();
+            }
+            exposed = exposedViaMethods.valueIsTrue();
+        }
+        boolean foundMark = myMethodsAndConstructors.stream()
+                .filter(ma -> !ma.getMethodInfo().inConstruction() && !ma.getMethodAnalysis().getProperty(FINALIZER).valueIsTrue())
+                .map(ma -> ma.getMethodAnalysis().getEventual())
+                .anyMatch(ev -> ev.mark() && ev.fields().contains(fieldInfo));
+        fieldAnalysis.setProperty(BEFORE_MARK, DV.fromBoolDv(!foundMark && !exposed));
+        return DONE;
+    }
+
     private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
@@ -1480,6 +1526,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
             check(Modified.class, e2.modified);
             check(Nullable.class, e2.nullable);
+            check(BeforeMark.class, e2.beforeMark);
 
             analyserResultBuilder.add(checkLinks.checkLinksForFields(fieldInfo, fieldAnalysis));
             analyserResultBuilder.add(checkLinks.checkLink1sForFields(fieldInfo, fieldAnalysis));

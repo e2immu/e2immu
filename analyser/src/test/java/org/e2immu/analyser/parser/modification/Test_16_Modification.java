@@ -54,7 +54,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_8".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
                     && "set".equals(fr.fieldInfo.name)) {
                 assertEquals("input/*@NotNull*/", d.currentValue().toString());
-                assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
             }
         };
         testClass("Modification_8", 0, 0, new DebugConfiguration.Builder()

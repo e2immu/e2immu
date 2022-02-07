@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.minor.testexample;
 import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
-@E1Immutable(after = "eventuallyFinal")
+@E2Immutable(recursive = true, after = "eventuallyFinal")
 public class Finalizer_1 {
 
     /*
@@ -26,6 +26,9 @@ public class Finalizer_1 {
     In the meantime, it gets modified (finished), while there is other temporary data around.
     Once the final state is reached, we try to guarantee that the temporary data is destroyed
     by severely limiting the scope of the finisher object.
+
+    The @BeforeMark indicates that the field will be in the "before" state until the very last
+    moment, i.e., until a call to "done", which finalizes the object.
      */
 
     private int count;

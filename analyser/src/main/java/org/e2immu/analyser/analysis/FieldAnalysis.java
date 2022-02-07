@@ -71,6 +71,7 @@ public interface FieldAnalysis extends Analysis {
                 // ignore delay OK because we're in shallow analysis
                 return typeImmutable.maxIgnoreDelay(fieldImmutable);
 
+            case BEFORE_MARK:
             case CONSTANT:
             case EXTERNAL_CONTAINER:
             case CONTAINER:

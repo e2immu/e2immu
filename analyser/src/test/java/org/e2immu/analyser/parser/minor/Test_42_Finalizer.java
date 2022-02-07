@@ -17,19 +17,14 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.support.EventuallyFinal;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -87,12 +82,21 @@ public class Test_42_Finalizer extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-
-        testClass("Finalizer_1", 1, 0, new DebugConfiguration.Builder()
-                .build(),
-                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("eventuallyFinal".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, DV.TRUE_DV, Property.BEFORE_MARK);
+            }
+        };
+        testClass("Finalizer_1", 0, 2, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
     }
 
-    // TODO Finalizer_2, Finalizer_3
-
+    @Test
+    public void test_2() throws IOException {
+        testClass("Finalizer_2", 0, 2, new DebugConfiguration.Builder()
+                .build());
+    }
+    // TODO Finalizer_3
 }

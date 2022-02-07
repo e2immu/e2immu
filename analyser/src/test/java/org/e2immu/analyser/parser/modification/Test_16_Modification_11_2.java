@@ -61,7 +61,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("getSet".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     String expectValue = d.iteration() <= 1 ? "<f:set>" : "instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -78,7 +78,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         default -> "";
                     };
                     assertEquals(expectDelay, d.currentValue().causesOfDelay().toString());
-                    assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.MUTABLE_DV, IMMUTABLE);
                 }
             }
 

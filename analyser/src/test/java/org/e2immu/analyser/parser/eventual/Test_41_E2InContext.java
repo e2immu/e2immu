@@ -153,14 +153,14 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 assert "0".equals(d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
                     assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-//                    assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventually".equals(d.fieldInfo().name)) {
-//                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -179,9 +179,9 @@ public class Test_41_E2InContext extends CommonTestRunner {
         };
 
         testClass("E2InContext_2", 0, 0, new DebugConfiguration.Builder()
-      //          .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-       //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-       //         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -23,6 +23,7 @@ public interface CauseOfDelay {
         APPROVED_PRECONDITIONS("approved_pc", "Approved preconditions for field"),
         ASPECT("aspect", "The type's aspect has not yet been determined"),
         ASSIGNED_TO_FIELD("assign_to_field", "The component 'analyseFieldAssignments' has not yet finished"),
+        BEFORE_MARK("before_mark", "@BeforeMark not yet determined"),
         BREAK_IMMUTABLE_DELAY("break_imm_delay", ""),
         BREAK_INIT_DELAY("break_init_delay", "cyclic dependency in initalisation"),
         BREAK_MOM_DELAY("break_mom_delay", "break a content modified - mom delay"),

@@ -94,7 +94,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         DV formallyImmutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
         DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
-        if (contractImmutable.isDone() && formallyImmutable.isDone()
+        if ((contractImmutable.isDone() || contractBefore.isDone()) && formallyImmutable.isDone()
                 && !parameterAnalysis.properties.isDone(IMMUTABLE)) {
             DV combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore.valueIsTrue());
             assert combined.isDone();
@@ -421,7 +421,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
-             //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
+                //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
                 parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER);
 
         if (delays.isDelayed()) {
@@ -436,7 +436,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus followExternalImmutable(SharedState sharedState) {
         DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
-        if(extImm.isDone()) {
+        if (extImm.isDone()) {
             return DONE;
         }
         DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
@@ -454,14 +454,18 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return property == EXTERNAL_NOT_NULL || property == EXTERNAL_IMMUTABLE || property == EXTERNAL_CONTAINER;
     }
 
+    // if contractImmutable is delayed, then @BeforeMark is present
     private DV combineImmutable(DV formallyImmutable, DV contractImmutable, boolean contractedBefore) {
-        int contractLevel = MultiLevel.level(contractImmutable);
+        assert contractImmutable.isDone() || contractedBefore;
+        assert formallyImmutable.isDone();
+
         int formalLevel = MultiLevel.level(formallyImmutable);
-        Effective contractEffective = MultiLevel.effective(contractImmutable);
+        int contractLevel = contractImmutable.isDelayed() ? formalLevel : MultiLevel.level(contractImmutable);
         Effective formalEffective = MultiLevel.effective(formallyImmutable);
+        Effective contractEffective = contractImmutable.isDelayed() ? formalEffective : MultiLevel.effective(contractImmutable);
 
         if (contractedBefore) {
-            if (contractEffective == EFFECTIVE) {
+            if (contractEffective == EFFECTIVE || formalEffective == EVENTUAL) {
                 if (formalEffective != EVENTUAL || contractLevel != formalLevel) {
                     analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                             Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));

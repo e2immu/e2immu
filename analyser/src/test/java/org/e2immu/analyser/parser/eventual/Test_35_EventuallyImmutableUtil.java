@@ -21,11 +21,9 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -336,6 +334,44 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         };
         testClass("EventuallyImmutableUtil_14", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_15() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("EventuallyImmutableUtil_15".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
+                    assertEquals("ev/*@NotNull*/", d.currentValue().toString());
+                    if(d.currentValue() instanceof PropertyWrapper pw) {
+                        assertFalse(pw.properties().containsKey(Property.IMMUTABLE));
+                        assertTrue(pw.expression() instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo);
+                    } else fail();
+                    // properly linked to the field!
+                    assertEquals("ev:1,this.eventuallyFinal:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, d.getProperty(Property.IMMUTABLE));
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("eventuallyFinal".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("EventuallyImmutableUtil_15".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+            }
+        };
+
+        testClass("EventuallyImmutableUtil_15", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

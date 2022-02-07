@@ -513,7 +513,7 @@ public class EvaluateMethodCall {
     }
 
 
-    private final static Property[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION, IMMUTABLE};
+    private final static Property[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION};
 
     private static Expression computeIdentity(MethodInfo methodInfo,
                                               ParameterizedType concreteReturnType,

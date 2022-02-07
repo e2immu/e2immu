@@ -12,42 +12,48 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.minor.testexample;
+package org.e2immu.analyser.parser.eventual.testexample;
 
-import org.e2immu.annotation.BeforeMark;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Finalizer;
+import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+
+// variant on _14, now with field initialized in constructor, with @BeforeMark
+// the requireNonNull adds a small complication
+
 @E2Immutable(recursive = true, after = "eventuallyFinal")
-public class Finalizer_2 {
+public class EventuallyImmutableUtil_15 {
 
-    /*
-    a "processor" takes an eventually final object in @BeforeMark state, does things to it,
-    and returns it in the @BeforeMark state in the finalizer. This guarantees that all temporary
-    data is lost. To ensure that the object stays in @BeforeMark state, the processor cannot
-    expose it except for through the finalizer.
-     */
-
-
-    private int count;
-    @BeforeMark
+    @NotModified(after = "eventuallyFinal")
+    private final AtomicInteger count = new AtomicInteger();
     private final EventuallyFinal<String> eventuallyFinal;
 
-    public Finalizer_2(@BeforeMark(contract = true) EventuallyFinal<String> eventuallyFinal) {
-        this.eventuallyFinal = eventuallyFinal;
+    public EventuallyImmutableUtil_15(@BeforeMark(contract = true) @NotNull EventuallyFinal<String> ev) {
+        this.eventuallyFinal = Objects.requireNonNull(ev);
     }
 
+    @Modified
+    @Only(before = "eventuallyFinal")
     public void set(String s) {
         eventuallyFinal.setVariable(s);
-        count++;
+        count.incrementAndGet();
     }
 
-    @Finalizer
-    @BeforeMark
+    @ERContainer
+    @Mark("eventuallyFinal")
     public EventuallyFinal<String> done(String last) {
-        eventuallyFinal.setVariable(last + "; tried " + count);
+        eventuallyFinal.setFinal(last + "; tried " + count);
         return eventuallyFinal;
     }
+
+    public String get() {
+        return eventuallyFinal.get();
+    }
+
+    public int getCount() {
+        return count.get();
+    }
 }
+
