@@ -24,7 +24,7 @@ import java.util.Set;
 @E1Container(after = "j")
 class EventuallyE1Immutable_2_M {
 
-    @Modified
+    @NotModified(after = "j")
     private final Set<Integer> integers = new HashSet<>();
 
     @Final(after = "j")

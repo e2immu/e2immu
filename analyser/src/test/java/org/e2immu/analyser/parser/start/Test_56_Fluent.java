@@ -175,12 +175,12 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() <= 2 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() <= 4 ? "<m:from>" : "this/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 3, DV.TRUE_DV, Property.FLUENT);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 5, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
@@ -271,7 +271,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'
-                    assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                    assertEquals(d.iteration() > 2, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };

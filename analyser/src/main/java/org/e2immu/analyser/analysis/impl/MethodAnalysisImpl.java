@@ -187,7 +187,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public String markLabelFromType() {
-            return analysisProvider.getTypeAnalysis(methodInfo.typeInfo).markLabel();
+            // value1 should be present when the property value is EVENTUAL or EVENTUAL_BEFORE, but not with _AFTER (see e.g.
+            // test EventuallyImmutableUtil_13)
+            DV immutable = getProperty(Property.IMMUTABLE);
+            boolean isAfter = immutable.isDone() && MultiLevel.effective(immutable) == MultiLevel.Effective.EVENTUAL_AFTER;
+            if (isAfter) return "";
+            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
+            return typeAnalysis.markLabel();
         }
 
         @Override

@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;
 
+import java.util.Map;
 import java.util.function.Function;
 
 public class CheckFinalNotModified {
@@ -33,18 +34,10 @@ public class CheckFinalNotModified {
     public static Message check(FieldInfo fieldInfo,
                                 Class<?> annotation,
                                 AnnotationExpression annotationExpression,
-                                FieldAnalysis fieldAnalysis,
-                                TypeAnalysis typeAnalysis) {
-
+                                FieldAnalysis fieldAnalysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        boolean isModifiedOrVariable;
-        if (Final.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(Property.FINAL).valueIsFalse();
-        } else if (NotModified.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(Property.MODIFIED_VARIABLE).valueIsFalse();
-        } else throw new UnsupportedOperationException();
-
-        String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;
+        Map.Entry<AnnotationExpression, Boolean> inAnalysis = fieldAnalysis.findAnnotation(annotation.getCanonicalName());
+        String mark = inAnalysis == null ? null : inAnalysis.getKey().extract("after", null);
 
         return CheckLinks.checkAnnotationWithValue(fieldAnalysis,
                 annotation.getName(),

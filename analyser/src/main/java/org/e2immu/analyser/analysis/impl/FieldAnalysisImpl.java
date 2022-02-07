@@ -159,7 +159,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public CausesOfDelay valuesDelayed() {
-            if(values.isSet()) return CausesOfDelay.EMPTY;
+            if (values.isSet()) return CausesOfDelay.EMPTY;
             return values.getFirst().causesOfDelay();
         }
 
@@ -254,10 +254,18 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // all other annotations cannot be added to primitives
             if (type.isPrimitiveExcludingVoid()) return;
 
+            DV formallyImmutable = typeImmutable();
+            DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
+            DV formallyContainer = typeContainer();
+            DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
+
             // @NotModified(after=), @NotModified, @Modified
-            if (modified.valueIsTrue() && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
-                String labels = typeAnalysisOfOwner.markLabel();
-                annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
+            if (modified.valueIsTrue() && !ownerImmutable.isDelayed()
+                    && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
+                if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.IMMUTABLE_1.level) {
+                    String labels = typeAnalysisOfOwner.markLabel();
+                    annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
+                }// else don't bother, we'll have an immutable annotation (see e.g. eventuallyFinal in EventuallyImmutableUtil_14)
             } else {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
@@ -268,10 +276,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL));
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            DV formallyImmutable = typeImmutable();
-            DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-            DV formallyContainer = typeContainer();
-            DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
             if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }

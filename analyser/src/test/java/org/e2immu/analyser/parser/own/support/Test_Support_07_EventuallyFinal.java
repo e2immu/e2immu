@@ -58,11 +58,11 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
             if ("EventuallyFinal".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() >= 1) {
                     Map<FieldReference, Expression> map = d.typeAnalysis().getApprovedPreconditionsE1();
-                    assertEquals("isFinal=!isFinal,value=!isFinal",
+                    assertEquals("isFinal=!isFinal",
                             map.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                     Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditionsE2();
-                    assertEquals("isFinal=!isFinal,value=!isFinal",
+                    assertEquals("isFinal=!isFinal",
                             map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                 }

@@ -316,13 +316,26 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_13() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("done".equals(d.methodInfo().name)) {
+                assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("EventuallyImmutableUtil_13", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_14() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("count".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
+            }
+        };
         testClass("EventuallyImmutableUtil_14", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

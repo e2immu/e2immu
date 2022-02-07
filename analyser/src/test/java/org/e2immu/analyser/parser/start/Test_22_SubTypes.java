@@ -146,11 +146,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertEquals("1", loop.statementIndex());
                     } else fail();
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:i>" : "instance type int";
+                        String expected = d.iteration() <= 1 ? "<vl:i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:i>" : "instance type int";
+                        String expected = d.iteration() <= 1 ? "<vl:i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -160,7 +160,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:i>+<v:sum>" : "i+sum$1";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<vl:i>+<v:sum>";
+                            case 1 -> "<vl:i>+sum$1";
+                            default -> "i+sum$1";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                             assertEquals("1", outside.statementIndex());
@@ -168,9 +172,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<loopIsNotEmptyCondition>?<out of scope:i:1>+<v:sum>:0"
-                                : "instance type boolean?instance type int+sum$1:0";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<loopIsNotEmptyCondition>?<out of scope:i:1>+<v:sum>:0";
+                            case 1 -> "<loopIsNotEmptyCondition>?<out of scope:i:1>+sum$1:0";
+                            default -> "instance type boolean?instance type int+sum$1:0";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

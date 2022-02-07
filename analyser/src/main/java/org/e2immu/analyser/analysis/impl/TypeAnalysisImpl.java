@@ -42,6 +42,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final SetOfTypes hiddenContentTypes;
     private final Map<String, MethodInfo> aspects;
     private final Set<FieldInfo> eventuallyImmutableFields;
+    private final Set<FieldInfo> guardedByEventuallyImmutableFields;
     private final Set<FieldInfo> visibleFields;
 
     private final boolean immutableCanBeIncreasedByTypeParameters;
@@ -52,6 +53,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<FieldReference, Expression> approvedPreconditionsE1,
                              Map<FieldReference, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
+                             Set<FieldInfo> guardedByEventuallyImmutableFields,
                              SetOfTypes hiddenContentTypes,
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields,
@@ -63,6 +65,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.hiddenContentTypes = hiddenContentTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
+        this.guardedByEventuallyImmutableFields = guardedByEventuallyImmutableFields;
         this.visibleFields = visibleFields;
         this.immutableCanBeIncreasedByTypeParameters = immutableCanBeIncreasedByTypeParameters;
     }
@@ -90,6 +93,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     @Override
     public Set<FieldInfo> getEventuallyImmutableFields() {
         return eventuallyImmutableFields;
+    }
+
+    @Override
+    public Set<FieldInfo> getGuardedByEventuallyImmutableFields() {
+        return guardedByEventuallyImmutableFields;
     }
 
     @Override
@@ -178,6 +186,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
         private final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
+        private final AddOnceSet<FieldInfo> guardedByEventuallyImmutableFields = new AddOnceSet<>();
 
         private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
         private final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
@@ -337,6 +346,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return eventuallyImmutableFields.toImmutableSet();
         }
 
+        @Override
+        public Set<FieldInfo> getGuardedByEventuallyImmutableFields() {
+            return guardedByEventuallyImmutableFields.toImmutableSet();
+        }
+
         public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // @ExtensionClass
@@ -426,6 +440,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE1.toImmutableMap(),
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
+                    guardedByEventuallyImmutableFields.toImmutableSet(),
                     hiddenContentTypes.isSet() ? hiddenContentTypes.get() : SetOfTypes.EMPTY,
                     getAspects(),
                     visibleFields,
@@ -450,9 +465,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             super.setProperty(property, i);
         }
 
-        public Set<FieldInfo> nonFinalFieldsNotApproved(List<FieldReference> nonFinalFields) {
+        public Set<FieldInfo> nonFinalFieldsNotApprovedOrGuarded(List<FieldReference> nonFinalFields) {
             return nonFinalFields.stream()
-                    .filter(fr -> !approvedPreconditionsE1.isSet(fr))
+                    .filter(fr -> !approvedPreconditionsE1.isSet(fr) && !guardedByEventuallyImmutableFields.contains(fr.fieldInfo))
                     .map(fr -> fr.fieldInfo)
                     .collect(Collectors.toUnmodifiableSet());
         }
@@ -469,6 +484,13 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public String markLabelFromType() {
             return isEventual() ? markLabel() : "";
+        }
+
+        public void addGuardedByEventuallyImmutableField(FieldInfo fieldInfo) {
+            assert fieldInfo != null;
+            if (!guardedByEventuallyImmutableFields.contains(fieldInfo)) {
+                guardedByEventuallyImmutableFields.add(fieldInfo);
+            }
         }
     }
 }

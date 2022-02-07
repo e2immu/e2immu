@@ -1458,8 +1458,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(FIELD_FINAL)) {
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
-                    myTypeAnalyser.getTypeAnalysis()));
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis));
             check(org.e2immu.annotation.Variable.class, e2.variableField);
         }
         if (analyserProgram.accepts(ALL)) {
@@ -1468,8 +1467,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             check(NotNull.class, e2.notNull);
             check(NotNull1.class, e2.notNull1);
 
-            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
-                    myTypeAnalyser.getTypeAnalysis()));
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis));
 
             // dynamic type annotations
             check(Container.class, e2.container);

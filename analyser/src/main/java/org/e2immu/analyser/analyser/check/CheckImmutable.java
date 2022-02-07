@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.Message;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class CheckImmutable {
@@ -39,7 +40,8 @@ public class CheckImmutable {
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
         Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", "");
-        String value1 = analysis.markLabelFromType();
+        Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.findAnnotation(annotation.getCanonicalName());
+        String value1 = inAnalysis == null ? "" : inAnalysis.getKey().extract("after", "");
         // do not use the after=""... as a marker to check the presence (see test E2InContext_3)
         kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1, false));
 

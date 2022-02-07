@@ -97,8 +97,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                 String delays = switch (d.iteration()) {
                     case 0 -> "initial:org.e2immu.analyser.parser.start.testexample.Singleton_2.SingletonClass.SINGLETON@Method_test_0";
                     case 1 -> "container@Class_SingletonClass;immutable@Class_SingletonClass";
-                    case 2 -> "immutable@Class_SingletonClass";
-                    case 3 -> "var_missing:org.e2immu.analyser.parser.start.testexample.Singleton_2.SingletonClass.SINGLETON.k@Method_test_0";
+                    case 2, 3 -> "initial@Field_created;initial@Field_k";
+                    case 4 -> "var_missing:org.e2immu.analyser.parser.start.testexample.Singleton_2.SingletonClass.SINGLETON.k@Method_test_0";
                     default -> "";
                 };
                 assertEquals(delays, d.evaluationResult().causesOfDelay().toString());

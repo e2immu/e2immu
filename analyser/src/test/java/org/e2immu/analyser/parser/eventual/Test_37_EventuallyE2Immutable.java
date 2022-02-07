@@ -548,8 +548,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                             : "initial:this.isFinal@Method_setFinal_0;initial:this.isFinal@Method_setVariable_0;values:this.value@Field_value";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
-                    // we expect "value" to have piggybacked on isFinal (ComputingTypeAnalyser.findPiggyBackingVariables)
-                    String expected = "isFinal=!isFinal,value=!isFinal";
+                    // we expect "value" to be guarded by isFinal (ComputingTypeAnalyser.findFieldsGuardedByEventuallyImmutableFields)
+                    String expected = "isFinal=!isFinal";
                     // E1 approved preconditions
                     Map<FieldReference, Expression> map1 = d.typeAnalysis().getApprovedPreconditions(false);
                     assertEquals(expected, map1.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))

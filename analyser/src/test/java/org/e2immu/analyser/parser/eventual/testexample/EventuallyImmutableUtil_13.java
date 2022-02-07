@@ -18,7 +18,8 @@ import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
 // complication of _12, precursor to Finalizer_1
-// test whether the "piggybacking" (making use of the constraints on eventuallyFinal to restrict the use of "count") works
+// test whether the guarding of variables (making use of the constraints on eventuallyFinal to restrict the
+// use of "count") works
 
 @ERContainer(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_13 {

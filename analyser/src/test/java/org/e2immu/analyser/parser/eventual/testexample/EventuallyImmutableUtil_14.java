@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ERContainer(after = "eventuallyFinal")
 public class EventuallyImmutableUtil_14 {
 
-    @Final(after = "eventuallyFinal")
+    @NotModified(after = "eventuallyFinal")
     private final AtomicInteger count = new AtomicInteger();
     private final EventuallyFinal<String> eventuallyFinal = new EventuallyFinal<>();
 

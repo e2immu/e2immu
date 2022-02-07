@@ -79,7 +79,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

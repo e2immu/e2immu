@@ -60,6 +60,9 @@ public interface TypeAnalysis extends Analysis {
     @NotNull1
     Set<FieldInfo> getEventuallyImmutableFields();
 
+    @NotNull1
+    Set<FieldInfo> getGuardedByEventuallyImmutableFields();
+
     FieldInfo translateToVisibleField(FieldReference fieldReference);
 
     default String markLabel() {

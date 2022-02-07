@@ -46,7 +46,7 @@ public class EventuallyE1Immutable_3 {
     }
 
     @NotNull
-    @Modified
+    @NotModified(after = "string")
     public final TwoIntegers input;
     private String string;
 
