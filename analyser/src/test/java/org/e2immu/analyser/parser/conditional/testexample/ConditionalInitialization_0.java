@@ -30,7 +30,6 @@ public class ConditionalInitialization_0 {
             set = Set.of("a", "b"); // @NotNull1
         }
         if (b) {
-            // here, the CI copy should not exist
             System.out.println("Set is " + set);
         }
     }

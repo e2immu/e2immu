@@ -280,6 +280,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             }
             Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(evaluationContext,
                     e.condition(), e.absoluteState());
+            if(reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
+                // simply accept this one, for now
+               return valuePropertiesWrapToBreakFieldInitDelay(e.variableInfo());
+            }
             Merge.ExpressionAndProperties result = one(e.variableInfo(), stateOfDestination, reworkedCondition);
             if (result != null) return result;
         }
