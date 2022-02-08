@@ -392,8 +392,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         if (sharedState.localConditionManager().isDelayed()) {
             CausesOfDelay causes = sharedState.localConditionManager().causesOfDelay();
-            return DelayedExpression.forCondition(statementAnalysis.primitives().booleanParameterizedType(),
-                    LinkedVariables.delayedEmpty(causes), causes);
+            if(causes.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
+                LOGGER.debug("Break init delay -- not delaying");
+            } else {
+                return DelayedExpression.forCondition(statementAnalysis.primitives().booleanParameterizedType(),
+                        LinkedVariables.delayedEmpty(causes), causes);
+            }
         }
 
         Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.evaluationContext(), value);

@@ -53,7 +53,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?<vp:Set<String>:initial@Class_ConditionalInitialization_0>:<f:set>";
-                            case 1 -> "<m:isEmpty>?Set.of(\"a\",\"b\"):<f:set>";
+                            case 1 -> "<wrapped:set>";// result of breaking init delay
                             default -> "ConditionalInitialization_0.set.isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -64,13 +64,10 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "initial:org.e2immu.analyser.parser.conditional.testexample.ConditionalInitialization_0.set@Method_ConditionalInitialization_0_0;initial@Class_ConditionalInitialization_0;initial@Field_set;values:org.e2immu.analyser.parser.conditional.testexample.ConditionalInitialization_0.set@Field_set";
-                    case 1 -> "break initialization delay,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
-                    default -> "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
-                };
+                String expected = d.iteration() == 0
+                        ? "initial:org.e2immu.analyser.parser.conditional.testexample.ConditionalInitialization_0.set@Method_ConditionalInitialization_0_0;initial@Class_ConditionalInitialization_0;initial@Field_set;values:org.e2immu.analyser.parser.conditional.testexample.ConditionalInitialization_0.set@Field_set"
+                        : "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
-
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -115,20 +112,19 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "c?setParam:<f:set>";
-                            default -> "c?setParam:<vp:set:initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set>";
-                            //default -> "c?setParam:instance type Set<String>";
+                            case 1 -> "<wrapped:set>";
+                            default -> "c?setParam:nullable instance type Set<String>";
                         };
-//                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set";
-                    default -> "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
-                };
+                String expected = d.iteration() == 0
+                        ? "initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set"
+                        : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);

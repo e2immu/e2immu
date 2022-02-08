@@ -64,6 +64,12 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    public static Expression forSelfAssignmentBreakInit(Identifier identifier,
+                                                        ParameterizedType parameterizedType,
+                                                        Properties valueProperties) {
+        return new Instance(identifier, parameterizedType, valueProperties);
+    }
+
     public static Expression forMerge(Identifier identifier,
                                       ParameterizedType parameterizedType,
                                       Properties valueProperties) {
