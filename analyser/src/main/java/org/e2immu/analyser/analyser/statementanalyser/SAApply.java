@@ -18,12 +18,11 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
@@ -179,6 +178,23 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 } else {
                     combined = merged;
                 }
+
+                if (variable instanceof FieldReference target) {
+                    Optional<VariableCause> optVc = valueToWritePossiblyDelayed.causesOfDelay().causesStream()
+                            .filter(c -> c instanceof VariableCause vc
+                                    && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                                    && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
+                            .map(c -> (VariableCause) c)
+                            .findFirst();
+                    if (optVc.isPresent()) {
+                        LOGGER.debug("Self-assignment with break-init delay: this.field = myselfAsParameter.field, field {}", target.fieldInfo.name);
+                        // replace the DVE with a DelayedWrappedExpression referring to self
+                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate(), target.parameterizedType, combined);
+                        VariableInfo tempVi = new VariableInfoImpl(variable, instance, combined);
+                        valueToWritePossiblyDelayed = new DelayedWrappedExpression(Identifier.generate(), tempVi, valueToWritePossiblyDelayed.causesOfDelay());
+                    }
+                }
+
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
 
                 if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
@@ -476,7 +492,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             } else {
                 CausesOfDelay merged = stateIsDelayedInChangeData.merge(marker);
                 // if the delays are caused by a field in break_init_delay, we will return the value rather than a delay
-                if(merged.causesStream().anyMatch(cause -> cause.cause().equals(CauseOfDelay.Cause.BREAK_INIT_DELAY))) {
+                if (merged.causesStream().anyMatch(cause -> cause.cause().equals(CauseOfDelay.Cause.BREAK_INIT_DELAY))) {
                     return value;
                 }
                 LinkedVariables lv = LinkedVariables.delayedEmpty(merged);

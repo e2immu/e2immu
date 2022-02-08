@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
@@ -111,17 +112,35 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     // discovered: no reEvaluate in StringConcat
     @Test
     public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().getParameters().size() == 2
+                    && "ExplicitConstructorInvocation_6".equals(d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "fullyQualifiedName".equals(fr.fieldInfo.name)) {
+                    if (fr.scopeIsThis()) {
+                        if ("0".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "\".\"+simpleName+<f:fullyQualifiedName>";
+                                case 1 -> "<wrapped:fullyQualifiedName>";
+                                default -> "\".\"+simpleName+enclosingType.fullyQualifiedName";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        } else fail("?" + d.statementId());
+                    }
+                }
+            }
+        };
         // 4 errors: private fields not read outside constructors
         testClass("ExplicitConstructorInvocation_6", 4, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
