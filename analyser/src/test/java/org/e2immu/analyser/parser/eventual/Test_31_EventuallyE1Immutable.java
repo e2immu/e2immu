@@ -60,7 +60,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    assertNotEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+//                    assertNotEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
             if ("setString".equals(d.methodInfo().name)) {
@@ -69,7 +69,16 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        // must be it 1, break init delay!
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<s:String>" : "string";
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }

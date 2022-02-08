@@ -475,6 +475,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 LOGGER.debug("Breaking delay " + marker);
             } else {
                 CausesOfDelay merged = stateIsDelayedInChangeData.merge(marker);
+                // if the delays are caused by a field in break_init_delay, we will return the value rather than a delay
+                if(merged.causesStream().anyMatch(cause -> cause.cause().equals(CauseOfDelay.Cause.BREAK_INIT_DELAY))) {
+                    return value;
+                }
                 LinkedVariables lv = LinkedVariables.delayedEmpty(merged);
                 return DelayedExpression.forState(variable.parameterizedType(), lv, merged);
             }

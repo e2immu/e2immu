@@ -919,8 +919,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
                                 && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
                                 && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
-                            proxy = breakDelayProxy(origin);
-                            viIsDelayed = false;
+                            throw new UnsupportedOperationException("Break init delay needs resolving for field "
+                                    + fieldInfo.name + " in method " + methodInfo.name);
                         } else {
                             proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
                             viIsDelayed = causesOfDelay.isDelayed();
@@ -943,42 +943,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         return new OccursAndDelay(occurs, occurrenceCountForError, delays);
-    }
-
-    private ValueAndPropertyProxy breakDelayProxy(ValueAndPropertyProxy.Origin origin) {
-        Expression value = new DelayedExpression("break initialization delay",
-                fieldInfo.type, LinkedVariables.EMPTY, fieldInfo.delay(CauseOfDelay.Cause.BREAK_INIT_DELAY));
-        return new ValueAndPropertyProxy() {
-            @Override
-            public Origin getOrigin() {
-                return origin;
-            }
-
-            @Override
-            public Expression getValue() {
-                return value;
-            }
-
-            @Override
-            public DV getProperty(Property property) {
-                return fieldInfo.delay(CauseOfDelay.Cause.BREAK_INIT_DELAY);
-            }
-
-            @Override
-            public LinkedVariables getLinkedVariables() {
-                return null;
-            }
-
-            @Override
-            public boolean validValueProperties() {
-                return false;
-            }
-
-            @Override
-            public String toString() {
-                return "break-delay proxy";
-            }
-        };
     }
 
     private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<ValueAndPropertyProxy> values) {
@@ -1469,7 +1433,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             exposed = true;
         } else {
             DV exposedViaMethods = exposureViaMethods();
-            if(exposedViaMethods.isDelayed()) {
+            if (exposedViaMethods.isDelayed()) {
                 fieldAnalysis.setProperty(BEFORE_MARK, exposedViaMethods.causesOfDelay());
                 return exposedViaMethods.causesOfDelay();
             }

@@ -56,7 +56,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
             if ("first".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 if (d.iteration() > 0) {
-                    String expectValues = "[CONSTRUCTION:first/*@NotNull*/, break-delay proxy]";
+                    String expectValues = "[METHOD:null, CONSTRUCTION:first/*@NotNull*/]";
                     assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
                 }
             }
@@ -68,8 +68,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
             }
         };
 
-        // code in set() always produces an error
-        testClass("FirstThen_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("FirstThen_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

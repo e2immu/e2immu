@@ -335,12 +335,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
         DV cnnInMap = cnn.max(inMap);
-        if (cnnInMap.isDelayed()) {
+        boolean isBreakInitDelay = cnn.isDelayed() && cnn.causesOfDelay().causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY);
+        if (cnnInMap.isDelayed() && !isBreakInitDelay) {
             // we return even if cmNn would be ENN, because our value could be higher
             return cnnInMap;
         }
         boolean cmNn = notNullAccordingToConditionManager(variable);
-        return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV);
+        DV cm = cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV;
+        if(isBreakInitDelay) return cm;
+        return cnnInMap.max(cm);
     }
 
     @Override

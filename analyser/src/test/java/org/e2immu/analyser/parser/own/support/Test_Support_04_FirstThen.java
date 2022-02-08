@@ -51,7 +51,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
                 String expectCondition = switch (d.iteration()) {
                     case 0 -> "null==<f:first>";
                     case 1 -> "null==<f*:first>";
-                    default -> "null==first$0";
+                    default -> "null==first";
                 };
                 assertEquals(expectCondition, d.condition().toString());
             }
@@ -61,6 +61,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
                 String expectPre = switch (d.iteration()) {
                     case 0 -> "null!=<f:then>";
                     case 1 -> "null!=<vp:then:initial:this.first@Method_set_1.0.0;values:this.then@Field_then>";
+                    case 2 -> "null!=<vp:then:break_init_delay:this.first@Method_set_1.0.0;values:this.then@Field_then>";
                     default -> "null!=then";
                 };
                 assertEquals(expectPre, d.statementAnalysis().stateData().getPrecondition().expression().toString());
@@ -91,7 +92,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             String expect = switch (d.iteration()) {
                 case 0 -> "Precondition[expression=null!=<f:first>, causes=[escape]]";
                 case 1 -> "Precondition[expression=null!=<f*:first>, causes=[escape]]";
-                default -> "Precondition[expression=???, causes=[]]"; // FIXME
+                default -> "Precondition[expression=null!=first, causes=[escape]]";
             };
             assertEquals(expect, d.methodAnalysis().getPrecondition().toString());
         }
@@ -137,8 +138,8 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
