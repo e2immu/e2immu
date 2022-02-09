@@ -85,6 +85,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         INDEPENDENT, INDEPENDENT.falseDv,
                         CONTAINER, CONTAINER.falseDv,
                         IDENTITY, IDENTITY.falseDv,
+                        IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
                         NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(location(), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, properties),

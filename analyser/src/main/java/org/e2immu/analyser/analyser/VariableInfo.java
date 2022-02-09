@@ -149,14 +149,14 @@ public interface VariableInfo {
             new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
 
             new MergeOp(IDENTITY, DV::min, IDENTITY.bestDv),
+            new MergeOp(IGNORE_MODIFICATIONS, DV::min, IGNORE_MODIFICATIONS.bestDv),
 
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
             new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
     );
 
-    // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
+    // value properties: IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
-
             new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),

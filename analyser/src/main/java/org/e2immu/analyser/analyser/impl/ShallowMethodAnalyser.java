@@ -157,6 +157,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         computeMethodPropertyIfNecessary(Property.IMMUTABLE, this::computeMethodImmutable);
         computeMethodPropertyIfNecessary(Property.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
         computeMethodPropertyIfNecessary(Property.IDENTITY, () -> bestOfOverridesOrWorstValue(Property.IDENTITY));
+        computeMethodPropertyIfNecessary(Property.IGNORE_MODIFICATIONS, () -> bestOfOverridesOrWorstValue(Property.IGNORE_MODIFICATIONS));
         computeMethodPropertyIfNecessary(Property.FINALIZER, () -> bestOfOverridesOrWorstValue(Property.FINALIZER));
         computeMethodPropertyIfNecessary(Property.CONSTANT, () -> bestOfOverridesOrWorstValue(Property.CONSTANT));
         // @Identity must come before @Container

@@ -140,7 +140,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
-            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> DV.FALSE_DV;
+            case IDENTITY, IGNORE_MODIFICATIONS, FLUENT, CONTEXT_MODIFIED -> DV.FALSE_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             default -> throw new UnsupportedOperationException("Property: " + property);
         };

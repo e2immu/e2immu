@@ -255,8 +255,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private AnalysisStatus annotateEventual(SharedState sharedState) {
-        if(methodAnalysis.eventualIsSet()) return DONE;
-        if(methodInfo.isConstructor) {
+        if (methodAnalysis.eventualIsSet()) return DONE;
+        if (methodInfo.isConstructor) {
             // don't write to annotations
             return DONE;
         }
@@ -490,6 +490,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
                 methodAnalysis.singleReturnValue.setFinal(ue);
                 methodAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
+                methodAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
@@ -591,6 +592,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
         LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
+
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
         if (currentIdentity.isDelayed()) {
             VariableExpression ve2;
@@ -598,6 +600,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     ve2.variable() instanceof ParameterInfo pi && pi.getMethod() == methodInfo && pi.index == 0;
             methodAnalysis.setProperty(IDENTITY, DV.fromBoolDv(isIdentity));
         }
+
+        DV currentIgnoreMods = methodAnalysis.getProperty(IGNORE_MODIFICATIONS);
+        if (currentIgnoreMods.isDelayed()) {
+            DV ignoreMods = variableInfo.getProperty(IGNORE_MODIFICATIONS).maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
+            methodAnalysis.setProperty(IGNORE_MODIFICATIONS, ignoreMods);
+        }
+
         return DONE;
     }
 

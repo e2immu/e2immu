@@ -694,7 +694,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER);
+            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, IGNORE_MODIFICATIONS);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -1513,6 +1513,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
         properties.put(IDENTITY, IDENTITY.falseDv);
+        properties.put(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
         properties.put(IMMUTABLE, MUTABLE_DV);
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
@@ -1531,6 +1532,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // value properties
         properties.put(IDENTITY, IDENTITY.falseDv);
+        properties.put(IGNORE_MODIFICATIONS, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
         properties.put(IMMUTABLE, IMMUTABLE.falseDv);
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
@@ -1571,12 +1573,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         // the external properties
-        DV extNotNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
-        combined.put(EXTERNAL_NOT_NULL, extNotNull);
-        DV extImm = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
-        combined.put(EXTERNAL_IMMUTABLE, extImm);
-        DV extCont = fieldAnalysis.getProperty(EXTERNAL_CONTAINER);
-        combined.put(EXTERNAL_CONTAINER, extCont);
+        for (Property property : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
+            DV v = fieldAnalysis.getProperty(property);
+            combined.put(property, v);
+        }
         vic.setValue(value, LinkedVariables.EMPTY, combined, true);
     }
 
@@ -1629,14 +1629,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(IDENTITY, DV.fromBoolDv(identity));
 
         // the external properties may be delayed, but if so they're delayed in the correct way!
-        DV extNotNull = parameterAnalysis.getProperty(EXTERNAL_NOT_NULL);
-        properties.put(EXTERNAL_NOT_NULL, extNotNull);
-        DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
-        properties.put(EXTERNAL_IMMUTABLE, extImm);
-        DV extCont = parameterAnalysis.getProperty(EXTERNAL_CONTAINER);
-        properties.put(EXTERNAL_CONTAINER, extCont);
-        DV mom = parameterAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
-        properties.put(MODIFIED_OUTSIDE_METHOD, mom);
+        for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
+            DV v = parameterAnalysis.getProperty(property);
+            properties.put(property, v);
+        }
 
         Expression value = Instance.initialValueOfParameter(parameterInfo, properties);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);

@@ -94,7 +94,7 @@ public interface MethodAnalysis extends Analysis {
     default DV getMethodProperty(Property property) {
         return switch (property) {
             case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
-                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
+                    FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
             case FINALIZER -> getPropertyFromMapNeverDelay(property);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };

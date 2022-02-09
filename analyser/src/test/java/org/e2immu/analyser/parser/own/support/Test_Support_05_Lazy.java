@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -43,9 +44,7 @@ Breaking the delays in "get()":
 - so the breaking has to repeat itself in iteration 2
 - the field analyser decides on IMMUTABLE in iteration 2
 - iteration 3 sees normal values
-- the state goes from suppressed to real FIXME still to implement
-- important: relies on the StatementAnalysis.fieldsWithBreakInitDelay, which currently uses a field that is used
-  for detecting infinite loops IMPROVE
+- the state goes from suppressed to real
  */
 public class Test_Support_05_Lazy extends CommonTestRunner {
 
@@ -54,6 +53,15 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("Lazy".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof ParameterInfo p && "supplierParam".equals(p.name)) {
+                assertDv(d, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+            }
+            if (d.variable() instanceof FieldReference fr && "supplier".equals(fr.fieldInfo.name)) {
+                assertEquals("1", d.statementId());
+                assertDv(d, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+            }
+        }
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
@@ -124,9 +132,6 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     default -> "null==t$0";
                 };
                 assertEquals("true", d.state().toString());
-                //  String expectEq = d.iteration() < 3 ? "" : "t=null";
-                //  assertEquals(expectEq, d.statementAnalysis().stateData().equalityAccordingToStateStream()
-                //          .map(Object::toString).collect(Collectors.joining(",")));
             }
             if ("2".equals(d.statementId())) {
                 // important: if the state says something about t, then after assignment to t this should be
@@ -152,6 +157,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.IGNORE_MODIFICATIONS));
             assertEquals("supplierParam", d.fieldAnalysis().getValue().toString());
         }
     };

@@ -92,7 +92,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             } else {
                 switch (k) {
                     // value properties are copied from previous, only when the value from previous is copied as well
-                    case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
+                    case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT, IGNORE_MODIFICATIONS -> {
                         if (valuePropertiesFromPrevious) res.put(k, prev);
                     }
                     // all other properties are copied from change data

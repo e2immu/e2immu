@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -199,13 +198,14 @@ public interface EvaluationContext {
     }
 
     // DO NOT change this set unless you adapt NewObject as well; it maintains a set of value properties
-    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
+    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
 
     Properties PRIMITIVE_VALUE_PROPERTIES = Properties.of(Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
             IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
             INDEPENDENT, MultiLevel.INDEPENDENT_DV,
             CONTAINER, MultiLevel.CONTAINER_DV,
-            IDENTITY, DV.FALSE_DV));
+            IDENTITY, DV.FALSE_DV,
+            IGNORE_MODIFICATIONS, DV.FALSE_DV));
 
     default Properties getValueProperties(Expression value) {
         return getValueProperties(null, value, false);
@@ -236,7 +236,8 @@ public interface EvaluationContext {
                 INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
                 CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
-                IDENTITY, DV.FALSE_DV));
+                IDENTITY, DV.FALSE_DV,
+                IGNORE_MODIFICATIONS, DV.FALSE_DV));
         assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
         return properties;
     }
@@ -248,7 +249,8 @@ public interface EvaluationContext {
                 INDEPENDENT, analyserContext.defaultIndependent(formalType),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
                 CONTAINER, analyserContext.defaultContainer(formalType),
-                IDENTITY, DV.FALSE_DV));
+                IDENTITY, DV.FALSE_DV,
+                IGNORE_MODIFICATIONS, DV.FALSE_DV));
     }
 
     /*
@@ -376,6 +378,7 @@ public interface EvaluationContext {
                 INDEPENDENT, INDEPENDENT.falseDv,
                 CONTAINER, CONTAINER.falseDv,
                 IDENTITY, IDENTITY.falseDv,
+                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
                 NOT_NULL_EXPRESSION, NOT_NULL_EXPRESSION.falseDv));
         // combine overwrites
         return existing.combine(p);

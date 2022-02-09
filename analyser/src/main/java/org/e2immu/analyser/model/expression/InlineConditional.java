@@ -135,7 +135,7 @@ public class InlineConditional extends BaseExpression implements Expression {
             DV nneIfFalse = notChild.getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
             return nneIfFalse.min(nneIfTrue);
         }
-        if (property == IDENTITY) {
+        if (property == IDENTITY || property == IGNORE_MODIFICATIONS) {
             return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
         }
         if (property == IMMUTABLE || property == INDEPENDENT || property == CONTAINER) {

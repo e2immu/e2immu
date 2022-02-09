@@ -50,6 +50,7 @@ public final class Instance extends BaseExpression implements Expression {
                         Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                         Property.INDEPENDENT, MultiLevel.DEPENDENT_DV,
                         Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV,
+                        Property.IGNORE_MODIFICATIONS, DV.FALSE_DV,
                         Property.IDENTITY, DV.FALSE_DV)));
     }
 
@@ -177,6 +178,7 @@ public final class Instance extends BaseExpression implements Expression {
                 Property.IMMUTABLE, immutable,
                 Property.CONTAINER, container,
                 Property.INDEPENDENT, independent,
+                Property.IGNORE_MODIFICATIONS, DV.FALSE_DV,
                 Property.IDENTITY, DV.FALSE_DV)));
     }
 
@@ -240,8 +242,8 @@ public final class Instance extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
-            case IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(property);
-            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
+            case IGNORE_MODIFICATIONS, IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(property);
+            case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };
     }
@@ -271,6 +273,9 @@ public final class Instance extends BaseExpression implements Expression {
         // TODO not consistent, but hack after changing 10s of tests, don't want to change back again
         if (valueProperties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
             outputBuilder.add(new Text("/*@Identity*/"));
+        }
+        if (valueProperties.getOrDefault(Property.IGNORE_MODIFICATIONS, DV.FALSE_DV).valueIsTrue()) {
+            outputBuilder.add(new Text("/*@IgnoreMods*/"));
         }
         return outputBuilder;
     }

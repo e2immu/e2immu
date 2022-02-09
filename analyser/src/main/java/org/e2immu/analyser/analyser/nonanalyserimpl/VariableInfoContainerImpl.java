@@ -308,6 +308,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         // even NOT_YET_ASSIGNED needs value properties (See TryStatement_2)
         initial.ensureProperty(NOT_NULL_EXPRESSION, defaultNotNull);
         initial.ensureProperty(IDENTITY, IDENTITY.falseDv);
+        initial.ensureProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
         initial.ensureProperty(CONTAINER, CONTAINER.falseDv);
         initial.ensureProperty(IMMUTABLE, MUTABLE_DV);
         initial.ensureProperty(INDEPENDENT, INDEPENDENT.falseDv);

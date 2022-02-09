@@ -77,6 +77,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public static final String ANALYSE_VALUES = "analyseValues";
     public static final String ANALYSE_CONSTANT = "analyseConstant";
     public static final String ANALYSE_BEFORE_MARK = "analyseBeforeMark";
+    public static final String ANALYSE_IGNORE_MODIFICATIONS = "analyseIgnoreModifications";
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -145,6 +146,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
+                .add(ANALYSE_IGNORE_MODIFICATIONS, sharedState -> analyseIgnoreModifications())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -1000,7 +1002,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                            case IDENTITY -> DV.FALSE_DV;
+                            case IDENTITY, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
                             case CONTAINER -> MultiLevel.CONTAINER_DV; // FIXME this should be diverted to the type
                             default -> throw new UnsupportedOperationException("? who wants to know " + property);
                         };
@@ -1099,6 +1101,25 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 || expression instanceof MethodReference;
     }
 
+    private AnalysisStatus analyseIgnoreModifications() {
+        DV currentIgnoreMods = fieldAnalysis.getProperty(IGNORE_MODIFICATIONS);
+        if (currentIgnoreMods.isDone()) {
+            return DONE;
+        }
+        CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
+        if (valuesStatus.isDelayed()) {
+            LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field " + fqn);
+            fieldAnalysis.setProperty(IGNORE_MODIFICATIONS, valuesStatus);
+            return valuesStatus;
+        }
+        List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
+        DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS)).reduce(DV.MIN_INT_DV, DV::max);
+        DV finalValue = res.valueIsTrue() ? res : DV.FALSE_DV;
+        fieldAnalysis.setProperty(IGNORE_MODIFICATIONS, finalValue);
+        LOGGER.debug("Set @IgnoreModifications to {} for field {}", finalValue, fqn);
+        return DONE;
+    }
+
     /*
     Nothing gets set before we know (a) the initialiser, if it is there, (b) values in the constructor, and (c)
     the decision on @Final.
@@ -1162,7 +1183,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             Property.IMMUTABLE, proxy.getProperty(Property.IMMUTABLE),
                             Property.INDEPENDENT, proxy.getProperty(Property.INDEPENDENT),
                             Property.CONTAINER, proxy.getProperty(Property.CONTAINER),
-                            Property.IDENTITY, proxy.getProperty(Property.IDENTITY)
+                            Property.IDENTITY, proxy.getProperty(Property.IDENTITY),
+                            IGNORE_MODIFICATIONS, proxy.getProperty(IGNORE_MODIFICATIONS)
                     ));
                     effectivelyFinalValue = constructorCall.removeConstructor(valueProperties, fieldAnalysis.primitives);
                 } else {
