@@ -208,7 +208,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         Expression t = ifTrueResult.value();
         Expression f = ifFalseResult.value();
 
-        if (condition.isUnknown() || t.isUnknown() || f.isUnknown()) {
+        if (condition.isEmpty() || t.isEmpty() || f.isEmpty()) {
             throw new UnsupportedOperationException();
         }
 

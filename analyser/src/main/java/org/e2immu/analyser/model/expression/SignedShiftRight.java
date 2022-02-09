@@ -46,7 +46,7 @@ public class SignedShiftRight extends BinaryOperator {
             return new IntConstant(primitives, li.constant() >> ri.constant());
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
 
         return new SignedShiftRight(identifier, primitives, l, r);
     }

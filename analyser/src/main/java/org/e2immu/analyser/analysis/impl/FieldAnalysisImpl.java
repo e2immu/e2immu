@@ -168,7 +168,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (fieldInfo.type.isUnboundTypeParameter()) return fieldInfo.type;
             if (value.isFinal()) {
                 Expression efv = value.get();
-                if (!efv.isUnknown()) {
+                if (!efv.isEmpty()) {
                     return efv.returnType();
                 }
                 return fieldInfo.type;

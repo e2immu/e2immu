@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -798,7 +799,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
         // not assigned in this statement
         if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
-            if (!viEval.valueIsSet() && !initialValue.isUnknown() && !viEval.isRead()) {
+            if (!viEval.valueIsSet() && !initialValue.isEmpty() && !viEval.isRead()) {
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
                 // end of the apply phase, even for variables that aren't read
                 map.removeAll(GroupPropertyValues.PROPERTIES);
@@ -1565,7 +1566,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (evaluationContext.inConstruction() && !myself) {
                 DV immutable = contextImmutable(vic, evaluationContext, fieldAnalysis, valueProps.get(IMMUTABLE));
                 properties.overwrite(CONTEXT_IMMUTABLE, immutable);
-            } else{
+            } else {
                 assert MUTABLE_DV.equals(properties.get(CONTEXT_IMMUTABLE));
             }
         }
@@ -2125,5 +2126,11 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         boolean different = !delay.equals(applyCausesOfDelay);
         applyCausesOfDelay = delay;
         return different;
+    }
+
+    @Override
+    public Set<FieldInfo> fieldsWithBreakInitDelay() {
+        return applyCausesOfDelay.causesStream().filter(c -> c instanceof VariableCause vc && vc.variable() instanceof FieldReference && c.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY)
+                .map(c -> ((FieldReference) ((VariableCause) c).variable()).fieldInfo).collect(Collectors.toUnmodifiableSet());
     }
 }

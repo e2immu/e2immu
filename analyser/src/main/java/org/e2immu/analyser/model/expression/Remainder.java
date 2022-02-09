@@ -45,7 +45,7 @@ public class Remainder extends BinaryOperator {
             return builder.setExpression(new IntConstant(primitives, li.constant() % ri.constant())).build();
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
 
         return builder.setExpression(new Remainder(identifier, primitives, l, r)).build();
     }

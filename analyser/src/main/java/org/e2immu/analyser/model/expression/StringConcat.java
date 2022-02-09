@@ -59,7 +59,7 @@ public class StringConcat extends BinaryOperator {
             return new StringConstant(primitives, lcv + rsv.constant());
         }
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
 
         return new StringConcat(identifier, primitives, l, r);
     }

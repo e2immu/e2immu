@@ -74,7 +74,7 @@ public final class EmptyExpression  extends BaseExpression implements Expression
     }
 
     @Override
-    public boolean isUnknown() {
+    public boolean isEmpty() {
         return true;
     }
 

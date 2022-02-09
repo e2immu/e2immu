@@ -158,7 +158,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         if (finalValues.size() == 1) return finalValues.get(0);
 
         for (Expression value : finalValues) {
-            if (value.isUnknown()) throw new UnsupportedOperationException();
+            if (value.isEmpty()) throw new UnsupportedOperationException();
         }
 
         if (finalValues.isEmpty()) {

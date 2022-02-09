@@ -81,6 +81,9 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     // empty expressions are unknown! They should NOT appear in operations (binary, unary)
+    default boolean isEmpty() {
+        return false;
+    }
     default boolean isUnknown() {
         return false;
     }

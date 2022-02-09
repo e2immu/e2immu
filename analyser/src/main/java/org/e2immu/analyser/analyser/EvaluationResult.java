@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -448,7 +450,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // switch from before or unknown, to after
                 DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
                 setProperty(variable, property, extImm);
-            } else if(currentEffective == EVENTUAL && nextEffective == EVENTUAL_BEFORE) {
+            } else if (currentEffective == EVENTUAL && nextEffective == EVENTUAL_BEFORE) {
                 DV extImm = MultiLevel.beforeImmutableDv(MultiLevel.level(currentImmutable));
                 setProperty(variable, property, extImm);
             }
@@ -557,16 +559,32 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
+            CausesOfDelay stateDelaysFilteredForSelfReference = resultOfExpression.isDelayed() ? stateIsDelayed: breakSelfReferenceDelay(assignmentTarget, stateIsDelayed);
             if (ecd == null) {
-                newEcd = new ChangeData(value, value.causesOfDelay().merge(stateIsDelayed),
-                        stateIsDelayed, markAssignment, Set.of(), linkedVariables, LinkedVariables.EMPTY, Map.of());
+                newEcd = new ChangeData(value, value.causesOfDelay().merge(stateDelaysFilteredForSelfReference),
+                        stateDelaysFilteredForSelfReference, markAssignment, Set.of(), linkedVariables, LinkedVariables.EMPTY, Map.of());
             } else {
-                newEcd = new ChangeData(value, ecd.delays.merge(stateIsDelayed).merge(value.causesOfDelay()),
-                        ecd.stateIsDelayed.merge(stateIsDelayed), ecd.markAssignment || markAssignment,
+                CausesOfDelay mergedValueDelays = ecd.delays.merge(stateDelaysFilteredForSelfReference).merge(value.causesOfDelay());
+                newEcd = new ChangeData(value, mergedValueDelays,
+                        ecd.stateIsDelayed.merge(stateDelaysFilteredForSelfReference), ecd.markAssignment || markAssignment,
                         ecd.readAtStatementTime, linkedVariables, LinkedVariables.EMPTY, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
             return this;
+        }
+
+        private CausesOfDelay breakSelfReferenceDelay(Variable assignmentTarget, CausesOfDelay stateIsDelayed) {
+            if (assignmentTarget instanceof FieldReference fieldReference) {
+                boolean selfReference = stateIsDelayed.causesOfDelay().causesStream()
+                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES || c.cause() == CauseOfDelay.Cause.INITIAL_VALUE)
+                                && c instanceof VariableCause vc
+                                && vc.variable().equals(fieldReference));
+                if (selfReference) {
+                    CauseOfDelay cause = new VariableCause(fieldReference, evaluationContext.getLocation(), CauseOfDelay.Cause.BREAK_INIT_DELAY);
+                    return new SimpleSet(cause).merge(stateIsDelayed);
+                }
+            }
+            return stateIsDelayed;
         }
 
         private void removeVariableFromOtherLinkedVariables(Variable assignmentTarget) {

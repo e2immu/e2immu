@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
@@ -22,7 +23,6 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.LhsRhs;
@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.DV.FALSE_DV;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
@@ -342,7 +341,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         boolean cmNn = notNullAccordingToConditionManager(variable);
         DV cm = cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV;
-        if(isBreakInitDelay) return cm;
+        if (isBreakInitDelay) return cm;
         return cnnInMap.max(cm);
     }
 
@@ -428,7 +427,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return vi;
     }
 
-    // E2Immutable_1, ConditionalInitialization_0
+    // E2Immutable_1, ConditionalInitialization_0, EventuallyE1Immutable_0
     private VariableInfo breakDelay(FieldReference fr, FieldAnalysis fieldAnalysis) {
         CausesOfDelay causes = fieldAnalysis.valuesDelayed().causesOfDelay();
         assert causes.isDelayed();

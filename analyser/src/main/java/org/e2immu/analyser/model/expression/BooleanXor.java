@@ -42,7 +42,7 @@ public class BooleanXor extends BinaryOperator {
             return new BooleanConstant(primitives, li.constant() ^ ri.constant());
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
 
         return new BooleanXor(identifier, primitives, l, r);
     }

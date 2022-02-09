@@ -16,14 +16,12 @@
 package org.e2immu.analyser.parser.own.support;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.Lazy;
@@ -32,8 +30,22 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+/*
+Breaking the delays in "get()":
+- in iteration 1, statement 1, EvaluationResult, breakSelfReferenceDelay
+- this travels to SAApply, where a DelayedWrappedExpression is injected
+- from statement 1 to statement 2 it carries over because the delayed state is suppressed at the end of SASubBlock
+- the field analyser has real values in iteration 1, but no IMMUTABLE yet
+- so the breaking has to repeat itself in iteration 2
+- the field analyser decides on IMMUTABLE in iteration 2
+- iteration 3 sees normal values
+- the state goes from suppressed to real FIXME still to implement
+- important: relies on the StatementAnalysis.fieldsWithBreakInitDelay, which currently uses a field that is used
+  for detecting infinite loops IMPROVE
+ */
 public class Test_Support_05_Lazy extends CommonTestRunner {
 
     public Test_Support_05_Lazy() {
@@ -45,68 +57,101 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
             }
+            if (d.variable() instanceof ReturnVariable) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String causes = switch (d.iteration()) {
+                        case 0 -> "initial:this.t@Method_get_0.0.0";
+                        case 1, 2 -> "initial@Field_t";
+                        default -> "";
+                    };
+                    assertCurrentValue(d, 3, causes, "t$0");
+                }
+                if ("2".equals(d.statementId())) {
+                    String value = switch (d.iteration()) {
+                        case 0 -> "null==<f:t>?<f:t>:<f:t>";
+                        case 1, 2 -> "<wrapped:t>";
+                        default -> "t$1-E$0"; //  FIXME there should be a @NotNull attached here, as the result of the method call requireNonNull
+                    };
+                    assertEquals(value, d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                }
+            }
+            if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
+                assertCurrentValue(d, 1, "initial@Field_supplier", "instance type Supplier<T>");
+            }
+
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertCurrentValue(d, 3, "initial@Field_t", "nullable instance type T");
+                }
+                if ("0".equals(d.statementId())) {
+                    String causes = switch (d.iteration()) {
+                        case 0, 1, 2 -> "initial@Field_t";
+                        default -> "";
+                    };
+                    assertCurrentValue(d, 3, causes, "nullable instance type T");
+                }
+                String expect = switch (d.iteration()) {
+                    case 0 -> "<m:requireNonNull>";
+                    case 1, 2 -> "<wrapped:t>";
+                    default -> "nullable instance type T/*@NotNull*/";
+                };
                 if ("1".equals(d.statementId())) {
-                    if (d.iteration() > 0) {
-                        assertEquals("supplier.get()/*@NotNull*/", d.currentValue().toString());
-                        assertEquals(1, d.currentValue().variables(true).size());
-                    }
+                    // should this not be supplier.get()? no, get() is modifying
+                    assertEquals(expect, d.currentValue().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    assertEquals(expect, d.currentValue().toString());
                 }
             }
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        int iteration = d.iteration();
-        if ("t".equals(d.fieldInfo().name) && iteration > 0) {
-            assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-        }
-        if ("supplier".equals(d.fieldInfo().name)) {
-            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-            if (iteration > 0) assertNotNull(d.fieldAnalysis().getValue());
+
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("get".equals(d.methodInfo().name)) {
+            if ("1".equals(d.statementId())) {
+                // delay gets broken from iteration 1; state is forced to true
+                String expect = switch (d.iteration()) {
+                    case 0 -> "null==<f:t>";
+                    case 1, 2 -> "true";
+                    default -> "null==t$0";
+                };
+                assertEquals(expect, d.state().toString());
+            }
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (d.iteration() > 0 && "get".equals(d.methodInfo().name)) {
-            if ("1".equals(d.statementId())) {
-                // this can be picked up as a precondition for the method
-                assertEquals("null==t$0", d.state().toString());
-            }
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("t".equals(d.fieldInfo().name)) {
+            assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+            assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+            String expected = d.iteration() == 0 ? "initial:this.supplier@Method_get_1;values:this.t@Field_t"
+                    : "null,nullable instance type T/*@NotNull*/";
+            assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+            assertEquals(d.iteration() > 0, d.fieldAnalysis().valuesDelayed().isDone());
+
+            assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+        }
+        if ("supplier".equals(d.fieldInfo().name)) {
+            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+            assertEquals("supplierParam", d.fieldAnalysis().getValue().toString());
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
-
-        FieldInfo supplier = d.methodInfo().typeInfo.getFieldByName("supplier", true);
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
-
-        if ("Lazy".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getFieldAsVariable(supplier);
-            assert tv != null;
-            assertFalse(tv.isDelayed());
-
-            ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
-            assertEquals("supplierParam", supplierParam.name);
-        }
         if ("get".equals(d.methodInfo().name)) {
-            VariableInfo vi = d.getFieldAsVariable(supplier);
-            assert vi != null;
-            assertFalse(vi.isAssigned());
-
-            VariableInfo ret = d.getReturnAsVariable();
-            if (d.iteration() >= 1) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, ret.getProperty(Property.NOT_NULL_EXPRESSION));
-                assertTrue(methodLevelData.linksHaveBeenEstablished());
-            }
+            String expect = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
+                    : "Precondition[expression=null==t, causes=[state]]";
+            assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
         }
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
-            assertEquals("Type java.util.function.Supplier<T>,Type param T",
-                    d.typeAnalysis().getTransparentTypes().toString());
+            assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
         }
     };
 

@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
-import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -251,7 +250,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                                      boolean atLeastOneBlockExecuted,
                                                      List<ConditionAndVariableInfo> mergeSources) {
         Expression currentValue = vi.getValue();
-        if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return valueProperties();
+        if (!atLeastOneBlockExecuted && currentValue.isEmpty()) return valueProperties();
 
         Variable variable = vi.variable();
         if (mergeSources.isEmpty()) {

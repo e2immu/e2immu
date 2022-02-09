@@ -64,7 +64,7 @@ public class Product extends BinaryOperator {
             return IntConstant.intOrDouble(primitives, ln.doubleValue() * rn.doubleValue());
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
 
         if (r instanceof Sum sum) {
             return Sum.sum(identifier, evaluationContext, product(evaluationContext, l, sum.lhs),

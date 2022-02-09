@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 

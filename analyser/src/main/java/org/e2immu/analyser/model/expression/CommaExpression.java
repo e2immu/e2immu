@@ -42,7 +42,7 @@ public class CommaExpression extends BaseExpression implements Expression {
         List<Expression> expressions = input.stream().filter(e -> !(e instanceof ConstantExpression)).toList();
         if (expressions.size() == 0) return new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
-        if (expressions.stream().anyMatch(Expression::isUnknown)) throw new UnsupportedOperationException();
+        if (expressions.stream().anyMatch(Expression::isEmpty)) throw new UnsupportedOperationException();
         return new CommaExpression(List.copyOf(expressions));
     }
 

@@ -18,11 +18,13 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,5 +56,15 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+    }
+
+    @Test
+    public void testSupplier() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Supplier.class);
+        assertTrue(typeInfo.isInterface());
+        assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.MUTABLE_DV,typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV,typeAnalysis.getProperty(Property.INDEPENDENT));
     }
 }

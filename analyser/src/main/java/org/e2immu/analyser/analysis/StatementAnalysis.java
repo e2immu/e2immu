@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface StatementAnalysis extends Analysis,
@@ -159,6 +160,8 @@ public interface StatementAnalysis extends Analysis,
     List<Variable> variablesReadBySubAnalysers();
 
     boolean latestDelay(CausesOfDelay delay);
+
+    Set<FieldInfo> fieldsWithBreakInitDelay();
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

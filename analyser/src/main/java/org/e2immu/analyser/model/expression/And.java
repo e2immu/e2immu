@@ -67,7 +67,7 @@ public class And extends ExpressionCanBeTooComplex {
         // STEP 1: check that all values return boolean!
         int complexity = 0;
         for (Expression v : values) {
-            assert !v.isUnknown() : "Unknown value " + v + " in And";
+            assert !v.isEmpty() : "Unknown value " + v + " in And";
             assert v.returnType() != null : "Null return type for " + v + " in And";
             assert v.returnType().isBooleanOrBoxedBoolean() || v.returnType().isUnboundTypeParameter()
                     : "Non-boolean return type for " + v + " in And: " + v.returnType();

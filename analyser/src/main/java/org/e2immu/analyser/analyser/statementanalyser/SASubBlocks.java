@@ -81,7 +81,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             ConditionManager cm = sharedState.localConditionManager().addState(assertCondition);
             statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
         } else {
-            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
+            Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
+            ConditionManager cm;
+            if (!fieldsWithBreakDelay.isEmpty()) {
+                cm = sharedState.localConditionManager().removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
+            } else {
+                cm = sharedState.localConditionManager();
+            }
+            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
         }
 
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {

@@ -101,7 +101,7 @@ public class Filter {
     private <X> FilterResult<X> internalFilter(Expression value, List<FilterMethod<X>> filterMethods) {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(v -> {
-            if (!v.isUnknown()) {
+            if (!v.isEmpty()) {
                 if (v instanceof Negation negatedValue) {
                     FilterResult<X> resultOfNegated = internalFilter(negatedValue.expression, filterMethods);
                     if (resultOfNegated != null) {

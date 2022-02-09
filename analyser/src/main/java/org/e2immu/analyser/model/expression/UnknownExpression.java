@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -67,6 +66,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static Expression forHardcodedMethodReturnValue(Identifier identifier, ParameterizedType parameterizedType,
                                                            String customMessage) {
         return new UnknownExpression(identifier, parameterizedType, customMessage);
+    }
+
+    public static Expression forSpecial() {
+        return new UnknownExpression(Identifier.CONSTANT, ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, "?");
     }
 
     @Override
@@ -164,5 +167,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
     @Override
     public boolean isComputeProperties() {
         return false;
+    }
+
+    @Override
+    public boolean isUnknown() {
+        return true;
     }
 }

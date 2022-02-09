@@ -151,7 +151,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         Primitives primitives = evaluationContext.getPrimitives();
         Expression value = evaluationResult.value();
 
-        if (value.isUnknown()) {
+        if (value.isEmpty()) {
             return builder.setExpression(value).build();
         }
         if (value.isDelayed()) {

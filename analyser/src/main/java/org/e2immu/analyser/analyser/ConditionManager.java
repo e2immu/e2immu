@@ -14,11 +14,13 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -46,7 +48,13 @@ public record ConditionManager(Expression condition,
                                Precondition precondition,
                                ConditionManager parent) {
 
+    private static final ConditionManager SPECIAL = new ConditionManager();
+
     public static final int LIMIT_ON_COMPLEXITY = 200;
+
+    private ConditionManager() {
+        this(UnknownExpression.forSpecial(), UnknownExpression.forSpecial(), new Precondition(UnknownExpression.forSpecial(), List.of()), null);
+    }
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
@@ -195,7 +203,7 @@ public record ConditionManager(Expression condition,
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
 
         Expression absoluteState = absoluteState(evaluationContext);
-        if (absoluteState.isUnknown() || value.isUnknown()) throw new UnsupportedOperationException();
+        if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
          */
@@ -224,7 +232,7 @@ public record ConditionManager(Expression condition,
 
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
-        if (e1.isUnknown() || e2.isUnknown()) throw new UnsupportedOperationException();
+        if (e1.isEmpty() || e2.isEmpty()) throw new UnsupportedOperationException();
         int complexity = e1.getComplexity() + e2.getComplexity();
         if (complexity > LIMIT_ON_COMPLEXITY) {
             return Instance.forTooComplex(Identifier.generate(),
@@ -267,7 +275,7 @@ public record ConditionManager(Expression condition,
                                                    EvaluationContext evaluationContext,
                                                    Filter.FilterMode filterMode,
                                                    boolean requireEqualsNull) {
-        if (value.isUnknown()) {
+        if (value.isEmpty()) {
             return Set.of();
         }
         Filter filter = new Filter(evaluationContext, filterMode);
@@ -284,7 +292,7 @@ public record ConditionManager(Expression condition,
      */
     public Expression precondition(EvaluationContext evaluationContext) {
         Expression absoluteState = absoluteState(evaluationContext);
-        if (absoluteState.isUnknown()) throw new UnsupportedOperationException();
+        if (absoluteState.isEmpty()) throw new UnsupportedOperationException();
         Expression negated = Negation.negate(evaluationContext, absoluteState);
 
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
@@ -325,7 +333,7 @@ public record ConditionManager(Expression condition,
     See Project_0 ...
      */
     public boolean isSafeDelayed() {
-        return isDelayed() || parent != null && parent.isDelayed();
+        return isDelayed() || parent != null && parent.isDelayed() || parent == SPECIAL;
     }
 
     public CausesOfDelay stateDelayedOrPreconditionDelayed() {
@@ -343,7 +351,24 @@ public record ConditionManager(Expression condition,
                 (condition.isBoolValueTrue() ? "" : "condition=" + condition + ";") +
                 (state.isBoolValueTrue() ? "" : "state=" + state + ";") +
                 (precondition.isEmpty() ? "" : "pc=" + precondition + ";") +
-                (parent == null ? "" : "parent=" + parent) + '}';
+                (parent == null ? "" : parent == SPECIAL ? "**" : "parent=" + parent) + '}';
+    }
+
+    public ConditionManager removeDelaysOn(Primitives primitives, Set<FieldInfo> fieldsWithBreakDelay) {
+        Expression c = removeDelaysOn(primitives, fieldsWithBreakDelay, condition);
+        Expression s = removeDelaysOn(primitives, fieldsWithBreakDelay, state);
+        Expression pc = removeDelaysOn(primitives, fieldsWithBreakDelay, precondition.expression());
+        return new ConditionManager(c, s, pc.equals(precondition.expression()) ? precondition : new Precondition(pc, precondition.causes()), SPECIAL);
+    }
+
+    private Expression removeDelaysOn(Primitives primitives, Set<FieldInfo> fieldsWithBreakDelay, Expression expression) {
+        if (expression.isDelayed()) {
+            CausesOfDelay causes = expression.causesOfDelay();
+            if (causes.causesStream().anyMatch(cause -> cause instanceof VariableCause vc && vc.variable() instanceof FieldReference fr && fieldsWithBreakDelay.contains(fr.fieldInfo))) {
+                return new BooleanConstant(primitives, true);
+            }
+        }
+        return expression;
     }
 
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

@@ -1197,7 +1197,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return value.causesOfDelay();
         }
 
-        if (value.isUnknown()) {
+        if (value.isEmpty()) {
             LOGGER.debug("@Constant of {} false, because not final", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(Property.CONSTANT, DV.FALSE_DV);
             return DONE;
