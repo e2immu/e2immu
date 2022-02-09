@@ -22,12 +22,22 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
+
+    @Test
+    public void testCollector() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Collector.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
 
     @Test
     public void testStream() {

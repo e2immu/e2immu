@@ -21,14 +21,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -49,19 +47,37 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("collector".equals(d.methodInfo().name)) {
+                if (d.iteration() >= 2) {
+                    Expression srv = d.methodAnalysis().getSingleReturnValue();
+                    if (srv instanceof InlinedMethod inline) {
+                        if (inline.expression() instanceof ConstructorCall cc) {
+                            assertEquals("$1", cc.anonymousClass().simpleName);
+                        } else fail("Got " + inline.expression().getClass());
+                    } else fail("Got " + srv.getClass());
+                }
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collector = typeMap.get(Collector.class);
             assertEquals(MultiLevel.NOT_CONTAINER_DV, collector.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
         testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)

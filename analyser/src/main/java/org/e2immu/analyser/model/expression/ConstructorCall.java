@@ -233,14 +233,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT, IDENTITY, CONTAINER -> analyserContext.defaultValueProperty(property, pt);
-            case IMMUTABLE -> immutableValue(analyserContext);
+            case IMMUTABLE -> immutableValue(pt, analyserContext);
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
     }
 
-    private DV immutableValue(AnalyserContext analyserContext) {
-        DV dv = analyserContext.defaultImmutable(parameterizedType, false);
+    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
+        DV dv = analyserContext.defaultImmutable(pt, false);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }
