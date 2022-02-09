@@ -117,6 +117,10 @@ public interface VariableInfo {
     @NotNull
     Properties valueProperties();
 
+    default boolean isAssignedAt(String index) {
+        return getAssignmentIds().getLatestAssignmentIndex().equals(index);
+    }
+
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

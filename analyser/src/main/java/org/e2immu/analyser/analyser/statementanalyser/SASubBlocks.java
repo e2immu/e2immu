@@ -53,6 +53,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
         }
 
+        // FIXME this should also be implemented on the haveSubBlocks side
+        Set<Variable> variablesAssigned = statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
+                .map(VariableInfo::variable).collect(Collectors.toUnmodifiableSet());
+        ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.evaluationContext(),
+                variablesAssigned);
+
         if (statement() instanceof AssertStatement) {
             Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
             boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
@@ -78,18 +84,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
             }
             Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
-            ConditionManager cm = sharedState.localConditionManager().addState(assertCondition);
-            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
+            cm = cm.addState(assertCondition);
         } else {
-            Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
-            ConditionManager cm;
-            if (!fieldsWithBreakDelay.isEmpty()) {
-                cm = sharedState.localConditionManager().removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
-            } else {
-                cm = sharedState.localConditionManager();
-            }
-            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
+            // FIXME this should also be implemented on the haveSubBlocks side
+            //Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
+            //if (!fieldsWithBreakDelay.isEmpty()) {
+            //    cm = cm.removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
+            //}
         }
+        statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
 
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterSubBlocksFromTimeAfterExecution();

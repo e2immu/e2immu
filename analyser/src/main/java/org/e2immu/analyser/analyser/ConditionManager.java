@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /*
@@ -369,6 +366,23 @@ public record ConditionManager(Expression condition,
             }
         }
         return expression;
+    }
+
+    public ConditionManager removeFromState(EvaluationContext evaluationContext, Set<Variable> variablesAssigned) {
+        Primitives primitives = evaluationContext.getPrimitives();
+        Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
+        if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {
+            return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, parent);
+        }
+        if (withoutNegation instanceof And and) {
+            Expression[] expressions = and.getExpressions().stream()
+                    .filter(e -> Collections.disjoint(e.variables(true), variablesAssigned))
+                    .toArray(Expression[]::new);
+            Expression s = expressions.length == 0 ? new BooleanConstant(primitives, true) :
+                    And.and(evaluationContext, expressions);
+            return new ConditionManager(condition, s, precondition, parent);
+        }
+        return this;
     }
 
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

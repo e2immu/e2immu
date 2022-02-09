@@ -179,7 +179,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                if (variable instanceof FieldReference target && valueToWritePossiblyDelayed.isDelayed()) {
+                if (variable instanceof FieldReference target && valueToWritePossiblyDelayed.isDelayed() && !combined.delays().isDelayed()) {
                     Optional<VariableCause> optVc = valueToWritePossiblyDelayed.causesOfDelay().causesStream()
                             .filter(c -> c instanceof VariableCause vc
                                     && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
@@ -194,7 +194,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         valueToWritePossiblyDelayed = new DelayedWrappedExpression(Identifier.generate(), tempVi, valueToWritePossiblyDelayed.causesOfDelay());
                     }
                 }
-                if(variable instanceof FieldReference target
+                if (variable instanceof FieldReference target
                         && valueToWritePossiblyDelayed.isDone()
                         && changeData.stateIsDelayed().isDelayed()) {
                     Optional<VariableCause> optVc = changeData.stateIsDelayed().causesOfDelay().causesStream()
@@ -203,11 +203,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                     && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
                             .map(c -> (VariableCause) c)
                             .findFirst();
-                    if(optVc.isPresent()) {
+                    if (optVc.isPresent()) {
                         // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
-                        VariableInfo tempVi = new VariableInfoImpl(variable, valueToWritePossiblyDelayed, combined);
+                        VariableInfo tempVi = new VariableInfoImpl(variable, valueToWritePossiblyDelayed, combined.copy());
                         valueToWritePossiblyDelayed = new DelayedWrappedExpression(Identifier.generate(), tempVi, changeData.stateIsDelayed());
                         assert valueToWritePossiblyDelayed.isDelayed();
+                        // DELAY combined
+
+                        EvaluationContext.VALUE_PROPERTIES.forEach(p -> combined.overwrite(p, changeData.stateIsDelayed()));
                     }
                 }
 

@@ -183,4 +183,8 @@ public class Properties {
     public Properties writableCopy() {
         return new Properties(new HashMap<>(map));
     }
+
+    public Properties copy() {
+        return Properties.of(map);
+    }
 }

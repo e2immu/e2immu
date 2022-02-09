@@ -162,7 +162,7 @@ public class Test_46_Singleton extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:boolean>" : "false";
+                        String expected = d.iteration() == 0 ? "<wrapped:created>" : "false";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

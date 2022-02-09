@@ -57,10 +57,14 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     }
                     // now comes the assignment this.t = t;
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:T>" : "t";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<wrapped:t>";
+                            case 1 -> "<s:T>";
+                            default -> "t";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
@@ -83,7 +87,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     String expectValue = d.iteration() <= 1 ? "<f:t>" : "nullable instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertDv(d, 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -105,7 +109,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             }

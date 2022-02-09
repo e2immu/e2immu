@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,12 +69,14 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
-                        case 0 -> "null==<f:t>?<f:t>:<f:t>";
-                        case 1, 2 -> "<wrapped:t>";
-                        default -> "t$1-E$0"; //  FIXME there should be a @NotNull attached here, as the result of the method call requireNonNull
+                        case 0 -> "<f:t>";
+                        case 1 -> "<wrapped:t>";
+                        case 2 -> "<s:T>";
+                        default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals(d.iteration() >= 3, d.currentValue().isDone());
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
@@ -93,15 +96,18 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
                 String expect = switch (d.iteration()) {
                     case 0 -> "<m:requireNonNull>";
-                    case 1, 2 -> "<wrapped:t>";
+                    case 1 -> "<wrapped:t>";
+                    case 2 -> "<s:T>"; // break init delay gone already
                     default -> "nullable instance type T/*@NotNull*/";
                 };
                 if ("1".equals(d.statementId())) {
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
+                    assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(expect, d.currentValue().toString());
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         }
@@ -117,7 +123,17 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     case 1, 2 -> "true";
                     default -> "null==t$0";
                 };
-                assertEquals(expect, d.state().toString());
+                assertEquals("true", d.state().toString());
+                //  String expectEq = d.iteration() < 3 ? "" : "t=null";
+                //  assertEquals(expectEq, d.statementAnalysis().stateData().equalityAccordingToStateStream()
+                //          .map(Object::toString).collect(Collectors.joining(",")));
+            }
+            if ("2".equals(d.statementId())) {
+                // important: if the state says something about t, then after assignment to t this should be
+                // removed!
+                assertEquals("true", d.state().toString());
+                assertEquals("", d.statementAnalysis().stateData().equalityAccordingToStateStream()
+                        .map(Object::toString).collect(Collectors.joining(",")));
             }
         }
     };
