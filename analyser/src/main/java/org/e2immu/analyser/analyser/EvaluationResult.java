@@ -576,7 +576,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private CausesOfDelay breakSelfReferenceDelay(Variable assignmentTarget, CausesOfDelay stateIsDelayed) {
             if (assignmentTarget instanceof FieldReference fieldReference) {
                 boolean selfReference = stateIsDelayed.causesOfDelay().causesStream()
-                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES || c.cause() == CauseOfDelay.Cause.INITIAL_VALUE)
+                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES )
                                 && c instanceof VariableCause vc
                                 && vc.variable().equals(fieldReference));
                 if (selfReference) {

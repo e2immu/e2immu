@@ -1077,12 +1077,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     continue;
                 }
                 if (modified.valueIsTrue()) {
-                    // if (eventual) {
                     if (typeAnalysis.containsApprovedPreconditionsE2(thisFieldInfo)) {
-                        LOGGER.debug("Modified field {} participates in eventually immutable of {}", fieldInfo.name, typeInfo.simpleName);
+                        LOGGER.debug("Modified field {} has the approved preconditions for {} to be eventually immutable",
+                                fieldInfo.name, typeInfo.simpleName);
                     } else {
-                        LOGGER.debug("For {} to become eventually E2Immutable, modified field {} can only be modified in methods marked @Mark or @Only(before=)",
-                                typeInfo.fullyQualifiedName, fieldInfo.name);
+                        LOGGER.debug("For {} to become eventually E2Immutable, modified field {} can only be modified " +
+                                "in methods marked @Mark or @Only(before=)", typeInfo.fullyQualifiedName, fieldInfo.name);
                         fieldsThatMustBeGuarded.add(fieldInfo);
                     }
                 }

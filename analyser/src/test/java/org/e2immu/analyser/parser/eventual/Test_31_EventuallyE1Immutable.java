@@ -77,7 +77,11 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:String>" : "string";
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<s:String>";
+                            case 1 -> "<wrapped:string>";
+                            default -> "string";
+                        };
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -186,11 +190,11 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
