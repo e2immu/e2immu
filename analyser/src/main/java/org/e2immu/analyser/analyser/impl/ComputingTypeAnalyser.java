@@ -770,7 +770,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                     .filter(ma -> !ma.getMethodInfo().isPrivate(analyserContext))
                     .flatMap(ma -> ma.getParameterAnalyses().stream())
-                    .map(pa -> pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT))
+                    .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
                 LOGGER.debug("Independence of type {} delayed, waiting for parameter independence",
@@ -1119,13 +1119,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             constructor.getMethodInfo().distinguishingName());
                     causesConstructor = causesConstructor.merge(independent.causesOfDelay()); //not decided
                 } else {
-                    if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                    DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                    if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
                         LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
                                 typeInfo.fullyQualifiedName);
                         typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
                         return ALT_DONE;
                     }
-                    int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
+                    int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                     minLevel = Math.min(minLevel, independentLevel);
                 }
             }
@@ -1206,13 +1207,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             causesMethods = causesMethods.merge(independent.causesOfDelay()); //not decided
                         }
                     } else {
-                        if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                        DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                        if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
                             LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
                                     typeInfo.fullyQualifiedName);
                             typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
                             return ALT_DONE;
                         }
-                        int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
+                        int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                         minLevel = Math.min(minLevel, independentLevel);
                     }
                 }
@@ -1253,6 +1255,24 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         LOGGER.debug("Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
         typeAnalysis.setProperty(ALT_IMMUTABLE, finalValue);
         return ALT_DONE;
+    }
+
+    /*
+    See Lazy; other code in SAEvaluationContext.cannotBeModified and StatementAnalysisImpl.initializeParameter.
+    A functional interface comes in as the parameter of a non-private method. Modifications on its single, modifying
+    method are ignored. As a consequence, we treat the object as at least e2immutable - independent_1.
+     */
+    private DV correctIndependentFunctionalInterface(ParameterAnalysis parameterAnalysis, DV independent) {
+        DV correctedIndependent;
+        DV ignoreModification = parameterAnalysis.getProperty(Property.IGNORE_MODIFICATIONS);
+        if (ignoreModification.valueIsTrue() && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface() &&
+                !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
+            LOGGER.debug("Incoming functional interface on non-private method");
+            correctedIndependent = independent.max(MultiLevel.INDEPENDENT_1_DV);
+        } else {
+            correctedIndependent = independent;
+        }
+        return correctedIndependent;
     }
 
     private Set<MethodInfo> methodsOf(FieldInfo fieldInfo) {

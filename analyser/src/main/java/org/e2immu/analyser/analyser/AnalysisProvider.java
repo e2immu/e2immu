@@ -101,11 +101,16 @@ public interface AnalysisProvider {
         }
     };
 
-    default DV getProperty(ParameterizedType parameterizedType, Property property) {
+    // at the moment, all calls have unboundIsMutable == false
+    default DV getProperty(ParameterizedType parameterizedType, Property property, boolean unboundIsMutable) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType != null) {
             TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
             return typeAnalysis == null ? property.falseDv : typeAnalysis.getProperty(property);
+        }
+        if (!unboundIsMutable) {
+            if (property == Property.IMMUTABLE) return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+            if (property == Property.INDEPENDENT) return MultiLevel.INDEPENDENT_1_DV;
         }
         return property.falseDv;
     }

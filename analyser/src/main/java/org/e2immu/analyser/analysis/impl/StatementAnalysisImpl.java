@@ -1611,15 +1611,35 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .maxIgnoreDelay(AnalysisProvider.defaultNotNull(type));
         properties.put(NOT_NULL_EXPRESSION, notNull);
 
+        // the external properties may be delayed, but if so they're delayed in the correct way!
+        for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
+            DV v = parameterAnalysis.getProperty(property);
+            properties.put(property, v);
+        }
+
         DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false);
         DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
                 .replaceDelayBy(MUTABLE_DV);
-        properties.put(IMMUTABLE, immutable);
 
         DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(type);
         DV independent = INDEPENDENT.max(parameterAnalysis.getProperty(INDEPENDENT), formallyIndependent)
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV);
-        properties.put(INDEPENDENT, independent);
+
+        /*
+        See ComputingTypeAnalyser.correctIndependentFunctionalInterface(), Lazy. A functional interface comes in as the
+        parameter of a non-private method. Modifications on its single, modifying method are ignored. As a consequence,
+        we treat the object as e2immutable.
+         */
+        DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS).maxIgnoreDelay(DV.FALSE_DV);
+        if(ignoreModifications.valueIsTrue()
+                && type.isFunctionalInterface()
+                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()){
+            properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV));
+            properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_1_DV));
+        } else {
+            properties.put(IMMUTABLE, immutable);
+            properties.put(INDEPENDENT, independent);
+        }
 
         // if the parameter is not explicitly annotated as a container, we can take a default value
         DV container = parameterAnalysis.getProperty(CONTAINER).maxIgnoreDelay(MultiLevel.NOT_CONTAINER_DV);
@@ -1627,12 +1647,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         boolean identity = parameterInfo.index == 0;
         properties.put(IDENTITY, DV.fromBoolDv(identity));
-
-        // the external properties may be delayed, but if so they're delayed in the correct way!
-        for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
-            DV v = parameterAnalysis.getProperty(property);
-            properties.put(property, v);
-        }
 
         Expression value = Instance.initialValueOfParameter(parameterInfo, properties);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);

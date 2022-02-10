@@ -170,6 +170,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             String expect = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
+            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
@@ -222,6 +221,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public boolean cannotBeModified(Expression value) {
         if (value instanceof IsVariableExpression ve) {
             VariableInfo variableInfo = findForReading(ve.variable(), true);
+
+            // see Lazy: a functional interface comes in as a parameter of a non-private method,
+            // and is treated as an E2Immutable object, with the modification on the
+            // single modifying method ignored. See ComputingTypeAnalyser.correctIndependentFunctionalInterface()
+            DV ignoreMod = variableInfo.getProperty(IGNORE_MODIFICATIONS);
+            if (ignoreMod.valueIsTrue()) return false;
+
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return true;
             DV imm = variableInfo.getProperty(IMMUTABLE);
