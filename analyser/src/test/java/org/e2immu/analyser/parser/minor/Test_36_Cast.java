@@ -72,14 +72,14 @@ public class Test_36_Cast extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "<m:increment>" : "instance type int";
+                    String expectValue = d.iteration() <= 1 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() == 0 ? "<f:t>" : "instance type T";
+                    String expectValue = d.iteration() <= 1 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? "return incrementedT:-1,this.t:0" : "this.t:0";
+                    String expectLinked = d.iteration() <= 1 ? "return incrementedT:-1,this.t:0" : "this.t:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }

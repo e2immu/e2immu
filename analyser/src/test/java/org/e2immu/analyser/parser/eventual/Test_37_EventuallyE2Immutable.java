@@ -182,8 +182,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
-                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyInto".equals(d.methodInfo().name)) {
@@ -543,10 +543,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_9".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() < 2) {
-                    String expected = d.iteration() == 0 ? "mm@Method_setFinalAllowEquals"
-                            : "initial:this.isFinal@Method_setFinal_0;initial:this.isFinal@Method_setVariable_0;values:this.value@Field_value";
-                    assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
+                if (d.iteration() <= 2) {
+                    assertTrue(d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
                 } else {
                     // we expect "value" to be guarded by isFinal (ComputingTypeAnalyser.findFieldsGuardedByEventuallyImmutableFields)
                     String expected = "isFinal=!isFinal";

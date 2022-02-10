@@ -73,7 +73,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("v2".equals(d.variableName()) && "2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<f:field>" : "field$1";
+                    String expect = d.iteration() == 0 ? "<f*:field>" : "field$1";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }

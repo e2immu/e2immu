@@ -437,6 +437,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // E2Immutable_1, ConditionalInitialization_0, EventuallyE1Immutable_0
+    // by returning a new VII object after having returned null here, we introduce the INITIAL_VALUE delay
     private VariableInfo breakDelay(FieldReference fr, FieldAnalysis fieldAnalysis) {
         CausesOfDelay causes = fieldAnalysis.valuesDelayed().causesOfDelay();
         assert causes.isDelayed();

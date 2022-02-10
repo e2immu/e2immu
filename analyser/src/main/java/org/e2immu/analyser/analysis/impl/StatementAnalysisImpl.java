@@ -751,7 +751,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                               FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
 
-        Properties map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
+        Properties map = fieldPropertyMap(evaluationContext, fieldReference.fieldInfo);
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
@@ -802,7 +802,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.isEmpty() && !viEval.isRead()) {
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
-                // end of the apply phase, even for variables that aren't read
+                // end of the "apply" phase, even for variables that aren't read
                 map.removeAll(GroupPropertyValues.PROPERTIES);
                 vic.setValue(initialValue, viInitial.getLinkedVariables(), map, false);
             }
@@ -1431,11 +1431,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                     EvaluationContext evaluationContext) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
-  /*      if (!evaluationContext.isMyself(variable)) {
-            DV defaultImmutable = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
-            properties.overwrite(CONTEXT_IMMUTABLE, defaultImmutable);
-        }*/
-        for(Property ext: EXTERNALS) {
+        for (Property ext : EXTERNALS) {
             properties.put(ext, ext.valueWhenAbsent());
         }
         Identifier identifier = Identifier.generate();
@@ -1562,25 +1558,35 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference);
+        boolean wroteExtIgnMod;
         if (myself && !fieldReference.fieldInfo.isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in SAApply
             combined = evaluationContext.ensureMyselfValueProperties(properties);
+            wroteExtIgnMod = false;
         } else {
             // the value and its properties are taken from the field analyser
             Properties valueProps = evaluationContext.getValueProperties(value);
             combined = properties.combine(valueProps);
-            if (evaluationContext.inConstruction() && !myself) {
-                DV immutable = contextImmutable(vic, evaluationContext, fieldAnalysis, valueProps.get(IMMUTABLE));
-                properties.overwrite(CONTEXT_IMMUTABLE, immutable);
+            if (evaluationContext.inConstruction()) {
+                properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
+                wroteExtIgnMod = true;
+                if (myself) {
+                    assert MUTABLE_DV.equals(properties.get(CONTEXT_IMMUTABLE));
+                } else {
+                    DV immutable = contextImmutable(vic, evaluationContext, fieldAnalysis, valueProps.get(IMMUTABLE));
+                    properties.overwrite(CONTEXT_IMMUTABLE, immutable);
+                }
             } else {
-                assert MUTABLE_DV.equals(properties.get(CONTEXT_IMMUTABLE));
+                wroteExtIgnMod = false;
             }
         }
         // the external properties
         for (Property property : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
-            DV v = fieldAnalysis.getProperty(property);
-            combined.put(property, v);
+            if (!wroteExtIgnMod || property != EXTERNAL_IGNORE_MODIFICATIONS) {
+                DV v = fieldAnalysis.getProperty(property);
+                combined.put(property, v);
+            }
         }
         vic.setValue(value, LinkedVariables.EMPTY, combined, true);
     }
@@ -1621,6 +1627,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV v = parameterAnalysis.getProperty(property);
             properties.put(property, v);
         }
+        properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
 
         DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false);
         DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
@@ -1683,13 +1690,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return result;
     }
 
-    private Properties fieldPropertyMap(AnalyserContext analyserContext,
+    private Properties fieldPropertyMap(EvaluationContext evaluationContext,
                                         FieldInfo fieldInfo) {
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
         Properties result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
 
         for (Property vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
-            DV value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);
+            DV value;
+            if (vp == EXTERNAL_IGNORE_MODIFICATIONS && evaluationContext.inConstruction()) {
+                value = EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent();
+            } else {
+                value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);
+            }
             // IMPROVE we're not passing on 'our' analyserContext instead relying on that of the field, which does not know the lambda we're in at the moment
             result.put(vp, value);
         }
@@ -2142,11 +2155,5 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         boolean different = !delay.equals(applyCausesOfDelay);
         applyCausesOfDelay = delay;
         return different;
-    }
-
-    @Override
-    public Set<FieldInfo> fieldsWithBreakInitDelay() {
-        return applyCausesOfDelay.causesStream().filter(c -> c instanceof VariableCause vc && vc.variable() instanceof FieldReference && c.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY)
-                .map(c -> ((FieldReference) ((VariableCause) c).variable()).fieldInfo).collect(Collectors.toUnmodifiableSet());
     }
 }

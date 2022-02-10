@@ -229,8 +229,6 @@ public class ComputeLinkedVariables {
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
             if (summary.isDelayed()) {
-                // FIXME if causesOfDelay contains the property itself, inject a break?
-
                 causes = causes.merge(summary.causesOfDelay());
             }
             for (Variable variable : cluster) {

@@ -68,11 +68,11 @@ public class ExternalContainer_0 {
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
     @Container // computed from the assignment
     private final Consumer<I> myContainer = new MyContainer();
-    @Container // computed
+    @E2Container // computed
     private final Consumer<I> myContainerLinkedToParameter;
 
-    // not contracted but computed: the @Container property, travels from @Container on the field
-    public ExternalContainer_0(@Container Consumer<I> consumer) {
+    // not contracted but computed: the @E2Container property, travels from @E2Container on the field
+    public ExternalContainer_0(@E2Container Consumer<I> consumer) {
         this.myContainerLinkedToParameter = consumer;
     }
 
@@ -82,13 +82,13 @@ public class ExternalContainer_0 {
             print(myContainerLinkedToParameter);// causes CONTEXT_CONTAINER to go up, which travels to the field, to the param
         }
         print(myContainer); // does not raise an error
-        print(myNonContainer); // raises an error
+        print(myNonContainer); // raises an ERROR!!
     }
 
     // the cause of all complexity: we demand that all implementations be @Container
     // as a consequence, accept will not modify iField because its parameter will be @NotModified
     @NotModified
-    private void print(@Container(contract = true) Consumer<I> in) {
+    private void print(@Container(contract = true) @IgnoreModifications Consumer<I> in) {
         in.accept(iField);
         System.out.println(iField.getI());
     }

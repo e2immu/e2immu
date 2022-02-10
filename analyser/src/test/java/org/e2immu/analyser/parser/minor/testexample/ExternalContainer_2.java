@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
@@ -86,7 +83,7 @@ public class ExternalContainer_2 {
 
     // it is not because modifications on "in" are ignored, that the actual modification on iField is ignored!
     @Modified
-    private void print(Consumer<I> in) {
+    private void print(@IgnoreModifications Consumer<I> in) {
         in.accept(iField);
         System.out.println(iField.getI());
     }

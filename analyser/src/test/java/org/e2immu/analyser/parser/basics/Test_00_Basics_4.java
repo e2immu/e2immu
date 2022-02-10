@@ -16,17 +16,17 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_4 extends CommonTestRunner {
     public Test_00_Basics_4() {
@@ -42,7 +42,11 @@ public class Test_00_Basics_4 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (I.equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i$0";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "1+<f:i>";
+                        case 1 -> "<wrapped:i>";
+                        default -> "1+i$0";
+                    };
                     assertEquals(expect, d.currentValue().toString());
                     assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -52,7 +56,11 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expect = d.iteration() == 0 ? "<f:i>" : "i$0";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<f:i>";
+                        case 1 -> "<vp:i:initial:this.i@Method_increment_0;values:this.i@Field_i>";
+                        default -> "i$0";
+                    };
                     assertEquals(expect, d.currentValue().toString());
                     String expectLv = "return getI:0,this.i:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

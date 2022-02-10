@@ -83,6 +83,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
         assert sharedState.iteration == 0;
 
+        // parameters have EXTERNAL_IGNORE_MODIFICATIONS set to not-involved
+        // (there is no intention to implement a feed-back from field to parameter)
+        if (!parameterAnalysis.properties.isDone(EXTERNAL_IGNORE_MODIFICATIONS)) {
+            parameterAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
+        }
+
         if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid() &&
                 !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
@@ -652,9 +658,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
             if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
                 parameterAnalysis.setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
-            }
-            if (!parameterAnalysis.properties.isDone(EXTERNAL_IGNORE_MODIFICATIONS)) {
-                parameterAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

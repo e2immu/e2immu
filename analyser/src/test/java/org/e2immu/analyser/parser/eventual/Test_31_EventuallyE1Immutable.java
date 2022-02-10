@@ -209,7 +209,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_2_M".equals(d.typeInfo().simpleName)) {
-                String expectApprovedPreconditions = d.iteration() == 0 ? "{}" : "{j=j<=0}";
+                String expectApprovedPreconditions = d.iteration() <= 1 ? "{}" : "{j=j<=0}";
                 assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }

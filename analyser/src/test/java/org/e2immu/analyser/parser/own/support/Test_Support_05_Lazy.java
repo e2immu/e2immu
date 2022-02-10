@@ -70,7 +70,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
                     String causes = switch (d.iteration()) {
-                        case 0 -> "initial:this.t@Method_get_0.0.0";
+                        case 0 -> "break_init_delay:this.t@Method_get_0.0.0";
                         case 1, 2 -> "initial@Field_t";
                         default -> "";
                     };
@@ -78,7 +78,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
-                        case 0 -> "<f:t>";
+                        case 0 -> "<f*:t>";
                         case 1 -> "<wrapped:t>";
                         case 2 -> "<s:T>";
                         default -> "t$1-E$0";

@@ -161,8 +161,6 @@ public interface StatementAnalysis extends Analysis,
 
     boolean latestDelay(CausesOfDelay delay);
 
-    Set<FieldInfo> fieldsWithBreakInitDelay();
-
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

@@ -51,7 +51,7 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:created>" : "instance type boolean";
+                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "instance type boolean";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -61,10 +61,14 @@ public class Test_46_Singleton extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Singleton_1".equals(d.methodInfo().name)) {
                 Precondition precondition = d.methodAnalysis().getPrecondition();
-                String expected = d.iteration() == 0 ? "!<f:created>" : "!Singleton_1.created";
+                String expected = switch (d.iteration()) {
+                    case 0 -> "!<f:created>";
+                    case 1 -> "!<f*:created>";
+                    default -> "!Singleton_1.created";
+                };
                 assertEquals(expected, precondition.expression().toString());
                 CausesOfDelay causesOfDelay = d.methodAnalysis().preconditionStatus();
-                assertEquals(d.iteration() < 1, causesOfDelay.isDelayed());
+                assertEquals(d.iteration() <= 1, causesOfDelay.isDelayed());
             }
         };
 
@@ -78,7 +82,7 @@ public class Test_46_Singleton extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Singleton_1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.SINGLETON);
+                assertDv(d, 2, DV.TRUE_DV, Property.SINGLETON);
             }
         };
 
@@ -112,7 +116,7 @@ public class Test_46_Singleton extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("multiply".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:multiply>" : "k*i";
+                String expect = d.iteration() <= 2 ? "<m:multiply>" : "k*i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -158,11 +162,15 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_7".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:created>" : "instance type boolean";
+                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "instance type boolean";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:boolean>" : "false";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:boolean>";
+                            case 1 -> "<wrapped:created>";
+                            default -> "false";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -171,18 +179,25 @@ public class Test_46_Singleton extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("Singleton_7".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "!<f:created>";
+                    case 1 -> "!<f*:created>";
+                    default -> "!Singleton_7.created";
+                };
                 if ("0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<f:created>" : "!Singleton_7.created";
                     assertEquals(expected,
                             d.statementAnalysis().stateData().getPrecondition().expression().toString());
-                    String expected1 = d.iteration() == 0 ? "<f:created>" : "Singleton_7.created";
+                    String expected1 = switch (d.iteration()) {
+                        case 0 -> "<f:created>";
+                        case 1 -> "<f*:created>";
+                        default -> "Singleton_7.created";
+                    };
                     assertEquals(expected1,
                             d.statementAnalysis().stateData().getConditionManagerForNextStatement().condition().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
-                    String expectValue = d.iteration() == 0 ? "!<f:created>" : "!Singleton_7.created";
-                    assertEquals(expectValue,
+                    assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                    assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                 }
             }
