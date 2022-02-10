@@ -324,8 +324,8 @@ public interface EvaluationContext {
         return new This(getAnalyserContext(), getCurrentType());
     }
 
-    default boolean cannotBeModified(Expression value) {
-        return false;
+    default DV cannotBeModified(Expression value) {
+        return DV.FALSE_DV;
     }
 
     default MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {

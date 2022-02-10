@@ -109,7 +109,7 @@ public interface FieldAnalysis extends Analysis {
                 Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
                 Property.CONTAINER, getProperty(Property.EXTERNAL_CONTAINER),
                 Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
-                Property.IGNORE_MODIFICATIONS, getProperty(Property.IGNORE_MODIFICATIONS),
+                Property.IGNORE_MODIFICATIONS, getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
                 Property.IDENTITY, Property.IDENTITY.falseDv));
         CausesOfDelay delay = properties.delays();
 

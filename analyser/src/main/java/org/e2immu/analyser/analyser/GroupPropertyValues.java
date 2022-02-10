@@ -36,7 +36,8 @@ public class GroupPropertyValues {
             Property.CONTEXT_CONTAINER,
             Property.EXTERNAL_NOT_NULL,
             Property.EXTERNAL_IMMUTABLE,
-            Property.EXTERNAL_CONTAINER);
+            Property.EXTERNAL_CONTAINER,
+            EXTERNAL_IGNORE_MODIFICATIONS);
 
     private final Map<Property, Map<Variable, DV>> map = new HashMap<>();
 
@@ -93,15 +94,16 @@ public class GroupPropertyValues {
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(statementAnalysis, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
         addToMap(statementAnalysis, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
+        addToMap(statementAnalysis, EXTERNAL_IGNORE_MODIFICATIONS, x -> EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(), false);
         addToMap(statementAnalysis, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, false);
         addToMap(statementAnalysis, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
         addToMap(statementAnalysis, CONTEXT_CONTAINER, x -> MultiLevel.NOT_CONTAINER_DV, true);
     }
 
     private void addToMap(StatementAnalysis statementAnalysis,
-                  Property property,
-                  Function<Variable, DV> falseValue,
-                  boolean complainDelay0) {
+                          Property property,
+                          Function<Variable, DV> falseValue,
+                          boolean complainDelay0) {
         Map<Variable, DV> map = getMap(property);
         statementAnalysis.rawVariableStream().forEach(e -> {
             VariableInfoContainer vic = e.getValue();

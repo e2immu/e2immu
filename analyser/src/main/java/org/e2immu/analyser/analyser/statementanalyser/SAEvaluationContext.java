@@ -218,7 +218,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     this one is meant for non-eventual types (for now). After/before errors are caught in EvaluationResult
      */
     @Override
-    public boolean cannotBeModified(Expression value) {
+    public DV cannotBeModified(Expression value) {
         if (value instanceof IsVariableExpression ve) {
             VariableInfo variableInfo = findForReading(ve.variable(), true);
 
@@ -226,21 +226,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // and is treated as an E2Immutable object, with the modification on the
             // single modifying method ignored. See ComputingTypeAnalyser.correctIndependentFunctionalInterface()
             DV ignoreMod = variableInfo.getProperty(IGNORE_MODIFICATIONS);
-            if (ignoreMod.equals(MultiLevel.IGNORE_MODS_DV)) return false;
             DV extIgnoreMod = variableInfo.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
-            if (extIgnoreMod.equals(MultiLevel.IGNORE_MODS_DV)) return false;
+            DV ignore = ignoreMod.max(extIgnoreMod);
+            if (ignore.isDelayed()) return ignore;
+            if (ignore.equals(MultiLevel.IGNORE_MODS_DV)) return DV.FALSE_DV;
 
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return true;
+            if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return DV.TRUE_DV;
             DV imm = variableInfo.getProperty(IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return true;
+            if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-            if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return true;
+            if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
             DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false);
-            return MultiLevel.isAtLeastEffectivelyE2Immutable(formal);
+            return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);
-        return MultiLevel.isAtLeastEffectivelyE2Immutable(valueProperty);
+        return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(valueProperty));
     }
 
     private DV getVariableProperty(Variable variable, Property property, boolean duringEvaluation) {

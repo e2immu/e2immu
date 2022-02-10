@@ -136,6 +136,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, EXTERNAL_NOT_NULL.valueWhenAbsent());
         groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         groupPropertyValues.set(EXTERNAL_CONTAINER, variable, EXTERNAL_CONTAINER.valueWhenAbsent());
+        groupPropertyValues.set(EXTERNAL_IGNORE_MODIFICATIONS, variable, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);

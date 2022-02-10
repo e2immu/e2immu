@@ -619,7 +619,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public boolean cannotBeModified(Expression value) {
+        public DV cannotBeModified(Expression value) {
             return evaluationContext.cannotBeModified(value);
         }
 

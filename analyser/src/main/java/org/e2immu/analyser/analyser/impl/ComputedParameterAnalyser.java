@@ -141,9 +141,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // implicit @IgnoreModifications rule for java.util.function
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
-            DV value = DV.fromBoolDv(parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
-                    && !parameterInfo.getMethod().isPrivate());
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, value);
+            boolean ignore = parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
+                    && !parameterInfo.getMethod().isPrivate();
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, ignore ? IGNORE_MODS_DV : NOT_IGNORE_MODS_DV);
         }
 
         if (parameterAnalysis.getProperty(MODIFIED_VARIABLE).isDelayed()) {
@@ -277,7 +277,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private static final Set<Property> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-            EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER);
+            EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER); // For now, NOT going with EXTERNAL_IGNORE_MODS
 
     private static Set<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
@@ -326,12 +326,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
 
         Set<Property> propertiesDelayed = new HashSet<>();
-        boolean notAssignedToField = true;
         for (Map.Entry<FieldInfo, DV> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             DV assignedOrLinked = e.getValue();
             Set<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
-            if (LinkedVariables.isAssigned(assignedOrLinked)) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
@@ -404,7 +402,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         for (Property property : PROPERTIES) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
-                if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL) {
+                if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
                     v = property.valueWhenAbsent();
                 } else if (property == EXTERNAL_IMMUTABLE) {
                     v = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
@@ -449,10 +447,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return causes.causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD)
                 .filter(c -> c instanceof VariableCause v && v.variable() == parameterInfo ||
                         c instanceof SimpleCause sc && sc.location().getInfo() == parameterInfo);
-    }
-
-    private static boolean isExternal(Property property) {
-        return property == EXTERNAL_NOT_NULL || property == EXTERNAL_IMMUTABLE || property == EXTERNAL_CONTAINER;
     }
 
     // if contractImmutable is delayed, then @BeforeMark is present
@@ -658,6 +652,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
             if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
                 parameterAnalysis.setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+            }
+            if (!parameterAnalysis.properties.isDone(EXTERNAL_IGNORE_MODIFICATIONS)) {
+                parameterAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

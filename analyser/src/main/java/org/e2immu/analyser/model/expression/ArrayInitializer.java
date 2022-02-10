@@ -145,6 +145,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                 case CONSTANT -> DV.TRUE_DV;
                 case EXTERNAL_CONTAINER, CONTAINER -> MultiLevel.CONTAINER_DV;
+                case EXTERNAL_IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
             };
@@ -160,6 +161,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         }
         if (Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
             return MultiLevel.CONTAINER_DV;
+        }
+        if(Property.EXTERNAL_IGNORE_MODIFICATIONS == property || Property.IGNORE_MODIFICATIONS == property) {
+            return MultiLevel.NOT_IGNORE_MODS_DV;
         }
         // default is to refer to each of the components
         return multiExpression.getProperty(evaluationContext, property, duringEvaluation);

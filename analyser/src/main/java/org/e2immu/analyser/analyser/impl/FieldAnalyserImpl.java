@@ -1398,6 +1398,17 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
+        DV ignoreModifications = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
+        if (ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+            LOGGER.debug("Mark field {} as @NotModified, because of @IgnoreModifications", fqn);
+            return DONE;
+        }
+        if (ignoreModifications.isDelayed()) {
+            LOGGER.debug("Delaying @Modified because of delayed @IgnoreModifications, field {}", fqn);
+            fieldAnalysis.setProperty(MODIFIED_OUTSIDE_METHOD, ignoreModifications.causesOfDelay());
+            return AnalysisStatus.of(ignoreModifications.causesOfDelay());
+        }
         Stream<MethodAnalyser> stream = methodsForModification();
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
                 stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
@@ -1592,7 +1603,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         @Override
         public DV getProperty(Variable variable, Property property) {
             if (variable instanceof FieldReference fieldReference) {
-                Property vp = replaceForFieldAnalyser(property);
+                Property vp = ComputingMethodAnalyser.external(property);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
@@ -1604,13 +1615,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             throw new UnsupportedOperationException("?? variable " + variable.fullyQualifiedName() + " of " + variable.getClass());
-        }
-
-        private Property replaceForFieldAnalyser(Property property) {
-            if (property == Property.NOT_NULL_EXPRESSION) return Property.EXTERNAL_NOT_NULL;
-            if (property == Property.IMMUTABLE) return Property.EXTERNAL_IMMUTABLE;
-            if (property == Property.CONTAINER) return EXTERNAL_CONTAINER;
-            return property;
         }
 
         @Override

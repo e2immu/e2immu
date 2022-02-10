@@ -996,6 +996,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return firstStatementAnalyser.navigateTo(index);
     }
 
+    public static Property external(Property property) {
+        if (property == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
+        if (property == IMMUTABLE) return EXTERNAL_IMMUTABLE;
+        if (property == CONTAINER) return EXTERNAL_CONTAINER;
+        if (property == IGNORE_MODIFICATIONS) return EXTERNAL_IGNORE_MODIFICATIONS;
+        return property;
+    }
+
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
@@ -1030,13 +1038,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return typeAnalysis.getProperty(property);
             }
             throw new UnsupportedOperationException("Variable: " + variable.fullyQualifiedName() + " type " + variable.getClass());
-        }
-
-        private Property external(Property property) {
-            if (property == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
-            if (property == IMMUTABLE) return EXTERNAL_IMMUTABLE;
-            if (property == CONTAINER) return EXTERNAL_CONTAINER;
-            return property;
         }
 
         @Override

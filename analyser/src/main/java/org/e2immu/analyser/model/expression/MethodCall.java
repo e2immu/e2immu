@@ -761,7 +761,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        if (modified.valueIsTrue() && evaluationContext.cannotBeModified(objectValue)) {
+        if (modified.valueIsTrue() && evaluationContext.cannotBeModified(objectValue).valueIsTrue()) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }

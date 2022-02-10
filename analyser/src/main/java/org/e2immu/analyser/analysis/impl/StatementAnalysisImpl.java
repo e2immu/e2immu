@@ -50,6 +50,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
+import static org.e2immu.analyser.model.MultiLevel.IGNORE_MODS_DV;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -808,8 +809,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
-    private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
-            EXTERNAL_CONTAINER);
+    private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES = EXTERNALS;
 
     @Override
     public void ensureMessages(Stream<Message> messageStream) {
@@ -1265,6 +1265,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
                 groupPropertyValues.getMap(EXTERNAL_CONTAINER));
 
+        CausesOfDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
+                groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
+
         CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
@@ -1274,7 +1277,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
-                .merge(extContStatus).merge(cImmStatus).merge(cContStatus));
+                .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus));
     }
 
 
@@ -1412,6 +1415,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
                 EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
                 EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+                EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
                 CONTEXT_MODIFIED, DV.FALSE_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE),
@@ -1431,9 +1435,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV defaultImmutable = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
             properties.overwrite(CONTEXT_IMMUTABLE, defaultImmutable);
         }*/
-        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
-        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        for(Property ext: EXTERNALS) {
+            properties.put(ext, ext.valueWhenAbsent());
+        }
         Identifier identifier = Identifier.generate();
         Expression initialValue;
         LinkedVariables linkedVariables;
@@ -1518,9 +1522,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(IMMUTABLE, MUTABLE_DV);
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
 
-        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
-        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        for (Property ext : Property.EXTERNALS) {
+            properties.put(ext, ext.valueWhenAbsent());
+        }
         UnknownExpression value = UnknownExpression.forReturnVariable(methodAnalysis.getMethodInfo().identifier,
                 returnVariable.returnType);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
@@ -1539,9 +1543,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // external: not relevant, except for external immutable, used for tracking the before/after state on the object
-        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
-        properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
+        for (Property ext : Property.EXTERNALS) {
+            if (ext != EXTERNAL_IMMUTABLE) properties.put(ext, ext.valueWhenAbsent());
+        }
         DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType, false);
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
@@ -1633,9 +1637,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
          */
         DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS)
                 .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
-        if(ignoreModifications.valueIsTrue()
+        if (ignoreModifications.equals(IGNORE_MODS_DV)
                 && type.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()){
+                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
             properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV));
             properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_1_DV));
         } else {

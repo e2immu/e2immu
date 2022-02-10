@@ -251,6 +251,7 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
     }
 
     public void ensureProperty(Property property, DV dv) {

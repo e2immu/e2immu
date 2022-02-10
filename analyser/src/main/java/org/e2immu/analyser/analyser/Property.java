@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.MultiLevel;
 
+import java.util.Set;
+
 public enum Property {
 
     /*
@@ -195,4 +197,7 @@ public enum Property {
         if (bestDv.equals(x) || bestDv.equals(y)) return bestDv;
         return x.max(y);
     }
+
+    public static final Set<Property> EXTERNALS = Set.of(EXTERNAL_IMMUTABLE,
+            EXTERNAL_CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS);
 }
