@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
@@ -31,6 +28,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class ShallowFieldAnalyser {
@@ -100,7 +98,11 @@ public class ShallowFieldAnalyser {
         DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV formallyIndependent = analysisProvider.defaultIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
+        DV ignoreMods = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.IGNORE_MODIFICATIONS);
 
+        Properties properties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, notNull,
+                Property.IMMUTABLE, immutable, Property.INDEPENDENT, independent, Property.CONTAINER, typeIsContainer,
+                Property.IGNORE_MODIFICATIONS, ignoreMods, Property.IDENTITY, DV.FALSE_DV));
         Expression value;
         if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
@@ -108,10 +110,10 @@ public class ShallowFieldAnalyser {
             if (initialiser instanceof ConstantExpression<?> constantExpression) {
                 value = constantExpression;
             } else {
-                value = Instance.forField(fieldInfo, initialiser.returnType(), notNull, immutable, typeIsContainer, independent);
+                value = Instance.forField(fieldInfo, initialiser.returnType(), properties);
             }
         } else {
-            value = Instance.forField(fieldInfo, null, notNull, immutable, typeIsContainer, independent);
+            value = Instance.forField(fieldInfo, null, properties);
         }
         fieldAnalysisBuilder.setValue(value);
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());

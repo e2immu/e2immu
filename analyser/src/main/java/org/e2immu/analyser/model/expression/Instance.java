@@ -172,14 +172,8 @@ public final class Instance extends BaseExpression implements Expression {
 
     public static Instance forField(FieldInfo fieldInfo,
                                     ParameterizedType type,
-                                    DV notNull, DV immutable, DV container, DV independent) {
-        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, Properties.of(Map.of(
-                Property.NOT_NULL_EXPRESSION, notNull,
-                Property.IMMUTABLE, immutable,
-                Property.CONTAINER, container,
-                Property.INDEPENDENT, independent,
-                Property.IGNORE_MODIFICATIONS, DV.FALSE_DV,
-                Property.IDENTITY, DV.FALSE_DV)));
+                                    Properties properties) {
+        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, properties);
     }
 
     private boolean internalChecks() {

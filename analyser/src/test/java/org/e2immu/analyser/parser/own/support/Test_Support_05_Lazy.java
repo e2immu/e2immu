@@ -65,6 +65,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
+                assertDv(d, 1, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -88,7 +89,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 1, "initial@Field_supplier", "instance type Supplier<T>");
+                assertCurrentValue(d, 1, "initial@Field_supplier",
+                        "instance type Supplier<T>/*@IgnoreMods*/");
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {

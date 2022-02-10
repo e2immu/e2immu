@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Map;
+
 public interface FieldAnalysis extends Analysis {
 
     /*
@@ -101,23 +103,19 @@ public interface FieldAnalysis extends Analysis {
         Expression value = getValue();
         if (value.isDelayed() || value.isConstant()) return value;
 
-        DV notNull = getProperty(Property.EXTERNAL_NOT_NULL);
-        DV immutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-        DV container = getProperty(Property.EXTERNAL_CONTAINER);
-        DV independent = getProperty(Property.INDEPENDENT);
-
-        CausesOfDelay delay = notNull.causesOfDelay().merge(immutable.causesOfDelay())
-                .merge(independent.causesOfDelay()).merge(container.causesOfDelay());
+        Properties properties = Properties.of(Map.of(
+                Property.NOT_NULL_EXPRESSION, getProperty(Property.EXTERNAL_NOT_NULL),
+                Property.IMMUTABLE, getProperty(Property.EXTERNAL_IMMUTABLE),
+                Property.CONTAINER, getProperty(Property.EXTERNAL_CONTAINER),
+                Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
+                Property.IGNORE_MODIFICATIONS, getProperty(Property.IGNORE_MODIFICATIONS),
+                Property.IDENTITY, DV.FALSE_DV));
+        CausesOfDelay delay = properties.delays();
 
         if (delay.isDelayed()) {
-            Properties priority = Properties.writable();
-            priority.put(Property.IMMUTABLE, immutable);
-            priority.put(Property.NOT_NULL_EXPRESSION, notNull);
-            priority.put(Property.CONTAINER, container);
-            priority.put(Property.INDEPENDENT, independent);
             return DelayedVariableExpression.forDelayedValueProperties(fieldReference, delay);
         }
-        Instance instance = Instance.forField(getFieldInfo(), value.returnType(), notNull, immutable, container, independent);
+        Instance instance = Instance.forField(getFieldInfo(), value.returnType(), properties);
         if (value instanceof ConstructorCall) {
             return PropertyWrapper.addState(instance, value);
         }
