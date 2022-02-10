@@ -103,7 +103,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
                 return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
             case IDENTITY, IGNORE_MODIFICATIONS:
-                return DV.FALSE_DV;
+                return property.falseDv;
         }
         throw new UnsupportedOperationException("No info about " + property + " for primitive");
     }
@@ -118,7 +118,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTEXT_MODIFIED:
             case IDENTITY, IGNORE_MODIFICATIONS:
-                return DV.FALSE_DV;
+                return property.falseDv;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }

@@ -145,10 +145,12 @@ public enum Property {
     EXTERNAL_CONTAINER("external @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_CONTAINER),
     CONTEXT_CONTAINER("context @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTEXT_CONTAINER),
 
+    IGNORE_MODIFICATIONS("@IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS),
+    EXTERNAL_IGNORE_MODIFICATIONS("external @IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS),
+
     CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
     IDENTITY("@Identity", CauseOfDelay.Cause.IDENTITY),
-    IGNORE_MODIFICATIONS("@IgnoreModifications", CauseOfDelay.Cause.IGNORE_MODIFICATIONS),
     SINGLETON("@Singleton", CauseOfDelay.Cause.SINGLETON),
     UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
     EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS);

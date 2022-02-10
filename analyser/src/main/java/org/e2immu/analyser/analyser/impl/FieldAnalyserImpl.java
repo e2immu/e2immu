@@ -141,12 +141,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
+                .add(ANALYSE_IGNORE_MODIFICATIONS, sharedState -> analyseIgnoreModifications())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
-                .add(ANALYSE_IGNORE_MODIFICATIONS, sharedState -> analyseIgnoreModifications())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -1002,7 +1002,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                            case IDENTITY, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
+                            case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
                             case CONTAINER -> MultiLevel.CONTAINER_DV; // FIXME this should be diverted to the type
                             default -> throw new UnsupportedOperationException("? who wants to know " + property);
                         };
@@ -1102,20 +1102,20 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private AnalysisStatus analyseIgnoreModifications() {
-        DV currentIgnoreMods = fieldAnalysis.getProperty(IGNORE_MODIFICATIONS);
+        DV currentIgnoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
         if (currentIgnoreMods.isDone()) {
             return DONE;
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field " + fqn);
-            fieldAnalysis.setProperty(IGNORE_MODIFICATIONS, valuesStatus);
+            fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, valuesStatus);
             return valuesStatus;
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
         DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS)).reduce(DV.MIN_INT_DV, DV::max);
-        DV finalValue = res.valueIsTrue() ? res : DV.FALSE_DV;
-        fieldAnalysis.setProperty(IGNORE_MODIFICATIONS, finalValue);
+        DV finalValue = res.equals(MultiLevel.IGNORE_MODS_DV) ? res : DV.FALSE_DV;
+        fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, finalValue);
         LOGGER.debug("Set @IgnoreModifications to {} for field {}", finalValue, fqn);
         return DONE;
     }

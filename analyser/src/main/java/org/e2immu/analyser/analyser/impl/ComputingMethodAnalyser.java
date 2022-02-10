@@ -489,8 +489,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (noReturnStatementReachable()) {
                 UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
                 methodAnalysis.singleReturnValue.setFinal(ue);
-                methodAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
-                methodAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.FALSE_DV);
+                methodAnalysis.setProperty(Property.IDENTITY, IDENTITY.falseDv);
+                methodAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);

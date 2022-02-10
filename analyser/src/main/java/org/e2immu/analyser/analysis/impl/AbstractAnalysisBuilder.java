@@ -266,7 +266,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
                     setProperty(Property.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
-                    setProperty(Property.IGNORE_MODIFICATIONS, trueFalse);
+                    DV trueFalseMulti = parameters.absent() ? MultiLevel.NOT_IGNORE_MODS_DV : MultiLevel.IGNORE_MODS_DV;
+                    setProperty(Property.IGNORE_MODIFICATIONS, trueFalseMulti);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
@@ -352,6 +353,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void writeTypeEventualFields(String after) {
-        throw new UnsupportedOperationException("Not implemented in "+getClass());
+        throw new UnsupportedOperationException("Not implemented in " + getClass());
     }
 }

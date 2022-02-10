@@ -67,6 +67,7 @@ public interface ParameterAnalysis extends Analysis {
             case EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case IGNORE_MODIFICATIONS:
+            case EXTERNAL_IGNORE_MODIFICATIONS:
             case CONTEXT_NOT_NULL:
                 break;
 

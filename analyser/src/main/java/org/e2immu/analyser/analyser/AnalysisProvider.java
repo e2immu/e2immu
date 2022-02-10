@@ -284,7 +284,7 @@ public interface AnalysisProvider {
         return switch (property) {
             case IMMUTABLE -> defaultImmutable(formalType, false);
             case INDEPENDENT -> defaultIndependent(formalType);
-            case IDENTITY, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
+            case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
             case CONTAINER -> defaultContainer(formalType);
             case NOT_NULL_EXPRESSION -> defaultNotNull(formalType);
             default -> throw new UnsupportedOperationException("property: " + property);

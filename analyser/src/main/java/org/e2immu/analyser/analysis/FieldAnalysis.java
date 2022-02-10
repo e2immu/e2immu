@@ -83,6 +83,7 @@ public interface FieldAnalysis extends Analysis {
             case FINAL:
             case IDENTITY:
             case IGNORE_MODIFICATIONS:
+            case EXTERNAL_IGNORE_MODIFICATIONS:
             case INDEPENDENT:
             case MODIFIED_OUTSIDE_METHOD:
             case MODIFIED_VARIABLE:
@@ -109,7 +110,7 @@ public interface FieldAnalysis extends Analysis {
                 Property.CONTAINER, getProperty(Property.EXTERNAL_CONTAINER),
                 Property.INDEPENDENT, getProperty(Property.INDEPENDENT),
                 Property.IGNORE_MODIFICATIONS, getProperty(Property.IGNORE_MODIFICATIONS),
-                Property.IDENTITY, DV.FALSE_DV));
+                Property.IDENTITY, Property.IDENTITY.falseDv));
         CausesOfDelay delay = properties.delays();
 
         if (delay.isDelayed()) {

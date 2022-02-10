@@ -85,7 +85,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
-        assertEquals(DV.TRUE_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.IGNORE_MODS_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
     }
 
     @Test
@@ -436,7 +436,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
-        assertEquals(DV.TRUE_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.IGNORE_MODS_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
     }
 

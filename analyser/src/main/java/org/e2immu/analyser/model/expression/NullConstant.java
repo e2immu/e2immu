@@ -73,7 +73,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE_DV;
-            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS, IDENTITY -> FALSE_DV;
+            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS, IDENTITY -> property.falseDv;
             case IMMUTABLE, INDEPENDENT, CONTAINER -> MultiLevel.NOT_INVOLVED_DV;
             default -> throw new UnsupportedOperationException("Asking for " + property);
         };

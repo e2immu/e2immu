@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.own.testexample.Logger;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -42,7 +43,7 @@ public class Test_Util_09_Logger extends CommonTestRunner {
             if ("log".equals(d.methodInfo().name) && d.methodAnalysis().getParameterAnalyses().size() == 4) {
                 ParameterAnalysis p3 = d.methodAnalysis().getParameterAnalyses().get(3);
                 // ignore mods not explicitly set, but because it is an abstract method in java.util.function
-                assertEquals(DV.TRUE_DV, p3.getProperty(Property.IGNORE_MODIFICATIONS));
+                assertEquals(MultiLevel.IGNORE_MODS_DV, p3.getProperty(Property.IGNORE_MODIFICATIONS));
                 assertEquals(DV.FALSE_DV, p3.getProperty(Property.MODIFIED_VARIABLE));
             }
         };

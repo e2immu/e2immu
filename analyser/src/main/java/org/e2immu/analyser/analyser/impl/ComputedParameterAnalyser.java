@@ -141,13 +141,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // implicit @IgnoreModifications rule for java.util.function
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
-            DV value = DV.fromBoolDv(parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext));
+            DV value = DV.fromBoolDv(parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
+                    && !parameterInfo.getMethod().isPrivate());
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, value);
         }
 
         if (parameterAnalysis.getProperty(MODIFIED_VARIABLE).isDelayed()) {
             DV contractIgnoreMod = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS);
-            if (contractIgnoreMod.valueIsTrue()) {
+            if (contractIgnoreMod.equals(IGNORE_MODS_DV)) {
                 parameterAnalysis.setProperty(MODIFIED_VARIABLE, DV.FALSE_DV);
             }
         }
@@ -639,7 +640,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             // @Container: handled separately
 
             // @IgnoreModifications
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.FALSE_DV);
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
 
             // @Independent
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {

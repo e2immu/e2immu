@@ -228,8 +228,8 @@ public class Lambda extends BaseExpression implements Expression {
                     Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                     Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                     Property.CONTAINER, MultiLevel.CONTAINER_DV,
-                    Property.IGNORE_MODIFICATIONS, DV.FALSE_DV,
-                    Property.IDENTITY, DV.FALSE_DV));
+                    Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
+                    Property.IDENTITY, Property.IDENTITY.falseDv));
             result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
         }
         return result;

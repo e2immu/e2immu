@@ -145,7 +145,7 @@ public class TestDefaultAnnotations {
         assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.FLUENT));
         assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.IDENTITY));
         assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertThrows(PropertyException.class, () -> sizeAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.NOT_IGNORE_MODS_DV, sizeAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
 
         // properties of a primitive return type:
         assertEquals(MultiLevel.CONTAINER_DV, sizeAnalysis.getProperty(Property.CONTAINER));
@@ -166,7 +166,7 @@ public class TestDefaultAnnotations {
 
         assertEquals(DV.TRUE_DV, addAll0.getProperty(Property.IDENTITY));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, addAll0.getProperty(Property.CONTAINER));
-        assertEquals(DV.FALSE_DV, addAll0.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.NOT_IGNORE_MODS_DV, addAll0.getProperty(Property.IGNORE_MODIFICATIONS));
         // method is non-modifying, so parameter is independent
         assertEquals(MultiLevel.INDEPENDENT_DV, addAll0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, addAll0.getProperty(Property.IMMUTABLE));

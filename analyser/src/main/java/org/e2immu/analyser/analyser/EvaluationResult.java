@@ -470,8 +470,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
                     .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
-                    : DV.FALSE_DV;
-            if (!ignoreContentModifications.valueIsTrue()) {
+                    : Property.IGNORE_MODIFICATIONS.falseDv;
+            if (!ignoreContentModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
                 if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
@@ -559,7 +559,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
-            CausesOfDelay stateDelaysFilteredForSelfReference = resultOfExpression.isDelayed() ? stateIsDelayed: breakSelfReferenceDelay(assignmentTarget, stateIsDelayed);
+            CausesOfDelay stateDelaysFilteredForSelfReference = resultOfExpression.isDelayed() ? stateIsDelayed : breakSelfReferenceDelay(assignmentTarget, stateIsDelayed);
             if (ecd == null) {
                 newEcd = new ChangeData(value, value.causesOfDelay().merge(stateDelaysFilteredForSelfReference),
                         stateDelaysFilteredForSelfReference, markAssignment, Set.of(), linkedVariables, LinkedVariables.EMPTY, Map.of());
@@ -576,7 +576,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private CausesOfDelay breakSelfReferenceDelay(Variable assignmentTarget, CausesOfDelay stateIsDelayed) {
             if (assignmentTarget instanceof FieldReference fieldReference) {
                 boolean selfReference = stateIsDelayed.causesOfDelay().causesStream()
-                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES )
+                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES)
                                 && c instanceof VariableCause vc
                                 && vc.variable().equals(fieldReference));
                 if (selfReference) {

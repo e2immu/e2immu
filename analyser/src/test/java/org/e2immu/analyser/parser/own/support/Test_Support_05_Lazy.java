@@ -55,17 +55,17 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("Lazy".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "supplierParam".equals(p.name)) {
-                assertDv(d, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof FieldReference fr && "supplier".equals(fr.fieldInfo.name)) {
                 assertEquals("1", d.statementId());
-                assertDv(d, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
         }
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
-                assertDv(d, 1, DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 1, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -159,7 +159,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.IGNORE_MODIFICATIONS));
+            assertEquals(MultiLevel.IGNORE_MODS_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
             assertEquals("supplierParam", d.fieldAnalysis().getValue().toString());
         }
     };

@@ -81,7 +81,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             DV change = changeData.getOrDefault(k, k.valueWhenAbsent());
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 DV value = switch (k) {
-                    case EXTERNAL_CONTAINER -> prev.minIgnoreNotInvolved(change);
+                    case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
                     case CONTEXT_MODIFIED, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL -> prev.max(change);
                     case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
                     case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);

@@ -50,8 +50,8 @@ public final class Instance extends BaseExpression implements Expression {
                         Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                         Property.INDEPENDENT, MultiLevel.DEPENDENT_DV,
                         Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV,
-                        Property.IGNORE_MODIFICATIONS, DV.FALSE_DV,
-                        Property.IDENTITY, DV.FALSE_DV)));
+                        Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
+                        Property.IDENTITY, Property.IDENTITY.falseDv)));
     }
 
     public Expression copyWithImmutable(DV immutable) {
@@ -268,7 +268,8 @@ public final class Instance extends BaseExpression implements Expression {
         if (valueProperties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
             outputBuilder.add(new Text("/*@Identity*/"));
         }
-        if (valueProperties.getOrDefault(Property.IGNORE_MODIFICATIONS, DV.FALSE_DV).valueIsTrue()) {
+        DV ignoreMods = valueProperties.getOrDefault(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+        if (ignoreMods.equals(MultiLevel.IGNORE_MODS_DV)) {
             outputBuilder.add(new Text("/*@IgnoreMods*/"));
         }
         return outputBuilder;

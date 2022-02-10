@@ -123,7 +123,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV modified = getProperty(Property.MODIFIED_VARIABLE);
             DV ignoreModifications = getProperty(Property.IGNORE_MODIFICATIONS);
             if (!analysisProvider.cannotBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue() &&
-                    !ignoreModifications.valueIsTrue()) {
+                    !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);

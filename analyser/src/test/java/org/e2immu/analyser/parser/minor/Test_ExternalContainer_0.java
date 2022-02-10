@@ -73,7 +73,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d.p(0), DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {

@@ -1265,8 +1265,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private DV correctIndependentFunctionalInterface(ParameterAnalysis parameterAnalysis, DV independent) {
         DV correctedIndependent;
         DV ignoreModification = parameterAnalysis.getProperty(Property.IGNORE_MODIFICATIONS);
-        if (ignoreModification.valueIsTrue() && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface() &&
-                !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
+        if (ignoreModification.equals(MultiLevel.IGNORE_MODS_DV)
+                && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface()
+                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
             LOGGER.debug("Incoming functional interface on non-private method");
             correctedIndependent = independent.max(MultiLevel.INDEPENDENT_1_DV);
         } else {

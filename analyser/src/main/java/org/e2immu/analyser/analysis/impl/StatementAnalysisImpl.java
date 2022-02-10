@@ -1532,7 +1532,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // value properties
         properties.put(IDENTITY, IDENTITY.falseDv);
-        properties.put(IGNORE_MODIFICATIONS, IDENTITY.falseDv);
+        properties.put(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
         properties.put(IMMUTABLE, IMMUTABLE.falseDv);
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
@@ -1541,6 +1541,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // external: not relevant, except for external immutable, used for tracking the before/after state on the object
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
+        properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
         DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType, false);
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
@@ -1630,7 +1631,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         parameter of a non-private method. Modifications on its single, modifying method are ignored. As a consequence,
         we treat the object as e2immutable.
          */
-        DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS).maxIgnoreDelay(DV.FALSE_DV);
+        DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS)
+                .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
         if(ignoreModifications.valueIsTrue()
                 && type.isFunctionalInterface()
                 && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()){

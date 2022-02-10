@@ -204,8 +204,8 @@ public interface EvaluationContext {
             IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
             INDEPENDENT, MultiLevel.INDEPENDENT_DV,
             CONTAINER, MultiLevel.CONTAINER_DV,
-            IDENTITY, DV.FALSE_DV,
-            IGNORE_MODIFICATIONS, DV.FALSE_DV));
+            IDENTITY, IDENTITY.falseDv,
+            IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
 
     default Properties getValueProperties(Expression value) {
         return getValueProperties(null, value, false);
@@ -236,8 +236,8 @@ public interface EvaluationContext {
                 INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
                 CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
-                IDENTITY, DV.FALSE_DV,
-                IGNORE_MODIFICATIONS, DV.FALSE_DV));
+                IDENTITY, IDENTITY.falseDv,
+                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
         assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
         return properties;
     }
@@ -249,8 +249,8 @@ public interface EvaluationContext {
                 INDEPENDENT, analyserContext.defaultIndependent(formalType),
                 NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
                 CONTAINER, analyserContext.defaultContainer(formalType),
-                IDENTITY, DV.FALSE_DV,
-                IGNORE_MODIFICATIONS, DV.FALSE_DV));
+                IDENTITY, IDENTITY.falseDv,
+                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
 
     /*

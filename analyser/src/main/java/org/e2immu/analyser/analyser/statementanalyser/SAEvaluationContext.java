@@ -226,7 +226,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // and is treated as an E2Immutable object, with the modification on the
             // single modifying method ignored. See ComputingTypeAnalyser.correctIndependentFunctionalInterface()
             DV ignoreMod = variableInfo.getProperty(IGNORE_MODIFICATIONS);
-            if (ignoreMod.valueIsTrue()) return false;
+            if (ignoreMod.equals(MultiLevel.IGNORE_MODS_DV)) return false;
+            DV extIgnoreMod = variableInfo.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
+            if (extIgnoreMod.equals(MultiLevel.IGNORE_MODS_DV)) return false;
 
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return true;

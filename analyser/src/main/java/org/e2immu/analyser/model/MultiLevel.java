@@ -96,7 +96,7 @@ public class MultiLevel {
         IMMUTABLE_1(0), IMMUTABLE_2(1), IMMUTABLE_3(2), IMMUTABLE_R(MAX_LEVEL),
         INDEPENDENT_1(0), INDEPENDENT_2(1), INDEPENDENT_R(MAX_LEVEL),
         NOT_NULL(0), NOT_NULL_1(1), NOT_NULL_2(2), NOT_NULL_3(3),
-        CONTAINER(0);
+        CONTAINER(0), IGNORE_MODS(0);
 
         public final int level;
 
@@ -113,6 +113,11 @@ public class MultiLevel {
     // CONTAINER (only at first level, for now not eventual; but it needs NOT_INVOLVED next to TRUE and FALSE)
     public static final DV NOT_CONTAINER_DV = compose(FALSE, CONTAINER, "notcontainer");
     public static final DV CONTAINER_DV = compose(EFFECTIVE, CONTAINER, "container");
+
+    // IGNORE_MODS/modifications (only at first level, for now not eventual; but it needs NOT_INVOLVED next to TRUE and FALSE)
+    public static final DV NOT_IGNORE_MODS_DV = compose(FALSE, IGNORE_MODS, "notignoremods");
+    public static final DV IGNORE_MODS_DV = compose(EFFECTIVE, IGNORE_MODS, "ignoremods");
+
 
     // DEPENDENT (only at the first level, for now not eventual)
 

@@ -233,7 +233,7 @@ public class Test_14_Warnings extends CommonTestRunner {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(DV.TRUE_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
+            assertEquals(MultiLevel.IGNORE_MODS_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
 
             TypeInfo myself = typeMap.get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
