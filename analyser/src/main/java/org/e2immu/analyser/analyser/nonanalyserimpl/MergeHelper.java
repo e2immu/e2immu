@@ -112,6 +112,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
 
+        mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(vi.variable(), mergedValue,
+                mergeValue.valueProperties());
         // TODO do post-process and replace local variables change the value properties?
         try {
             vi.setValue(mergedValue); // copy the delayed value
@@ -264,8 +266,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // variables, also guaranteed to return, so not continue after the merge)
         List<ConditionAndVariableInfo> reduced = mergeSources.stream().filter(ConditionAndVariableInfo::keepInMerge).toList();
 
-        boolean allValuesIdentical = reduced.stream().allMatch(cav ->
-                currentValue.equals(cav.value()));
+        boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.value()));
         if (allValuesIdentical) return valueProperties();
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
                 .allMatch(cav -> specialEquals(evaluationContext.getVariableValue(variable, reduced.get(0).variableInfo()),
@@ -279,9 +280,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             }
             Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(evaluationContext,
                     e.condition(), e.absoluteState());
-            if(reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
+            if (reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                 // simply accept this one, for now
-               return valuePropertiesWrapToBreakFieldInitDelay(e.variableInfo());
+                return valuePropertiesWrapToBreakFieldInitDelay(e.variableInfo());
             }
             Merge.ExpressionAndProperties result = one(e.variableInfo(), stateOfDestination, reworkedCondition);
             if (result != null) return result;

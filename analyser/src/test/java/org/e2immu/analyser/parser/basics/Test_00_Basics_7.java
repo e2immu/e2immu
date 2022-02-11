@@ -156,7 +156,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
                     String expect = switch (d.iteration()) {
                         case 0 -> "<f:i>==<f:i>";
-                        case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                        case 1 -> "<wrapped:return increment3>";
                         default -> "true";
                     };
                     if ("1.0.3".equals(d.statementId())) {
@@ -270,7 +270,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
                     case 0 -> "<f:i>==<f:i>";
-                    case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                    case 1 -> "<wrapped:return increment3>";
                     default -> "true";
                 };
                 assertEquals(expect, d.methodAnalysis().getLastStatement()

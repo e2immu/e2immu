@@ -891,9 +891,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     if (vii.getValue() instanceof DelayedWrappedExpression dwe) {
                         // the reason for providing a VI rather than an expression in DWE is that it contains properties as well.
                         // these properties are hard to compute here
-                        // IMPROVE we should detect DWE inside any expression, and then do some fancy replacement
-                        // SOLUTION: have the SAEvaluationOfMainExpression write a DWE around the final value when there is a DWE inside the expression
-                        // after doing a translation for these inner DWEs to their enclosed value.
                         vi = dwe.getVariableInfo();
                     } else {
                         vi = vii;
@@ -934,7 +931,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         }
                         added = true;
                         if (viIsDelayed) {
-                            LOGGER.debug("Delay consistent value for field {} because of {}", fqn, vi.getValue().toString());
+                            LOGGER.debug("Delay consistent value for field {} because of {} in {}",
+                                    fqn, vi.getValue().toString(), methodInfo.fullyQualifiedName);
                             delays = delays.merge(causesOfDelay);
                         }
                     }

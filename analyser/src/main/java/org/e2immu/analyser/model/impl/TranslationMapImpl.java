@@ -44,13 +44,15 @@ public class TranslationMapImpl implements TranslationMap {
     public final Map<ParameterizedType, ParameterizedType> types;
     public final Map<LocalVariable, LocalVariable> localVariables;
     public final Map<? extends Variable, ? extends Expression> variableExpressions;
+    public final boolean expandDelayedWrappedExpressions;
 
     public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                               Map<? extends Expression, ? extends Expression> expressions,
                               Map<? extends Variable, ? extends Expression> variableExpressions,
                               Map<? extends Variable, ? extends Variable> variables,
                               Map<MethodInfo, MethodInfo> methods,
-                              Map<ParameterizedType, ParameterizedType> types) {
+                              Map<ParameterizedType, ParameterizedType> types,
+                              boolean expandDelayedWrappedExpressions) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
@@ -61,12 +63,19 @@ public class TranslationMapImpl implements TranslationMap {
                 .filter(e -> e.getKey() instanceof LocalVariableReference && e.getValue() instanceof LocalVariableReference)
                 .collect(Collectors.toMap(e -> ((LocalVariableReference) e.getKey()).variable,
                         e -> ((LocalVariableReference) e.getValue()).variable));
+        this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
+    }
+
+    @Override
+    public boolean expandDelayedWrappedExpressions() {
+        return expandDelayedWrappedExpressions;
     }
 
     @Override
     public String toString() {
         return "TM{" + variables.size() + "," + methods.size() + "," + expressions.size() + "," + statements.size()
-                + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() + "}";
+                + "," + types.size() + "," + localVariables.size() + "," + variableExpressions.size() +
+                (expandDelayedWrappedExpressions ? ",expand" : "") + "}";
     }
 
     @Override
@@ -165,9 +174,11 @@ public class TranslationMapImpl implements TranslationMap {
         private final Map<MethodInfo, MethodInfo> methods = new HashMap<>();
         private final Map<Statement, List<Statement>> statements = new HashMap<>();
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
+        private boolean expandDelayedWrappedExpressions;
 
         public TranslationMapImpl build() {
-            return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types);
+            return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
+                    expandDelayedWrappedExpressions);
         }
 
         public Builder put(Statement template, Statement actual) {
@@ -211,6 +222,11 @@ public class TranslationMapImpl implements TranslationMap {
 
         public boolean isEmpty() {
             return statements.isEmpty() && expressions.isEmpty() && variables.isEmpty() && methods.isEmpty() && types.isEmpty();
+        }
+
+        public Builder setExpandDelayedWrapperExpressions(boolean expandDelayedWrappedExpressions) {
+            this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
+            return this;
         }
     }
 }

@@ -14,20 +14,26 @@
 
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.GroupPropertyValues;
-import org.e2immu.analyser.analyser.Properties;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.expression.ConstantExpression;
+import org.e2immu.analyser.model.expression.DelayedWrappedExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
 
 public record Merge(EvaluationContext evaluationContext,
                     VariableInfoContainer vic) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Merge.class);
 
     public enum Action {
         MERGE, REMOVE, IGNORE
@@ -56,7 +62,7 @@ public record Merge(EvaluationContext evaluationContext,
 
         Expression postProcess = activate(postProcessState, evaluationContext);
 
-        VariableInfoImpl existing = vici.currentExcludingMerge();
+        VariableInfoImpl existing = breakInitDelay(vici);
         if (!vic.hasMerge()) {
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing);
             VariableInfoImpl vii = mergeHelper.mergeIntoNewObject(stateOfDestination,
@@ -70,6 +76,41 @@ public record Merge(EvaluationContext evaluationContext,
                     mergeSources, groupPropertyValues, translationMap);
         }
     }
+
+    private VariableInfoImpl breakInitDelay(VariableInfoContainerImpl vici) {
+        VariableInfoImpl vii = vici.currentExcludingMerge();
+        if (vii.variable() instanceof FieldReference fieldReference && vii.getValue().isDelayed()) {
+            boolean selfReference = vii.getValue().causesOfDelay().causesStream()
+                    .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES)
+                            && c instanceof VariableCause vc
+                            && vc.variable().equals(fieldReference));
+            if (selfReference) {
+                LOGGER.debug("Detected self-reference in merge helper on variable field {}", fieldReference);
+                Expression instance;
+                Expression fromAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getValueForStatementAnalyser(fieldReference);
+                Properties properties;
+                if (fromAnalysis.isDelayed()) {
+                    // if (evaluationContext.getCurrentMethod().getMethodInfo().isConstructor && !fieldReference.isStatic) {
+                    instance = ConstantExpression.nullValue(evaluationContext.getAnalyserContext().getPrimitives(),
+                            fieldReference.fieldInfo.type.bestTypeInfo());
+                    properties = evaluationContext.valuePropertiesOfNullConstant(fieldReference.parameterizedType);
+                    //  } else {
+                    //     instance = ;
+                    //  }
+                } else {
+                    instance = fromAnalysis;
+                    properties = evaluationContext.getValueProperties(instance);
+                }
+                assert instance.isDone();
+                VariableInfoImpl wrappedVii = new VariableInfoImpl(vii.variable(), instance, properties);
+                Expression wrapped = new DelayedWrappedExpression(Identifier.generate(),
+                        wrappedVii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+                vii.setValue(wrapped);
+            }
+        }
+        return vii;
+    }
+
 
     // post-processing the state is only done under certain limited conditions, currently ONLY to
     // merge variables, defined outside the loop but assigned inside, back to the outside of the loop.

@@ -189,6 +189,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                 valueToWritePossiblyDelayed = detectBreakDelayInAssignment(variable, changeData, valueToWritePossiblyDelayed, combined);
 
+                // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
+                // evaluation context
+                valueToWritePossiblyDelayed = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(variable,
+                        valueToWritePossiblyDelayed, combined);
+
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
 
                 if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {

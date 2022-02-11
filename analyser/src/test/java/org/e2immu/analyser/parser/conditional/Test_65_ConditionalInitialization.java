@@ -83,16 +83,16 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         };
 
         testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_0bis() throws IOException {
-        testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
-                        .build(),
+        testClass("ConditionalInitialization_0", 0, 0,
+                new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
@@ -121,7 +121,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "c?setParam:<f:set>";
-                            case 1 -> "<wrapped:set>";
+                            case 1, 2 -> "<wrapped:set>";
                             default -> "c?setParam:nullable instance type Set<String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -133,21 +133,30 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
             if ("set".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0
                         ? "initial:java.lang.System.out@Method_ConditionalInitialization_1_0.1.0;initial:this.set@Method_ConditionalInitialization_1_0.1.0;initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set"
-                        : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
+                        : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,c?setParam:null,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+                assertEquals(d.iteration() == 0, d.fieldAnalysis().valuesDelayed().isDelayed());
 
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         // field occurs in all constructors or at least one static block
 
         testClass("ConditionalInitialization_1", 0, 1, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_1bis() throws IOException {
+        testClass("ConditionalInitialization_1", 0, 1, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
+    }
+
 
     @Test
     public void test_2() throws IOException {
@@ -164,6 +173,12 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         testClass("ConditionalInitialization_2", 1, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
+    }
+
+    @Test
+    public void test_2bis() throws IOException {
+        testClass("ConditionalInitialization_2", 1, 2, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
@@ -185,6 +200,13 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     }
 
     @Test
+    public void test_3bis() throws IOException {
+        testClass("ConditionalInitialization_3", 0, 1,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
+    }
+
+    @Test
     public void test_4() throws IOException {
         testClass("ConditionalInitialization_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
@@ -192,8 +214,32 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
     @Test
     public void test_4bis() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("ConditionalInitialization_4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "1+<f:i>";
+                            case 1 -> "<wrapped:i>";
+                            default -> "1+ConditionalInitialization_4.i";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "b?1+<f:i>:<f:i>";
+                            case 1 -> "<wrapped:i>";
+                            default -> "b?1+ConditionalInitialization_4.i:instance type int";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
         testClass("ConditionalInitialization_4", 0, 0,
-                new DebugConfiguration.Builder().build(),
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 }

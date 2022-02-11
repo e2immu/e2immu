@@ -15,9 +15,11 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -108,6 +110,9 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public Expression translate(TranslationMap translationMap) {
+        if (translationMap.expandDelayedWrappedExpressions()) {
+            return variableInfo.getValue();
+        }
         return this;
     }
 
@@ -132,5 +137,22 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         return new DelayedWrappedExpression(identifier, variableInfo, this.causesOfDelay.merge(causesOfDelay));
+    }
+
+    public static Expression moveDelayedWrappedExpressionToFront(Variable variable,
+                                                                 Expression value,
+                                                                 Properties valueProperties) {
+        if (value.isDelayed() && !(value instanceof DelayedWrappedExpression)) {
+            List<DelayedWrappedExpression> x = value.collect(DelayedWrappedExpression.class);
+            if (!x.isEmpty()) {
+                TranslationMap tm = new TranslationMapImpl.Builder().setExpandDelayedWrapperExpressions(true).build();
+                Expression translated = value.translate(tm);
+                VariableInfoImpl vi = new VariableInfoImpl(variable, translated, valueProperties);
+                DelayedWrappedExpression dwe = new DelayedWrappedExpression(value.getIdentifier(), vi, value.causesOfDelay());
+                assert dwe.isDelayed();
+                return dwe;
+            }
+        }
+        return value;
     }
 }

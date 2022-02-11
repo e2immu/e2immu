@@ -50,6 +50,8 @@ public interface TranslationMap {
 
     TypeInfo translateTypeWithBody(TypeInfo typeInfo);
 
+    boolean expandDelayedWrappedExpressions();
+
     @NotNull
     LocalVariable translateLocalVariable(LocalVariable localVariable);
 

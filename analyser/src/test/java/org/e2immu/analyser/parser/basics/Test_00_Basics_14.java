@@ -84,14 +84,24 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, eval.getProperty(CONTEXT_NOT_NULL));
                     }
 
-                    String expectValue = d.iteration() <= 1 ? "<f:t>" : "nullable instance type T";
-                    assertEquals(expectValue, d.currentValue().toString());
-
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
                     if ("0.0.0".equals(d.statementId())) {
+                        String expectValue = switch (d.iteration()) {
+                            case 0, 1 -> "<f:t>";
+                            default -> "nullable instance type T";
+                        };
+                        assertEquals(expectValue, d.currentValue().toString());
+
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     } else {
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:t>";
+                            case 1 -> "<wrapped:t>";
+                            default -> "nullable instance type T";
+                        };
+                        assertEquals(expectValue, d.currentValue().toString());
+
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }

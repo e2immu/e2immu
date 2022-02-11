@@ -286,7 +286,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         assertTrue(d.variableInfo().isRead());
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<f:integer>";
-                            case 1 -> "<vp:integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2;values:this.integer@Field_integer>";
+                            case 1 -> "<wrapped:integer>";
                             default -> "nullable instance type Integer";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
