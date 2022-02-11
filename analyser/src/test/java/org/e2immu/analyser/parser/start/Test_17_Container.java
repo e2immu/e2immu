@@ -137,7 +137,7 @@ public class Test_17_Container extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                final String DELAYED = "initial:this.s@Method_setS_1;values:this.s@Field_s";
+                final String DELAYED = "container:this.s@Method_setS_1;initial:this.s@Method_setS_1;values:this.s@Field_s";
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

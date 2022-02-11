@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.own.support;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -74,12 +75,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 1, 2 -> "initial@Field_t";
                         default -> "";
                     };
-                    assertCurrentValue(d, 3, causes, "t$0");
+                    assertCurrentValue(d, 3, "t$0");
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
-                        case 0 -> "<f*:t>";
-                        case 1 -> "<wrapped:t>";
+                        case 0 -> "<f:t>";
+                        case 1 -> "<f*:t>";
                         case 2 -> "<s:T>";
                         default -> "t$1-E$0";
                     };
@@ -89,20 +90,19 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 1, "initial@Field_supplier",
-                        "instance type Supplier<T>/*@IgnoreMods*/");
+                assertCurrentValue(d, 1, "instance type Supplier<T>/*@IgnoreMods*/");
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 3, "initial@Field_t", "nullable instance type T");
+                    assertCurrentValue(d, 3, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
                     String causes = switch (d.iteration()) {
                         case 0, 1, 2 -> "initial@Field_t";
                         default -> "";
                     };
-                    assertCurrentValue(d, 3, causes, "nullable instance type T");
+                    assertCurrentValue(d, 3, "nullable instance type T");
                 }
                 String expect = switch (d.iteration()) {
                     case 0 -> "<m:requireNonNull>";
@@ -149,7 +149,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("t".equals(d.fieldInfo().name)) {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
-            String expected = d.iteration() == 0 ? "initial:this.supplier@Method_get_1;values:this.t@Field_t"
+            String expected = d.iteration() == 0
+                    ? "initial:this.supplier@Method_get_1;initial:this.t@Method_get_2;values:this.t@Field_t"
                     : "null,nullable instance type T/*@NotNull*/";
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             assertEquals(d.iteration() > 0, d.fieldAnalysis().valuesDelayed().isDone());

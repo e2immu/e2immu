@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -263,7 +264,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                String sortedValues = "initial:q@Method_increment_1;initial:this.i@Field_i;initial:this.i@Method_Basics_7_0.0.1;values:this.i@Field_i";
+                String sortedValues = "[11 delays]";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder)(d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 10, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
@@ -274,7 +275,8 @@ public class Test_00_Basics_7 extends CommonTestRunner {
            //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
            //     .addEvaluationResultVisitor(evaluationResultVisitor)
            //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build());
+         //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 }

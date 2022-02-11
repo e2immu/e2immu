@@ -130,7 +130,9 @@ public class Test_36_Cast extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+                new AnalyserConfiguration.Builder()
+                        .setForceExtraDelayForTesting(true)
+                        .setComputeContextPropertiesOverAllMethods(true).build());
     }
 
     @Test

@@ -112,6 +112,17 @@ public abstract class VisitorTestSupport {
         mustSeeIteration(d, delayedBeforeIteration);
     }
 
+    public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String value) {
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(d.currentValue().isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + d.currentValue() + " for variable " + d.variableName());
+        } else {
+            assertTrue(d.currentValue().isDone(), "Expected current value to be done in iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + d.currentValue()
+                    .causesOfDelay() + " for variable " + d.variableName());
+            assertEquals(value, d.currentValue().toString());
+        }
+        mustSeeIteration(d, delayedBeforeIteration);
+    }
+
     /*
     a -> a
     a|b -> abbbb

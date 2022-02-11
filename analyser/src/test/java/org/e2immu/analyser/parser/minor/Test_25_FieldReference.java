@@ -57,8 +57,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    String expected = d.iteration() == 0 ? "<f:changeData>" : "nullable instance type Map<String,ChangeData>";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertCurrentValue(d, 1,  "nullable instance type Map<String,ChangeData>");
                     assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                 }
             }

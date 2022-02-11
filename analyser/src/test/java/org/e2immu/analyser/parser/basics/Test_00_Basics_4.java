@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -70,6 +71,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
         };
         testClass("Basics_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 }

@@ -325,8 +325,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("bs[0]".equals(d.variable().simpleName())) {
                     assertEquals("org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]",
                             d.variable().fullyQualifiedName());
-                    String expect = d.iteration() == 0 ? "<v:bs[0]>/*{DL bs:initial@Class_DependentVariables_3,bs[0]:assigned:1}*/" : "instance type boolean/*{L bs:independent:805,bs[0]:assigned:1}*/";
-                    assertEquals(expect, d.currentValue().toString());
+                    assertCurrentValue(d,1, "instance type boolean/*{L bs:independent:805,bs[0]:assigned:1}*/");
                 }
                 if ("added".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {

@@ -103,7 +103,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
 
-                    assertCurrentValue(d, 1, "initial@Field_string", "nullable instance type String");
+                    assertCurrentValue(d, 1,
+                            "initial:this.string@Method_add_0;initial@Field_string", "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));

@@ -117,7 +117,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("initial:param@Method_method3_0", d.currentValue().causesOfDelay().toString());
+                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0",
+                                d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {
                         assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
@@ -129,7 +130,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("initial:param@Method_method3_0", d.currentValue().causesOfDelay().toString());
+                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0",
+                                d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {
                         assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());

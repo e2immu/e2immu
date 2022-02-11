@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -51,8 +52,7 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "instance type boolean";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertCurrentValue(d, 2, "instance type boolean");
                     }
                 }
             }
@@ -91,7 +91,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
@@ -124,7 +125,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     // counter-example to the technique of test 0
@@ -162,8 +164,7 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_7".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "instance type boolean";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertCurrentValue(d, 2, "instance type boolean");
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
@@ -219,7 +220,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     // counter-example to the technique of test 1

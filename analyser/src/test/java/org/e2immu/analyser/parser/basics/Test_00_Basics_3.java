@@ -72,7 +72,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    String expect = d.iteration() == 0 ? "null!=<field*:org.e2immu.analyser.parser.basics.testexample.Basics_3.s>" : "true";
+                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.parser.basics.testexample.Basics_3.s>" : "true";
                     assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
@@ -130,8 +130,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (OUT.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
-                        assertCurrentValue(d, 2,
-                                "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
+                        assertCurrentValue(d, 2, INSTANCE_PRINT_STREAM);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     } else if ("0.1.0".equals(d.statementId())) {
                         // NOT present in the first iteration!
@@ -140,8 +139,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     } else if ("0".equals(d.statementId())) {
                         assertInitialValue(d, 0, "", INSTANCE_PRINT_STREAM);
 
-                        assertCurrentValue(d, 2,
-                                "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
+                        assertCurrentValue(d, 2, INSTANCE_PRINT_STREAM);
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertSame(d.variableInfo(), d.variableInfoContainer().best(VariableInfoContainer.Level.MERGE));
 
@@ -156,8 +154,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 2, "initial@Field_s|initial@Field_s",
-                                "nullable instance type String");
+                        assertCurrentValue(d, 2, "nullable instance type String");
                         assertFalse(d.variableInfo().isAssigned());
 
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
@@ -211,9 +208,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
-                    assertCurrentValue(d, 2,
-                            "initial@Field_s|initial@Field_s",
-                            "nullable instance type String");
+                    assertCurrentValue(d, 2, "nullable instance type String");
 
                     String expectLv = "return getS:0,this.s:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -306,7 +301,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 // because the value is not known, the ENN cannot be either
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-                assertDv(d, 1, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }

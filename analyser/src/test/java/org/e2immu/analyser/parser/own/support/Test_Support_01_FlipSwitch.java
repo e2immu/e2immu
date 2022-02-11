@@ -67,7 +67,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FlipSwitch".equals(d.typeInfo().simpleName)) {
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{isSet=!isSet}";
+                String expectE2 = d.iteration() == 0 ? "{}" : "{isSet=!isSet}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };

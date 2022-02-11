@@ -292,7 +292,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         VariableInfo tempVi = new VariableInfoImpl(variable, instance, combined);
                         return new DelayedWrappedExpression(Identifier.generate(), tempVi, valueToWritePossiblyDelayed.causesOfDelay());
                     }
-                    LOGGER.debug("Delayed value, delayed value properties...");
                 }
             } else {
                 if (changeData.stateIsDelayed().isDelayed()) {

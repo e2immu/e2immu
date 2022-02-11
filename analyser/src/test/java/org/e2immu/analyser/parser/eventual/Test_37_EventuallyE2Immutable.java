@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.eventual;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
@@ -204,7 +205,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         testClass("EventuallyE2Immutable_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     /*
@@ -563,9 +565,16 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         testClass("EventuallyE2Immutable_9", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
+    // also works without the extra delay!
+    @Test
+    public void test_9bis() throws IOException {
+        testClass("EventuallyE2Immutable_9", 0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
 
     @Test
     public void test_10() throws IOException {

@@ -562,8 +562,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("org.e2immu.analyser.parser.loops.testexample.Loops_18.Container.read#<out of scope:container:1.0.1>".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:read>";
-                            case 1 -> "<loopIsNotEmptyCondition>?<f:read>:instance type int";
+                            case 0 -> "<loopIsNotEmptyCondition>&&!<m:contains>?0==<f:read>?<f:read>:<f:read>:<f:read>";
+                            case 1 -> "<loopIsNotEmptyCondition>?<m:contains>?<f:read>:0==<f:read>?<f:read>:<f:read>:instance type int";
                             default -> "instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());

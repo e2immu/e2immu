@@ -316,7 +316,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_13() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("done".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
             }
         };
         testClass("EventuallyImmutableUtil_13", 0, 0, new DebugConfiguration.Builder()
