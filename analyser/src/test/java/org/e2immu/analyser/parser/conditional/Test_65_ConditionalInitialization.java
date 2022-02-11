@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.conditional;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -63,7 +64,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                if(d.iteration()==0) {
+                if (d.iteration() == 0) {
                     assertTrue(d.fieldAnalysis().valuesDelayed().isDelayed());
                 } else {
                     String expected = "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
@@ -82,10 +83,17 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         };
 
         testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
+    }
+
+    @Test
+    public void test_0bis() throws IOException {
+        testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
@@ -178,8 +186,14 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-
         testClass("ConditionalInitialization_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_4bis() throws IOException {
+        testClass("ConditionalInitialization_4", 0, 0,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 }

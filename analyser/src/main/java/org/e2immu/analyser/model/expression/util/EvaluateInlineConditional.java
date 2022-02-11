@@ -118,7 +118,7 @@ public class EvaluateInlineConditional {
         // x&y ? (y&z ? a : b) : c --> x&y ? (z ? a : b) : c
         if (ifTrue instanceof InlineConditional ifTrueInline && ifTrueInline.condition instanceof And and) {
             Expression ifTrueCondition = removeCommonClauses(evaluationContext, condition, and);
-            if (!ifTrueCondition.equals(ifTrueInline.condition)) {
+            if (ifTrueCondition != ifTrueInline.condition) {
                 return conditionalValueConditionResolved(evaluationContext,
                         condition, new InlineConditional(Identifier.generate(),
                                 evaluationContext.getAnalyserContext(), ifTrueCondition,
@@ -193,8 +193,9 @@ public class EvaluateInlineConditional {
     }
 
     private static Expression removeCommonClauses(EvaluationContext evaluationContext, Expression condition, And and) {
-        return And.and(evaluationContext,
-                and.getExpressions().stream().filter(e -> !inExpression(e, condition)).toArray(Expression[]::new));
+        Expression[] filtered = and.getExpressions().stream().filter(e -> !inExpression(e, condition)).toArray(Expression[]::new);
+        if (filtered.length == and.getExpressions().size()) return and;
+        return And.and(evaluationContext, filtered);
     }
 
     private static boolean inExpression(Expression e, Expression container) {

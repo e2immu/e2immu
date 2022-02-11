@@ -42,6 +42,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
         super(identifier);
         this.variableInfo = variableInfo;
         this.causesOfDelay = causesOfDelay;
+        assert causesOfDelay.isDelayed();
     }
 
     /*

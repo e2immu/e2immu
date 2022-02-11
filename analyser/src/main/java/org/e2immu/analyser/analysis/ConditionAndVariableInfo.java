@@ -45,6 +45,14 @@ public record ConditionAndVariableInfo(Expression condition,
     }
 
     public boolean keepInMerge() {
-        return variableInfo.variable() instanceof ReturnVariable ? !alwaysEscapes() : !alwaysEscapesOrReturns();
+        // the return value is kept unless there was an escape via throws
+        if (variableInfo.variable() instanceof ReturnVariable) return !alwaysEscapes();
+        // other sub-blocks are kept unless there's an escape or return; however, there is an exception for the last statement!
+        assert lastStatement.parent() != null;
+        if (lastStatement.parent().navigationData().next.get().isEmpty()) {
+            // see Basics_7_3 for an example: method ends on synchronized block, with return as its last statement.
+            return !alwaysEscapes;
+        }
+        return !alwaysEscapesOrReturns();
     }
 }

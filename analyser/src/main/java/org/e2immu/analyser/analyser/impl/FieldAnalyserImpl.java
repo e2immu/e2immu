@@ -277,7 +277,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in method analyser: {}", fqn);
+            LOGGER.warn("Caught exception in field analyser: {}", fqn);
             throw rte;
         }
     }
@@ -1123,7 +1123,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
         DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS)).reduce(DV.MIN_INT_DV, DV::max);
-        DV finalValue = res.equals(MultiLevel.IGNORE_MODS_DV) ? res : DV.FALSE_DV;
+        DV finalValue = res.equals(MultiLevel.IGNORE_MODS_DV) ? res : MultiLevel.NOT_IGNORE_MODS_DV;
         fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, finalValue);
         LOGGER.debug("Set @IgnoreModifications to {} for field {}", finalValue, fqn);
         return DONE;

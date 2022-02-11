@@ -34,12 +34,11 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream/*@IgnoreMods*/";
+    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream";
 
     public Test_00_Basics_7() {
         super(true);
@@ -61,10 +60,12 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             }
 
             if ("increment".equals(d.methodInfo().name) && "4".equals(d.statementId()) && d.iteration() > 0) {
-                assertEquals("true", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 1 ? "<f*:i>==-<p:q>+<wrapped:i>" : "true";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId()) && d.iteration() > 0) {
-                assertEquals("true", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 1 ? "-1==<vp:i:[11 delays]>-<wrapped:i>" : "true";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
 
@@ -96,7 +97,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 2, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 3, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
@@ -145,23 +146,33 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             if ("increment".equals(d.methodInfo().name)) {
                 if (I.equals(d.variableName())) {
                     if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                        assertEquals("i+q", d.currentValue().toString());
+                        String expected = d.iteration() == 1 ? "<wrapped:i>" : "i+q";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<f:i>==<f:i>";
+                        case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                        default -> "true";
+                    };
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
+                    String expect = switch (d.iteration()) {
+                        case 0 -> I_DELAYED;
+                        case 1 -> "<vp:i:[11 delays]>";
+                        default -> "i";
+                    };
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : "i";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = "j:0,this.i:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -178,17 +189,20 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
 
                 if (I.equals(d.variableName())) {
+                    String expect0_100 = switch (d.iteration()) {
+                        case 0 -> I_DELAYED;
+                        case 1 -> "<vp:i:[11 delays]>";
+                        default -> "instance type int";
+                    };
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                         String linked = "j:0,this.i:0";
@@ -199,9 +213,13 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
+                    String expect102 = switch (d.iteration()) {
+                        case 0 -> "1+<f:i>";
+                        case 1 -> "<wrapped:i>";
+                        default -> "1+i";
+                    };
                     if ("1.0.2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expect102, d.currentValue().toString());
                         assertEquals("1.0.2-E", d.variableInfo().getReadId());
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         String expectLv = "this.i:0";
@@ -212,8 +230,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:i>" : "instance type int";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expect102, d.currentValue().toString());
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
@@ -251,10 +268,15 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                assertEquals("true", d.methodAnalysis().getLastStatement()
+                String expect = switch (d.iteration()) {
+                    case 0 -> "<f:i>==<f:i>";
+                    case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                    default -> "true";
+                };
+                assertEquals(expect, d.methodAnalysis().getLastStatement()
                         .getVariable(INC3_RETURN_VAR).current().getValue().toString());
-
-                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+                String srv = d.iteration() <= 1 ? "<m:increment3>" : "true";
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
 
             }
         };
@@ -264,19 +286,26 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                String sortedValues = "[11 delays]";
-                assertEquals(sortedValues, ((FieldAnalysisImpl.Builder)(d.fieldAnalysis())).sortedValuesString());
-                assertDv(d, 10, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
+                String sortedValues = d.iteration() == 0 ? "[11 delays]"
+                        : "(b?p:0)<=9?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
+                assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
+                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }
         };
 
         testClass("Basics_7", 0, 1, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build(),
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
+    }
+
+    @Test
+    public void test7bis() throws IOException {
+        testClass("Basics_7", 0, 1, new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(false).build());
     }
 }

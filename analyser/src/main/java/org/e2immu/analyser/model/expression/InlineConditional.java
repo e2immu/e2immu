@@ -48,6 +48,8 @@ public class InlineConditional extends BaseExpression implements Expression {
     public final Expression ifFalse;
     public final InspectionProvider inspectionProvider;
     public static final int COMPLEXITY = 10;
+    // cached
+    private final CausesOfDelay causesOfDelay;
 
     public InlineConditional(Identifier identifier,
                              InspectionProvider inspectionProvider,
@@ -59,6 +61,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
         this.inspectionProvider = inspectionProvider;
+        this.causesOfDelay = condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
     }
 
     @Override
@@ -273,15 +276,20 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public CausesOfDelay causesOfDelay() {
-        return condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
+        return causesOfDelay;
     }
 
+    // IMPORTANT NOTE: this is a pretty expensive operation, even with the causesOfDelay cache!
+    // removing the condition is the least to do.
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        Expression c = condition.isDelayed() ? condition.mergeDelays(causesOfDelay) : condition;
+        //Expression c = condition.isDelayed() ? condition.mergeDelays(causesOfDelay) : condition;
         Expression t = ifTrue.isDelayed() ? ifTrue.mergeDelays(causesOfDelay) : ifTrue;
         Expression f = ifFalse.isDelayed() ? ifFalse.mergeDelays(causesOfDelay) : ifFalse;
-        return new InlineConditional(identifier, inspectionProvider, c, t, f);
+        if (t != ifTrue || f != ifFalse) {
+            return new InlineConditional(identifier, inspectionProvider, condition, t, f);
+        }
+        return this;
     }
 
     @Override

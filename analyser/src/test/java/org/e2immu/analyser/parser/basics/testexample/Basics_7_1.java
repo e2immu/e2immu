@@ -12,29 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.parser.basics.testexample;
 
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Constant;
 
-import java.util.Set;
-import java.util.stream.Stream;
+/*
+Variant on 7 which cause(s/d) a break init delay problem
+ */
+public class Basics_7_1 {
 
-public interface CausesOfDelay extends DV, AnalysisStatus {
+    private int i;
 
-    CausesOfDelay EMPTY = new SimpleSet(Set.of());
-
-    boolean contains(Variable variable);
-
-    @NotNull
-    CausesOfDelay merge(CausesOfDelay other);
-
-    @NotNull
-    Stream<CauseOfDelay> causesStream();
-
-    CausesOfDelay removeAll(Set<CauseOfDelay> breaks);
+    @Constant("true")
+    synchronized boolean increment(int q) {
+        int k = i;
+        System.out.println("q is " + q);
+        i += q;
+        System.out.println("i is " + i);
+        return i == k + q;
+    }
 }

@@ -66,6 +66,12 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
     }
 
     @Override
+    public CausesOfDelay removeAll(Set<CauseOfDelay> breaks) {
+        Set<CauseOfDelay> set = causes.stream().filter(c -> !breaks.contains(c)).collect(Collectors.toUnmodifiableSet());
+        return set.isEmpty() ? CausesOfDelay.EMPTY : new SimpleSet(set);
+    }
+
+    @Override
     public int pos() {
         return 1;
     }

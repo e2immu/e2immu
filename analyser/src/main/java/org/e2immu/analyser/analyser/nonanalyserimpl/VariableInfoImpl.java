@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.DelayedWrappedExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
@@ -227,9 +228,9 @@ public class VariableInfoImpl implements VariableInfo {
                 throw ise;
             }
         } else {
-            assert !(value.isInstanceOf(DelayedExpression.class)); // simple safe-guard, others are more difficult to check
+            assert !(value.isInstanceOf(DelayedExpression.class)); // simple safeguard, others are more difficult to check
             assert !(value.isInstanceOf(DelayedVariableExpression.class));
-
+            assert !(value.isInstanceOf(DelayedWrappedExpression.class));
             try {
                 setFinalAllowEquals(this.value, value);
             } catch (IllegalStateException ise) {
