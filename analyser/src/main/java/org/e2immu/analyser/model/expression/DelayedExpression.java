@@ -271,4 +271,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return linkedVariables;
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new DelayedExpression(msg, parameterizedType, linkedVariables, this.causesOfDelay.merge(causesOfDelay));
+    }
 }

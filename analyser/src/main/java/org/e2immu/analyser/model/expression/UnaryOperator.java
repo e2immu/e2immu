@@ -189,6 +189,14 @@ public class UnaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (expression.isDelayed()) {
+            return new UnaryOperator(identifier, operator, expression.mergeDelays(causesOfDelay), precedence);
+        }
+        return this;
+    }
+
+    @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }

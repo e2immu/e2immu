@@ -1106,6 +1106,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (currentIgnoreMods.isDone()) {
             return DONE;
         }
+        // NOTE: commenting out this situation introduces an extra delay round into many tests, e.g. Precondition_1
+        // which is good for stress testing the BREAK_INIT delay system
+        boolean forceExtraDelayForTesting = analyserContext.getConfiguration().analyserConfiguration().forceExtraDelayForTesting();
+        DV formalType = analyserContext.defaultImmutable(fieldInfo.type, false);
+        if (formalType.isDone() && MultiLevel.isAtLeastEffectivelyE2Immutable(formalType) && !forceExtraDelayForTesting) {
+            LOGGER.debug("Set @IgnoreModifications to NOT_IGNORE_MODS for field e2immutable field {}", fqn);
+            fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
+            return DONE;
+        }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field " + fqn);

@@ -98,6 +98,14 @@ public class EnclosedExpression extends BaseExpression implements Expression {
         return inner.causesOfDelay();
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if(inner.isDelayed()) {
+            return new EnclosedExpression(identifier, inner.mergeDelays(causesOfDelay));
+        }
+        return this;
+    }
+
     public Expression inner() {
         return inner;
     }

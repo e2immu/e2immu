@@ -208,4 +208,9 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     public CausesOfDelay causesOfDelay() {
         return causesOfDelay;
     }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new DelayedVariableExpression(msg, debug, variable, this.causesOfDelay.merge(causesOfDelay));
+    }
 }

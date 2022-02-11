@@ -127,4 +127,9 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     public VariableInfo getVariableInfo() {
         return variableInfo;
     }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new DelayedWrappedExpression(identifier, variableInfo, this.causesOfDelay.merge(causesOfDelay));
+    }
 }

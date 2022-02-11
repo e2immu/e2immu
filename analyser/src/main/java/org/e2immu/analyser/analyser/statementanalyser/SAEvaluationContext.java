@@ -335,11 +335,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     private DV nneForVariable(boolean duringEvaluation, Variable variable, DV inMap, CausesOfDelay delays) {
-        if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        }
         if (delays.isDelayed()) {
             return delays; // see Enum_8; otherwise we compute NNE of a delayed field <f:...>
+        }
+        if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
+            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
         DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
         DV cnnInMap = cnn.max(inMap);
@@ -447,7 +447,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         && vc.variable().equals(fr)
                         && vc.location().equals(here));
         if (cyclicDependency) {
-            LOGGER.debug("Breaking the delay by inserting a special delayed value");
+            LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, here);
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
             Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, cause);
             return new VariableInfoImpl(getLocation(), fr, dve);

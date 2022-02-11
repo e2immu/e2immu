@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
@@ -106,4 +103,11 @@ public class StringConcat extends BinaryOperator {
         return builder.setExpression(stringConcat(identifier, evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        Expression l = lhs.isDelayed() ? lhs.mergeDelays(causesOfDelay) : lhs;
+        Expression r = rhs.isDelayed() ? rhs.mergeDelays(causesOfDelay) : rhs;
+        if (l != lhs || r != rhs) return new StringConcat(identifier, primitives, l, r);
+        return this;
+    }
 }

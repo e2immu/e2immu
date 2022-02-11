@@ -84,6 +84,7 @@ public interface Expression extends Element, Comparable<Expression> {
     default boolean isEmpty() {
         return false;
     }
+
     default boolean isUnknown() {
         return false;
     }
@@ -192,6 +193,10 @@ public interface Expression extends Element, Comparable<Expression> {
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
     }
+
+    // goes together with causesOfDelay()
+    @NotNull
+    default Expression mergeDelays(CausesOfDelay causesOfDelay) { return this; }
 
     default boolean isDelayed() {
         return causesOfDelay().isDelayed();

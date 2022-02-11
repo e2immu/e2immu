@@ -106,6 +106,11 @@ public class CommaExpression extends BaseExpression implements Expression {
         return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new CommaExpression(expressions.stream().map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e).toList());
+    }
+
     public List<Expression> expressions() {
         return expressions;
     }

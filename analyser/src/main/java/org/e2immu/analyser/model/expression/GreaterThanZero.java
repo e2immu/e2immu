@@ -329,6 +329,15 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         return expression.causesOfDelay();
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if(expression.isDelayed()) {
+            return new GreaterThanZero(identifier, booleanParameterizedType,
+                    expression.mergeDelays(causesOfDelay), allowEquals);
+        }
+        return this;
+    }
+
     public Expression expression() {
         return expression;
     }

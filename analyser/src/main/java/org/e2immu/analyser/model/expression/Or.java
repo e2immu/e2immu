@@ -265,6 +265,13 @@ public final class Or extends ExpressionCanBeTooComplex {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new Or(identifier, primitives, expressions.stream()
+                .map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e)
+                .toList());
+    }
+
+    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));

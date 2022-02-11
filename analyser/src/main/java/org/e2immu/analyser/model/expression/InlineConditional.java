@@ -271,10 +271,17 @@ public class InlineConditional extends BaseExpression implements Expression {
         return Precedence.TERNARY;
     }
 
-
     @Override
     public CausesOfDelay causesOfDelay() {
         return condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
+    }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        Expression c = condition.isDelayed() ? condition.mergeDelays(causesOfDelay) : condition;
+        Expression t = ifTrue.isDelayed() ? ifTrue.mergeDelays(causesOfDelay) : ifTrue;
+        Expression f = ifFalse.isDelayed() ? ifFalse.mergeDelays(causesOfDelay) : ifFalse;
+        return new InlineConditional(identifier, inspectionProvider, c, t, f);
     }
 
     @Override

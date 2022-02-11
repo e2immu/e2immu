@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -189,11 +190,11 @@ public class Test_04_Precondition extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test1_34() throws IOException {
         testClass("Precondition_1_34", 0, 0, new DebugConfiguration.Builder()
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
@@ -201,16 +202,23 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setPositive4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "j3".equals(p.name)) {
+                    String expected = d.iteration() == 0 ? "<p:j3>" : "instance type int/*@Identity*/";
                     if ("0".equals(d.statementId())) {
-                        assertEquals("<p:j3>", d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("<p:j3>", d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fieldReference && "i".equals(fieldReference.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("<p:j3>", d.currentValue().toString());
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<p:j3>";
+                            case 1 -> "<wrapped:i>";
+                            default -> "j3";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -223,9 +231,10 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
         };
         testClass("Precondition_1_4", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .build());
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
     @Test
@@ -275,7 +284,11 @@ public class Test_04_Precondition extends CommonTestRunner {
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
-                        String expectValue = d.iteration() <= 1 ? "<f:integer>" : "nullable instance type Integer";
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:integer>";
+                            case 1 -> "<vp:integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2;values:this.integer@Field_integer>";
+                            default -> "nullable instance type Integer";
+                        };
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {

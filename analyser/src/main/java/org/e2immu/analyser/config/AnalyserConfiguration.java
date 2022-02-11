@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 
@@ -28,6 +27,7 @@ import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
+                                    boolean forceExtraDelayForTesting,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
                                     AnalyserProgram analyserProgram) {
 
@@ -47,6 +47,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         // see @NotNull in FieldAnalyser for an explanation
         private boolean computeContextPropertiesOverAllMethods;
         private boolean computeFieldAnalyserAcrossAllMethods;
+        private boolean forceExtraDelayForTesting;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
@@ -59,6 +60,11 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         public Builder setPatternMatcherProvider(PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
             this.patternMatcherProvider = patternMatcherProvider;
+            return this;
+        }
+
+        public Builder setForceExtraDelayForTesting(boolean forceExtraDelayForTesting) {
+            this.forceExtraDelayForTesting = forceExtraDelayForTesting;
             return this;
         }
 
@@ -81,6 +87,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return new AnalyserConfiguration(skipTransformations,
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
+                    forceExtraDelayForTesting,
                     patternMatcherProvider == null ?
                             (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
                     analyserProgram);
@@ -93,6 +100,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                 "\n    skipTransformations=" + skipTransformations +
                 "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
                 "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
+                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting +
                 "\n    analyserProgram=" + analyserProgram;
     }
 }

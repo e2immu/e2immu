@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.annotation.Modified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,6 +121,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
 
+        Location here = getLocation();
+        boolean breakInitDelay = evaluationResult.causesOfDelay().causesStream()
+                .anyMatch(c -> c instanceof VariableCause vc
+                        && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                        && vc.location().equals(here));
+
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -179,40 +186,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                if (variable instanceof FieldReference target && valueToWritePossiblyDelayed.isDelayed() && !combined.delays().isDelayed()) {
-                    Optional<VariableCause> optVc = valueToWritePossiblyDelayed.causesOfDelay().causesStream()
-                            .filter(c -> c instanceof VariableCause vc
-                                    && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                                    && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
-                            .map(c -> (VariableCause) c)
-                            .findFirst();
-                    if (optVc.isPresent()) {
-                        LOGGER.debug("Self-assignment with break-init delay: this.field = myselfAsParameter.field, field {}", target.fieldInfo.name);
-                        // replace the DVE with a DelayedWrappedExpression referring to self
-                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate(), target.parameterizedType, combined);
-                        VariableInfo tempVi = new VariableInfoImpl(variable, instance, combined);
-                        valueToWritePossiblyDelayed = new DelayedWrappedExpression(Identifier.generate(), tempVi, valueToWritePossiblyDelayed.causesOfDelay());
-                    }
-                }
-                if (variable instanceof FieldReference target
-                        && valueToWritePossiblyDelayed.isDone()
-                        && changeData.stateIsDelayed().isDelayed()) {
-                    Optional<VariableCause> optVc = changeData.stateIsDelayed().causesOfDelay().causesStream()
-                            .filter(c -> c instanceof VariableCause vc
-                                    && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                                    && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
-                            .map(c -> (VariableCause) c)
-                            .findFirst();
-                    if (optVc.isPresent()) {
-                        // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
-                        VariableInfo tempVi = new VariableInfoImpl(variable, valueToWritePossiblyDelayed, combined.copy());
-                        valueToWritePossiblyDelayed = new DelayedWrappedExpression(Identifier.generate(), tempVi, changeData.stateIsDelayed());
-                        assert valueToWritePossiblyDelayed.isDelayed();
-                        // DELAY combined
-
-                        EvaluationContext.VALUE_PROPERTIES.forEach(p -> combined.overwrite(p, changeData.stateIsDelayed()));
-                    }
-                }
+                valueToWritePossiblyDelayed = detectBreakDelay(variable, changeData, valueToWritePossiblyDelayed, combined);
 
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
 
@@ -240,7 +214,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
                     vic.setValue(changeData.value(), removed, merged, false);
                 } else {
-                    if (variable instanceof This || !evaluationResult.causesOfDelay().isDelayed()) {
+                    if (variable instanceof This || !evaluationResult.causesOfDelay().isDelayed() || breakInitDelay) {
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
                         // if the existing value is not delayed, the value properties must not be delayed either!
@@ -253,12 +227,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 "While writing to variable " + variable;
                         vic.setValue(vi1.getValue(), vi1.getLinkedVariables(), merged, false);
                     } else {
-                        // delayed situation; do not copy the value properties
+                        // delayed situation; do not copy the value properties UNLESS there is a break delay
                         Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
                                 sharedState.evaluationContext(),
                                 variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, false);
                         merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
+                        // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
+                        vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
                     }
                 }
             }
@@ -298,6 +274,52 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
 
         return applyStatusAndEnnStatus;
+    }
+
+    private Expression detectBreakDelay(Variable variable,
+                                        EvaluationResult.ChangeData changeData,
+                                        Expression valueToWritePossiblyDelayed,
+                                        @Modified Properties combined) {
+        if (variable instanceof FieldReference target) {
+            if (valueToWritePossiblyDelayed.isDelayed()) {
+                Optional<VariableCause> optVc = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
+                if (optVc.isPresent()) {
+                    if (!combined.delays().isDelayed()) {
+                        // we don't have a value, but can make a perfectly good "instance", with all the right value properties
+
+                        // replace the DVE with a DelayedWrappedExpression referring to self
+                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate(), target.parameterizedType, combined);
+                        VariableInfo tempVi = new VariableInfoImpl(variable, instance, combined);
+                        return new DelayedWrappedExpression(Identifier.generate(), tempVi, valueToWritePossiblyDelayed.causesOfDelay());
+                    }
+                    LOGGER.debug("Delayed value, delayed value properties...");
+                }
+            } else {
+                if (changeData.stateIsDelayed().isDelayed()) {
+                    // we have a perfectly good value, but the current state is delayed, so eventually we'll have to revisit
+                    Optional<VariableCause> optVc = extractBreakInitCause(changeData.stateIsDelayed(), target);
+                    if (optVc.isPresent()) {
+                        // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
+                        VariableInfo tempVi = new VariableInfoImpl(variable, valueToWritePossiblyDelayed, combined.copy());
+                        Expression res = new DelayedWrappedExpression(Identifier.generate(), tempVi, changeData.stateIsDelayed());
+                        assert res.isDelayed();
+                        // DELAY combined
+                        EvaluationContext.VALUE_PROPERTIES.forEach(p -> combined.overwrite(p, changeData.stateIsDelayed()));
+                        return res;
+                    }
+                }
+            }
+        }
+        return valueToWritePossiblyDelayed;
+    }
+
+    private Optional<VariableCause> extractBreakInitCause(CausesOfDelay valueToWritePossiblyDelayed, FieldReference target) {
+        return valueToWritePossiblyDelayed.causesStream()
+                .filter(c -> c instanceof VariableCause vc
+                        && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                        && vc.variable() instanceof FieldReference fr && fr.fieldInfo == target.fieldInfo)
+                .map(c -> (VariableCause) c)
+                .findFirst();
     }
 
     private EvaluationResult variablesReadAndAssignedInSubAnalysers(EvaluationResult evaluationResultIn,

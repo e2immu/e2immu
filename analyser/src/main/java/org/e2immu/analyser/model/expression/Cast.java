@@ -125,6 +125,14 @@ public class Cast extends BaseExpression implements Expression {
         return expression.causesOfDelay();
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (expression.isDelayed()) {
+            return new Cast(expression.mergeDelays(causesOfDelay), parameterizedType);
+        }
+        return this;
+    }
+
     public Expression getExpression() {
         return expression;
     }

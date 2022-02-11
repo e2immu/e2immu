@@ -731,6 +731,13 @@ public class And extends ExpressionCanBeTooComplex {
         return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return new And(identifier, primitives, expressions.stream()
+                .map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e)
+                .toList());
+    }
+
     public Expression removePartsNotReferringTo(EvaluationContext evaluationContext, Variable variable) {
         Expression[] filtered = this.expressions.stream()
                 .filter(e -> e.variables(true).contains(variable))

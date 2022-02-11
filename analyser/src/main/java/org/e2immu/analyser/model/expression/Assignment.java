@@ -208,6 +208,16 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (value.isDelayed()) {
+            return new Assignment(identifier, primitives, target, value.mergeDelays(causesOfDelay),
+                    assignmentOperator, prefixPrimitiveOperator, complainAboutAssignmentOutsideType, variableTarget,
+                    binaryOperator, hackForUpdatersInForLoop);
+        }
+        return this;
+    }
+
+    @Override
     public Precedence precedence() {
         return Precedence.ASSIGNMENT;
     }

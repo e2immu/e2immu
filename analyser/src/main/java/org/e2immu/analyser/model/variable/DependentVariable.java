@@ -119,11 +119,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         return arrayVariable != null && arrayVariable.isLocal();
     }
 
-    @Override
-    public boolean needsNewVariableWithoutValueCall() {
-        return true;
-    }
-
     public boolean hasArrayVariable() {
         return expressionOrArrayVariable.isRight();
     }

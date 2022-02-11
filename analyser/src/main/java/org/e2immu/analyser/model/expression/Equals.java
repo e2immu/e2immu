@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
@@ -285,5 +286,13 @@ public class Equals extends BinaryOperator {
     @Override
     public int order() {
         return ExpressionComparator.ORDER_EQUALS;
+    }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        Expression l = lhs.isDelayed() ? lhs.mergeDelays(causesOfDelay) : lhs;
+        Expression r = rhs.isDelayed() ? rhs.mergeDelays(causesOfDelay) : rhs;
+        if (l != lhs || r != rhs) return new Equals(identifier, primitives, l, r);
+        return this;
     }
 }

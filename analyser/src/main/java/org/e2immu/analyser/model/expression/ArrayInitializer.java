@@ -56,6 +56,13 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         this.inspectionProvider = inspectionProvider;
     }
 
+    private ArrayInitializer(Identifier identifier, MultiExpression multiExpression, ParameterizedType commonType, InspectionProvider inspectionProvider) {
+        super(identifier);
+        this.multiExpression = multiExpression;
+        this.commonType = commonType;
+        this.inspectionProvider = inspectionProvider;
+    }
+
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = multiExpression.stream()
@@ -71,7 +78,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     public Expression translate(TranslationMap translationMap) {
         // IMPROVE can be made more efficient, make a TranslationCollector on arrays
         List<Expression> exs = multiExpression.stream().toList();
-        List<Expression> translated = exs.stream().map(e->e.translate(translationMap))
+        List<Expression> translated = exs.stream().map(e -> e.translate(translationMap))
                 .collect(TranslationCollectors.toList(exs));
         ParameterizedType translatedType = translationMap.translateType(commonType);
         if (translatedType == commonType && translated == exs) return this;
@@ -138,6 +145,14 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        MultiExpression multi = new MultiExpression(Arrays.stream(multiExpression.expressions())
+                .map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e)
+                .toArray(Expression[]::new));
+        return new ArrayInitializer(identifier, multi, commonType, inspectionProvider);
+    }
+
+    @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (multiExpression.isEmpty()) {
             return switch (property) {
@@ -162,7 +177,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         if (Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
             return MultiLevel.CONTAINER_DV;
         }
-        if(Property.EXTERNAL_IGNORE_MODIFICATIONS == property || Property.IGNORE_MODIFICATIONS == property) {
+        if (Property.EXTERNAL_IGNORE_MODIFICATIONS == property || Property.IGNORE_MODIFICATIONS == property) {
             return MultiLevel.NOT_IGNORE_MODS_DV;
         }
         // default is to refer to each of the components

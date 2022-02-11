@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.Property;
@@ -77,5 +78,12 @@ public record MultiExpression(Expression... expressions) {
 
     public int size() {
         return expressions.length;
+    }
+
+    public MultiExpression mergeDelaysOnLastExpression(CausesOfDelay causesOfDelay) {
+        Expression[] e = new Expression[expressions.length];
+        System.arraycopy(expressions, 0, e, 0, expressions.length);
+        e[expressions.length - 1] = expressions[expressions.length - 1].mergeDelays(causesOfDelay);
+        return new MultiExpression(e);
     }
 }

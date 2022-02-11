@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -159,5 +156,13 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public Expression removeAllReturnValueParts() {
         if (expression.isReturnValue()) return expression;
         return new Negation(identifier, operator, expression.removeAllReturnValueParts());
+    }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (expression.isDelayed()) {
+            return new Negation(identifier, operator, expression.mergeDelays(causesOfDelay));
+        }
+        return this;
     }
 }

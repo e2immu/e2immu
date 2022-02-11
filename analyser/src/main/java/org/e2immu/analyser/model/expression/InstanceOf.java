@@ -211,6 +211,14 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (expression.isDelayed()) {
+            return new InstanceOf(identifier, primitives, parameterizedType, expression.mergeDelays(causesOfDelay), patternVariable);
+        }
+        return this;
+    }
+
+    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(expression.typesReferenced(), parameterizedType.typesReferenced(true));
     }

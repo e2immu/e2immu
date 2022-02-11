@@ -537,4 +537,12 @@ public class BinaryOperator extends BaseExpression implements Expression {
     public CausesOfDelay causesOfDelay() {
         return lhs.causesOfDelay().merge(rhs.causesOfDelay());
     }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        Expression l = lhs.isDelayed() ? lhs.mergeDelays(causesOfDelay) : lhs;
+        Expression r = rhs.isDelayed() ? rhs.mergeDelays(causesOfDelay) : rhs;
+        if (l != lhs || r != rhs) return new BinaryOperator(identifier, primitives, l, operator, r, precedence);
+        return this;
+    }
 }

@@ -139,6 +139,14 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if(multiExpression.lastExpression().isDelayed()) {
+            return new MultiExpressions(identifier, inspectionProvider, multiExpression.mergeDelaysOnLastExpression(causesOfDelay));
+        }
+        return this;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

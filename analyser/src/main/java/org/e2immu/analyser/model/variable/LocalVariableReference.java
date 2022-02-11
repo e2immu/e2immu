@@ -89,11 +89,6 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public boolean needsNewVariableWithoutValueCall() {
-        return true;
-    }
-
-    @Override
     public VariableNature variableNature() {
         return variable.nature();
     }

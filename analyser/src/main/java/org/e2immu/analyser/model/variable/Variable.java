@@ -55,7 +55,9 @@ public interface Variable extends OneVariable {
     @NotNull
     String fullyQualifiedName();
 
-    default String debug() { return simpleName(); }
+    default String debug() {
+        return simpleName();
+    }
 
     boolean isStatic();
 
@@ -81,11 +83,12 @@ public interface Variable extends OneVariable {
         return simpleName();
     }
 
-    default boolean needsNewVariableWithoutValueCall() {
-        return false;
-    }
-
     default VariableNature variableNature() {
         return VariableNature.METHOD_WIDE;
+    }
+
+    // normal equals, except that for field references, we match on fieldInfo, ignoring the scope
+    default boolean specialEquals(Variable variable) {
+        return equals(variable);
     }
 }

@@ -54,13 +54,21 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         Expression translated = scope.translate(translationMap);
-        if(translated == scope) return this;
+        if (translated == scope) return this;
         return new ArrayLength(primitives, translated);
     }
 
     @Override
     public CausesOfDelay causesOfDelay() {
         return scope.causesOfDelay();
+    }
+
+    @Override
+    public Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        if (scope.isDelayed()) {
+            return new ArrayLength(primitives, scope.mergeDelays(causesOfDelay));
+        }
+        return this;
     }
 
     @Override
@@ -104,7 +112,7 @@ public class ArrayLength extends BaseExpression implements Expression {
         } else if (result.value().isDelayed()) {
             builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives(), result.value().causesOfDelay()));
         } else {
-             builder.setExpression(this);
+            builder.setExpression(this);
         }
         return builder.build();
     }

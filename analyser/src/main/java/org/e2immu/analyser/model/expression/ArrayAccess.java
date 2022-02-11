@@ -142,20 +142,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
                                 MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                     }
                     Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
-                /*    if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
-                        // we have no value yet
-                        Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, arrayValue,
-                                evaluatedDependentVariable);
-                        DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
-                        LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
-                                .changeAllTo(independent)
-                                .merge(LinkedVariables.of(evaluatedDependentVariable, LinkedVariables.ASSIGNED_DV));
-                        builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
-                        Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
-                        builder.setExpression(wrappedObject);
-                    } else {*/
                     builder.setExpression(currentValue);
-                    //  }
                 }
             }
         }
