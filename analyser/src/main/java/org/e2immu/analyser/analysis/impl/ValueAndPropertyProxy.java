@@ -51,12 +51,15 @@ public interface ValueAndPropertyProxy {
 
     // needed because a specific Proxy instance (created in FieldAnalyserImpl.breakDelayProxy)
     // which cannot yet guarantee correct values
-    default boolean validValueProperties() { return true; }
+    default boolean validValueProperties() {
+        return true;
+    }
 
     Comparator<ValueAndPropertyProxy> COMPARATOR =
             (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
 
-    record ValueAndPropertyProxyBasedOnVariableInfo(VariableInfo variableInfo,
+    record ValueAndPropertyProxyBasedOnVariableInfo(Expression value,
+                                                    VariableInfo variableInfo,
                                                     Origin origin) implements ValueAndPropertyProxy {
 
         @Override
@@ -66,7 +69,7 @@ public interface ValueAndPropertyProxy {
 
         @Override
         public Expression getValue() {
-            return variableInfo.getValue();
+            return value;
         }
 
         @Override

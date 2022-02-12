@@ -888,14 +888,17 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 boolean added = false;
                 for (VariableInfo vii : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
                     VariableInfo vi;
+                    Expression expression;
                     if (vii.getValue() instanceof DelayedWrappedExpression dwe) {
                         // the reason for providing a VI rather than an expression in DWE is that it contains properties as well.
                         // these properties are hard to compute here
                         vi = dwe.getVariableInfo();
+                        expression = dwe.getExpression();
+                        assert expression.isDone();
                     } else {
                         vi = vii;
+                        expression = vi.getValue();
                     }
-                    Expression expression = vi.getValue();
                     CausesOfDelay causesOfDelay = expression.causesOfDelay();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
@@ -908,7 +911,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     ValueAndPropertyProxy proxy;
 
                     boolean viIsDelayed;
-                    if (vi.getValue() instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
+                    if (expression instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
                             methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.isDefaultScope && !fr.isStatic) {
                         // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
                         // as well as ExplicitConstructorInvocation_4
@@ -921,7 +924,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             throw new UnsupportedOperationException("Break init delay needs resolving for field "
                                     + fieldInfo.name + " in method " + methodInfo.name);
                         } else {
-                            proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
+                            proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(expression, vi, origin);
                             viIsDelayed = causesOfDelay.isDelayed();
                         }
                         values.add(proxy);
@@ -932,7 +935,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         added = true;
                         if (viIsDelayed) {
                             LOGGER.debug("Delay consistent value for field {} because of {} in {}",
-                                    fqn, vi.getValue().toString(), methodInfo.fullyQualifiedName);
+                                    fqn, expression, methodInfo.fullyQualifiedName);
                             delays = delays.merge(causesOfDelay);
                         }
                     }
@@ -959,7 +962,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
                     latestBlock = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo
-                            (vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
+                            (vi.getValue(), vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
                     delays = delays.merge(vi.getValue().causesOfDelay());
                 }
             }

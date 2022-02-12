@@ -100,11 +100,12 @@ public record Merge(EvaluationContext evaluationContext,
                 } else {
                     instance = fromAnalysis;
                     properties = evaluationContext.getValueProperties(instance);
+                    // TODO explicitly not passing the properties -- is this ok?
                 }
                 assert instance.isDone();
-                VariableInfoImpl wrappedVii = new VariableInfoImpl(vii.variable(), instance, properties);
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate(),
-                        wrappedVii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+                        instance,
+                        vii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
                 vii.setValue(wrapped);
             }
         }

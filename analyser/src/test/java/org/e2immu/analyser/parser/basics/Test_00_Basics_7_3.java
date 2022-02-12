@@ -74,7 +74,7 @@ public class Test_00_Basics_7_3 extends CommonTestRunner {
                     if ("1.0.3".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<f:i>==<f:i>";
-                            case 1 -> "<wrapped:return increment3>";
+                            case 1 -> "<wrapped:i>";
                             default -> "true";
                         };
                         assertEquals(expect, d.currentValue().toString());

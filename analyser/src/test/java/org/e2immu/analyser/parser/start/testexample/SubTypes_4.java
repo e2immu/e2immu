@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 /*
-In this example we warn against assigning to a field outside of the owning type
+In this example we warn against assigning to a field outside the owning type
  */
 public class SubTypes_4 {
 

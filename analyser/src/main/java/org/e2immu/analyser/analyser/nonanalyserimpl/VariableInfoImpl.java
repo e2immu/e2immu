@@ -74,7 +74,8 @@ public class VariableInfoImpl implements VariableInfo {
         assert location != Location.NOT_YET_SET;
     }
 
-    // used as a temp in MergeHelper
+    // used as a temp in MergeHelper; make sure that this one is not used to generate VI objects for inclusion
+    // in DelayedWrappedExpression: they need to be the original ones that will be updated in subsequent iterations
     public VariableInfoImpl(Variable variable, Expression value, Properties properties) {
         this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));

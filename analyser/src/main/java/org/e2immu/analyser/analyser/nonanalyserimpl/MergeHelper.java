@@ -112,8 +112,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
 
-        mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(vi.variable(), mergedValue,
-                mergeValue.valueProperties());
+        mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(mergedValue);
         // TODO do post-process and replace local variables change the value properties?
         try {
             vi.setValue(mergedValue); // copy the delayed value
@@ -234,7 +233,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
         SimpleSet causes = new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.VALUES);
         Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
-        Expression value = new DelayedWrappedExpression(Identifier.generate(), vi, causes);
+        Expression value = new DelayedWrappedExpression(Identifier.generate(), vi.getValue(), vi, causes);
         return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
     }
 
@@ -280,7 +279,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             }
             Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(evaluationContext,
                     e.condition(), e.absoluteState());
-            if (reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
+            if (reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY) && !e.variableInfo().getValue().isDelayed()) {
                 // simply accept this one, for now
                 return valuePropertiesWrapToBreakFieldInitDelay(e.variableInfo());
             }

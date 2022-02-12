@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -187,12 +186,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                valueToWritePossiblyDelayed = detectBreakDelayInAssignment(variable, changeData, valueToWritePossiblyDelayed, combined);
+                valueToWritePossiblyDelayed = detectBreakDelayInAssignment(variable,
+                        vi, changeData, valueToWritePossiblyDelayed, combined);
 
                 // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
                 // evaluation context
-                valueToWritePossiblyDelayed = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(variable,
-                        valueToWritePossiblyDelayed, combined);
+                valueToWritePossiblyDelayed = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(valueToWritePossiblyDelayed);
 
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
 
@@ -294,6 +293,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     private Expression detectBreakDelayInAssignment(Variable variable,
+                                                    VariableInfo vi,
                                                     EvaluationResult.ChangeData changeData,
                                                     Expression valueToWritePossiblyDelayed,
                                                     @Modified Properties combined) {
@@ -306,14 +306,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate(), target.parameterizedType, combined);
-                        VariableInfo tempVi = new VariableInfoImpl(variable, instance, combined);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
                         if (causes.isDone()) {
                             //just making sure that we are delayed
                             causes = new SimpleSet(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
                         }
-                        return new DelayedWrappedExpression(Identifier.generate(), tempVi, causes);
+                        return new DelayedWrappedExpression(Identifier.generate(), instance, vi, causes);
                     }
                 }
             } else {
@@ -322,8 +321,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     Set<CauseOfDelay> breaks = extractBreakInitCause(changeData.stateIsDelayed(), target);
                     if (!breaks.isEmpty()) {
                         // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
-                        VariableInfo tempVi = new VariableInfoImpl(variable, valueToWritePossiblyDelayed, combined.copy());
-                        Expression res = new DelayedWrappedExpression(Identifier.generate(), tempVi, changeData.stateIsDelayed());
+                        Expression res = new DelayedWrappedExpression(Identifier.generate(), valueToWritePossiblyDelayed,
+                                vi, changeData.stateIsDelayed());
                         assert res.isDelayed();
                         // DELAY combined
                         LOGGER.debug("Return wrapped expression to break state delay on {} in {}", target, index());

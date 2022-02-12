@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -24,6 +23,8 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,15 +36,21 @@ See ConditionalInitialization_1.
  */
 @E2Container
 public final class DelayedWrappedExpression extends BaseExpression implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DelayedWrappedExpression.class);
+
     private final VariableInfo variableInfo;
     private final CausesOfDelay causesOfDelay;
+    private final Expression expression;
 
     public DelayedWrappedExpression(Identifier identifier,
+                                    Expression expression,
                                     VariableInfo variableInfo,
                                     CausesOfDelay causesOfDelay) {
         super(identifier);
         this.variableInfo = variableInfo;
         this.causesOfDelay = causesOfDelay;
+        this.expression = expression;
+        assert expression.isDone();
         assert causesOfDelay.isDelayed();
     }
 
@@ -64,7 +71,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public boolean isNumeric() {
-        return variableInfo.getValue().isNumeric();
+        return expression.isNumeric();
     }
 
     @Override
@@ -111,14 +118,14 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     @Override
     public Expression translate(TranslationMap translationMap) {
         if (translationMap.expandDelayedWrappedExpressions()) {
-            return variableInfo.getValue();
+            return expression;
         }
         return this;
     }
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return variableInfo.getValue().variables(descendIntoFieldReferences);
+        return expression.variables(descendIntoFieldReferences);
     }
 
     @Override
@@ -136,23 +143,32 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedWrappedExpression(identifier, variableInfo, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedWrappedExpression(identifier, expression, variableInfo, this.causesOfDelay.merge(causesOfDelay));
     }
 
-    public static Expression moveDelayedWrappedExpressionToFront(Variable variable,
-                                                                 Expression value,
-                                                                 Properties valueProperties) {
+    public static Expression moveDelayedWrappedExpressionToFront(Expression value) {
         if (value.isDelayed() && !(value instanceof DelayedWrappedExpression)) {
             List<DelayedWrappedExpression> x = value.collect(DelayedWrappedExpression.class);
             if (!x.isEmpty()) {
+                if (x.size() > 1) {
+                    LOGGER.warn("Multiple occurrences of DWE? Taking the first one");
+                }
                 TranslationMap tm = new TranslationMapImpl.Builder().setExpandDelayedWrapperExpressions(true).build();
                 Expression translated = value.translate(tm);
-                VariableInfoImpl vi = new VariableInfoImpl(variable, translated, valueProperties);
-                DelayedWrappedExpression dwe = new DelayedWrappedExpression(value.getIdentifier(), vi, value.causesOfDelay());
-                assert dwe.isDelayed();
-                return dwe;
+                if(translated.isDelayed()) {
+                    return x.get(0); // no need to proceed, will not be picked up by FieldAnalyserImpl.values
+                }
+                DelayedWrappedExpression dwe = x.get(0);
+                DelayedWrappedExpression newDwe = new DelayedWrappedExpression(dwe.getIdentifier(),
+                        translated, dwe.variableInfo, dwe.causesOfDelay());
+                assert newDwe.isDelayed();
+                return newDwe;
             }
         }
         return value;
+    }
+
+    public Expression getExpression() {
+        return expression;
     }
 }
