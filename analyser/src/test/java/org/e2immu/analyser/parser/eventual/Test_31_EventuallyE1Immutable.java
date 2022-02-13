@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -208,6 +209,29 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("addIfGreater".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<return value>||i>=<f:j>";
+                            case 1 -> "<wrapped:j>";
+                            default -> "<return value>||i>=j$0";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<p:i>>=<f:j>";
+                            case 1 -> "<wrapped:j>";
+                            default -> "i>=j$0";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                }
+            }
+        };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_2_M".equals(d.typeInfo().simpleName)) {
                 String expectApprovedPreconditions = d.iteration() <= 1 ? "{}" : "{j=j<=0}";
@@ -217,6 +241,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());

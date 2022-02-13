@@ -49,18 +49,18 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0, 1 -> "<m:isSet>";
+                        case 0, 1, 2 -> "<m:isSet>";
                         default -> "null!=other.t";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0, 1 -> "<m:set>";
+                        case 0, 1, 2 -> "<m:set>";
                         default -> "<no return value>";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -70,7 +70,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String expectLv = d.iteration() == 0 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -78,11 +78,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-                    String expectValue = d.iteration() <= 1 ? "<p:other>" :
-                            "nullable instance type Basics_21<T>/*@Identity*/";
-                    assertEquals(expectValue, d.currentValue().toString());
+
 
                     if ("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 2 ? "<p:other>" :
+                                "nullable instance type Basics_21<T>/*@Identity*/";
+                        assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -94,6 +95,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     } else {
                         assertEquals("0", d.statementId());
+                        String expectValue = d.iteration() <= 2 ? "<m:isSet>?<p:other>:<p:other>" :
+                                "nullable instance type Basics_21<T>/*@Identity*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer().getPreviousOrInitial()
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
@@ -119,28 +124,28 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() <= 1 ? "<m:get>" : "t$0";
+                String expect = d.iteration() <= 2 ? "<m:get>" : "t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
+                String expect = d.iteration() <= 2 ? "<m:isSet>" : "null!=t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -761,6 +761,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             map.overwrite(CONTEXT_IMMUTABLE, ctx);
         } else {
             assert MUTABLE_DV.equals(map.get(CONTEXT_IMMUTABLE));
+            assert !map.containsKey(IMMUTABLE);
         }
 
         if (!viInitial.valueIsSet()) {

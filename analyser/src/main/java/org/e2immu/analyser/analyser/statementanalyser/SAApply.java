@@ -160,17 +160,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         .getValueProperties(variable.parameterizedType(), valueToWrite, true);
                 CausesOfDelay valuePropertiesIsDelayed = valueProperties.delays();
 
-                boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
-                Expression valueToWritePossiblyDelayed;
-                if (valueToWriteIsDelayed) {
-                    valueToWritePossiblyDelayed = valueToWrite;
-                } else if (valuePropertiesIsDelayed.isDelayed()) {
-                    valueToWritePossiblyDelayed = valueToWrite.createDelayedValue(sharedState.evaluationContext(),
-                            valuePropertiesIsDelayed);
-                } else {
-                    // no delays!
-                    valueToWritePossiblyDelayed = valueToWrite;
-                }
+                Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valuePropertiesIsDelayed);
 
                 Properties changeDataProperties = Properties.of(changeData.properties());
                 boolean myself = sharedState.evaluationContext().isMyself(variable);
@@ -186,15 +176,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                valueToWritePossiblyDelayed = detectBreakDelayInAssignment(variable,
-                        vi, changeData, valueToWritePossiblyDelayed, combined);
-
-                // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
-                // evaluation context
-                valueToWritePossiblyDelayed = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(valueToWritePossiblyDelayed);
-
-                vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
-
+                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWritePossiblyDelayed, combined);
+                if(possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
+                    // trying without setting properties -- too dangerous to set value properties
+                    vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, Properties.EMPTY, false);
+                } else {
+                    // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
+                    // evaluation context
+                    vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
+                }
                 if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                     statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                 }
@@ -292,11 +282,22 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return applyStatusAndEnnStatus;
     }
 
+    private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,
+                                            Expression valueToWrite,
+                                            CausesOfDelay valuePropertiesIsDelayed) {
+        boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
+        if (!valueToWriteIsDelayed && valuePropertiesIsDelayed.isDelayed()) {
+            return valueToWrite.createDelayedValue(sharedState.evaluationContext(),
+                    valuePropertiesIsDelayed);
+        }
+        return valueToWrite;
+    }
+
     private Expression detectBreakDelayInAssignment(Variable variable,
                                                     VariableInfo vi,
                                                     EvaluationResult.ChangeData changeData,
                                                     Expression valueToWritePossiblyDelayed,
-                                                    @Modified Properties combined) {
+                                                    Properties combined) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
                 Set<CauseOfDelay> breaks = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
@@ -324,15 +325,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         Expression res = new DelayedWrappedExpression(Identifier.generate(), valueToWritePossiblyDelayed,
                                 vi, changeData.stateIsDelayed());
                         assert res.isDelayed();
-                        // DELAY combined
                         LOGGER.debug("Return wrapped expression to break state delay on {} in {}", target, index());
-                        EvaluationContext.VALUE_PROPERTIES.forEach(p -> combined.overwrite(p, changeData.stateIsDelayed()));
                         return res;
                     }
                 }
             }
         }
-        return valueToWritePossiblyDelayed;
+        // move DWE to the front, if it is hidden somewhere deeper inside the expression
+        return DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(valueToWritePossiblyDelayed);
     }
 
     private Set<CauseOfDelay> extractBreakInitCause(CausesOfDelay valueToWritePossiblyDelayed, FieldReference target) {
