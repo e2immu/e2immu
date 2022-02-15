@@ -105,11 +105,13 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<vp:Set<String>:initial@Class_ConditionalInitialization_1>"
                                 : "Set.of(\"a\",\"b\")";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "b?<vp:Set<String>:initial@Class_ConditionalInitialization_1>:<f:set>"
                                 : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -117,14 +119,16 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("setParam", d.currentValue().toString());
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "c?setParam:<f:set>";
-                            case 1, 2 -> "<wrapped:set>";
+                            case 1 -> "<wrapped:set>";
                             default -> "c?setParam:nullable instance type Set<String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -137,16 +141,17 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().valuesDelayed().isDelayed());
 
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                // both resolved in iteration 1 thanks to the property break of Merge.breakInitDelay
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
         // field occurs in all constructors or at least one static block
 
         testClass("ConditionalInitialization_1", 0, 1, new DebugConfiguration.Builder()
-                // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

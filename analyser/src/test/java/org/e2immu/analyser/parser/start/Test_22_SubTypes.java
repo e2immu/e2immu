@@ -274,7 +274,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
     // delay cycle to be broken:
     // 1- anonymous type is partially immutable, but needs primary type to finalize the value
     // 2- because the anonymous type's IMMUTABLE is not known, the field "external" gets no value
-    // 3- because the field gets no value, it can get no IGNORE_MODS, hence no MODIFIED_OUTSIDE_METHOD
+    // 3- because the field gets no value, it can get no IGNORE_MODS, hence no value for MODIFIED_OUTSIDE_METHOD
     // 4- because of the delay on the field, the primary type's IMMUTABLE cannot be computed
     @Test
     public void test_10() throws IOException {

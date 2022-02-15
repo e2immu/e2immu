@@ -599,7 +599,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private DV computeWorstNotNullOverValues(boolean computeContextPropertiesOverAllMethods, DV bestOverContext) {
         DV worstOverValuesUnfiltered = fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
-                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                .map(this::notNullInProxy)
                 .reduce(DV.MAX_INT_DV, DV::min);
 
         DV worstOverValues;
@@ -611,6 +611,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             assert worstOverValues != DV.MAX_INT_DV;
         }
         return worstOverValues;
+    }
+
+    private DV notNullInProxy(ValueAndPropertyProxy proxy) {
+        DV nne = proxy.getProperty(Property.NOT_NULL_EXPRESSION);
+        if (nne.isDelayed()) {
+            DV nneBreak = proxy.getProperty(NOT_NULL_BREAK);
+            if (nneBreak.isDone()) return nneBreak;
+        }
+        return nne;
     }
 
     private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered) {

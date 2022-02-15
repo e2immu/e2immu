@@ -24,7 +24,6 @@ public class ConditionalInitialization_1 {
         if (b) {
             set = Set.of("a", "b"); // @NotNull1
         } else {
-            // here, the CI copy should not exist
             System.out.println("Set is " + set);
         }
     }

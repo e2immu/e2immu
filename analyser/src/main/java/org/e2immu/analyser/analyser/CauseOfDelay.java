@@ -26,6 +26,7 @@ public interface CauseOfDelay {
         BEFORE_MARK("before_mark", "@BeforeMark not yet determined"),
         BREAK_IMMUTABLE_DELAY("break_imm_delay", ""),
         BREAK_INIT_DELAY("break_init_delay", "cyclic dependency in initalisation"),
+        BREAK_INIT_DELAY_IN_MERGE("bid_merge", "Break init delay in merge"),
         BREAK_MOM_DELAY("break_mom_delay", "break a content modified - mom delay"),
         CANDIDATE_NULL_PTR("candidate_null_ptr", ""),
         CNN_PARENT("context_not_null_parent", "Context not null for parent"),

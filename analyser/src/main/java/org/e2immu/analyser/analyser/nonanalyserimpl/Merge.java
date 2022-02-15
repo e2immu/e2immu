@@ -105,7 +105,9 @@ public record Merge(EvaluationContext evaluationContext,
                 assert instance.isDone();
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate(),
                         instance,
-                        vii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+                        vii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
+                vii.setProperty(Property.IMMUTABLE_BREAK, properties.get(Property.IMMUTABLE));
+                vii.setProperty(Property.NOT_NULL_BREAK, properties.get(Property.NOT_NULL_EXPRESSION));
                 vii.setValue(wrapped);
             }
         }
