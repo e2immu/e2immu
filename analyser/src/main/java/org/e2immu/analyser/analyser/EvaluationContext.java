@@ -352,24 +352,13 @@ public interface EvaluationContext {
     should we compute context immutable? not if we're a variable of the type itself
      */
     default boolean isMyself(Variable variable) {
+        if(variable instanceof This) return true;
+        if(variable instanceof FieldReference fr && fr.isStatic) return false;
         return isMyself(variable.parameterizedType());
     }
 
-    default boolean isMyself(ParameterizedType parameterizedType) {
-        InspectionProvider inspectionProvider = getAnalyserContext();
-        TypeInfo bestType = parameterizedType.bestTypeInfo(inspectionProvider);
-        TypeInfo myself = getCurrentType();
-        if (myself.equals(bestType)) return true;
-        TypeInfo primaryVariable = bestType == null ? null : bestType.primaryType();
-        TypeInfo primaryMyself = myself.primaryType();
-        if (primaryMyself.equals(primaryVariable)) {
-            // in the same compilation unit, analysed at the same time
-            return bestType.parentalHierarchyContains(myself, inspectionProvider) ||
-                    myself.parentalHierarchyContains(bestType, inspectionProvider) ||
-                    bestType.nonStaticallyEnclosingTypesContains(myself, inspectionProvider) ||
-                    myself.nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
-        }
-        return false;
+    default boolean isMyself(ParameterizedType type) {
+        return getCurrentType().isMyself(type, getAnalyserContext());
     }
 
     default Properties ensureMyselfValueProperties(Properties existing) {

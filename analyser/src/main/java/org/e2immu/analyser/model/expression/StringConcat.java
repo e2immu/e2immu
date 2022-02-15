@@ -68,7 +68,7 @@ public class StringConcat extends BinaryOperator {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-            default -> DV.FALSE_DV;
+            default -> property.falseDv;
         };
     }
 

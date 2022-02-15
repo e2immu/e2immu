@@ -17,7 +17,6 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -50,8 +49,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
-import static org.e2immu.analyser.model.MultiLevel.IGNORE_MODS_DV;
-import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
@@ -755,7 +753,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
-        if (!evaluationContext.isMyself(fieldReference) && evaluationContext.inConstruction()) {
+        boolean myself = evaluationContext.isMyself(fieldReference);
+        if (!myself && evaluationContext.inConstruction()) {
             DV immutable = map.getOrDefault(EXTERNAL_IMMUTABLE, MUTABLE_DV);
             DV ctx = contextImmutable(vic, evaluationContext, fieldAnalysis, immutable);
             map.overwrite(CONTEXT_IMMUTABLE, ctx);
@@ -780,12 +779,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // add the value properties from the current value to combined (do not set to initial!!)
         }
 
-        Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
-        valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
+        if (myself) {
+            map.put(IMMUTABLE, MUTABLE_DV);
+            map.put(CONTAINER, NOT_CONTAINER_DV);
+            map.put(INDEPENDENT, DEPENDENT_DV);
+            map.put(IDENTITY, DV.FALSE_DV);
+            map.put(IGNORE_MODIFICATIONS, NOT_IGNORE_MODS_DV);
+        } else {
+            Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
+            valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
 
-        CausesOfDelay causesOfDelay = valueMap.delays();
-        if (causesOfDelay.isDelayed() && initialValue.isDone()) {
-            initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
+            CausesOfDelay causesOfDelay = valueMap.delays();
+            if (causesOfDelay.isDelayed() && initialValue.isDone()) {
+                initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
+            }
         }
         if (!viInitial.valueIsSet()) {
             vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);

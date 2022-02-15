@@ -92,12 +92,14 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals("parent/*@NotNull*/", d.currentValue().toString());
                     assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("parent".equals(d.fieldInfo().name)) {
-                assertEquals("[null,parentContext/*@NotNull*/,parent/*@NotNull*/]", d.fieldAnalysis().getValue().toString());
+                String expected = d.iteration() == 0 ? "<f:parent>" : "[null,parentContext/*@NotNull*/,parent/*@NotNull*/]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
             if ("typeMap".equals(d.fieldInfo().name)) {
                 assertEquals("typeMap", d.fieldAnalysis().getValue().toString());
@@ -112,9 +114,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
