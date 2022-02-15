@@ -18,7 +18,6 @@ package org.e2immu.analyser.parser.own.support;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -91,6 +90,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
                 assertCurrentValue(d, 1, "instance type Supplier<T>/*@IgnoreMods*/");
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
@@ -113,6 +113,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
+//                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                     assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
@@ -161,6 +162,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals(MultiLevel.IGNORE_MODS_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
+            assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             assertEquals("supplierParam", d.fieldAnalysis().getValue().toString());
         }
     };
@@ -184,11 +186,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

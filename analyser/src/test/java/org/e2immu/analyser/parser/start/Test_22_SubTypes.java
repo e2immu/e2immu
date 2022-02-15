@@ -271,9 +271,62 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 .build());
     }
 
+    // delay cycle to be broken:
+    // 1- anonymous type is partially immutable, but needs primary type to finalize the value
+    // 2- because the anonymous type's IMMUTABLE is not known, the field "external" gets no value
+    // 3- because the field gets no value, it can get no IGNORE_MODS, hence no MODIFIED_OUTSIDE_METHOD
+    // 4- because of the delay on the field, the primary type's IMMUTABLE cannot be computed
     @Test
     public void test_10() throws IOException {
-        testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder().build());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            // is analysed before "go", but after $1
+            // iteration 2 should see a value
+            if ("SubTypes_10".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
+                    assertEquals("0", d.statementId());
+                    String expected = d.iteration() <= 1 ? "<new:External>" : "";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+            if ("go".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
+                    assertEquals("0", d.statementId());
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("external".equals(d.fieldInfo().name)) {
+                assertDv(d, 10, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 10, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+
+                String expect = switch (d.iteration()) {
+                    case 0 -> "container@Class_SubTypes_10;immutable@Class_SubTypes_10;values:this.external@Field_external";
+                    case 1 -> "cm:this.external@Method_go_0;initial@Interface_External;link:this.external@Method_go_0;values:this.external@Field_external";
+                    default -> "";
+                };
+                assertEquals(expect, d.fieldAnalysis().valuesDelayed().toString());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("External".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+            }
+            // will only see CM in "go" in iteration 2, as it is analysed before "go" and the constructor
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                // so we know early on that the anonymous type itself is immutable; however, we must wait for the enclosing type
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder()
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
     }
 
     @Test

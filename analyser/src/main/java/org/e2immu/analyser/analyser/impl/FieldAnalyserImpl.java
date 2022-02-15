@@ -765,7 +765,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .reduce(DV.MAX_INT_DV, DV::min);
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;
         if (worstOverValues.isDelayed()) {
-            LOGGER.debug("Delay @Immutable on {}, waiting for values", fqn);
+            LOGGER.debug("Delay @Immutable on {}, waiting for values in proxies: {}", fqn, worstOverValues);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, worstOverValues);
             return worstOverValues.causesOfDelay();
         }
@@ -816,7 +816,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (isMyOwnType(proxy.getValue().returnType())) {
             return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
         }
-        return proxy.getProperty(Property.IMMUTABLE);
+        DV inProxy = proxy.getProperty(Property.IMMUTABLE);
+        if (inProxy.isDelayed()) {
+            DV breakValue = proxy.getProperty(IMMUTABLE_BREAK);
+            if (breakValue.isDone()) return breakValue;
+        }
+        return inProxy;
     }
 
     private boolean isMyOwnType(ParameterizedType returnType) {

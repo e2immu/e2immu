@@ -233,7 +233,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT, IDENTITY, CONTAINER, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
-            case IMMUTABLE -> immutableValue(pt, analyserContext);
+            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };

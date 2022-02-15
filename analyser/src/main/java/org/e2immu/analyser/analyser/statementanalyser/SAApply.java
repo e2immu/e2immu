@@ -179,7 +179,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWritePossiblyDelayed, combined);
                 if(possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
                     // trying without setting properties -- too dangerous to set value properties
-                    vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, Properties.EMPTY, false);
+                    // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
+                    // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
+                    Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, combined.get(IMMUTABLE)));
+                    vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, false);
                 } else {
                     // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
                     // evaluation context

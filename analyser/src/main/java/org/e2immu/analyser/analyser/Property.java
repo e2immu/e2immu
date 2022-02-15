@@ -87,6 +87,9 @@ public enum Property {
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null),
 
+    IMMUTABLE_BREAK("@Immutable break", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE),
+
     // separate property for fields, in conjunction with a finalizer
     BEFORE_MARK("@BeforeMark", CauseOfDelay.Cause.BEFORE_MARK),
     /*

@@ -103,9 +103,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
