@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -232,17 +233,35 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-            case INDEPENDENT, IDENTITY, CONTAINER, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
+            case IDENTITY, CONTAINER, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
             case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
+            case INDEPENDENT -> independentValue(pt, analyserContext);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
+    }
+
+    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
+        if (anonymousClass != null) {
+            DV immutable = immutableValue(pt, analyserContext);
+            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
+                return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
+            }
+            if (immutable.isDelayed()) return immutable;
+            return MultiLevel.DEPENDENT_DV;
+        }
+        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
     }
 
     private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
         DV dv = analyserContext.defaultImmutable(pt, false);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
+        }
+        // this is the value for use in the statement analyser, for inner classes (non-static nested classes)
+        if (dv.isDelayed() && anonymousClass != null) {
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(anonymousClass);
+            return typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
         }
         return dv;
     }

@@ -284,7 +284,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("SubTypes_10".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    String expected = d.iteration() <= 1 ? "<new:External>" : "";
+                    String expected = d.iteration() == 0 ? "<new:External>" : "new External(){}";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
@@ -297,14 +297,10 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("external".equals(d.fieldInfo().name)) {
-                assertDv(d, 10, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
-                assertDv(d, 10, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
-                String expect = switch (d.iteration()) {
-                    case 0 -> "container@Class_SubTypes_10;immutable@Class_SubTypes_10;values:this.external@Field_external";
-                    case 1 -> "cm:this.external@Method_go_0;initial@Interface_External;link:this.external@Method_go_0;values:this.external@Field_external";
-                    default -> "";
-                };
+                String expect = d.iteration() == 0 ? "container@Class_SubTypes_10;values:this.external@Field_external" : "";
                 assertEquals(expect, d.fieldAnalysis().valuesDelayed().toString());
             }
         };
@@ -318,14 +314,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("$1".equals(d.typeInfo().simpleName)) {
                 // so we know early on that the anonymous type itself is immutable; however, we must wait for the enclosing type
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
