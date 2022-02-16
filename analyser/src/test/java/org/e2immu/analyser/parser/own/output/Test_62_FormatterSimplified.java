@@ -14,25 +14,25 @@
 
 package org.e2immu.analyser.parser.own.output;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -145,7 +145,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     DV exec = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
-                    if(d.iteration()<=1) {
+                    if (d.iteration() <= 1) {
                         assertTrue(exec.isDelayed());
                     } else {
                         assertEquals(FlowData.ALWAYS, exec);
@@ -206,26 +206,26 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
      */
     @Test
     public void test_9() throws IOException {
+        int BIG = 10;
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<f:forwardInfo>" :
+                    String expect = d.iteration() <= 2 ? "<f:forwardInfo>" :
                             "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                     assertEquals(expect, d.evaluationResult().value().toString());
-
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "9==<m:index>&&null!=<f:forwardInfo>" :
-                            "9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
+                    String expect = d.iteration() <= 2 ? "9==<m:index>&&null!=<f:forwardInfo>" :
+                            "null!=(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo&&9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<instanceOf:Guide>" :
                             "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -236,35 +236,40 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
                 if ("fwdInfo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:forwardInfo>" :
+                        String expect = d.iteration() <= 2 ? "<f:forwardInfo>" :
                                 "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
-                        String expectLv = d.iteration() == 0 ? "?"
-                                : "(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() <= 2
+                                ? "(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,fwdInfo:0"
+                                : "(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo:1,fwdInfo:0";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<instanceOf:Guide>" : "list.get(forwardInfo.pos) instanceof Guide";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:Guide>";
+                        case 1, 2 -> "<s:boolean>";
+                        default -> "list.get(forwardInfo.pos) instanceof Guide";
+                    };
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "pos".equals(fr.fieldInfo.name)) {
                     assertEquals("forwardInfo", fr.scope.toString());
-                    String expect = d.iteration() == 0 ? "<f:pos>" : "instance type int";
+                    String expect = d.iteration() <= 2 ? "<f:pos>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() == 0 ? "<f:guide>" : "instance type Guide";
+                    String expect = d.iteration() <= 2 ? "<f:guide>" : "nullable instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
                     if ("fwdInfo".equals(fr.scope.toString())) {
                         if ("0".equals(d.statementId())) {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -272,80 +277,61 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
                     if ("(new Stack<GuideOnStack>()).peek()".equals(fr.scope.toString())) {
-                        String expect = d.iteration() == 0 ? "<f:forwardInfo>" : "instance type ForwardInfo";
+                        String expect = d.iteration() <= 2 ? "<f:forwardInfo>" : "nullable instance type ForwardInfo";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek()".equals(fr.scope.toString())) {
-                        assertEquals("instance type ForwardInfo", d.currentValue().toString());
+                        assertEquals("nullable instance type ForwardInfo", d.currentValue().toString());
                     } else fail("Scope is " + fr.scope);
                 }
             }
             if ("lookAhead".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "pos".equals(fr.fieldInfo.name)) {
-                    assertEquals("instance type ForwardInfo", fr.scope.toString());
-                    assertEquals(d.iteration() == 0 ? "<f:pos>" : "instance type int", d.currentValue().toString());
+                    assertEquals("forwardInfo", fr.scope.toString());
+                    assertEquals(d.iteration() <= 2 ? "<f:pos>" : "instance type int", d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
-                    assertEquals("instance type GuideOnStack", fr.scope.toString());
-                    String expect = d.iteration() == 0 ? "<f:forwardInfo>" : "instance type ForwardInfo";
+                    assertEquals("(new Stack<GuideOnStack>()).peek()", fr.scope.toString());
+                    String expect = d.iteration() <= 2 ? "<f:forwardInfo>" : "nullable instance type ForwardInfo";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
-                    assertEquals("instance type ForwardInfo", fr.scope.toString());
-                    String expect = d.iteration() == 0 ? "<f:guide>" : "instance type Guide";
+                    assertEquals("fwdInfo", fr.scope.toString());
+                    String expect = d.iteration() <= 2 ? "<f:guide>" : "nullable instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     assertFalse(d.conditionManagerForNextStatement().isDelayed());
                     assertFalse(d.localConditionManager().isDelayed());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0,
+                    assertEquals(d.iteration() <= 2, d.conditionManagerForNextStatement().isDelayed());
+                    assertFalse(d.localConditionManager().isDelayed());
+
+                    assertEquals(d.iteration() >= 4,
                             d.statementAnalysis().stateData().valueOfExpressionIsDelayed() == null);
 
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().preconditionIsFinal());
-                    assertEquals(d.iteration() > 0,
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertEquals(d.iteration() >= 3,
                             d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
-                    assertEquals(d.iteration() == 0, d.conditionManagerForNextStatement().isDelayed());
-                }
-            }
-            if ("lookAhead".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    // 'this', parameter 'list', ret var; references to fields 'pos', 'guide', 'forwardInfo'
-                    assertFalse(d.statementAnalysis().variableIsSet("fwdInfo"));
-                    Map<String, VariableInfoContainer> map = d.statementAnalysis().rawVariableStream()
-                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-                    assertEquals(6, map.size());
-                    String values = map.keySet().stream()
-                            .map(s -> s.replace(FormatterSimplified_9.class.getCanonicalName(), ""))
-                            .sorted().collect(Collectors.joining(","));
-                    assertEquals(".ForwardInfo.guide#instance type ForwardInfo," +
-                            ".ForwardInfo.pos#instance type ForwardInfo," +
-                            ".GuideOnStack.forwardInfo#instance type GuideOnStack," +
-                            ".lookAhead(java.util.List<.OutputElement>)," +
-                            ".lookAhead(java.util.List<.OutputElement>):0:list,.this", values);
+                    assertEquals(d.iteration() <= 2, d.localConditionManager().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.conditionManagerForNextStatement().isDelayed());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("list.get(forwardInfo.pos) instanceof Guide", d.methodAnalysis().getSingleReturnValue().toString());
-                }
-            }
-            if ("index".equals(d.methodInfo().name)) {
-                fail();
+
+                String expected = d.iteration() <= 2 ? "<m:apply>" : "list.get(forwardInfo.pos) instanceof Guide";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -357,7 +343,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("pos".equals(d.fieldInfo().name)) {
                 assertEquals("pos", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("guide".equals(d.fieldInfo().name)) {
                 assertEquals("guide", d.fieldAnalysis().getValue().toString());
@@ -376,10 +362,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("GuideOnStack".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -389,14 +375,14 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, peek.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
-        testClass("FormatterSimplified_9", 0, 1, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_9", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

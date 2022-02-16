@@ -224,6 +224,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, true);
                         assert vi1.getValue().isDelayed()
+                                || vi1.getValue().isNotYetAssigned()
                                 || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
                                 "While writing to variable " + variable;
                         Expression value;

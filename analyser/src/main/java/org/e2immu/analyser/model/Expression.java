@@ -225,4 +225,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default Expression generify(EvaluationContext evaluationContext) {
         return this;
     }
+
+    default boolean isNotYetAssigned() {
+        return false;
+    }
 }

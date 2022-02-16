@@ -173,4 +173,9 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public boolean isUnknown() {
         return true;
     }
+
+    @Override
+    public boolean isNotYetAssigned() {
+        return NOT_YET_ASSIGNED.equals(msg);
+    }
 }
