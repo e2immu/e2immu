@@ -35,7 +35,7 @@ public class FormatterSimplified_8 {
         int index();
     }
 
-    Boolean lookAhead(ForwardInfo forwardInfo) {
+    static Boolean lookAhead(ForwardInfo forwardInfo) {
         if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
             assert forwardInfo.guide == null;
             return true;

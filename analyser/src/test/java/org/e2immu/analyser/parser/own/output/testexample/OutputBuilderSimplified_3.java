@@ -19,7 +19,7 @@ import java.util.List;
 
 /*
 Problem becomes infinite loop when the separator if-statement (combiner:2) is removed.
-Otherwise, its a plain error overwriting CNN from 1 to 5 for a.list
+Otherwise, it's a plain error overwriting CNN from 1 to 5 for a.list
  */
 public class OutputBuilderSimplified_3 {
     interface OutputElement {

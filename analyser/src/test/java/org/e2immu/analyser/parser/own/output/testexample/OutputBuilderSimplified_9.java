@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.own.output.testexample;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -31,7 +28,7 @@ import java.util.function.Supplier;
 
 public class OutputBuilderSimplified_9 {
 
-    @E1Immutable
+    @E1Container
     @NotNull
     @NotModified
     public static Supplier<BiConsumer<OutputBuilderSimplified_9, OutputBuilderSimplified_9>> joining() {

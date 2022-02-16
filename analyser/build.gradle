@@ -37,7 +37,7 @@ jar {
 }
 
 test {
-    exclude '**/failing/*', '**/parser/own/annotationstore/*',  '**/parser/own/output/*',  '**/parser/own/util/*'
+    exclude '**/failing/*', '**/parser/own/annotationstore/*', '**/parser/own/util/*'
 
     maxHeapSize = "2G"
     useJUnitPlatform()

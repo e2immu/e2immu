@@ -16,6 +16,7 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +38,7 @@ public record Guide(int index, Position position,
             this.msg = msg;
         }
 
-
+        public String msg() { return msg; }
 
     }
     public static GuideGenerator generatorForBlock() {
@@ -64,7 +65,7 @@ public record Guide(int index, Position position,
         return new GuideGenerator(0, false, false, false, false);
     }
 
-    @E2Container
+    @ERContainer
     public static class GuideGenerator {
         public final int index;
         private final int tabs;
@@ -112,7 +113,7 @@ public record Guide(int index, Position position,
 
     @Override
     public String trace() {
-        return "/*" + position.msg + index + "*/";
+        return "/*" + position.msg() + index + "*/";
     }
 
     @Override
