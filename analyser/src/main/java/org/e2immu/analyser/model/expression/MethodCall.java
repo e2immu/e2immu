@@ -177,7 +177,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 assert !methodInfo.methodInspection.isSet()
                         || methodInfo.methodInspection.get().isStatic();
                 TypeInfo typeInfo = typeExpression.parameterizedType.typeInfo;
-                TypeName typeName = new TypeName(typeInfo, qualification.qualifierRequired(typeInfo));
+                TypeName typeName = typeInfo.typeName(qualification.qualifierRequired(typeInfo));
                 outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
                 if (guideGenerator != null) start = true;
@@ -187,7 +187,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 assert !methodInfo.methodInspection.isSet() ||
                         !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
                         + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
-                TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
+                TypeName typeName = thisVar.typeInfo.typeName(qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
                 outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));

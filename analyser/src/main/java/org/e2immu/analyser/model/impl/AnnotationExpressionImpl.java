@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Finalizer;
@@ -76,7 +75,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder().add(Symbol.AT)
-                .add(new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)));
+                .add(typeInfo.typeName(qualification.qualifierRequired(typeInfo)));
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                     .add(expressions.stream().map(expression -> expression.output(qualification))

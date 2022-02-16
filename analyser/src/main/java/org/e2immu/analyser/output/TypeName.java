@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.StringUtil;
 
 public record TypeName(String simpleName,
@@ -29,12 +28,6 @@ public record TypeName(String simpleName,
     // for tests
     public TypeName(String simpleName) {
         this(simpleName, simpleName, simpleName, Required.SIMPLE);
-    }
-
-    public TypeName(TypeInfo typeInfo, Required requiresQualifier) {
-        this(typeInfo.simpleName, typeInfo.fullyQualifiedName,
-                typeInfo.isPrimaryType() ? typeInfo.simpleName : typeInfo.fromPrimaryTypeDownwards(),
-                requiresQualifier);
     }
 
     @Override

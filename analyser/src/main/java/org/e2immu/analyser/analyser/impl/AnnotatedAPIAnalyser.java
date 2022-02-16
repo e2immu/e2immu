@@ -272,15 +272,20 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     private void validateIndependence() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
-            DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
-            ValueExplanation computed = computeIndependent(typeInfo);
-            // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
-            if (inMap.gt(computed.value)) {
-                Message message = Message.newMessage(typeInfo.newLocation(),
-                        Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
-                        "Found " + inMap + ", computed maximally " + computed.value
-                                + " in " + computed.explanation);
-                messages.add(message);
+            try {
+                DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(Property.INDEPENDENT);
+                ValueExplanation computed = computeIndependent(typeInfo);
+                // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
+                if (inMap.gt(computed.value)) {
+                    Message message = Message.newMessage(typeInfo.newLocation(),
+                            Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
+                            "Found " + inMap + ", computed maximally " + computed.value
+                                    + " in " + computed.explanation);
+                    messages.add(message);
+                }
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Caught exception while validating independence of {}", typeInfo);
+                throw ise;
             }
         }));
     }

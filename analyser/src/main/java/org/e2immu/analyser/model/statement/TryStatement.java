@@ -23,7 +23,10 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -129,7 +132,7 @@ public class TryStatement extends StatementWithStructure {
         public OutputBuilder output(Qualification qualification) {
             return new OutputBuilder()
                     .add(unionOfTypes.stream()
-                            .map(pt -> new OutputBuilder().add(new TypeName(pt.typeInfo,
+                            .map(pt -> new OutputBuilder().add(pt.typeInfo.typeName(
                                     qualification.qualifierRequired(pt.typeInfo))))
                             .collect(OutputBuilder.joining(Symbol.PIPE)))
                     .add(Space.ONE).add(new Text(localVariableCreation.declarations.get(0).localVariable().name()));

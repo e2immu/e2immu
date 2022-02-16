@@ -19,7 +19,10 @@ import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.QualifiedName;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.ThisName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -172,12 +175,12 @@ public class FieldReference extends VariableWithConcreteReturnType {
         if (scope == null) {
             // static!
             return new OutputBuilder().add(new QualifiedName(fieldInfo.name,
-                    new TypeName(fieldInfo.owner, qualification.qualifierRequired(fieldInfo.owner)),
+                    fieldInfo.owner.typeName(qualification.qualifierRequired(fieldInfo.owner)),
                     qualification.qualifierRequired(this) ? YES : NO_FIELD));
         }
         if (scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
             ThisName thisName = new ThisName(thisVar.writeSuper,
-                    new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo)),
+                    thisVar.typeInfo.typeName(qualification.qualifierRequired(thisVar.typeInfo)),
                     qualification.qualifierRequired(thisVar));
             return new OutputBuilder().add(new QualifiedName(fieldInfo.name, thisName,
                     qualification.qualifierRequired(this) ? YES : NO_FIELD));

@@ -22,6 +22,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
+import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -738,4 +739,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         }
         return false;
     }
+
+
+    public TypeName typeName(TypeName.Required requiresQualifier) {
+        return new TypeName(simpleName, fullyQualifiedName, isPrimaryType() ? simpleName : fromPrimaryTypeDownwards(),
+                requiresQualifier);
+    }
+
 }

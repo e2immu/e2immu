@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.ArrayList;
@@ -27,7 +30,7 @@ public class ParameterizedTypePrinter {
     /**
      * It is important not too use the inspection provider too eagerly. During bootstrap of the java.lang classes,
      * there are a lot of interdependencies, and this printer does not have an auto-inspect system.
-     *
+     * <p>
      * Default: no explicit type parameter definitions.
      *
      * @param inspectionProvider Needed to study the type parameters.
@@ -46,13 +49,12 @@ public class ParameterizedTypePrinter {
     }
 
     /**
-     *
-     * @param inspectionProvider needed to inspect the type parameters
-     * @param qualification fully qualified, partially, simple...?
-     * @param parameterizedType the type to print
-     * @param varargs print, or don't print ...
-     * @param diamond print, or don't print the diamond operator < ... >
-     * @param withoutArrays don't print or print []
+     * @param inspectionProvider    needed to inspect the type parameters
+     * @param qualification         fully qualified, partially, simple...?
+     * @param parameterizedType     the type to print
+     * @param varargs               print, or don't print ...
+     * @param diamond               print, or don't print the diamond operator < ... >
+     * @param withoutArrays         don't print or print []
      * @param visitedTypeParameters when not null, allow for one definition of a type parameter
      * @return printed result
      */
@@ -81,7 +83,7 @@ public class ParameterizedTypePrinter {
             outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
-                outputBuilder.add(new TypeName(parameterizedType.typeInfo, qualification.qualifierRequired(parameterizedType.typeInfo)));
+                outputBuilder.add(parameterizedType.typeInfo.typeName(qualification.qualifierRequired(parameterizedType.typeInfo)));
             } else {
                 OutputBuilder sub;
                 if (parameterizedType.typeInfo.isPrimaryType() ||
@@ -140,7 +142,7 @@ public class ParameterizedTypePrinter {
             typeInfo = next;
         }
         return taps.stream().map(tap -> singleType(inspectionProvider, qualification,
-                tap.typeInfo, diamond, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
+                        tap.typeInfo, diamond, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
                 .collect(OutputBuilder.joining(Symbol.DOT));
     }
 
@@ -158,13 +160,13 @@ public class ParameterizedTypePrinter {
         if (forceSimple) {
             outputBuilder.add(new Text(typeInfo.simpleName));
         } else {
-            outputBuilder.add(new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)));
+            outputBuilder.add(typeInfo.typeName(qualification.qualifierRequired(typeInfo)));
         }
         if (!typeParameters.isEmpty() && diamond != Diamond.NO) {
             outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
             if (diamond == Diamond.SHOW_ALL) {
                 outputBuilder.add(typeParameters.stream().map(tp -> print(inspectionProvider, qualification,
-                        tp, false, Diamond.SHOW_ALL, false, visitedTypeParameters))
+                                tp, false, Diamond.SHOW_ALL, false, visitedTypeParameters))
                         .collect(OutputBuilder.joining(Symbol.COMMA)));
             }
             outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);

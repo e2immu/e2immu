@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.ThisName;
-import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -106,7 +105,7 @@ public class This implements Variable {
     @Override
     public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new ThisName(writeSuper,
-                new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)),
+                typeInfo.typeName(qualification.qualifierRequired(typeInfo)),
                 qualification.qualifierRequired(this)));
     }
 

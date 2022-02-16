@@ -16,10 +16,7 @@
 package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.output.FormattingOptions;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.OutputElement;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +31,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, FormattingOptions.class, Guide.class),
+        testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
+                        FormattingOptions.class, Guide.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
