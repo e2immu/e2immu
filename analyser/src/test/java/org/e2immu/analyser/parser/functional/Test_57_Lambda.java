@@ -47,7 +47,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d,  MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -68,7 +68,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -195,8 +195,9 @@ public class Test_57_Lambda extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("a*a+b*-b+a*b+a*-b", e.toString());
-                assertTrue(e instanceof InlinedMethod);
+                String expected = d.iteration() == 0 ? "<m:method>" : "a*a+b*-b+a*b+a*-b";
+                assertEquals(expected, e.toString());
+                if (d.iteration() > 0) assertTrue(e instanceof InlinedMethod);
             }
             if ("direct".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();

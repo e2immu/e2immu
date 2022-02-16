@@ -21,7 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -243,15 +243,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expect = d.iteration() <= 2 ? "<m:apply>"
-                            : "b.list.isEmpty()||!Space.NONE==separator?nullable instance type OutputBuilderSimplified_7/*@Identity*/:instance type OutputBuilderSimplified_7/*@Identity*/.list.isEmpty()?Space.NONE==separator?nullable instance type OutputBuilderSimplified_7/*@Identity*/:instance type OutputBuilderSimplified_7/*@Identity*/:b";
+                    // modifying method, so the lambda becomes an instance
+                    String expect = d.iteration() <= 2 ? "<m:apply>" : "instance type $4";
                     assertEquals(expect, d.currentValue().toString());
-                    if (d.iteration() > 3) {
-                        // cannot be inlined, as it is modifying
-                        assertTrue(d.currentValue() instanceof InlineConditional, "Class is " + d.currentValue().getClass());
-                    }
-                    // FIXME which component is not immutable?
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -262,14 +257,35 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+
+                String expected = d.iteration() <= 2 ? "<m:apply>"
+                        : "b.list.isEmpty()?a:a.list.isEmpty()&&!b.list.isEmpty()?b:nullable instance type OutputBuilderSimplified_7/*@Identity*//*{L a:dependent:2}*/";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
+
                 ParameterAnalysis p1 = d.parameterAnalyses().get(1);
                 assertEquals(MultiLevel.NOT_INVOLVED_DV, p1.getProperty(Property.EXTERNAL_IMMUTABLE));
-                assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("combiner".equals(d.methodInfo().name)) {
-                // FIXME
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                String expected = d.iteration() <= 2 ? "<m:combiner>" : "instance type $4";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if ("supplier".equals(d.methodInfo().name)) {
+                assertEquals("OutputBuilderSimplified_7::new", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+                String expected = d.iteration() <= 2 ? "<m:apply>" : "result";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 3) {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()

@@ -234,7 +234,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
     public void test_7() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("method".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

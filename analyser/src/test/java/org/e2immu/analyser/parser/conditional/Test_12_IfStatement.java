@@ -354,7 +354,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
         };
-        testClass("IfStatement_9", 6, 3, new DebugConfiguration.Builder()
+        testClass("IfStatement_9", 6, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

@@ -214,24 +214,48 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result;
         if (methodInfo.hasReturnValue()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv.isDone()) {
-                InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
-                result = Objects.requireNonNullElse(inlineValue, srv);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+            DV nneParam;
+            if (methodAnalysis.getParameterAnalyses().isEmpty()) {
+                // supplier
+                nneParam = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
             } else {
-                CausesOfDelay causes = srv.causesOfDelay();
+                // function
+                nneParam = methodAnalysis.getParameterAnalyses()
+                        .stream().map(pa -> pa.getProperty(Property.NOT_NULL_PARAMETER)).reduce(DV.MAX_INT_DV, DV::min);
+                assert nneParam != DV.MAX_INT_DV;
+            }
+            if (srv.isDone() && modified.isDone() && nneParam.isDone()) {
+                if (modified.valueIsFalse()) {
+                    result = srv;
+                    assert result instanceof InlinedMethod || result.isConstant();
+                } else {
+                    // modifying method, we cannot simply substitute
+                    DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
+                    assert nne.isDone();
+                    result = makeInstance(parameterizedType, nne);
+                }
+            } else {
+                CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
                 result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
                         causes);
             }
         } else {
             // the lambda
-            Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                    Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
-                    Property.CONTAINER, MultiLevel.CONTAINER_DV,
-                    Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
-                    Property.IDENTITY, Property.IDENTITY.falseDv));
-            result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
+            result = makeInstance(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
+        return result;
+    }
+
+    private Expression makeInstance(ParameterizedType parameterizedType, DV nne) {
+        Expression result;
+        Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
+                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
+                Property.CONTAINER, MultiLevel.CONTAINER_DV,
+                Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
+                Property.IDENTITY, Property.IDENTITY.falseDv));
+        result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
         return result;
     }
 

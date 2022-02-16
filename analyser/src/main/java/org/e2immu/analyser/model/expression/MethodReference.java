@@ -136,7 +136,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+            case NOT_NULL_EXPRESSION -> notNull(evaluationContext, methodInfo);
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
@@ -144,5 +144,23 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             default -> throw new UnsupportedOperationException("Property: " + property);
         };
+    }
+
+    // very similar code in Lambda; also used by InlinedMethod
+    static DV notNull(EvaluationContext evaluationContext, MethodInfo methodInfo) {
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+        DV nne;
+        if (methodAnalysis.getParameterAnalyses().isEmpty()) {
+            if (methodInfo.hasReturnValue()) {
+                nne = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
+            } else {
+                return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+            }
+        } else {
+            nne = methodAnalysis.getParameterAnalyses()
+                    .stream().map(pa -> pa.getProperty(Property.NOT_NULL_PARAMETER)).reduce(DV.MAX_INT_DV, DV::min);
+            assert nne != DV.MAX_INT_DV;
+        }
+        return MultiLevel.composeOneLevelMoreNotNull(nne);
     }
 }

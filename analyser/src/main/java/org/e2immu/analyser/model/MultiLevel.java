@@ -76,7 +76,7 @@ public class MultiLevel {
                 case 3 -> EVENTUAL_BEFORE;
                 case 4 -> EVENTUAL_AFTER;
                 case 5 -> EFFECTIVE;
-                default -> throw new UnsupportedOperationException();
+                default -> throw new UnsupportedOperationException("Value " + i);
             };
         }
 
@@ -253,6 +253,7 @@ public class MultiLevel {
 
     public static boolean isAfterThrowWhenNotEventual(DV dv) {
         if (dv.isDelayed()) return false;
+        assert dv.value() >= 0;
         Effective effective = effective(dv);
         //if (effective == EVENTUAL_BEFORE) throw new UnsupportedOperationException();
         return effective == EVENTUAL_AFTER || effective == EVENTUAL;
@@ -269,12 +270,14 @@ public class MultiLevel {
 
     public static boolean isBefore(DV dv) {
         if (dv.isDelayed()) return false;
+        assert dv.value() >= 0;
         Effective effective = effective(dv);
         return effective == EVENTUAL_BEFORE || effective == EVENTUAL;
     }
 
     public static DV composeOneLevelLessIndependent(DV dv) {
         if (dv.isDelayed()) return dv;
+        assert dv.value() >= 0;
         int level = level(dv);
         if (level == 0) return dv;
         Effective effective = effective(dv);
@@ -299,6 +302,7 @@ public class MultiLevel {
 
     public static DV composeOneLevelMoreNotNull(DV dv) {
         if (dv.isDelayed()) return dv;
+        assert dv.value() >= 0;
         int level = level(dv);
         int newLevel = level == MAX_LEVEL ? level : level + 1;
         return composeNotNull(newLevel);

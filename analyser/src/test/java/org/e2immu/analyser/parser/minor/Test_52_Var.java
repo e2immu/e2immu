@@ -84,7 +84,8 @@ public class Test_52_Var extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("\"y\".repeat(3)", d.evaluationResult().value().toString());
+                    String expected = d.iteration() == 0 ? "<m:apply>" : "\"y\".repeat(3)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
         };
@@ -100,16 +101,20 @@ public class Test_52_Var extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("repeater".equals(d.methodInfo().name)) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("repeater", inlinedMethod.methodInfo().name);
-                    if (inlinedMethod.expression() instanceof InlinedMethod inlinedMethod2) {
-                        assertEquals("apply", inlinedMethod2.methodInfo().name);
-                        assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
-                        assertFalse(inlinedMethod.containsVariableFields());
-                        assertEquals(2, inlinedMethod.variables(true).size());
-                        assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));
-                    } else fail();
-                } else fail();
+                String expect = d.iteration() == 0 ? "<m:repeater>" : "x.repeat(i)";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("repeater", inlinedMethod.methodInfo().name);
+                        if (inlinedMethod.expression() instanceof InlinedMethod inlinedMethod2) {
+                            assertEquals("apply", inlinedMethod2.methodInfo().name);
+                            assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                            assertFalse(inlinedMethod.containsVariableFields());
+                            assertEquals(2, inlinedMethod.variables(true).size());
+                            assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));
+                        } else fail();
+                    } else fail("Srv instance of " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };

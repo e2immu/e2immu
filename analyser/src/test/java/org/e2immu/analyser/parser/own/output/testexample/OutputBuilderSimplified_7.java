@@ -35,7 +35,7 @@ public class OutputBuilderSimplified_7 {
         }
     }
 
-    @E2Container
+    @ERContainer
     static class Space implements OutputElement {
         static final Space NONE = new Space();
     }

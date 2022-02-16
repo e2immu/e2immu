@@ -54,6 +54,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     private final Expression expression;
     private final Set<VariableExpression> variablesOfExpression;
     private final boolean containsVariableFields;
+    private final Set<Variable> myParameters;
 
     public InlinedMethod(Identifier identifier,
                          MethodInfo methodInfo,
@@ -65,6 +66,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         this.expression = Objects.requireNonNull(expression);
         this.variablesOfExpression = variablesOfExpression;
         this.containsVariableFields = containsVariableFields;
+        myParameters = Set.copyOf(methodInfo.methodInspection.get().getParameters());
     }
 
     public static Expression of(Identifier identifier,
@@ -163,6 +165,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
      */
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        if (property == Property.NOT_NULL_EXPRESSION) {
+            return MethodReference.notNull(evaluationContext, methodInfo);
+        }
         return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(property);
     }
 
@@ -510,19 +515,34 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            if (value instanceof VariableExpression ve) {
+                return getProperty(ve.variable(), property);
+            }
             return evaluationContext.getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
         }
 
         @Override
         public DV getProperty(Variable variable, Property property) {
+            if (myParameters.contains(variable)) {
+                LOGGER.debug("Enquiring after {} in method {}", variable.simpleName(), methodInfo.fullyQualifiedName);
+                return property.falseDv;
+            }
             ensureVariableIsKnown(variable);
-            return property.falseDv; // FIXME
+            if (evaluationContext.isPresent(variable)) {
+                return evaluationContext.getProperty(variable, property);
+            }
+            // other.isSet() expands to other.t, with other a parameter, t a known field, but other.t not yet known
+            return getPropertyFromPreviousOrInitial(variable, property);
         }
 
         @Override
         public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
+            if (variable instanceof ParameterInfo pi && myParameters.contains(pi)) {
+                LOGGER.debug("Enquiring after {} in method {}", pi.simpleName(), methodInfo.fullyQualifiedName);
+                return property.falseDv;
+            }
             ensureVariableIsKnown(variable);
-            return property.falseDv; // FIXME
+            return evaluationContext.getPropertyFromPreviousOrInitial(variable, property);
         }
 
         @Override
@@ -546,7 +566,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return evaluationContext.getValueProperties(parameterizedType, value, ignoreConditionInConditionManager);
         }
 
-        // FIXME should this be delayed? we never want to end up with an InlinedMethod object
         @Override
         public Instance currentValue(Variable variable) {
             ensureVariableIsKnown(variable);

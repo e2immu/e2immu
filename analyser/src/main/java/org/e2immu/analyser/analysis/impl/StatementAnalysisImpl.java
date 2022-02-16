@@ -1810,8 +1810,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public VariableInfo findOrThrow(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
-        if (vic == null)
-            throw new UnsupportedOperationException("Have not yet evaluated " + variable.fullyQualifiedName());
+        assert vic != null : "Have not yet evaluated " + variable.fullyQualifiedName();
         return vic.current();
     }
 
