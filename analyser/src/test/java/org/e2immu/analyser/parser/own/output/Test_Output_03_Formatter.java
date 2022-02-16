@@ -44,7 +44,8 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 }
             }
         };
-        testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class, Guide.class),
+        testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class,
+                        TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class),
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());

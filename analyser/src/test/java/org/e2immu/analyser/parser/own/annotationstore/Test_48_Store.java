@@ -15,9 +15,9 @@
 package org.e2immu.analyser.parser.own.annotationstore;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -56,7 +56,7 @@ public class Test_48_Store extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo mapEntry = typeMap.get(Map.Entry.class);
             MethodInfo getValue = mapEntry.findUniqueMethod("getValue", 0);
-            assertTrue( getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
+            assertTrue(getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
             assertTrue(getValue.isAbstract());
         };
 
@@ -266,8 +266,7 @@ public class Test_48_Store extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     assertNotEquals("2", d.statementId());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
-                    String expectValue = d.iteration() == 0 && d.statementId().compareTo("1.0") > 0 ? "<v:entry>"
-                            : "nullable instance type Entry<String,Object>";
+                    String expectValue = "nullable instance type Entry<String,Object>";
                     assertEquals(expectValue, d.currentValue().toString(), d.statementId());
                 }
                 if ("countUpdated".equals(d.variableName())) {
@@ -281,21 +280,21 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "!projectName.equals(entry.getValue())||null==projectName?1+<v:countUpdated>:0"
-                                : "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:0";
+                                ? "!projectName.equals(entry.getValue()/*(String)*/)||null==projectName?1+<v:countUpdated>:0"
+                                : "!projectName.equals(entry.getValue()/*(String)*/)||null==projectName?1+countUpdated$1:0";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "(projectName.equals((nullable instance type Entry<String,Object>).getValue())||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?0:1+<v:countUpdated>"
-                                : "body.entrySet().isEmpty()?0:instance type int";
+                                ? "(projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?0:1+<v:countUpdated>"
+                                : "(projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?0:1+countUpdated$1";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
         };
-        testClass(List.of("Project_0", "Store_8"), 2, 13, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_8"), 3, 17, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }

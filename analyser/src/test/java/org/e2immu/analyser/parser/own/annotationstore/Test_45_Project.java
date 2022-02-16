@@ -19,8 +19,12 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -30,9 +34,12 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+// IMPORTANT: without Annotated APIs! Methods are non-modifying by default
 
 public class Test_45_Project extends CommonTestRunner {
 
@@ -48,23 +55,22 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
-                        case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7";
-                        default -> "instance type boolean&&instance type boolean&&null!=read$7";
+                        case 0, 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
+                        default -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&null!=entry.getValue().read";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
-                    assertTrue(changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
+                    assertFalse(changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<m:put>";
-                        default -> "result.put(entry$2.getKey(),entry$2.getValue().value)";
+                        case 0, 1, 2, 3 -> "<m:put>";
+                        default -> "result$2.put(entry.getKey(),entry.getValue().value)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:debug>" : "<no return value>";
+                    String expected = d.iteration() <= 3 ? "<m:debug>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -75,60 +81,67 @@ public class Test_45_Project extends CommonTestRunner {
                 if ((CONTAINER + ".value#prev").equals(d.variable().fullyQualifiedName())) {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null==<m:get>?null:<f:value>" :
-                            "null==kvStore.get(key)?null:kvStore.get(key).value";
+                    String expectValue = switch (d.iteration()) {
+                        case 0, 3 -> "null==<m:get>?null:<f:value>";
+                        case 1 -> "null==<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>?null:<f:value>";
+                        case 2 -> "null==<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>?null:<f:value>";
+                        default -> "null==kvStore.get(key)?null:kvStore.get(key).value";
+                    };
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                // FIXME could also be delayed?
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                if ("2.0.0".equals(d.statementId())) {
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<v:result>";
-                            // FIXME modification code broken
-                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                            case 0, 1, 2, 3 -> "<v:result>";
+                            default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>?<v:result>:new HashMap<>()";
-                            case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7?<v:result>:new HashMap<>()";
-                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                            case 0, 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>?<v:result>:new HashMap<>()";
+                            case 3 -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&null!=entry.getValue().read?<v:result>:new HashMap<>()";
+                            default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
-                            case 1 -> "!instance type boolean||queried.contains(entry$2.getKey())||!<m:isBefore>||null==read$7?new HashMap<>():<v:result>";
-                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                            case 1, 2 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
+                            case 3 -> "!entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!entry.getValue().read.isBefore(entry.getValue().updated)||queried.contains(entry.getKey())||null==entry.getValue().read?new HashMap<>():<v:result>";
+                            default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
-                            case 1 -> "kvStore.entrySet().isEmpty()?new HashMap<>():<merge:Map<String,String>>";
-                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                            case 0 -> "<loopIsNotEmptyCondition>&&<m:isAfter>&&<m:isBefore>&&!<m:contains>&&null!=<f:read>?<v:result>:new HashMap<>()";
+                            case 1, 2 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
+                            case 3 -> "!(nullable instance type Entry<String,Container>).getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!(nullable instance type Entry<String,Container>).getValue().read.isBefore((nullable instance type Entry<String,Container>).getValue().updated)||kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||null==(nullable instance type Entry<String,Container>).getValue().read?new HashMap<>():<v:result>";
+                            default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
-                            case 0 -> "[kvStore, org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, container.read, container.read, container.read, result]";
-                            // NOTE: read$7 is still present (copy of variable field)
-                            case 1 -> "[kvStore, org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, read$7, read$7, result]";
-                            default -> "[]";
+                            case 0 -> "<out of scope:container:2.0.1>.read,container,entry,key,kvStore,result";
+                            case 1, 2 -> "<out of scope:container:2.0.1>.read,<out of scope:container:2.0.1>.read,container,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 3 -> "(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().updated,kvStore,now,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):1:readWithinMillis,result";
+                            default -> "";
                         };
-                        assertEquals(expectedVars, d.currentValue().variables(true).toString());
+                        assertEquals(expectedVars, d.currentValue().variables(true)
+                                .stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
                     }
                 }
             }
@@ -138,9 +151,8 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
-                        case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
-                        case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7";
-                        default -> "instance type boolean&&instance type boolean&&null!=read$7";
+                        case 0, 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
+                        default -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&null!=entry.getValue().read";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());
@@ -154,20 +166,20 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
 
             MethodInfo putInMap = map.findUniqueMethod("put", 2);
-            assertEquals(DV.TRUE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashMap = typeMap.get(HashMap.class);
             MethodInfo put = hashMap.findUniqueMethod("put", 2);
-            assertEquals(DV.TRUE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
-        testClass("Project_0", 1, 11, new DebugConfiguration.Builder()
+        testClass("Project_0", 2, 15, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -177,8 +189,17 @@ public class Test_45_Project extends CommonTestRunner {
     }
 
     @Test
+    public void test_0bis() throws IOException {
+        testClass("Project_0", 2, 11, new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeContextPropertiesOverAllMethods(true)
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
+    @Test
     public void test_1() throws IOException {
-        testClass("Project_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("Project_1", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -187,14 +208,13 @@ public class Test_45_Project extends CommonTestRunner {
      */
     @Test
     public void test_2() throws IOException {
-        final String CONTAINER = "[org.e2immu.analyser.parser.own.annotationstore.testexample.Project_2.Container.Container(java.lang.String)]";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2
-                            ? "{org.e2immu.analyser.parser.own.annotationstore.testexample.Project_2.Container.Container(java.lang.String)=true}"
-                            : "{org.e2immu.analyser.parser.own.annotationstore.testexample.Project_2.Container.Container(java.lang.String)=false}";
+                    String expect = d.iteration() == 0
+                            ? "cm@Parameter_value;cnn@Parameter_value;ext_not_null@Parameter_value;mom@Parameter_value"
+                            : "";
                     assertEquals(expect, d.evaluationResult().causesOfDelay().toString());
                 }
             }
@@ -203,13 +223,13 @@ public class Test_45_Project extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         };
@@ -237,14 +257,14 @@ public class Test_45_Project extends CommonTestRunner {
             ParameterAnalysis p0a = p0.parameterAnalysis.get();
             assertEquals(DV.TRUE_DV, p0a.getProperty(Property.IDENTITY)); // first property
 
-            assertEquals(DV.TRUE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
-            assertEquals(MultiLevel.DEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
+            assertEquals(MultiLevel.INDEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
-            assertEquals(MultiLevel.CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
-        testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("Project_4", 1, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

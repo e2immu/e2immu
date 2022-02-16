@@ -43,7 +43,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
-        testClass("Project_0", 1, 4, new DebugConfiguration.Builder()
+        testClass("Project_0", 2, 6, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -62,14 +62,14 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -86,13 +86,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // for(Map.Entry entry: ... .entrySet())
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                    }
-                }
-                if ("entry$0".equals(d.variableName())) {
-                    if ("0".equals(d.statementId())) {
-                        assertTrue(d.iteration() > 0);
-                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d,  MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
