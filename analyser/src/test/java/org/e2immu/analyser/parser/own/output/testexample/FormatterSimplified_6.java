@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public class FormatterSimplified_6 {
 
-    record ForwardInfo(int pos, int chars, @Nullable String string, @NotNull Guide guide, boolean symbol) {
+    record ForwardInfo(int pos, int chars, @Nullable String string, @Nullable Guide guide, boolean symbol) {
         public boolean isGuide() {
             return string == null;
         }

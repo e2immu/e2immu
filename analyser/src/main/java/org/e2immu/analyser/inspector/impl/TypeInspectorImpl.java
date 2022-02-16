@@ -234,6 +234,11 @@ public class TypeInspectorImpl implements TypeInspector {
         }
     }
 
+    /*
+    The annotations on the record declaration belong to the fields, not to the constructor.
+    Motivation: if you want to annotate those of the constructor, you can always add a constructor. There
+    is no alternative way of annotating the fields.
+     */
     private List<RecordField> doRecordDeclaration(ExpressionContext expressionContext,
                                                   RecordDeclaration recordDeclaration) {
         builder.setTypeNature(TypeNature.RECORD);
@@ -250,6 +255,9 @@ public class TypeInspectorImpl implements TypeInspector {
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PRIVATE);
+            for (AnnotationExpr annotationExpr : parameter.getAnnotations()) {
+                fieldBuilder.addAnnotation(AnnotationInspector.inspect(expressionContext, annotationExpr));
+            }
             expressionContext.typeContext().typeMap.registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
 
