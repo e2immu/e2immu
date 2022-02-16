@@ -379,7 +379,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
      */
     private ApplyStatusAndEnnStatus contextProperties(StatementAnalyserSharedState sharedState,
                                                       EvaluationResult evaluationResult,
-                                                      CausesOfDelay delay,
+                                                      CausesOfDelay delayIn,
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
@@ -413,7 +413,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // 1
         CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL));
-        delay = delay.merge(cnnStatus);
+        CausesOfDelay delay = delayIn.merge(cnnStatus);
 
         // 2
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL));

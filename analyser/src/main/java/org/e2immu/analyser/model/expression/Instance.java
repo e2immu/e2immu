@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -264,13 +265,17 @@ public final class Instance extends BaseExpression implements Expression {
         Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
         outputBuilder.add(text);
 
-        // TODO not consistent, but hack after changing 10s of tests, don't want to change back again
-        if (valueProperties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
-            outputBuilder.add(new Text("/*@Identity*/"));
-        }
-        DV ignoreMods = valueProperties.getOrDefault(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
-        if (ignoreMods.equals(MultiLevel.IGNORE_MODS_DV)) {
-            outputBuilder.add(new Text("/*@IgnoreMods*/"));
+        if(qualification == Qualification.FULLY_QUALIFIED_NAME) {
+            outputBuilder.add(Space.ONE).add(new Text(identifier.compact()));
+        } else {
+            // not consistent, but hack after changing 10s of tests, don't want to change back again
+            if (valueProperties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
+                outputBuilder.add(new Text("/*@Identity*/"));
+            }
+            DV ignoreMods = valueProperties.getOrDefault(Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv);
+            if (ignoreMods.equals(MultiLevel.IGNORE_MODS_DV)) {
+                outputBuilder.add(new Text("/*@IgnoreMods*/"));
+            }
         }
         return outputBuilder;
     }

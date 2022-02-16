@@ -37,4 +37,9 @@ public record VariableIdentifier(Variable variable, String index) implements Ide
     public int identifierOrder() {
         return 5;
     }
+
+    @Override
+    public String compact() {
+        return "V:" + variable.fullyQualifiedName() + ":" + index;
+    }
 }

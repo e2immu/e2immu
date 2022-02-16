@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /*
 An Element needs an identifier, to distinguish it from other structurally similar elements.
@@ -81,6 +82,8 @@ public interface Identifier extends Comparable<Identifier> {
         return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), index);
     }
 
+    String compact();
+
     record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -95,6 +98,11 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public int identifierOrder() {
             return 0;
+        }
+
+        @Override
+        public String compact() {
+            return line + ":" + pos;
         }
     }
 
@@ -129,6 +137,11 @@ public interface Identifier extends Comparable<Identifier> {
         public int identifierOrder() {
             return 1;
         }
+
+        @Override
+        public String compact() {
+            return "ID:" + identifier;
+        }
     }
 
     record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
@@ -144,6 +157,11 @@ public interface Identifier extends Comparable<Identifier> {
         public int identifierOrder() {
             return 2;
         }
+
+        @Override
+        public String compact() {
+            return "ID:" + identifiers.stream().map(Identifier::compact).collect(Collectors.joining(","));
+        }
     }
 
     record LoopConditionIdentifier(String index) implements Identifier {
@@ -156,6 +174,11 @@ public interface Identifier extends Comparable<Identifier> {
         public int identifierOrder() {
             return 3;
         }
+
+        @Override
+        public String compact() {
+            return "L:" + index;
+        }
     }
 
     record CatchConditionIdentifier(String index) implements Identifier {
@@ -167,6 +190,11 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public int identifierOrder() {
             return 4;
+        }
+
+        @Override
+        public String compact() {
+            return "C:" + index;
         }
     }
 
@@ -181,6 +209,11 @@ public interface Identifier extends Comparable<Identifier> {
         public int identifierOrder() {
             return 6;
         }
+
+        @Override
+        public String compact() {
+            return "S:" + constant;
+        }
     }
 
     record VariableOutOfScopeIdentifier(String fqn, String index) implements Identifier {
@@ -192,6 +225,11 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public int identifierOrder() {
             return 7;
+        }
+
+        @Override
+        public String compact() {
+            return "V:" + index;
         }
     }
 }
