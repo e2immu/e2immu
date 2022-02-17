@@ -120,7 +120,6 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
 
         classes.forEach(clazz -> builder.addRestrictSourceToPackages(clazz.getCanonicalName()));

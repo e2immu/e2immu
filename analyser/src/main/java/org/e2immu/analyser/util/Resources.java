@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.util;
 
-import org.apache.commons.io.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +100,7 @@ public class Resources {
         if (urls != null) {
             for (URL url : urls) {
                 try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                    IOUtil.copy(url.openStream(), byteArrayOutputStream);
+                    url.openStream().transferTo(byteArrayOutputStream);
                     return byteArrayOutputStream.toByteArray();
                 } catch (IOException e) {
                     throw new ResourceAccessException("URL = " + url + ", Cannot read? " + e.getMessage());

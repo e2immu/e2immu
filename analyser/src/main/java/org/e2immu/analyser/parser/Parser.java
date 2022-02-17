@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
-import org.apache.commons.io.IOUtil;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -188,7 +188,9 @@ public class Parser {
 
                 InputStreamReader isr = new InputStreamReader(url.openStream(),
                         configuration.inputConfiguration().sourceEncoding());
-                String source = IOUtil.toString(isr);
+                StringWriter sw = new StringWriter();
+                isr.transferTo(sw);
+                String source = sw.toString();
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
                         input.globalTypeContext().typeMap(), typesForWildcardImport, anonymousTypeCounters,
                         configuration.annotatedAPIConfiguration().disabled());

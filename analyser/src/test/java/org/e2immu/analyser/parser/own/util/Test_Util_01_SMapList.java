@@ -16,11 +16,14 @@
 package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.SMapList;
@@ -36,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_01_SMapList extends CommonTestRunner {
 
-    public static final String COPY_OF_TMP = "Map.copyOf(map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type HashMap<A,List<B>>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/)";
+    public static final String COPY_OF_TMP = "Map.copyOf(map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<A,List<B>>)";
 
     public Test_Util_01_SMapList() {
         super(true);
@@ -45,12 +48,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:get>" : "destination.get(e$1.getKey())";
-                assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals("destination.get(e.getKey())", d.evaluationResult().value().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "null==<m:get>" : "null==destination.get(e$1.getKey())";
-                assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals("null==destination.get(e.getKey())", d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
                 assertEquals("src.entrySet()", d.evaluationResult().value().toString());
@@ -71,7 +72,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals(MultiLevel.NULLABLE_DV, d.currentValue().getProperty(d.evaluationContext(),
                             Property.NOT_NULL_EXPRESSION, true));
 
-                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("3".equals(d.statementId())) {
                     assertEquals("null==map.get(a)?List.of():map.get(a)", d.currentValue().toString());
@@ -100,7 +101,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
@@ -108,38 +109,38 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     .getParameterAnalyses().get(1).getProperty(Property.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
+                if (d.iteration() <= 1) assertTrue(paramMod.isDelayed());
                 else assertEquals(DV.FALSE_DV, paramMod);
             }
             if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
+                if (d.iteration() <= 1) assertTrue(paramMod.isDelayed());
                 else assertEquals(DV.FALSE_DV, paramMod);
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
             if ("3".equals(d.statementId())) {
-                assertEquals("bs:3,list:0", d.variableInfo().getLinkedVariables().toString());
+                String expected = d.iteration() == 0 ? "a:-1,bs:-1,list:0,map:-1,return add:-1" : "list:0";
+                assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
             } else {
-                assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
+                String expected = d.iteration() == 0 ? "a:-1,list:0,map:-1" : "list:0";
+                assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
             }
         }
 
 
         if ("addAll".equals(d.methodInfo().name)) {
             if ("e".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<v:e>" : "nullable instance type Entry<A,List<B>>";
-                assertEquals(expectValue, d.currentValue().toString());
+                assertEquals("instance type Entry<A,List<B>>", d.currentValue().toString());
             }
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("destination")) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("nullable instance type Map<A,List<B>>", d.currentValue().toString());
-                    assertEquals("destination:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("inDestination".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:get>" : "destination.get(e$1.getKey())";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("destination.get(e.getKey())", d.currentValue().toString());
                 }
             }
             if ("change".equals(d.variableName())) {
@@ -151,17 +152,14 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:addAll>" : "instance type boolean";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals("instance type boolean", d.currentValue().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:addAll>||null==<m:get>"
-                            : "instance type boolean||null==destination.get(e$1.getKey())";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals("instance type boolean||null==destination.get(e.getKey())", d.currentValue().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -213,9 +211,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(FlowData.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? "null!=<m:get>"
-                        : "null!=destination.get(e$1.getKey())";
-                assertEquals(expectCondition, d.condition().toString());
+                assertEquals("null!=destination.get(e.getKey())", d.condition().toString());
             }
         }
     };
@@ -240,19 +236,17 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
             if ("bs".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("b".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {
-            if (d.iteration() == 0) {
-                assertNull(d.methodAnalysis().getSingleReturnValue());
-            } else {
-                assertEquals(COPY_OF_TMP, d.methodAnalysis().getSingleReturnValue().toString());
-            }
+            String expect = d.iteration() == 0 ? "<m:immutable>" : COPY_OF_TMP;
+            assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+
             assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };

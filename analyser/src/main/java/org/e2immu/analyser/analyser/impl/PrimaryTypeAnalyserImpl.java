@@ -256,7 +256,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Delays: {}", analysisStatus.causesOfDelay());
             }
-            throw new UnsupportedOperationException("No progress after " + iteration + " iterations for primary type(s) " + name + "?");
+            throw new NoProgressException("No progress after " + iteration + " iterations for primary type(s) " + name);
         }
     }
 

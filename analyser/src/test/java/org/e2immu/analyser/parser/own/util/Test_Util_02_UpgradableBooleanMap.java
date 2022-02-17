@@ -62,7 +62,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("UpgradableBooleanMap::putAll", d.currentValue().toString());
+                    String expected = d.iteration() == 0
+                            ? "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other;ext_not_null@Parameter_other>"
+                            : "UpgradableBooleanMap::putAll";
+                    assertEquals(expected, d.currentValue().toString());
                     assertEquals("return combiner:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -71,10 +74,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("put".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 assertEquals("put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
@@ -89,7 +92,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
             // accumulator
             if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             // finisher

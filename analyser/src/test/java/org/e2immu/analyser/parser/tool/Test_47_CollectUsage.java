@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parser.tool;
 
-import org.apache.commons.io.FileUtils;
 import org.e2immu.analyser.annotatedapi.Composer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -27,10 +26,14 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,17 +67,22 @@ public class Test_47_CollectUsage extends CommonTestRunner {
                 java.util.Random.nextInt()
                 """, namesCsv);
 
-        File testDir = new File("build/test_47");
-        FileUtils.deleteDirectory(testDir);
+        Path testDir = Path.of("build/test_47");
+        try (Stream<Path> walk = Files.walk(testDir)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .peek(System.out::println)
+                    .forEach(File::delete);
+        }
+
         Composer composer = new Composer(typeContext.typeMap, "test47",
                 set::contains);
         Collection<TypeInfo> apiTypes = composer.compose(typesInSet);
-        composer.write(apiTypes, testDir.getPath());
+        composer.write(apiTypes, testDir.toString());
 
-        assertTrue(testDir.isDirectory());
-        File javaLang = new File(testDir, "test47/JavaLang.java");
+        File javaLang = new File(testDir.toFile(), "test47/JavaLang.java");
         assertTrue(javaLang.canRead());
-        File javaUtil = new File(testDir, "test47/JavaUtil.java");
+        File javaUtil = new File(testDir.toFile(), "test47/JavaUtil.java");
         assertTrue(javaUtil.canRead());
     }
 

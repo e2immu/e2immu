@@ -37,7 +37,6 @@ public class TestInspectAndResolveAnalyserCode {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")

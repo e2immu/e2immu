@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.annotatedapi;
 
-import org.apache.commons.io.FileUtils;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -30,7 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,14 +73,20 @@ public class TestComposer {
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
         }
 
-        File defaultDestination = new File(AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
-        FileUtils.deleteDirectory(defaultDestination);
+        Path defaultDestination = Path.of(AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
+        try (Stream<Path> walk = Files.walk(defaultDestination)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .peek(System.out::println)
+                    .forEach(File::delete);
+        }
+
         composer.write(apiTypes, AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
 
         // should not exist, there is no dot after java.lang in the package filter
-        File javaLangAnnotations = new File(defaultDestination, "org/e2immu/testannotatedapi/JavaLangAnnotation.java");
+        File javaLangAnnotations = new File(defaultDestination.toFile(), "org/e2immu/testannotatedapi/JavaLangAnnotation.java");
         assertFalse(javaLangAnnotations.exists());
-        File javaLang = new File(defaultDestination, "org/e2immu/testannotatedapi/JavaLang.java");
+        File javaLang = new File(defaultDestination.toFile(), "org/e2immu/testannotatedapi/JavaLang.java");
         assertTrue(javaLang.exists());
     }
 }
