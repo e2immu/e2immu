@@ -21,9 +21,11 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -56,7 +58,7 @@ public class Test_48_Store extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo mapEntry = typeMap.get(Map.Entry.class);
             MethodInfo getValue = mapEntry.findUniqueMethod("getValue", 0);
-            assertTrue(getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
+            assertFalse(getValue.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
             assertTrue(getValue.isAbstract());
         };
 
@@ -66,10 +68,8 @@ public class Test_48_Store extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // EVAL level
                         VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                        String expectLinks = d.iteration() == 0 ? "?" : "";
-                        assertEquals(expectLinks, eval.getLinkedVariables().toString());
-                        String expectValue = d.iteration() == 0 ? "<v:entry>" : "nullable instance type Entry<String,Object>";
-                        assertEquals(expectValue, eval.getValue().toString());
+                        assertEquals("entry:0", eval.getLinkedVariables().toString());
+                        assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
@@ -86,8 +86,7 @@ public class Test_48_Store extends CommonTestRunner {
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "countRemoved" : "countRemoved,countRemoved$1.0.0";
-                assertEquals(expect, d.evaluationResult().changeData().keySet().stream()
+                assertEquals("countRemoved", d.evaluationResult().changeData().keySet().stream()
                         .map(Variable::fullyQualifiedName).sorted().collect(Collectors.joining(",")));
             }
         };
@@ -96,7 +95,7 @@ public class Test_48_Store extends CommonTestRunner {
                 if ("countRemoved".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
@@ -118,52 +117,48 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "instance type Project_0";
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
-                    String expectLinked = d.iteration() == 0 ? "?" : "";
+                    String expectLinked = d.iteration() == 0 ? "project:0,this:-1" : "project:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getOrCreate".equals(d.methodInfo().name)) {
-                // modified, because .get() is modifying (there is no annotated API)
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                // not modifying, there is no annotated API
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                // dependent, because only independent if non-modifying (current rule, we may want to get rid of this)
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                // independent because non-modifying (no Annotated API)
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
-                else {
-                    Expression value = d.methodAnalysis().getSingleReturnValue();
-                    assertEquals("newProject", value.toString());
-                    assertTrue(value instanceof VariableExpression, "Have " + value.getClass());
-                }
+                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Store_3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
-        testClass(List.of("Project_0", "Store_3"), 3, 11, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_3"), 4, 15, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -199,8 +194,12 @@ public class Test_48_Store extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("s".equals(d.variableName())) {
-                    if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                    if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:toString>" : "object.toString()";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "instance type boolean?<m:toString>:<m:toString>" : "object.toString()";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -244,16 +243,7 @@ public class Test_48_Store extends CommonTestRunner {
      */
     @Test
     public void test_7() throws IOException {
-
-        // transparent types have nothing to do with this, given that there is only one field, of type int
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("Store_7".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param E]", d.typeAnalysis().getTransparentTypes().toString());
-            }
-        };
-
         testClass("Store_7", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

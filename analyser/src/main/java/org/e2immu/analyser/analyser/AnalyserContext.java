@@ -21,7 +21,6 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -97,14 +96,18 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+        if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
         ParameterAnalyser parameterAnalyser = getParameterAnalyser(parameterInfo);
         if (parameterAnalyser != null) {
             return parameterAnalyser.getParameterAnalysis();
         }
+        MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
+        if (methodAnalysis != null) {
+            return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
+        }
         AnalyserContext parent = getParent();
         if (parent != null) return parent.getParameterAnalysis(parameterInfo);
 
-        if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
         throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
     }
 

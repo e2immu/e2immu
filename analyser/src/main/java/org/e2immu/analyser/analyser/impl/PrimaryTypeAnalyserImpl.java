@@ -109,9 +109,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
         Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
         sortedTypes.forEach(sortedType -> {
-            List<WithInspectionAndAnalysis> mfss = sortedType.methodsFieldsSubTypes();
-            mfss.forEach(mfs -> {
-                if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
+            List<WithInspectionAndAnalysis> analyses = sortedType.methodsFieldsSubTypes();
+            analyses.forEach(analysis -> {
+                if (analysis instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
                     TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
                     MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalyser.getTypeAnalysis(),
                             false, true, this);
@@ -131,7 +131,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
         methodAnalysers = Map.copyOf(methodAnalysersBuilder);
 
-        // finally fields, and wire everything together
+        // finally, we deal with fields, and wire everything together
         Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();
         List<Analyser> allAnalysers = sortedTypes.stream().flatMap(sortedType ->
                 sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {

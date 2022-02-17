@@ -27,6 +27,8 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.stream.Stream;
 
 // field and types have been done already!
 public class ShallowMethodAnalyser extends MethodAnalyserImpl {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShallowMethodAnalyser.class);
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
     private final boolean enableVisitors;
@@ -58,6 +61,15 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+        try {
+            return internalAnalyse(iteration, closure);
+        } catch (RuntimeException re) {
+            LOGGER.error("Error while analysing method {}", methodInfo.fullyQualifiedName);
+            throw re;
+        }
+    }
+
+    private AnalyserResult internalAnalyse(int iteration, EvaluationContext closure) {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.own.annotationstore.testexample;
 
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class Store_3 {
 
     private final Map<String, Project_0> projects = new HashMap<>();
 
-    @Modified
+    @NotModified
     private Project_0 getOrCreate() {
         Project_0 inMap = projects.get("x");
         Project_0 newProject = new Project_0("x");

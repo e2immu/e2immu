@@ -46,6 +46,7 @@ public class Store_7 {
                 private Handler<HttpServerRequest> myHandler;
                 @Override
                 public HttpServer requestHandler(Handler<HttpServerRequest> handler) {
+                    assert handler != null;
                     this.myHandler = handler;
                     return this; // PART OF @Fluent test: anonymous is assignable to HttpServer
                 }

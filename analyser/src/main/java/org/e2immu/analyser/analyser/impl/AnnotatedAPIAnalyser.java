@@ -432,6 +432,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser analyser = methodAnalysers.get(methodInfo);
         if (analyser != null) return analyser.getMethodAnalysis();
+        assert methodInfo.methodAnalysis.isSet();
         return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
     }
 
