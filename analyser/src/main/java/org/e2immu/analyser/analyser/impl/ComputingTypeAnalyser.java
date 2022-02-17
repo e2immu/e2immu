@@ -612,14 +612,19 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
             FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
-            if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()
-                    && !fieldInfo.isPublic()
-                    && !tempApproved.containsKey(fieldReference)) {
-                // we have a variable field, without preconditions. Is it guarded by a field with preconditions?
-                // see e.g. EventuallyFinal, where value is only written while covered by the preconditions of isFinal
-                // conditions are: it must be assigned in some method, and the methods it is assigned in must be
-                // contained in those of the field with preconditions
-                Set<MethodInfo> methodsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
+            if (fieldInfo.isPrivate() && !tempApproved.containsKey(fieldReference)) {
+                Set<MethodInfo> methodsAssigned;
+                DV finalDv = fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL);
+                if (finalDv.valueIsFalse()) {
+                    // we have a variable field, without preconditions. Is it guarded by a field with preconditions?
+                    // see e.g. EventuallyFinal, where value is only written while covered by the preconditions of isFinal
+                    // conditions are: it must be assigned in some method, and the methods it is assigned in must be
+                    // contained in those of the field with preconditions
+                    methodsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
+                } else {
+                    assert finalDv.valueIsTrue();
+                    methodsAssigned = methodsWhereFieldIsModified(fieldInfo);
+                }
                 if (!methodsAssigned.isEmpty()) {
                     Optional<FieldReference> guard = methodsForApprovedField.entrySet().stream()
                             .filter(e -> e.getValue().containsAll(methodsAssigned))
@@ -633,6 +638,15 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         }
+    }
+
+    private Set<MethodInfo> methodsWhereFieldIsModified(FieldInfo fieldInfo) {
+        return myMethodAnalysers.stream()
+                .filter(ma -> !ma.getMethodInfo().inConstruction())
+                .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream()
+                        .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue()))
+                .map(MethodAnalyser::getMethodInfo)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private Set<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
@@ -1063,6 +1077,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
                     typeAnalysis.addEventuallyImmutableField(fieldInfo);
                 }
+            } else if(typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
+                LOGGER.debug("Field {} is guarded by preconditions", fieldFQN);
+
             } else if (!isPrimitive) {
                 boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
                         && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;

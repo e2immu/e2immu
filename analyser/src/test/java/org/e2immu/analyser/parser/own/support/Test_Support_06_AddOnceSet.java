@@ -60,6 +60,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 if (d.iteration() >= 2) {
                     assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                    assertEquals("[set]", d.typeAnalysis().getGuardedByEventuallyImmutableFields().toString());
                 }
             }
         };
