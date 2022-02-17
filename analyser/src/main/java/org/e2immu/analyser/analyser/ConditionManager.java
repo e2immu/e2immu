@@ -254,8 +254,13 @@ public record ConditionManager(Expression condition,
      * @return individual variables that appear in the conjunction as variable == null
      */
     public Set<Variable> findIndividualNullInState(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        Expression absoluteState = absoluteState(evaluationContext);
-        return findIndividualNull(absoluteState, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
+        Expression state;
+        if (evaluationContext.preventAbsoluteStateComputation()) {
+            state = this.state;
+        } else {
+            state = absoluteState(evaluationContext);
+        }
+        return findIndividualNull(state, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
     }
 

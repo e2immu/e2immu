@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
@@ -352,8 +351,8 @@ public interface EvaluationContext {
     should we compute context immutable? not if we're a variable of the type itself
      */
     default boolean isMyself(Variable variable) {
-        if(variable instanceof This) return true;
-        if(variable instanceof FieldReference fr && fr.isStatic) return false;
+        if (variable instanceof This) return true;
+        if (variable instanceof FieldReference fr && fr.isStatic) return false;
         return isMyself(variable.parameterizedType());
     }
 
@@ -376,6 +375,19 @@ public interface EvaluationContext {
     default boolean inConstruction() {
         MethodAnalyser ma = getCurrentMethod();
         return ma != null && ma.getMethodInfo().inConstruction();
+    }
+
+    /*
+     Store_0 shows an example of a stack overflow going from the ConditionManager.absoluteState via And, Negation,
+     Equals, EvaluationContext.isNotNull0, notNullAccordingToConditionManager, findIndividualNullInState and back to
+     absoluteState... This method, only applied in Negation at the moment, prevents this infinite loop from occurring.
+     */
+    default boolean preventAbsoluteStateComputation() {
+        return false;
+    }
+
+    default EvaluationContext copyToPreventAbsoluteStateComputation() {
+        return this;
     }
 
     /*

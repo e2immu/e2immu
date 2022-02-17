@@ -56,6 +56,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final StatementAnalyser statementAnalyser;
     private final AnalyserContext analyserContext;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
+    private final boolean preventAbsoluteStateComputation;
+    private final boolean base;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -66,7 +68,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         ConditionManager conditionManager,
                         EvaluationContext closure) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager, closure, false, true);
+                iteration, conditionManager, closure, false, true, false);
     }
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
@@ -81,7 +83,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         ConditionManager conditionManager,
                         EvaluationContext closure,
                         boolean disableEvaluationOfMethodCallsUsingCompanionMethods,
-                        boolean base) {
+                        boolean base,
+                        boolean preventAbsoluteStateComputation) {
         super(iteration, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
@@ -89,6 +92,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.analyserContext = analyserContext;
         this.statementAnalysis = statementAnalysis;
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
+        this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
+        this.base = base;
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
@@ -113,6 +118,18 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 }
             }
         }
+    }
+
+    @Override
+    public boolean preventAbsoluteStateComputation() {
+        return preventAbsoluteStateComputation;
+    }
+
+    @Override
+    public EvaluationContext copyToPreventAbsoluteStateComputation() {
+        return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext,
+                localAnalysers, iteration, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
+                false, true);
     }
 
     private MethodInfo methodInfo() {
@@ -177,7 +194,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 iteration,
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
                 closure,
-                disableEvaluationOfMethodCallsUsingCompanionMethods, false);
+                disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation);
     }
 
     @Override
@@ -185,14 +202,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false);
+                iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
+                preventAbsoluteStateComputation);
     }
 
     public EvaluationContext childState(Expression state) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager.addState(state), closure,
-                false, false);
+                false, false, preventAbsoluteStateComputation);
     }
 
         /*
@@ -317,7 +335,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (ignoreStateInConditionManager) {
             EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                    iteration, conditionManager.withoutState(getPrimitives()), closure, false, false);
+                    iteration, conditionManager.withoutState(getPrimitives()), closure, false, false,
+                    preventAbsoluteStateComputation);
             return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
         }
 

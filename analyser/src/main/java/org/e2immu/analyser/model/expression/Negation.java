@@ -24,7 +24,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class Negation extends UnaryOperator implements ExpressionWrapper {
 
@@ -74,7 +73,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         }
         if (v instanceof And and) {
             List<Expression> negated = and.getExpressions().stream()
-                    .map(av -> Negation.negate(evaluationContext, av)).collect(Collectors.toList());
+                    .map(av -> Negation.negate(evaluationContext, av)).toList();
             return Or.or(evaluationContext, negated.toArray(Expression[]::new));
         }
         if (v instanceof Sum sum) {
@@ -86,11 +85,13 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
         if (v instanceof Equals equals) {
             if (equals.lhs instanceof InlineConditional inlineConditional) {
-                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(evaluationContext, equals.rhs, inlineConditional);
+                EvaluationContext safeEvaluationContext = evaluationContext.copyToPreventAbsoluteStateComputation();
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.rhs, inlineConditional);
                 if (result != null) return result;
             }
             if (equals.rhs instanceof InlineConditional inlineConditional) {
-                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(evaluationContext, equals.lhs, inlineConditional);
+                EvaluationContext safeEvaluationContext = evaluationContext.copyToPreventAbsoluteStateComputation();
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.lhs, inlineConditional);
                 if (result != null) return result;
             }
         }
