@@ -48,7 +48,8 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             if ("immutableConcat".equals(d.methodInfo().name)) {
                 if ("t".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("nullable instance type T", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<vl:t>" : "instance type T";
+                        assertEquals(expected, d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
                     }
                     if ("1".equals(d.statementId())) {

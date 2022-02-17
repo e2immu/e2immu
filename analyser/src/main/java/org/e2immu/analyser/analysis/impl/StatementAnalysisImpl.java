@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -77,6 +76,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
     private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
+    private final Map<Variable, DV> variablesModifiedBySubAnalysers = new HashMap<>(); // TODO protect
 
     // a variable that changes from iteration to iteration... should be moved out at some point
     private CausesOfDelay applyCausesOfDelay;
@@ -373,64 +373,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return streamOfLatestInfoOfVariablesReferringTo(fieldInfo).toList();
     }
 
-    // next to this.field, and local copies, we also have fields with a non-this scope.
-    // all values that contain the field itself get blocked;
-
-    @Override
-    public List<VariableInfo> assignmentInfo(FieldInfo fieldInfo) {
-        List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo);
-        if (normalValue.isEmpty()) return normalValue;
-        List<VariableInfo> result = new ArrayList<>();
-        VariableInfo viThis = null;
-        for (VariableInfo vi : normalValue) {
-            if (vi.isAssigned()) {
-                if (vi.variable() instanceof FieldReference fr && (fr.isStatic || fr.scopeIsThis())) {
-                    assert viThis == null;
-                    viThis = vi;
-                } else {
-                    result.add(vi);
-                }
-            }
-        }
-        if (viThis == null) return result;
-
-        FieldReference fieldReference = new FieldReference(InspectionProvider.defaultFrom(primitives), fieldInfo);
-
-        DelayedVariableExpression dve;
-        boolean viThisHasDelayedValue = (dve = viThis.getValue().asInstanceOf(DelayedVariableExpression.class)) != null &&
-                dve.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo;
-        boolean partialAssignment = viThis.getValue().variables(true).contains(fieldReference);
-        if (viThisHasDelayedValue || !partialAssignment) {
-            result.add(viThis);
-            return result;
-        }
-        // else: do not at viThis to the result
-
-        // search for all VI's that did an assignment without self-references
-        Set<String> done = new HashSet<>();
-        Set<String> added = new HashSet<>();
-        for (VariableInfo normal : normalValue) {
-            Iterator<String> it = normal.getAssignmentIds().idStream();
-            while (it.hasNext()) {
-                String assignmentId = it.next();
-                String assignmentIndex = StringUtil.stripLevel(assignmentId);
-                if (!done.contains(assignmentIndex) && !prefixAdded(assignmentIndex, added)) {
-                    StatementAnalysis statementAnalysis = methodAnalysis.getFirstStatement().navigateTo(assignmentIndex);
-                    VariableInfoContainer assignmentVic = statementAnalysis.getVariable(fieldInfo.fullyQualifiedName());
-                    String level = StringUtil.level(assignmentId);
-                    VariableInfo assignmentVi = EVALUATION.label.equals(level) ? assignmentVic.best(EVALUATION) : assignmentVic.best(MERGE);
-                    Expression value = assignmentVi.getValue();
-                    if (acceptForConditionalInitialization(fieldInfo, value)) {
-                        added.add(assignmentIndex);
-                        result.add(assignmentVi);
-                    }
-                    done.add(assignmentIndex);
-                }
-            }
-        }
-        return result;
-    }
-
     @Override
     public VariableInfoContainer getVariable(String fullyQualifiedName) {
         return variables.get(fullyQualifiedName);
@@ -444,15 +386,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public boolean variableIsSet(String fullyQualifiedName) {
         return variables.isSet(fullyQualifiedName);
-    }
-
-    private boolean prefixAdded(String assignmentIndex, Set<String> added) {
-        return added.stream().anyMatch(assignmentIndex::startsWith);
-    }
-
-    private boolean acceptForConditionalInitialization(FieldInfo fieldInfo, Expression value) {
-        List<Variable> variables = value.variables(true);
-        return variables.stream().noneMatch(v -> v instanceof FieldReference fr && fieldInfo.equals(fr.fieldInfo));
     }
 
     @Override
@@ -514,6 +447,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         EvaluationContext closure = evaluationContext;
         boolean inClosure = false;
         while (closure != null) {
+            // data is copied back to the closure in StatementAnalyserImpl.transferFromClosureToResult;
+            // mechanism is the VariableAccessReport
             if (closure.getCurrentMethod() != null) {
                 for (ParameterInfo parameterInfo : closure.getCurrentMethod().getMethodInspection().getParameters()) {
                     VariableNature variableNature = inClosure
@@ -1673,22 +1608,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
-    @Override
-    public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
-        if (variable instanceof FieldReference fieldReference) {
-            if (methodAnalysis.getMethodInfo().inConstruction()) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-
-            DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(Property.FINAL);
-            if (effectivelyFinal.isDelayed()) {
-                return VariableInfoContainer.VARIABLE_FIELD_DELAY;
-            }
-            if (effectivelyFinal.valueIsFalse()) {
-                return statementTime;
-            }
-        }
-        return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-    }
-
     private Properties sharedContext(DV contextNotNull) {
         Properties result = Properties.writable();
         result.put(CONTEXT_NOT_NULL, contextNotNull);
@@ -2143,9 +2062,17 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
 
     @Override
     public void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport) {
-        for (Variable v : variableAccessReport.variablesRead()) {
-            if (!variablesReadBySubAnalysers.contains(v)) {
-                variablesReadBySubAnalysers.add(v);
+        for (Map.Entry<Variable, Properties> e : variableAccessReport.propertiesMap().entrySet()) {
+            DV read = e.getValue().getOrDefaultNull(READ);
+            Variable variable = e.getKey();
+            if (read != null && read.valueIsTrue() && !variablesReadBySubAnalysers.contains(variable)) {
+                variablesReadBySubAnalysers.add(variable);
+            }
+            DV modified = e.getValue().getOrDefaultNull(CONTEXT_MODIFIED);
+            if (modified != null) {
+                DV current = variablesModifiedBySubAnalysers.get(variable);
+                assert current == null || current.isDelayed() || current.equals(modified);
+                variablesModifiedBySubAnalysers.put(variable, modified);
             }
         }
     }
@@ -2153,6 +2080,16 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
     @Override
     public List<Variable> variablesReadBySubAnalysers() {
         return this.variablesReadBySubAnalysers.stream().toList();
+    }
+
+    @Override
+    public Stream<Map.Entry<Variable, DV>> variablesModifiedBySubAnalysers() {
+        return this.variablesModifiedBySubAnalysers.entrySet().stream();
+    }
+
+    @Override
+    public boolean haveVariablesModifiedBySubAnalysers() {
+        return !variablesModifiedBySubAnalysers.isEmpty();
     }
 
     // IMPORTANT: Singleton_2 runs green when we only look at the previous delay

@@ -185,12 +185,12 @@ public class Lambda extends BaseExpression implements Expression {
         return Precedence.BOTTOM;
     }
 
-    // TODO: the "true" in the types referenced of the parameter is not necessarily true (probably even false!)
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of(
-                block.typesReferenced(),
-                parameters.stream().flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()));
+        return UpgradableBooleanMap.of(block.typesReferenced(),
+                parameters.stream()
+                        .flatMap(p -> p.typesReferenced(parameterOutputVariants.get(p.index) == OutputVariant.TYPED).stream())
+                        .collect(UpgradableBooleanMap.collector()));
     }
 
     @Override

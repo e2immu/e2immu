@@ -14,35 +14,43 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Variable;
 
 import java.util.function.Predicate;
 
-// tests to see if the assignment in the Lambda progresses to the field
-// note: @Variable only when the field analyser is configured to consider the whole primary type.
-public class Lambda_14 {
+// tests to see if the modification in the Lambda progresses to the field
+public class ModificationInLambda_1 {
 
     static class I {
-        @Variable
         private int i;
+
+        public void setI(int i) {
+            this.i = i;
+        }
 
         public int getI() {
             return i;
         }
     }
 
-    @NotModified // outside the scope of modification
-    private final I ii = new I();
+    @Modified
+    private final I i = new I();
 
-    public Predicate<String> nonModifying() {
-        return t -> ii.getI() < t.length();
+    public ModificationInLambda_1(int x) {
+        i.setI(x);
     }
 
-    public Predicate<String> assigning() {
+    @NotModified
+    public Predicate<String> nonModifying() {
+        return t -> i.getI() < t.length();
+    }
+
+    @Modified // calling the method allows one to modify i, even if it does not happen immediately
+    public Predicate<String> modifying() {
         return t -> {
-            if (t.length() > 10) ii.i = t.length();
-            return ii.getI() < t.length();
+            if (t.length() > 10) i.setI(t.length());
+            return i.getI() < t.length();
         };
     }
 }

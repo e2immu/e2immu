@@ -160,7 +160,9 @@ public enum Property {
     IDENTITY("@Identity", CauseOfDelay.Cause.IDENTITY),
     SINGLETON("@Singleton", CauseOfDelay.Cause.SINGLETON),
     UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
-    EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS);
+    EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS),
+
+    READ("read", CauseOfDelay.Cause.READ);
 
     public final String name;
     private final DV valueWhenAbsentDv;

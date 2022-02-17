@@ -49,10 +49,10 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                         assertEquals("n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("n<=100?i>=10&&n>=11?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
+                        assertEquals("n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertEquals("n<=1000?i>=100&&n>=101?Integer.toString(i):\"0\"+Integer.toString(i):n<=100?i>=10&&n>=11?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
+                        assertEquals("n<=1000?i<=99?\"0\"+Integer.toString(i):Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                 }
             }
@@ -87,7 +87,8 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("n<=1000?i<=99?\"0\"+Integer.toString(i):Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=10?Integer.toString(i):<return value>",
+                        d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

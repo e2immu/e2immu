@@ -244,12 +244,23 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     // hidden content component inside the field
 
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
+
+                    CausesOfDelay hiddenContentDelayed = fields.stream()
+                            .map(fr -> typeAnalysis.hiddenContentTypeStatus())
+                            .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                    if (hiddenContentDelayed.isDelayed()) {
+                        LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
+                                parameterInfo.fullyQualifiedName());
+                        return hiddenContentDelayed;
+                    }
                     DV minHiddenContentImmutable = fields.stream()
                             // hidden content is available, because linking has been computed(?)
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
                             .map(pt -> analyserContext.defaultImmutable(pt, false))
                             .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                     if (minHiddenContentImmutable.isDelayed()) {
+                        LOGGER.debug("Delay independent in parameter {}, waiting for immutable of hidden content/transparent types",
+                                parameterInfo.fullyQualifiedName());
                         return minHiddenContentImmutable.causesOfDelay();
                     }
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable);

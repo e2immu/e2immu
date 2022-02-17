@@ -296,13 +296,6 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_13() throws IOException {
-        // modification of "test" implementation goes against the @NotModified which is there by default
-        testClass("Lambda_13", 1, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    @Test
-    public void test_14() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("assigning".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
@@ -324,7 +317,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         // assigning to field outside type = not allowed
         // property value worse than overridden method: Predicate is @NotModified without A API
-        testClass("Lambda_14", 2, 0, new DebugConfiguration.Builder()
+        testClass("Lambda_13", 2, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
@@ -332,9 +325,9 @@ public class Test_57_Lambda extends CommonTestRunner {
     }
 
     @Test
-    public void test_14_2() throws IOException {
+    public void test_13_2() throws IOException {
         // additional error: @Variable is not seen (we don't look outside the static type)
-        testClass("Lambda_14", 3, 0, new DebugConfiguration.Builder()
+        testClass("Lambda_13", 3, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }

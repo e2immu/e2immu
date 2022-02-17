@@ -14,48 +14,47 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public record VariableAccessReport(Set<Variable> variablesRead) {
+public record VariableAccessReport(Map<Variable, Properties> propertiesMap) {
 
-    public static final VariableAccessReport EMPTY = new VariableAccessReport(Set.of());
+    public static final VariableAccessReport EMPTY = new VariableAccessReport(Map.of());
 
     public VariableAccessReport combine(VariableAccessReport other) {
         if (isEmpty()) return other;
         if (other.isEmpty()) return this;
-        return new VariableAccessReport(
-                Stream.concat(variablesRead.stream(), other.variablesRead.stream()).collect(Collectors.toUnmodifiableSet()));
+        Map<Variable, Properties> map = new HashMap<>(propertiesMap);
+        for (Map.Entry<Variable, Properties> e : other.propertiesMap.entrySet()) {
+            map.merge(e.getKey(), e.getValue(), Properties::merge);
+        }
+        return new VariableAccessReport(map);
     }
 
     private boolean isEmpty() {
-        return variablesRead.isEmpty();
+        return propertiesMap.isEmpty();
     }
 
     public static class Builder {
-        private final Set<Variable> variablesRead = new HashSet<>();
-        private final Map<FieldReference, VariableInfo> fieldsAssigned = new HashMap<>();
+        private final Map<Variable, Properties> propertiesMap = new HashMap<>();
 
         public void addVariableRead(Variable v) {
-            variablesRead.add(v);
+            Properties properties = propertiesMap.computeIfAbsent(v, x -> Properties.writable());
+            properties.put(Property.READ, DV.TRUE_DV);
         }
 
-        public void addFieldAssigned(FieldReference fieldReference, VariableInfo variableInfo) {
-            assert fieldReference == variableInfo.variable();
-            fieldsAssigned.put(fieldReference, variableInfo);
+        public void addVariableModified(Variable v, DV value) {
+            Properties properties = propertiesMap.computeIfAbsent(v, x -> Properties.writable());
+            properties.put(Property.CONTEXT_MODIFIED, value);
         }
 
         public VariableAccessReport build() {
-            if (variablesRead.isEmpty() && fieldsAssigned.isEmpty()) return EMPTY;
-            return new VariableAccessReport(Set.copyOf(variablesRead));
+            return new VariableAccessReport(Map.copyOf(propertiesMap));
         }
     }
 }

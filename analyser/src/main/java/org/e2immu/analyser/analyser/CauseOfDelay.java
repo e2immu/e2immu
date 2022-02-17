@@ -70,6 +70,7 @@ public interface CauseOfDelay {
         NOT_NULL_PARAMETER("nnp", ""),
         PARTIAL_IMM("partial_imm", "partial immutable: immutable without taking parent/enclosing into account"),
         PROP_MOD("prop_mod", ""),
+        READ("read", "must be there for property READ, but cannot be delayed"),
         REMAP_PARAMETER("remap_param", "Remapping a parameter for the companion analyser is not yet possible"),
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),
         SINGLE_RETURN_VALUE("svr", "single return value not yet set"),

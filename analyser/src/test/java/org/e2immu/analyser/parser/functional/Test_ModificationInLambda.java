@@ -14,11 +14,22 @@
 
 package org.e2immu.analyser.parser.functional;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+// IMPORTANT! Test_Util_2_UpgradeBooleanMap does a similar test, but with a delay on the modification
 
 public class Test_ModificationInLambda extends CommonTestRunner {
 
@@ -28,7 +39,37 @@ public class Test_ModificationInLambda extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if (d.variable() instanceof This thisVar) {
+                    if ("$1".equals(thisVar.typeInfo.simpleName)) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    } else if ("ModificationInLambda_0".equals(thisVar.typeInfo.simpleName)) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    } else fail("Have " + thisVar.typeInfo.fullyQualifiedName);
+                }
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+        };
         testClass("ModificationInLambda_0", 0, 0, new DebugConfiguration.Builder()
-                        .build());
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
+
+    @Test
+    public void test_1() throws IOException {
+        // the @Modified is there even if there is no guarantee that the predicate is tested.
+        testClass("ModificationInLambda_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

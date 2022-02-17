@@ -28,13 +28,13 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.annotation.Modified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
@@ -69,7 +69,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
-        EvaluationResult evaluationResult1 = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
+        EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
                 sharedState.evaluationContext());
 
         // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
@@ -177,7 +177,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
 
                 Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWritePossiblyDelayed, combined);
-                if(possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
+                if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
                     // trying without setting properties -- too dangerous to set value properties
                     // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
                     // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
@@ -347,16 +347,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private EvaluationResult variablesReadAndAssignedInSubAnalysers(EvaluationResult evaluationResultIn,
-                                                                    EvaluationContext evaluationContext) {
+    private EvaluationResult variablesReadOrModifiedInSubAnalysers(EvaluationResult evaluationResultIn,
+                                                                   EvaluationContext evaluationContext) {
         List<Variable> readBySubAnalysers = statementAnalysis.variablesReadBySubAnalysers();
-
-        if (!readBySubAnalysers.isEmpty()) {
+        if (!readBySubAnalysers.isEmpty() || statementAnalysis.haveVariablesModifiedBySubAnalysers()) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
             builder.compose(evaluationResultIn);
             for (Variable variable : readBySubAnalysers) {
                 builder.markRead(variable);
             }
+            Stream<Map.Entry<Variable, DV>> modifiedStream = statementAnalysis.variablesModifiedBySubAnalysers();
+            modifiedStream.forEach(e -> builder.setProperty(e.getKey(), CONTEXT_MODIFIED, e.getValue()));
+
             return builder.build();
         }
 

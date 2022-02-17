@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -598,21 +599,17 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     /*
     variables that were in the closure (coming from a statement outside this local primary type analyser)
     and were read or assigned, get marked in the result
-
-    we only do this once, because READ/ASSIGNED is handled in the first iteration, invariably!
-     */
+    */
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
         TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
 
         VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
         if (closure != null) {
+            AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
             statementAnalysis.variableStream().forEach(vi -> {
                 // naive approach
-                if (vi.isReadAt(index()) && closure.isPresent(vi.variable())) {
-                    builder.addVariableRead(vi.variable());
-                }
-                if (vi.variable() instanceof FieldReference fr
+                if (closure.isPresent(vi.variable()) || vi.variable() instanceof FieldReference fr
                         && fr.fieldInfo.owner != currentType
                         && fr.fieldInfo.owner.primaryType().equals(currentType.primaryType())) {
                     // mark, irrespective of whether it is present there or not (given that we are not the owner)
@@ -620,14 +617,20 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     if (vi.isReadAt(index())) {
                         builder.addVariableRead(vi.variable());
                     }
-                    if (vi.getAssignmentIds().getLatestAssignmentIndex().equals(index())) {
-                        builder.addFieldAssigned(fr, vi);
+                    DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+                    builder.addVariableModified(vi.variable(), modified); // also when delayed!!!
+                    if (modified.isDelayed()) {
+                        causes.set(causes.get().merge(modified.causesOfDelay()));
                     }
                 }
-
             });
             VariableAccessReport variableAccessReport = builder.build();
             analyserResultBuilder.addVariableAccessReport(variableAccessReport);
+
+            if (causes.get().isDelayed()) {
+                LOGGER.debug("Delay transfer from closure to result, no information on ContextModified yet");
+                return causes.get();
+            }
         }
         return DONE;
     }

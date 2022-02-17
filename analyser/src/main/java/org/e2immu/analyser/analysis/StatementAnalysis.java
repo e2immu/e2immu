@@ -50,8 +50,6 @@ public interface StatementAnalysis extends Analysis,
     @NotNull
     VariableInfo getLatestVariableInfo(String variableName);
 
-    List<VariableInfo> assignmentInfo(FieldInfo fieldInfo);
-
     List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
 
     Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
@@ -150,14 +148,15 @@ public interface StatementAnalysis extends Analysis,
 
     Primitives primitives();
 
-    int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int newStatementTime);
-
     void initIteration1Plus(EvaluationContext evaluationContext, StatementAnalysis previous);
 
     Stream<Variable> candidateVariablesForNullPtrWarningStream();
 
     void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport);
     List<Variable> variablesReadBySubAnalysers();
+    Stream<Map.Entry<Variable, DV>> variablesModifiedBySubAnalysers();
+
+    boolean haveVariablesModifiedBySubAnalysers();
 
     boolean latestDelay(CausesOfDelay delay);
 
