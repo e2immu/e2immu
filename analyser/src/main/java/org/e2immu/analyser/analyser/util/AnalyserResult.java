@@ -113,9 +113,5 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
         public Stream<Message> getMessageStream() {
             return messages.getMessageStream();
         }
-
-        public void addVariableAccessReport(VariableAccessReport variableAccessReport) {
-            this.variableAccessReport = this.variableAccessReport.combine(variableAccessReport);
-        }
     }
 }

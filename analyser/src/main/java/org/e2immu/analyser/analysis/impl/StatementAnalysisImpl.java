@@ -284,7 +284,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public StatementAnalysis lastStatement(boolean excludeThrows) {
-        if (flowData.isUnreachable() && parent == null) {
+        if (flowData.isUnreachable() && "0".equals(index)) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalysis replaced = followReplacements();

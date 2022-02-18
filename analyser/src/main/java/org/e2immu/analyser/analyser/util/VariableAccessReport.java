@@ -31,7 +31,8 @@ public record VariableAccessReport(Map<Variable, Properties> propertiesMap) {
         if (other.isEmpty()) return this;
         Map<Variable, Properties> map = new HashMap<>(propertiesMap);
         for (Map.Entry<Variable, Properties> e : other.propertiesMap.entrySet()) {
-            map.merge(e.getKey(), e.getValue(), Properties::merge);
+            // we use combine rather than merge, so that done values can overwrite delayed values
+            map.merge(e.getKey(), e.getValue(), Properties::combine);
         }
         return new VariableAccessReport(map);
     }

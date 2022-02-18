@@ -352,7 +352,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 builder.addVariableRead(fr);
             }
         }
-        analyserResultBuilder.addVariableAccessReport(builder.build());
+        analyserResultBuilder.setVariableAccessReport(builder.build());
     }
 
     /*

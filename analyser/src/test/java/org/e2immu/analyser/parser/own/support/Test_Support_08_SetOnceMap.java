@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -33,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
@@ -47,7 +49,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param K, Type param V",
                         d.typeAnalysis().getTransparentTypes().toString());
-          //FIXME      assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -72,13 +74,21 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
+            if ("putAll".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() <= 2 ? "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0;link:e@Method_accept_0"
+                            : "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
+                    assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
+                            .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                }
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    assertTrue(d.iteration() >= 2);
-                    assertEquals("instance type HashMap<K,V>", d.currentValue().toString());
+                if (d.variable() instanceof ParameterInfo p && "e".equals(p.name)) {
+                    String expect = d.iteration() <= 2 ? "<p:e>" : "nullable instance type Entry<K,V>/*@Identity*/";
+                    assertEquals(expect, d.currentValue().toString());
                 }
             }
             if ("get".equals(d.methodInfo().name)) {

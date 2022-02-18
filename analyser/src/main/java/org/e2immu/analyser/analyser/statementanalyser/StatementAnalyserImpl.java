@@ -601,6 +601,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     and were read or assigned, get marked in the result
     */
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
+        StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
+        if (last != statementAnalysis.lastStatement()) {
+            // no point in running this unless we are the last statement in the method
+            return DONE;
+        }
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
         TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
 
@@ -614,7 +619,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         && fr.fieldInfo.owner.primaryType().equals(currentType.primaryType())) {
                     // mark, irrespective of whether it is present there or not (given that we are not the owner)
                     // readId will be 0-E, index 0
-                    if (vi.isReadAt(index())) {
+                    if (vi.isRead()) {
                         builder.addVariableRead(vi.variable());
                     }
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
@@ -625,7 +630,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 }
             });
             VariableAccessReport variableAccessReport = builder.build();
-            analyserResultBuilder.addVariableAccessReport(variableAccessReport);
+            analyserResultBuilder.setVariableAccessReport(variableAccessReport);
 
             if (causes.get().isDelayed()) {
                 LOGGER.debug("Delay transfer from closure to result, no information on ContextModified yet");
