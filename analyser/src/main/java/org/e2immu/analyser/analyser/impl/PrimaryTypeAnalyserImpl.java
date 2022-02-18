@@ -40,8 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.config.AnalyserProgram.PROGRAM_ALL;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 
 /*
 Recursive, but only for types inside statements, not for subtypes.
@@ -230,7 +229,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void analyse() {
         if (typeAnalysers.size() > 10) {
-            LOGGER.warn("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
+            LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
         }
 
         if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
@@ -246,6 +245,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
             if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
                 LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
+                return;
+            }
+            if (iteration > 1 && !configuration.analyserConfiguration().analyserProgram().accepts(ALL)) {
+                LOGGER.debug("\n******\nStopping after iteration 1 according to program\n******");
                 return;
             }
             analysisStatus = analyserResult.analysisStatus();

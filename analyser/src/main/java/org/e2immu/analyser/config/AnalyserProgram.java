@@ -36,6 +36,8 @@ public record AnalyserProgram(Step step, Set<Step> accepted) {
 
         ITERATION_1PLUS(FIELD_FINAL, MODIFIED),
 
+        ITERATION_1(ITERATION_1PLUS),
+
         ALL(ITERATION_1PLUS);
 
 

@@ -41,7 +41,6 @@ public class TestAnalyseCode {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/main/java")
-                //    .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
@@ -54,7 +53,7 @@ public class TestAnalyseCode {
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.FIELD_FINAL))
+                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_1))
                 .build();
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
