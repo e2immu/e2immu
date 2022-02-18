@@ -36,12 +36,20 @@ import java.util.Objects;
 public final class VariableExpression extends CommonVariableExpression {
 
     public static Expression of(Variable v) {
-        return !(v instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(v)
-                : DelayedVariableExpression.forVariable(v, fr.scope.causesOfDelay());
+        if (!(v instanceof FieldReference fr) || fr.scope.isDone()) return new VariableExpression(v);
+        if (fr.scope instanceof DelayedVariableExpression dve) {
+            return DelayedVariableExpression.forVariable(v, dve.statementTime, fr.scope.causesOfDelay());
+        }
+        //could, for example, be a DelayedVariableOutOfScope...
+        return DelayedVariableExpression.forVariable(v, VariableInfoContainer.NOT_A_FIELD, fr.scope.causesOfDelay());
     }
+
     public static Expression of(Variable v, Suffix suffix) {
-        return !(v instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(v, suffix)
-                : DelayedVariableExpression.forVariable(v, fr.scope.causesOfDelay());
+        if (!(v instanceof FieldReference fr) || fr.scope.isDone()) return new VariableExpression(v, suffix);
+        if (fr.scope instanceof DelayedVariableExpression dve) {
+            return DelayedVariableExpression.forVariable(v, dve.statementTime, fr.scope.causesOfDelay());
+        }
+        return DelayedVariableExpression.forVariable(v, VariableInfoContainer.NOT_A_FIELD, fr.scope.causesOfDelay());
     }
 
     public interface Suffix {
@@ -289,15 +297,16 @@ public final class VariableExpression extends CommonVariableExpression {
                     FieldReference newFieldRef = new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression());
                     return new VariableExpression(newFieldRef, ve.suffix);
                 }
-                return DelayedVariableExpression.forField(fr, scopeResultIsDelayed);
+                return DelayedVariableExpression.forField(fr, evaluationContext.getInitialStatementTime(), scopeResultIsDelayed);
             }
             if (currentValue instanceof DelayedVariableExpression ve
                     && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
                 if (!scopeResultIsDelayed.isDelayed()) {
                     return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()),
+                            evaluationContext.getInitialStatementTime(),
                             ve.causesOfDelay);
                 }
-                return DelayedVariableExpression.forField(fr, ve.causesOfDelay);
+                return DelayedVariableExpression.forField(fr, evaluationContext.getInitialStatementTime(), ve.causesOfDelay);
             }
         }
         return currentValue;

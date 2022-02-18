@@ -1509,7 +1509,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
-            return DelayedVariableExpression.forField(fieldReference,
+            return DelayedVariableExpression.forField(fieldReference, VariableInfoContainer.IN_FIELD_ANALYSER,
                     new VariableCause(fieldReference, fieldInfo.newLocation(), CauseOfDelay.Cause.FIELD_FINAL));
         }
         if (effectivelyFinal.valueIsFalse()) {

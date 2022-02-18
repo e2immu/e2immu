@@ -146,9 +146,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // expression in if statement always true; unreachable statement
         testClass("Loops_7", 2, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               // .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

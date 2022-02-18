@@ -324,7 +324,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 staticField ? null : ve);
         CausesOfDelay causesOfDelay = evaluationContext.variableIsDelayed(scopeField);
         if (causesOfDelay.isDelayed()) {
-            return DelayedVariableExpression.forField(scopeField, causesOfDelay);
+            return DelayedVariableExpression.forField(scopeField, evaluationContext.getInitialStatementTime(), causesOfDelay);
         }
         return new VariableExpression(scopeField);
     }

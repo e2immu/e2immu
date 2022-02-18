@@ -133,7 +133,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
                 if (delayed) {
                     CausesOfDelay causesOfDelay = arrayExpression.causesOfDelay()
                             .merge(indexValue.value().causesOfDelay());
-                    Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
+                    Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable,
+                            evaluationContext.getInitialStatementTime(), causesOfDelay);
 
                     builder.setExpression(dve);
                 } else {

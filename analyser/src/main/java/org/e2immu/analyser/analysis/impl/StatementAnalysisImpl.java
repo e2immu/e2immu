@@ -704,7 +704,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
-                initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
+                initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference, flowData().getInitialTime());
             }
         } else {
             // only set properties copied from the field
@@ -726,7 +726,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
             CausesOfDelay causesOfDelay = valueMap.delays();
             if (causesOfDelay.isDelayed() && initialValue.isDone()) {
-                initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
+                initialValue = DelayedVariableExpression.forField(fieldReference, flowData.getInitialTime(), causesOfDelay);
             }
         }
         if (!viInitial.valueIsSet()) {
@@ -1393,7 +1393,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
                 CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
                 if (causesOfDelay.isDelayed()) {
-                    arrayValue = DelayedVariableExpression.forVariable(dv, causesOfDelay);
+                    arrayValue = DelayedVariableExpression.forVariable(dv,  flowData.getTimeAfterEvaluation(), causesOfDelay);
                 } else {
                     arrayValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayBase, dv);
                 }
@@ -1498,7 +1498,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // start with context properties
         Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
-        Expression value = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
+        Expression value = fieldAnalysis.getValueForStatementAnalyser(fieldReference, flowData.getInitialTime());
 
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference);

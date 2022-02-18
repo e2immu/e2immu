@@ -95,8 +95,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     } else {
                         assertEquals("0", d.statementId());
-                        String expectValue = d.iteration() <= 1 ? "<m:isSet>?<p:other>:<p:other>" :
-                                "nullable instance type Basics_21<T>/*@Identity*/";
+                        String expectValue = d.iteration() <= 1 ? "<p:other>" : "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer().getPreviousOrInitial()

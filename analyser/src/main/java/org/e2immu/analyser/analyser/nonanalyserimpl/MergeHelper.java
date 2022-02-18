@@ -513,7 +513,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     public Expression noConclusion(Properties variableProperties) {
         CausesOfDelay delay = variableProperties.delays();
         if (delay.isDelayed()) {
-            return DelayedVariableExpression.forVariable(vi.variable(), delay);
+            return DelayedVariableExpression.forVariable(vi.variable(), evaluationContext.getFinalStatementTime(), delay);
         }
         return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }

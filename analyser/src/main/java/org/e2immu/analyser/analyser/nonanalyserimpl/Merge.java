@@ -88,7 +88,8 @@ public record Merge(EvaluationContext evaluationContext,
             if (selfReference) {
                 LOGGER.debug("Detected self-reference in merge helper on variable field {}", fieldReference);
                 Expression instance;
-                Expression fromAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getValueForStatementAnalyser(fieldReference);
+                Expression fromAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo)
+                        .getValueForStatementAnalyser(fieldReference, evaluationContext.getFinalStatementTime());
                 Properties properties;
                 if (fromAnalysis.isDelayed()) {
                     // if (evaluationContext.getCurrentMethod().getMethodInfo().isConstructor && !fieldReference.isStatic) {

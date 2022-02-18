@@ -298,7 +298,8 @@ public class Assignment extends BaseExpression implements Expression {
      */
     private Expression makeHackInstance(EvaluationContext evaluationContext, CausesOfDelay causes) {
         if (causes.isDelayed()) {
-            return DelayedVariableExpression.forVariable(variableTarget, causes);
+            return DelayedVariableExpression.forVariable(variableTarget, evaluationContext.getInitialStatementTime(),
+                    causes);
         }
         Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(target.returnType());
         return Instance.forVariableInLoopDefinedOutside(identifier, target.returnType(), valueProperties);

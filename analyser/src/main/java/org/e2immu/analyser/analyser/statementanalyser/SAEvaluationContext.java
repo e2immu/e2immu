@@ -57,7 +57,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final AnalyserContext analyserContext;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
     private final boolean preventAbsoluteStateComputation;
-    private final boolean base;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -93,7 +92,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.statementAnalysis = statementAnalysis;
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
-        this.base = base;
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
@@ -468,7 +466,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (cyclicDependency) {
             LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, here);
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
-            Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, cause);
+            Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, getInitialStatementTime(), cause);
             return new VariableInfoImpl(getLocation(), fr, dve);
         }
         return null;
@@ -615,7 +613,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
                         eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
-                translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
+                translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
             }
         }
     }

@@ -100,7 +100,7 @@ public interface FieldAnalysis extends Analysis {
 
     Expression getInitializerValue();
 
-    default Expression getValueForStatementAnalyser(FieldReference fieldReference) {
+    default Expression getValueForStatementAnalyser(FieldReference fieldReference, int statementTime) {
         Expression value = getValue();
         if (value.isDelayed() || value.isConstant()) return value;
 
@@ -114,7 +114,7 @@ public interface FieldAnalysis extends Analysis {
         CausesOfDelay delay = properties.delays();
 
         if (delay.isDelayed()) {
-            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, delay);
+            return DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime, delay);
         }
         Instance instance = Instance.forField(getFieldInfo(), value.returnType(), properties);
         if (value instanceof ConstructorCall) {

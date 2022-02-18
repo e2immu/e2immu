@@ -32,14 +32,16 @@ import java.util.Set;
 public interface VariableInfoContainer {
 
     /* note: local variables also have a variableNature. This one can override their value
-    but only when this variable nature is VariableDefinedOutsideLoop. All the others have to agree exactly,
-    and can be used interchangeably.
-     */
+        but only when this variable nature is VariableDefinedOutsideLoop. All the others have to agree exactly,
+        and can be used interchangeably.
+         */
+
     @NotNull
     VariableNature variableNature();
 
-    int VARIABLE_FIELD_DELAY = -1;
+    int NOT_A_FIELD = -1;
     int NOT_A_VARIABLE_FIELD = -2;
+    int IN_FIELD_ANALYSER = -3;
 
     // prefixes in assignment id
     // see TestLevelSuffixes to visually understand the order

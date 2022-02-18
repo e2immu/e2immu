@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.DelayedWrappedExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -89,7 +90,13 @@ public class VariableInfoImpl implements VariableInfo {
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
         CausesOfDelay causesOfDelay = initialValue(location, variable);
-        value.setVariable(DelayedVariableExpression.forVariable(variable, causesOfDelay));
+        int statementTime;
+        if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
+            statementTime = dve.statementTime;
+        } else {
+            statementTime = VariableInfoContainer.NOT_A_FIELD;
+        }
+        value.setVariable(DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay));
         linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }
 
@@ -106,7 +113,13 @@ public class VariableInfoImpl implements VariableInfo {
         this.readId = Objects.requireNonNull(readId);
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         CausesOfDelay causesOfDelay = initialValue(location, variable);
-        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, causesOfDelay) : delayedValue);
+        int statementTime;
+        if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
+            statementTime = dve.statementTime;
+        } else {
+            statementTime = VariableInfoContainer.NOT_A_FIELD;
+        }
+        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay) : delayedValue);
         linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }
 
