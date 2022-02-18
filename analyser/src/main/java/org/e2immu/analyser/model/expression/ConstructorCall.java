@@ -116,6 +116,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
+        assert parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a constructor call with delayed arguments";
         this.constructor = constructor;
         this.anonymousClass = anonymousClass;
         this.arrayInitializer = arrayInitializer;
@@ -154,6 +155,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 .collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
             return this;
+        }
+        CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
+                .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (causesOfDelay.isDelayed()) {
+            return DelayedExpression.forNewObject(translatedType,
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new ConstructorCall(identifier,
                 constructor,
@@ -350,10 +357,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        ConstructorCall newObject = new ConstructorCall(identifier, constructor, parameterizedType,
-                diamond, reParamValues, anonymousClass, arrayInitializer);
+        Expression expression;
+        CausesOfDelay causesOfDelay = reParamValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (causesOfDelay.isDelayed()) {
+            expression = createDelayedValue(evaluationContext, causesOfDelay);
+        } else {
+            expression = new ConstructorCall(identifier, constructor, parameterizedType,
+                    diamond, reParamValues, anonymousClass, arrayInitializer);
+        }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams);
-        return builder.setExpression(newObject).build();
+        return builder.setExpression(expression).build();
     }
 
     @Override
@@ -376,7 +389,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, forwardEvaluationInfo, constructor, false, null);
-
+        CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (parameterDelays.isDelayed()) {
+            return delayedConstructorCall(evaluationContext, res.k, parameterDelays);
+        }
 
         // check state changes of companion methods
         Expression instance;
@@ -408,6 +424,15 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();
+    }
+
+    private EvaluationResult delayedConstructorCall(EvaluationContext evaluationContext,
+                                                    EvaluationResult.Builder builder,
+                                                    CausesOfDelay causesOfDelay) {
+        assert causesOfDelay.isDelayed();
+        builder.setExpression(createDelayedValue(evaluationContext, causesOfDelay));
+        // set scope delay
+        return builder.build();
     }
 
     @Override

@@ -66,6 +66,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         super(identifier, methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
+        assert parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
         this.objectIsImplicit = objectIsImplicit;
     }
 
@@ -86,6 +87,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 parameterExpressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedMethod == methodInfo && translatedObject == object && translatedParameters == parameterExpressions) {
             return this;
+        }
+        CausesOfDelay causesOfDelay = translatedParameters.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
+                .merge(translatedObject.causesOfDelay());
+        if(causesOfDelay.isDelayed()) {
+            return DelayedExpression.forMethod(translatedMethod, translatedMethod.returnType(),
+                    LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new MethodCall(identifier,
                 objectIsImplicit,

@@ -54,16 +54,17 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
             EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
-            String expectedLv = d.iteration() == 0 ? "list:-1" : "list:2";
+            String expectedLv = d.iteration() <= 1 ? "list:-1" : "list:2";
             assertEquals(expectedLv, ci.linkedVariables().toString());
         }
         if ("getListC2".equals(d.methodInfo().name)) {
             EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
-            assertEquals("this.list:3", cd.linkedVariables().toString());
+            String expected = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+            assertEquals(expected, cd.linkedVariables().toString());
         }
         if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
             EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
-            String expectedLv = d.iteration() == 0 ? "list:-1" : "list:3";
+            String expectedLv = d.iteration() <= 1 ? "list:-1" : "list:3";
             assertEquals(expectedLv, ci.linkedVariables().toString());
         }
     };
@@ -99,8 +100,10 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             }
             if ("getListC2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("new ArrayList<>(list)", d.currentValue().toString());
-                    assertEquals("return getListC2:0,this.list:3",
+                    String expected = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
+                    assertEquals(expected, d.currentValue().toString());
+                    String expectedLv = d.iteration() == 0 ? "return getListC2:0,this.list:-1" : "return getListC2:0,this.list:3";
+                    assertEquals(expectedLv,
                             d.variableInfo().getLinkedVariables().toString());
                 }
             }

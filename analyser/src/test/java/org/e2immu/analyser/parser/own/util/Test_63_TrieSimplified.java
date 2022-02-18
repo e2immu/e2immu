@@ -41,7 +41,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         // null ptr warning
-        testClass("TrieSimplified_0", 0, 1, new DebugConfiguration.Builder()
+        testClass("TrieSimplified_0", 5, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

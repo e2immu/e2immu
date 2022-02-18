@@ -41,8 +41,9 @@ public record Merge(EvaluationContext evaluationContext,
 
     public record ExpressionAndProperties(Expression expression, Properties valueProperties) {
         public ExpressionAndProperties {
-            assert expression.isDelayed() ||
-                    EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> valueProperties.get(p).isDone());
+            assert expression.isDelayed() || expression.isNotYetAssigned() ||
+                    EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> valueProperties.get(p).isDone()) :
+                    "Value properties are delayed for expression " + expression;
         }
     }
 

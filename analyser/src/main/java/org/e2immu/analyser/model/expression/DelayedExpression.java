@@ -177,6 +177,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         // result is an int, so no linked variables
     }
 
+    public static Expression forConstructorCall(ParameterizedType parameterizedType,
+                                                LinkedVariables delayedLinkedVariables, CausesOfDelay causesOfDelay) {
+        String msg = brackets("cc:" + parameterizedType.typeInfo.simpleName);
+        return new DelayedExpression(msg, parameterizedType, delayedLinkedVariables, causesOfDelay);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

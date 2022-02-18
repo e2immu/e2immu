@@ -77,7 +77,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "container@Class_C1;immutable@Class_C1;independent@Class_C1";
+                            case 0 -> "initial:this.s2@Method_example1_0";
                             case 1 -> "cm@Parameter_setC;container@Class_C1;initial@Field_set;mom@Parameter_setC";
                             case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;container@Class_C1;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2;mom@Parameter_setC";
                             default -> "container@Class_C1;mom@Parameter_setC";
@@ -85,7 +85,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
-                            case 0 -> "assign_to_field@Parameter_setC;immutable@Class_C1";
+                            case 0 -> "assign_to_field@Parameter_setC;immutable@Class_C1;initial:this.s2@Method_example1_0";
                             case 1 -> "initial@Field_set";
                             default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
                         };
@@ -99,7 +99,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                         // delays in iteration 1, because no value yet
                         String expectedDelay = d.iteration() == 0
-                                ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;immutable@Class_C1;link:this.s2@Method_example1_2"
+                                ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;immutable@Class_C1;initial:this.s2@Method_example1_0;link:this.s2@Method_example1_2"
                                 : "cm:c.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
                         assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -143,7 +143,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 String expectedDelay = d.iteration() == 0
-                        ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;immutable@Class_C1;link:this.s2@Method_example1_2"
+                        ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;immutable@Class_C1;initial:this.s2@Method_example1_0;link:this.s2@Method_example1_2"
                         : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
                 assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }

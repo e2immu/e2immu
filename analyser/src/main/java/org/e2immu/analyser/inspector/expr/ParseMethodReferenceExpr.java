@@ -84,8 +84,10 @@ public class ParseMethodReferenceExpr {
             for (int i = 0; i < singleAbstractMethod.methodInspection.getParameters().size(); i++) {
                 final int index = i;
                 ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
-                LOGGER.debug("Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
-                        methodCandidates.size(), concreteType.detailedString(), i);
+                if(LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
+                            methodCandidates.size(), concreteType.detailedString(expressionContext.typeContext()), i);
+                }
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
                     ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(typeContext, mc, index, scopeIsAType, constructor);

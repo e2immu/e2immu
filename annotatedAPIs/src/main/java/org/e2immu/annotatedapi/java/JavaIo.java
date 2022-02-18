@@ -16,6 +16,9 @@ package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.*;
 
+import java.io.OutputStream;
+import java.io.Writer;
+
 public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
 
@@ -146,5 +149,15 @@ public class JavaIo {
 
         @Modified
         void write(@Independent char[] cbuf, int off, int len);
+    }
+
+    interface Reader$ {
+        @Modified
+        long transferTo(@Modified Writer out);
+    }
+
+    interface InputStream$ {
+        @Modified
+        long transferTo(@Modified OutputStream out);
     }
 }

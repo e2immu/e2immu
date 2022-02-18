@@ -979,7 +979,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
                 Expression bestValue;
-                if (best.getValue().isDelayed()) {
+                Properties bestProperties = best.valueProperties();
+                if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
                     bestValue = new DelayedVariableOutOfScope(identifier,
                             toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
                 } else {
@@ -989,7 +990,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     // NOTE: Instance is based on identifier and type
                     TranslationMapImpl.Builder selfRefBuilder = new TranslationMapImpl.Builder();
                     Expression instance = Instance.forMerge(identifier, best.variable().parameterizedType(),
-                            Properties.of(best.getProperties()));
+                            bestProperties);
                     selfRefBuilder.addVariableExpression(best.variable(), instance);
                     bestValue = best.getValue().translate(selfRefBuilder.build());
                 }

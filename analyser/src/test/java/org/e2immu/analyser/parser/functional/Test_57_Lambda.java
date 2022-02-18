@@ -300,7 +300,8 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("assigning".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("t.length()", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
+                        assertEquals(expected, d.currentValue().toString());
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

@@ -57,7 +57,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    assertCurrentValue(d, 1,  "nullable instance type Map<String,ChangeData>");
+                    assertCurrentValue(d, 1, "nullable instance type Map<String,ChangeData>");
                     assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                 }
             }
@@ -132,10 +132,11 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, "cm@Parameter_setP;mom@Parameter_setP", 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String delayed = d.iteration() == 0 ? "cm:this.setP@Method_copy_2;initial:this.setP@Method_copy_0;link:this.setP@Method_copy_2" : "mom@Parameter_setP";
+                        assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -163,13 +164,13 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("ParameterAnalysis".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                String delayed = d.iteration() == 0 ? "mom@Parameter_setP" : "break_mom_delay@Parameter_setP;cm@Parameter_setP;mom@Parameter_setP";
-                assertDv(d.p(0), delayed, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                String delayed = d.iteration() <= 1 ? "mom@Parameter_setP" : "break_mom_delay@Parameter_setP;mom@Parameter_setP";
+                assertDv(d.p(0), delayed, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("setP".equals(d.fieldInfo().name)) {
-                assertDv(d, "cm@Parameter_setP;mom@Parameter_setP", 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
