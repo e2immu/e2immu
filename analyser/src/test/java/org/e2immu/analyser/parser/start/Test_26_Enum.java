@@ -267,7 +267,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
+                        case 0 -> "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
                         case 1, 2 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<array-access:Enum_3>/*{L array:not_involved:0,array[i]:assigned:1}*/";
                         case 3, 4 -> "array.length>instance type int?instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/:instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/";
                         default -> throw new UnsupportedOperationException();

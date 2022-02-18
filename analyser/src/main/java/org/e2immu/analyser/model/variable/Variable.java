@@ -14,9 +14,11 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -87,8 +89,10 @@ public interface Variable extends OneVariable {
         return VariableNature.METHOD_WIDE;
     }
 
-    // normal equals, except that for field references, we match on fieldInfo, ignoring the scope
-    default boolean specialEquals(Variable variable) {
-        return equals(variable);
+    default int statementTime() {
+        if (variable() instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
+            return dve.statementTime;
+        }
+        return VariableInfoContainer.NOT_A_FIELD;
     }
 }

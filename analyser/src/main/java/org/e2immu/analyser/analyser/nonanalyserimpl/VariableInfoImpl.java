@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_RELEVANT;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -60,25 +61,28 @@ public class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     public VariableInfoImpl(Variable variable) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
+        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null,
+                VariableInfoContainer.NOT_RELEVANT);
     }
 
     // used for returning delayed values
-    public VariableInfoImpl(Location location, Variable variable) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
+    public VariableInfoImpl(Location location, Variable variable, int statementTime) {
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null, statementTime);
         assert location != Location.NOT_YET_SET;
     }
 
     // used to break initialisation delay
     public VariableInfoImpl(Location location, Variable variable, Expression value) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
+                VariableInfoContainer.NOT_RELEVANT);
         assert location != Location.NOT_YET_SET;
     }
 
     // used as a temp in MergeHelper; make sure that this one is not used to generate VI objects for inclusion
     // in DelayedWrappedExpression: they need to be the original ones that will be updated in subsequent iterations
     public VariableInfoImpl(Variable variable, Expression value, Properties properties) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
+        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
+                NOT_RELEVANT);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
 
@@ -106,19 +110,14 @@ public class VariableInfoImpl implements VariableInfo {
                      AssignmentIds assignmentIds,
                      String readId,
                      Set<Integer> readAtStatementTimes,
-                     Expression delayedValue) {
+                     Expression delayedValue,
+                     int statementTime) {
         this.location = Objects.requireNonNull(location);
         this.variable = Objects.requireNonNull(variable);
         this.assignmentIds = Objects.requireNonNull(assignmentIds);
         this.readId = Objects.requireNonNull(readId);
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         CausesOfDelay causesOfDelay = initialValue(location, variable);
-        int statementTime;
-        if (variable instanceof FieldReference fr && fr.scope instanceof DelayedVariableExpression dve) {
-            statementTime = dve.statementTime;
-        } else {
-            statementTime = VariableInfoContainer.NOT_A_FIELD;
-        }
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay) : delayedValue);
         linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }

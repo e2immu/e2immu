@@ -42,6 +42,7 @@ public interface VariableInfoContainer {
     int NOT_A_FIELD = -1;
     int NOT_A_VARIABLE_FIELD = -2;
     int IN_FIELD_ANALYSER = -3;
+    int NOT_RELEVANT = -4;
 
     // prefixes in assignment id
     // see TestLevelSuffixes to visually understand the order

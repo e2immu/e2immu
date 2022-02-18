@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -377,6 +378,18 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     public void test_5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
+                if ("s".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals("<vl:s>", d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    }
+                    if ("1.0.1.0.2".equals(d.statementId())) {
+                        assertEquals("<vl:s>", d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
                 if ("node".equals(d.variableName())) {
                     DV cnn = d.getProperty(Property.CONTEXT_NOT_NULL);
                     if ("1.0.1.0.0".equals(d.statementId())) {
@@ -407,9 +420,23 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
             }
         };
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("1.0.1".equals(d.statementId())) {
+                    String expected = d.iteration() <= 1 ? "null==<f:map>" : "null==node.map";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("1.0.2".equals(d.statementId())) {
+                    assertEquals("null==<f:map>?<new:TrieNode<T>>:null==<m:get>?<new:TrieNode<T>>:<m:get>", d.evaluationResult().value().toString());
+                }
+            }
+        };
         // 2x potential null pointer warning, seems correct
         testClass("TrieSimplified_5", 3, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build());
+                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .build(),
+                // IMPORTANT: assignment outside of type, so to placate the analyser...
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

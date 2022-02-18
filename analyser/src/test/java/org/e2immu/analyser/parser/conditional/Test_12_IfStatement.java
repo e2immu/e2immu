@@ -326,7 +326,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>?<v:min>><m:size>?<m:size>:<f:MAX_VALUE>:<f:MAX_VALUE>)";
+                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<f:MAX_VALUE>)";
                             case 1 -> "8+(fromTypeBounds$4.0.3.0.0.isEmpty()||targetTypeBounds$4.0.3.isEmpty()?2147483647:min$4.0.3.0.0><m:size>?<m:size>:<f:MAX_VALUE>)";
                             default -> "8+(fromTypeBounds$4.0.3.0.0.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3.0.0?2147483647:instance type ParameterizedType.typeInfo.length())";
                         };

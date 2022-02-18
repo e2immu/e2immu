@@ -415,7 +415,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             assert !(variable instanceof ParameterInfo) :
                     "Parameter " + variable.fullyQualifiedName() + " should be known in " + methodInfo().fullyQualifiedName
                             + ", statement " + statementAnalysis.index();
-            return new VariableInfoImpl(getLocation(), variable); // no value, no state; will be created by a MarkRead
+            return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime()); // no value, no state; will be created by a MarkRead
         }
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
@@ -429,7 +429,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValuesYet(fieldAnalysis)) {
                         VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
                         if (breakDelay != null) return breakDelay;
-                        return new VariableInfoImpl(getLocation(), variable);
+                        return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime());
                     }
                 }
                 // we still could have a delay to be broken (See e.g. E2Immutable_1)
@@ -446,7 +446,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
                 if (!relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    return new VariableInfoImpl(getLocation(), variable); // no value, no state
+                    return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime()); // no value, no state
                 }
             }
         } // else we need to go to the variable itself

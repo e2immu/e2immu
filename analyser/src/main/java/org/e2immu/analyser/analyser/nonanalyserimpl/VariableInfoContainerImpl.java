@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -90,7 +91,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(previous);
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
-                NOT_YET_READ, Set.of(), newValue);
+                NOT_YET_READ, Set.of(), newValue, outside.variable().statementTime());
         initial.newVariable(false);
         initial.setValue(newValue);
         initial.setLinkedVariables(outside.getLinkedVariables());
@@ -116,7 +117,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         VariableNature variableNature,
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED, NOT_YET_READ,
-                Set.of(), null);
+                Set.of(), null, variable.statementTime());
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableNature, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -132,7 +133,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              Instance value,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Level.INITIAL),
-                index + Level.EVALUATION, Set.of(), null);
+                index + Level.EVALUATION, Set.of(), null, NOT_A_FIELD);
         initial.newVariable(true);
         initial.setValue(value);
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
@@ -291,7 +292,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
              */
 
             VariableInfoImpl eval = new VariableInfoImpl(location, pi.variable(), assignmentIds, readId,
-                    readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue());
+                    readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue(), pi.variable().statementTime());
             evaluation.set(eval);
             if (!pi.valueIsSet()) {
                 eval.setValue(pi.getValue());
@@ -357,7 +358,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl prepareForWritingContextProperties(Location location, VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
-                vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
+                vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue(),
+                vi1.variable().statementTime());
         write.setValue(vi1.getValue());
         write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))

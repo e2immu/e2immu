@@ -136,15 +136,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public boolean specialEquals(Variable variable) {
-        if (this == variable) return true;
-        if (variable instanceof FieldReference fr) {
-            return fieldInfo.equals(fr.fieldInfo);
-        }
-        return false;
-    }
-
-    @Override
     public int hashCode() {
         return hashCode;
     }
