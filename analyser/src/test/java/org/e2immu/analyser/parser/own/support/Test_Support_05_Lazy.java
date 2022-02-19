@@ -151,7 +151,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = d.iteration() == 0
-                    ? "initial:this.supplier@Method_get_1;initial:this.t@Method_get_2;values:this.t@Field_t"
+                    ? "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t"
                     : "null,nullable instance type T/*@NotNull*/";
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             assertEquals(d.iteration() > 0, d.fieldAnalysis().valuesDelayed().isDone());

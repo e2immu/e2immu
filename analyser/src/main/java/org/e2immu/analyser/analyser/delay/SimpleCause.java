@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
+import java.util.Objects;
+
 public class SimpleCause implements CauseOfDelay {
     private final Location location;
     private final CauseOfDelay.Cause cause;
@@ -31,6 +33,19 @@ public class SimpleCause implements CauseOfDelay {
 
     public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
         this(withInspectionAndAnalysis.newLocation(), cause);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SimpleCause that = (SimpleCause) o;
+        return location.equals(that.location) && cause == that.cause;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(location, cause);
     }
 
     @Override

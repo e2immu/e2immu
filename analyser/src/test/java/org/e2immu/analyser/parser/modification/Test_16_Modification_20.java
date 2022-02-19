@@ -59,9 +59,10 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "assign_to_field@Parameter_setC;cm:this@Method_example1_0;immutable@Class_C1;initial:this.s2@Method_example1_0;link:this.s2@Method_example1_0";
-                            case 1 -> "cm:this@Method_example1_0;initial@Field_set;link:this.s2@Method_example1_0";
-                            default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this@Method_example1_0;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_0;link:this.s2@Method_example1_2";
+                            case 0 -> "assign_to_field@Parameter_setC;cm:this@Method_example1_0-E;immutable@Class_C1;initial:this.s2@Method_example1_0-C;link:this.s2@Method_example1_0-E";
+                            case 1 -> "cm:this@Method_example1_0-E;initial@Field_set;link:this.s2@Method_example1_0-E";
+                            case 2, 3, 4 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:this@Method_example1_0-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_0-E;link:this.s2@Method_example1_2-E";
+                            default -> fail();
                         };
                         assertDv(d, expectedDelay, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -142,12 +143,12 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build(),
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

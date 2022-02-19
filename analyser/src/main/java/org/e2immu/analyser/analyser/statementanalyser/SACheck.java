@@ -184,10 +184,11 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                     .forEach(e -> {
                         String loopVarFqn = e.getKey();
                         StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
-                        StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
-                        if (statementAnalysis == null || !statementAnalysis.variableIsSet(loopVarFqn) ||
-                                !statementAnalysis.getVariable(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.EVALUATION),
+                        StatementAnalysis firstAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
+                        if (firstAnalysis == null || !firstAnalysis.variableIsSet(loopVarFqn) ||
+                                !firstAnalysis.getVariable(loopVarFqn).current().isRead()) {
+                            Location location = statementAnalysis.location(Stage.EVALUATION);
+                            this.statementAnalysis.ensure(Message.newMessage(location,
                                     Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });

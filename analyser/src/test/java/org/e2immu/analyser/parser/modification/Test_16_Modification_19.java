@@ -77,17 +77,17 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "initial:this.s2@Method_example1_0";
+                            case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "cm@Parameter_setC;container@Class_C1;initial@Field_set;mom@Parameter_setC";
-                            case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;container@Class_C1;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2;mom@Parameter_setC";
+                            case 2 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;container@Class_C1;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_2-E;mom@Parameter_setC";
                             default -> "container@Class_C1;mom@Parameter_setC";
                         };
                         assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
-                            case 0 -> "assign_to_field@Parameter_setC;immutable@Class_C1;initial:this.s2@Method_example1_0";
+                            case 0 -> "assign_to_field@Parameter_setC;immutable@Class_C1;initial:this.s2@Method_example1_0-C";
                             case 1 -> "initial@Field_set";
-                            default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
+                            default -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_2-E";
                         };
                         assertLinked(d, 3, linkDelay, "c:0,this.s2:2");
                     }
@@ -99,8 +99,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                         // delays in iteration 1, because no value yet
                         String expectedDelay = d.iteration() == 0
-                                ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;immutable@Class_C1;initial:this.s2@Method_example1_0;link:this.s2@Method_example1_2"
-                                : "cm:c.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
+                                ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2-E;immutable@Class_C1;initial:this.s2@Method_example1_0-C;link:this.s2@Method_example1_2-E"
+                                : "cm:c.set@Method_example1_2-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_2-E";
                         assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -143,8 +143,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 String expectedDelay = d.iteration() == 0
-                        ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;immutable@Class_C1;initial:this.s2@Method_example1_0;link:this.s2@Method_example1_2"
-                        : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
+                        ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;immutable@Class_C1;initial:this.s2@Method_example1_0-C;link:this.s2@Method_example1_2-E"
+                        : "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_2-E";
                 assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
@@ -154,7 +154,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
                 String expectedDelay = d.iteration() == 0
                         ? "initial@Field_set"
-                        : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_2";
+                        : "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_2-E";
                 assertDv(d, expectedDelay, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
                 String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;container@Class_C1;mom@Parameter_setC"

@@ -236,6 +236,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         int iteration = 0;
         AnalysisStatus analysisStatus;
 
+        int MAX_ITERATION = 20;
         do {
             LOGGER.debug("\n******\nStarting iteration {} of the primary type analyser on {}\n******",
                     iteration, name);
@@ -253,7 +254,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
-        } while (analysisStatus.isProgress());
+        } while (analysisStatus.isProgress() && iteration < MAX_ITERATION);
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
             if (LOGGER.isDebugEnabled()) {

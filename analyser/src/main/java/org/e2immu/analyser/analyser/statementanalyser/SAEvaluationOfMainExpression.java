@@ -58,13 +58,25 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private String index() {
         return statementAnalysis.index();
     }
+
     /*
     We cannot yet set Linked1Variables in VIC.copy(), because the dependency graph is involved so
     "notReadInThisStatement" is not accurate. But unless an actual "delay" is set, there really is
     no involvement.
      */
-
     AnalysisStatus evaluationOfMainExpression(StatementAnalyserSharedState sharedState) {
+        try {
+            CausesOfDelay merged = evaluationOfMainExpression0(sharedState);
+            boolean progress = statementAnalysis.latestDelay(merged);
+            return AnalysisStatus.of(merged).addProgress(progress);
+        } catch (Throwable rte) {
+            LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
+            throw rte;
+        }
+
+    }
+
+    private CausesOfDelay evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate =
                 new SAInitializersAndUpdaters(statementAnalysis)
                         .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
@@ -73,7 +85,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!
          */
-        AnalysisStatus analysisStatus = AnalysisStatus.of(causes);
 
         Structure structure = statementAnalysis.statement().getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
@@ -86,7 +97,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
             if (statementAnalysis.statement() instanceof BreakStatement breakStatement) {
                 if (statementAnalysis.parent().statement() instanceof SwitchStatementOldStyle) {
-                    return analysisStatus;
+                    return causes;
                 }
                 StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
                 Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), correspondingLoop.steps());
@@ -99,114 +110,110 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
             } else if (statement() instanceof LocalClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
-                return apply.apply(sharedState, builder.build()).combinedStatus();
+                return apply.apply(sharedState, builder.build()).combinedStatus().causesOfDelay();
             } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 // empty parameters: this(); or super();
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
                 if (!assignments.isBooleanConstant()) {
                     EvaluationResult result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+                    // FIXME clean up, AnalysisStatus -> Causes
                     AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
-                    return applyResult.combine(analysisStatus);
+                    return applyResult.causesOfDelay().merge(causes);
                 }
             }
-            return analysisStatus;
+            return causes;
         }
 
-        try {
-            if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
-                List<Assignment> patterns = new SAPatternVariable(statementAnalysis)
-                        .patternVariables(sharedState.evaluationContext(), structure.expression());
-                expressionsFromInitAndUpdate.addAll(patterns);
-                expressionsFromInitAndUpdate.add(structure.expression());
-            }
-            // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
-            Expression toEvaluate = expressionsFromInitAndUpdate.size() == 1 ? expressionsFromInitAndUpdate.get(0) :
-                    new CommaExpression(expressionsFromInitAndUpdate);
-            EvaluationResult result;
-            if (statementAnalysis.statement() instanceof ReturnStatement) {
-                assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
-                result = createAndEvaluateReturnStatement(sharedState);
-            } else {
-                result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
-            }
-            if (statementAnalysis.statement() instanceof LoopStatement) {
-                Range range = statementAnalysis.rangeData().getRange();
-                if (range.isDelayed()) {
-                    statementAnalysis.rangeData().computeRange(statementAnalysis, result);
-                    statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
-                }
-            }
-            if (statementAnalysis.statement() instanceof ThrowStatement) {
-                if (methodInfo().hasReturnValue()) {
-                    result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
-                }
-            }
-            if (statementAnalysis.statement() instanceof AssertStatement) {
-                result = handleNotNullClausesInAssertStatement(sharedState.evaluationContext(), result);
-            }
-            if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
-                statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
-            }
-            ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
 
-            // post-process
-
-            AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status().merge(analysisStatus.causesOfDelay()));
-            CausesOfDelay ennStatus = applyResult.ennStatus();
-
-            if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
-                Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
-                if (!assignments.isBooleanConstant()) {
-                    LOGGER.debug("Assignment expressions: {}", assignments);
-                    result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
-                    ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result);
-                    statusPost = assignmentResult.status().merge(analysisStatus.causesOfDelay());
-                    ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
-                }
-            }
-            if (ennStatus.isDelayed()) {
-                LOGGER.debug("Delaying statement {} in {} because of external not null/external immutable: {}",
-                        index(), methodInfo().fullyQualifiedName, ennStatus);
-            }
-
-            Expression value = result.value();
-            assert value != null; // EmptyExpression in case there really is no value
-            boolean valueIsDelayed = value.isDelayed() || statusPost != DONE;
-
-            CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
-            if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
-                    statementAnalysis.statement() instanceof AssertStatement)) {
-                value = eval_IfElse_Assert(sharedState, value);
-                if (value.isDelayed()) {
-                    // for example, an if(...) inside a loop, when the loop's range is being computed
-                    stateForLoop = value.causesOfDelay();
-                }
-            } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
-                eval_Switch(sharedState, value, switchStatement);
-            } else if (statementAnalysis.statement() instanceof ReturnStatement) {
-                stateForLoop = addLoopReturnStatesToState(sharedState);
-                Expression condition = sharedState.localConditionManager().condition();
-                StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
-                if (correspondingLoop != null &&
-                        correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
-                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
-                }
-            } else if (statement() instanceof ThrowStatement) {
-                value = noReturnValue();
-                // but, see also code above that changes the return variable's value; See SwitchExpression_4
-            }
-
-            // the value can be delayed even if it is "true", for example (Basics_3)
-            // see Precondition_3 for an example where different values arise, because preconditions kick in
-            boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
-            statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
-
-            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop))
-                    .addProgress(applyResult.progress());
-        } catch (Throwable rte) {
-            LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
-            throw rte;
+        if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
+            List<Assignment> patterns = new SAPatternVariable(statementAnalysis)
+                    .patternVariables(sharedState.evaluationContext(), structure.expression());
+            expressionsFromInitAndUpdate.addAll(patterns);
+            expressionsFromInitAndUpdate.add(structure.expression());
         }
+        // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
+        Expression toEvaluate = expressionsFromInitAndUpdate.size() == 1 ? expressionsFromInitAndUpdate.get(0) :
+                new CommaExpression(expressionsFromInitAndUpdate);
+        EvaluationResult result;
+        if (statementAnalysis.statement() instanceof ReturnStatement) {
+            assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
+            result = createAndEvaluateReturnStatement(sharedState);
+        } else {
+            result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+        }
+        if (statementAnalysis.statement() instanceof LoopStatement) {
+            Range range = statementAnalysis.rangeData().getRange();
+            if (range.isDelayed()) {
+                statementAnalysis.rangeData().computeRange(statementAnalysis, result);
+                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
+            }
+        }
+        if (statementAnalysis.statement() instanceof ThrowStatement) {
+            if (methodInfo().hasReturnValue()) {
+                result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
+            }
+        }
+        if (statementAnalysis.statement() instanceof AssertStatement) {
+            result = handleNotNullClausesInAssertStatement(sharedState.evaluationContext(), result);
+        }
+        if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
+            statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
+        }
+        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
+
+        // post-process
+
+        AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status().merge(causes));
+        CausesOfDelay ennStatus = applyResult.ennStatus();
+
+        if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
+            Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
+            if (!assignments.isBooleanConstant()) {
+                LOGGER.debug("Assignment expressions: {}", assignments);
+                result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result);
+                statusPost = assignmentResult.status().merge(causes);
+                ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
+            }
+        }
+        if (ennStatus.isDelayed()) {
+            LOGGER.debug("Delaying statement {} in {} because of external not null/external immutable: {}",
+                    index(), methodInfo().fullyQualifiedName, ennStatus);
+        }
+
+        Expression value = result.value();
+        assert value != null; // EmptyExpression in case there really is no value
+        boolean valueIsDelayed = value.isDelayed() || statusPost != DONE;
+
+        CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
+        if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
+                statementAnalysis.statement() instanceof AssertStatement)) {
+            value = eval_IfElse_Assert(sharedState, value);
+            if (value.isDelayed()) {
+                // for example, an if(...) inside a loop, when the loop's range is being computed
+                stateForLoop = value.causesOfDelay();
+            }
+        } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
+            eval_Switch(sharedState, value, switchStatement);
+        } else if (statementAnalysis.statement() instanceof ReturnStatement) {
+            stateForLoop = addLoopReturnStatesToState(sharedState);
+            Expression condition = sharedState.localConditionManager().condition();
+            StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
+            if (correspondingLoop != null &&
+                    correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
+            }
+        } else if (statement() instanceof ThrowStatement) {
+            value = noReturnValue();
+            // but, see also code above that changes the return variable's value; See SwitchExpression_4
+        }
+
+        // the value can be delayed even if it is "true", for example (Basics_3)
+        // see Precondition_3 for an example where different values arise, because preconditions kick in
+        boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
+        statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
+
+        return ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop);
     }
 
     private Expression noReturnValue() {

@@ -117,7 +117,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0",
+                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0-E",
                                 d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {
@@ -130,7 +130,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0",
+                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0-E",
                                 d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {

@@ -78,7 +78,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private final Map<Variable, DV> variablesModifiedBySubAnalysers = new HashMap<>(); // TODO protect
 
     // a variable that changes from iteration to iteration... should be moved out at some point
-    private CausesOfDelay applyCausesOfDelay;
+    private Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
 
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
@@ -2096,8 +2096,13 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
     // it halts if we cannot progress if we encounter any of the earlier delays (so don't keep a set of delays)
     @Override
     public boolean latestDelay(CausesOfDelay delay) {
-        boolean different = !delay.equals(applyCausesOfDelay);
-        applyCausesOfDelay = delay;
-        return different;
+        int count = applyCausesOfDelay.merge(delay, 1, Integer::sum);
+        if (count > 10) {
+            LOGGER.error("Delay map:");
+            applyCausesOfDelay.forEach((k, v) -> LOGGER.error("{}: {}", k, v));
+            throw new NoProgressException("Interrupting at statement " + index + " in method " + methodAnalysis.getMethodInfo().fullyQualifiedName);
+        }
+        // new d
+        return count <= 2;
     }
 }

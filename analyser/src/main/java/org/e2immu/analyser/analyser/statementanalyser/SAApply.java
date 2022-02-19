@@ -506,8 +506,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont).merge(extIgnMod).merge(anyExtIgnMod);
 
-        boolean progress = statementAnalysis.latestDelay(delay);
-        return new ApplyStatusAndEnnStatus(delay, externalDelay, progress);
+        return new ApplyStatusAndEnnStatus(delay, externalDelay);
     }
 
     // filter out inline conditional on throws statements, when the state becomes "false"

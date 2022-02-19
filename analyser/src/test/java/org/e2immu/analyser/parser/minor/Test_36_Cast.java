@@ -86,7 +86,7 @@ public class Test_36_Cast extends CommonTestRunner {
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0
-                        ? "<vp:t:cnn:this.t@Method_getTAsString_0;identity:this.t@Method_getTAsString_0;ignore_mods:this.t@Method_getTAsString_0;not_null:this.t@Method_getTAsString_0>/*(String)*/"
+                        ? "<vp:t:cnn:this.t@Method_getTAsString_0-C;identity:this.t@Method_getTAsString_0-C;ignore_mods:this.t@Method_getTAsString_0-C;not_null:this.t@Method_getTAsString_0-C>/*(String)*/"
                         : "t/*(String)*/";
                 assertEquals(expected, d.currentValue().toString());
                 if (d.iteration() > 0) {
@@ -96,7 +96,7 @@ public class Test_36_Cast extends CommonTestRunner {
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = switch (d.iteration()) {
-                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0;container@Class_Counter;identity:this.t@Method_getTAsCounter_0;ignore_mods:this.t@Method_getTAsCounter_0;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0>/*(Counter)*/";
+                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0-C;container@Class_Counter;identity:this.t@Method_getTAsCounter_0-C;ignore_mods:this.t@Method_getTAsCounter_0-C;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0-C>/*(Counter)*/";
                     case 1 -> "<vp:t:final@Field_i>/*(Counter)*/";
                     default -> "t/*(Counter)*/";
                 };

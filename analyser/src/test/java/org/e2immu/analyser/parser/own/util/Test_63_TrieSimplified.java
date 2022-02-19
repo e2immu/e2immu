@@ -322,7 +322,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertLinked(d, 1,
-                                "immutable@Class_TrieNode;initial:this.root@Method_add_0",
+                                "immutable@Class_TrieNode;initial:this.root@Method_add_0-C",
                                 "node:0,return add:0,this.root:0");
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -341,7 +341,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() <= 2 ? "node:0,return add:0,this.root:0" : "node:0,return add:0,this.root:1";
                         assertLinked(d, 1,
-                                "immutable@Class_TrieNode;initial:this.root@Method_add_0",
+                                "immutable@Class_TrieNode;initial:this.root@Method_add_0-C",
                                 expectLv);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

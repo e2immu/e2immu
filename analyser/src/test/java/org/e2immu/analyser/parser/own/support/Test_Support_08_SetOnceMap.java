@@ -76,7 +76,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0;link:e@Method_accept_0"
+                    String expected = d.iteration() <= 2 ? "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0-E;link:e@Method_accept_0-E"
                             : "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
                             .map(Object::toString).sorted().collect(Collectors.joining(",")));
@@ -115,10 +115,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 2 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectedDelay = d.iteration() == 0
-                                ? "assign_to_field@Parameter_k;assign_to_field@Parameter_k"
-                                : "assign_to_field@Parameter_k";
-                        assertLinked(d, 2, expectedDelay, "k:0");
+                        assertLinked(d, 2, "assign_to_field@Parameter_k", "k:0");
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
