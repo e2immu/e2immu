@@ -79,11 +79,11 @@ public interface EvaluationContext {
         return getCurrentStatement() != null;
     }
 
-    default Location getLocation() {
+    default Location getLocation(Stage level) {
         return null;
     }
 
-    default Location getLocation(Identifier identifier) {
+    default Location getEvaluationLocation(Identifier identifier) {
         return null;
     }
 
@@ -416,7 +416,7 @@ public interface EvaluationContext {
 
     default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
         if (hiddenContentTypes == null) return new HiddenContent(List.of(),
-                new SimpleSet(new SimpleCause(getLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT)));
+                new SimpleSet(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
         if (hiddenContentTypes.contains(concreteType)) {
             return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
         }

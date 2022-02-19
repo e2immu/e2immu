@@ -228,12 +228,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
         if (lastStatement != null) {
-            VariableInfo vi = lastStatement.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
+            VariableInfo vi = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
             if (vi != null) {
                 if (!vi.linkedVariablesIsSet()) {
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    return new SimpleSet(new VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
+                    return new SimpleSet(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE), CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
@@ -529,7 +529,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, FieldInfo fieldInfo) {
         VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo),
-                VariableInfoContainer.Level.MERGE);
+                Stage.MERGE);
         return vi != null && vi.isAssigned();
     }
 
@@ -623,7 +623,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
-                lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
+                lastStatementAnalysis.findOrNull(parameterInfo, Stage.MERGE);
         if (vi == null || !vi.isRead()) {
             boolean takeValueFromOverride;
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()

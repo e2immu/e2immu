@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
+import static org.e2immu.analyser.analyser.Stage.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -60,7 +60,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final StatementAnalysis parent;
     public final boolean inSyncBlock;
     public final MethodAnalysis methodAnalysis;
-    public final Location location;
 
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
@@ -95,7 +94,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
         stateData = new StateData(statement instanceof LoopStatement, primitives);
-        location = new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
+        Location location = new LocationImpl(methodAnalysis.getMethodInfo(), index + INITIAL, statement.getIdentifier());
         flowData = new FlowData(location);
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
@@ -391,7 +390,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public boolean containsMessage(Message.Label messageLabel) {
         return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
-                message.location().equals(location()));
+                message.location().equalsIgnoreStage(location(INITIAL)));
     }
 
     @Override
@@ -405,8 +404,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public Location location() {
-        return location;
+    public Location location(Stage stage) {
+        return new LocationImpl(methodAnalysis.getMethodInfo(), index + stage.label, statement.getIdentifier());
     }
 
     // ****************************************************************************************
@@ -489,7 +488,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         if (markCopyOfEnclosingMethod) {
             Expression newValue = vi.getValue().generify(evaluationContext);
-            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
+            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(INITIAL),
                     vic, navigationData.hasSubBlocks(), newValue);
         } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
@@ -740,7 +739,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for properties, which are incremental upon reading, we already copy into evaluation,
         because we don't have explicit code available
          */
-        VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
+        VariableInfo viEval = vic.best(Stage.EVALUATION);
         // not assigned in this statement
         if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.isEmpty() && !viEval.isRead()) {
@@ -1051,7 +1050,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     if (localAtLeastOneBlock &&
                             checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
                         assert variable == renamed : "Overwriting previous assignments doesn't go together with renames";
-                        ensure(Message.newMessage(location, Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
+                        ensure(Message.newMessage(location(MERGE), Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
                                 variable.simpleName()));
                     }
                 } catch (Throwable throwable) {
@@ -1315,7 +1314,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
 
-        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable,
+        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(INITIAL), variable,
                 variableNature, navigationData.hasSubBlocks());
         if (store) putVariable(variable.fullyQualifiedName(), vic);
 
@@ -1393,7 +1392,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
                 CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
                 if (causesOfDelay.isDelayed()) {
-                    arrayValue = DelayedVariableExpression.forVariable(dv,  flowData.getTimeAfterEvaluation(), causesOfDelay);
+                    arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
                 } else {
                     arrayValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayBase, dv);
                 }
@@ -1543,7 +1542,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else if (fieldAnalysis.getFieldInfo().owner.primaryType().equals(evaluationContext.getCurrentType().primaryType())) {
             Expression initializerValue = fieldAnalysis.getInitializerValue();
             if (initializerValue == null) {
-                immutable = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
+                immutable = new SimpleSet(location(INITIAL), CauseOfDelay.Cause.INITIAL_VALUE);
             } else {
                 ParameterizedType pt = initializerValue.returnType();
                 immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false);
@@ -1638,7 +1637,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public int statementTime(VariableInfoContainer.Level level) {
+    public int statementTime(Stage level) {
         return switch (level) {
             case INITIAL -> flowData.getInitialTime();
             case EVALUATION -> flowData.getTimeAfterEvaluation();
@@ -1707,7 +1706,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @return the most current variable info object, or null if the variable does not exist
      */
     @Override
-    public VariableInfo findOrNull(@NotNull Variable variable, VariableInfoContainer.Level level) {
+    public VariableInfo findOrNull(@NotNull Variable variable, Stage level) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
         if (vic == null) return null;
@@ -1782,7 +1781,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level) {
+    public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level) {
         return variables.stream()
                 .filter(e -> switch (level) {
                     case INITIAL -> throw new UnsupportedOperationException();
@@ -1840,7 +1839,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (localVariablesAssignedInThisLoop == null || localVariablesAssignedInThisLoop.isFrozen()) {
             return CausesOfDelay.EMPTY;
         }
-        return new SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED); // DELAY
+        return new SimpleSet(location(INITIAL), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED); // DELAY
     }
 
     @Override
@@ -1881,7 +1880,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      EvaluationContext evaluationContext) {
         LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
         VariableInfoContainer vic = findForWriting(loopVar);
-        vic.ensureEvaluation(location(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+        vic.ensureEvaluation(location(EVALUATION), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 Set.of());
         ParameterizedType parameterizedType = loopVar.parameterizedType();
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
@@ -1932,7 +1931,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
                     if (vi.valueIsSet() && externalNotNull.equals(MultiLevel.NULLABLE_DV)
                             && notNullExpression.equals(MultiLevel.NULLABLE_DV)) {
-                        ensure(Message.newMessage(location(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
+                        ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Variable: " + variable.simpleName()));
                     }
                 }
@@ -1950,10 +1949,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public void potentiallyRaiseNullPointerWarningENN() {
         candidateVariablesForNullPtrWarningStream().forEach(variable -> {
-            VariableInfo vi = findOrNull(variable, VariableInfoContainer.Level.MERGE);
+            VariableInfo vi = findOrNull(variable, Stage.MERGE);
             DV cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
             if (cnn.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-                ensure(Message.newMessage(location(), Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
+                ensure(Message.newMessage(location(EVALUATION), Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
                         "Variable: " + variable.fullyQualifiedName()));
             }
         });
@@ -1966,7 +1965,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (precondition != null) {
             Expression preconditionExpression = precondition.expression();
             if (preconditionExpression.isBoolValueFalse()) {
-                ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
+                ensure(Message.newMessage(location(EVALUATION), Message.Label.INCOMPATIBLE_PRECONDITION));
                 stateData().setPreconditionAllowEquals(Precondition.empty(primitives()));
             } else {
                 Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression());
@@ -1983,7 +1982,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 }
                 Expression result = localConditionManager.evaluate(evaluationContext, preconditionExpression);
                 if (result.isBoolValueFalse()) {
-                    ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
+                    ensure(Message.newMessage(location(EVALUATION), Message.Label.INCOMPATIBLE_PRECONDITION));
                 }
             }
         } else if (!stateData().preconditionIsFinal()) {
@@ -2027,7 +2026,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
 
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
 
-        vic.ensureEvaluation(location, assignmentIds, readId, changeData.readAtStatementTime());
+        vic.ensureEvaluation(location(EVALUATION), assignmentIds, readId, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) {
             vic.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV, EVALUATION);
         }

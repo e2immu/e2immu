@@ -74,7 +74,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
     public DV getPropertyFromMapDelayWhenAbsent(Property property) {
         DV v = properties.getOrDefaultNull(property);
-        if (v == null) return new SimpleSet(location(), property.causeOfDelay());
+        if (v == null) return new SimpleSet(location(Stage.INITIAL), property.causeOfDelay());
         return v;
     }
 
@@ -330,7 +330,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
             if (onlyMark == null) {
-                LOGGER.warn("No mark value on {}", location());
+                LOGGER.warn("No mark value on {}", location(Stage.INITIAL));
             } else {
                 writeEventual(onlyMark, false, isAfter, null);
             }

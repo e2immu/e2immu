@@ -50,7 +50,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
-    public Location location() {
+    public Location location(Stage stage) {
         return parameterInfo.newLocation();
     }
 
@@ -97,7 +97,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public Location location() {
+        public Location location(Stage stage) {
             return location;
         }
 

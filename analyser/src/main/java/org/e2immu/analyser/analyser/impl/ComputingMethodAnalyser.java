@@ -444,7 +444,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private StatementAnalysis statementBeforeAssignment(FieldReference fieldReference) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        VariableInfo vi = lastStatement.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
+        VariableInfo vi = lastStatement.findOrNull(fieldReference, Stage.MERGE);
         if (vi != null && vi.isAssigned()) {
             Matcher m = INDEX_PATTERN.matcher(vi.getAssignmentIds().getLatestAssignment());
             if (m.matches()) {

@@ -18,7 +18,17 @@ import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
-public record SimpleCause(Location location, CauseOfDelay.Cause cause) implements CauseOfDelay {
+public class SimpleCause implements CauseOfDelay {
+    private final Location location;
+    private final CauseOfDelay.Cause cause;
+    private final String withoutStatementIdentifier;
+
+    public SimpleCause(Location location, CauseOfDelay.Cause cause) {
+        this.cause = cause;
+        this.location = location;
+        this.withoutStatementIdentifier = cause.label + "@" + location.delayStringWithoutStatementIdentifier();
+    }
+
     public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
         this(withInspectionAndAnalysis.newLocation(), cause);
     }
@@ -26,5 +36,20 @@ public record SimpleCause(Location location, CauseOfDelay.Cause cause) implement
     @Override
     public String toString() {
         return cause.label + "@" + location.toDelayString();
+    }
+
+    @Override
+    public Cause cause() {
+        return cause;
+    }
+
+    @Override
+    public String withoutStatementIdentifier() {
+        return withoutStatementIdentifier;
+    }
+
+    @Override
+    public Location location() {
+        return location;
     }
 }

@@ -166,12 +166,12 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public Location getLocation() {
+        public Location getLocation(Stage level) {
             return companionMethod.newLocation();
         }
 
         @Override
-        public Location getLocation(Identifier identifier) {
+        public Location getEvaluationLocation(Identifier identifier) {
             return new LocationImpl(companionMethod, identifier);
         }
 
@@ -200,7 +200,8 @@ public class CompanionAnalyser {
                 if (remapping == null)
                     return DelayedVariableExpression.forParameter(parameterInfo,
                             new SimpleSet(
-                                    new VariableCause(variable, getLocation(), CauseOfDelay.Cause.REMAP_PARAMETER)));
+                                    new VariableCause(variable, getLocation(Stage.INITIAL),
+                                            CauseOfDelay.Cause.REMAP_PARAMETER)));
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);

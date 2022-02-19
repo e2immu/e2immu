@@ -56,27 +56,27 @@ In this case, the return variable is never linked to any other variable.
 public class ComputeLinkedVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinkedVariables.class);
 
-    private final VariableInfoContainer.Level level;
+    private final Stage stage;
     private final StatementAnalysis statementAnalysis;
     private final List<List<Variable>> clusters;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
-                                   VariableInfoContainer.Level level,
+                                   Stage stage,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph<Variable, DV> weightedGraph,
                                    List<List<Variable>> clusters,
                                    CausesOfDelay delaysInClustering) {
         this.clusters = clusters;
         this.delaysInClustering = delaysInClustering;
-        this.level = level;
+        this.stage = stage;
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
-                                                VariableInfoContainer.Level level,
+                                                Stage stage,
                                                 boolean staticallyAssigned,
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
@@ -87,7 +87,7 @@ public class ComputeLinkedVariables {
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> variables = new HashSet<>();
 
-        statementAnalysis.variableEntryStream(level).forEach(e -> {
+        statementAnalysis.variableEntryStream(stage).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
             Variable variable = vi1.variable();
@@ -127,7 +127,7 @@ public class ComputeLinkedVariables {
                 if (curated.isDelayed()) {
                     curated.variables().forEach((v, value) -> {
                         if (value.isDelayed()) {
-                            delaysInClustering.add(new VariableCause(v, statementAnalysis.location(), CauseOfDelay.Cause.LINKING));
+                            delaysInClustering.add(new VariableCause(v, statementAnalysis.location(stage), CauseOfDelay.Cause.LINKING));
                             value.causesOfDelay().causesStream().forEach(delaysInClustering::add);
                         }
                     });
@@ -139,7 +139,7 @@ public class ComputeLinkedVariables {
         List<List<Variable>> clusters = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV);
-        return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clusters,
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
                 SimpleSet.from(delaysInClustering));
     }
 
@@ -197,7 +197,7 @@ public class ComputeLinkedVariables {
                 c instanceof VariableCause vc && vc.variable().equals(variable))) {
             return propertyValue;
         }
-        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(),
+        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(stage),
                 CauseOfDelay.Cause.CONTEXT_MODIFIED));
         return delaysInClustering.causesOfDelay().merge(specificDelay);
     }
@@ -234,10 +234,10 @@ public class ComputeLinkedVariables {
             for (Variable variable : cluster) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
-                    VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
+                    VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                     if (vi.getProperty(property).isDelayed()) {
                         try {
-                            vic.setProperty(property, summary, level);
+                            vic.setProperty(property, summary, stage);
                         } catch (IllegalStateException ise) {
                             LOGGER.error("Current cluster: {}", cluster);
                             throw ise;
@@ -265,8 +265,8 @@ public class ComputeLinkedVariables {
                 Map<Variable, DV> map = weightedGraph.links(variable, true);
                 LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
-                vic.setLinkedVariables(linkedVariables, level);
+                vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+                vic.setLinkedVariables(linkedVariables, stage);
             }
         }
     }
@@ -276,7 +276,7 @@ public class ComputeLinkedVariables {
      * It touches all variables rather than those in clusters only.
      */
     public void writeLinkedVariables(Set<Variable> touched, Set<Variable> toRemove) {
-        assert level == VariableInfoContainer.Level.MERGE;
+        assert stage == Stage.MERGE;
         statementAnalysis.rawVariableStream()
                 .forEach(e -> {
                     VariableInfoContainer vic = e.getValue();
@@ -288,8 +288,8 @@ public class ComputeLinkedVariables {
 
                         LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                        vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), VariableInfoContainer.Level.MERGE);
-                        vic.setLinkedVariables(linkedVariables, level);
+                        vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
+                        vic.setLinkedVariables(linkedVariables, stage);
                     }
                 });
     }

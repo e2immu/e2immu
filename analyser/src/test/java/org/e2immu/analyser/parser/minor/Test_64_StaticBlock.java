@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.minor;
 
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -72,8 +72,8 @@ public class Test_64_StaticBlock extends CommonTestRunner {
 
                 // we're in a sync block, statement time does not increase: variable fields do not lose their value
                 assertTrue(d.statementAnalysis().inSyncBlock());
-                assertEquals(0, d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL));
-                assertEquals(0, d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION));
+                assertEquals(0, d.statementAnalysis().statementTime(Stage.INITIAL));
+                assertEquals(0, d.statementAnalysis().statementTime(Stage.EVALUATION));
             }
         };
 

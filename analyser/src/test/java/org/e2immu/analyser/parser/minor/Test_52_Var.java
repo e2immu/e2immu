@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -134,7 +134,7 @@ public class Test_52_Var extends CommonTestRunner {
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
-                            .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
+                            .best(Stage.EVALUATION).getValue().toString());
                     assertFalse(d.variableInfoContainer().hasMerge());
                 } else {
                     fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)

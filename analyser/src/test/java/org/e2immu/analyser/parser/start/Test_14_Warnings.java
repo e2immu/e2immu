@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -77,7 +78,7 @@ public class Test_14_Warnings extends CommonTestRunner {
     public void test1() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.start.testexample.Warnings_1";
         final String THIS = TYPE + ".this";
-        final String E = VariableInfoContainer.Level.EVALUATION.toString();
+        final String E = Stage.EVALUATION.toString();
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             AnalysisStatus analysisStatus = d.result().analysisStatus();

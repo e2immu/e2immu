@@ -415,7 +415,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (lastStatement == null) {
                     increment = false;
                 } else if (lastStatement.flowData().initialTimeNotYetSet()) {
-                    SimpleSet initialTime = new SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
+                    SimpleSet initialTime = new SimpleSet(methodAnalysis.location(Stage.INITIAL), CauseOfDelay.Cause.INITIAL_TIME);
                     return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
                 } else {
                     if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {

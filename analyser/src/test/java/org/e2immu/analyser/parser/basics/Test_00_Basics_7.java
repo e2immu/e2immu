@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -50,7 +50,6 @@ public class Test_00_Basics_7 extends CommonTestRunner {
     public void test7() throws IOException {
         final String I = "org.e2immu.analyser.parser.basics.testexample.Basics_7.i";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.parser.basics.testexample.Basics_7.increment3()";
-        final String I_DELAYED = "<f:i>";
         final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -64,7 +63,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId()) && d.iteration() > 0) {
-                String expected = d.iteration() == 1 ? "-1==<vp:i:[11 delays]>-<wrapped:i>" : "true";
+                String expected = d.iteration() == 1 ? "-1==<f:i>-<wrapped:i>" : "true";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -73,19 +72,19 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             if ("Basics_7".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        assertEquals("0.0.0" + Stage.EVALUATION, d.variableInfo().getReadId());
                         assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // READ IMPLICITLY via the variable 'i'
-                        assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        assertEquals("0.0.1" + Stage.EVALUATION, d.variableInfo().getReadId());
                         String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
+                        assertEquals("0" + Stage.MERGE, d.variableInfo().getReadId());
 
                         String expect = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
@@ -168,8 +167,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
                 if ("j".equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
-                        case 0 -> I_DELAYED;
-                        case 1 -> "<vp:i:[11 delays]>";
+                        case 0, 1 -> "<f:i>";
                         default -> "i";
                     };
                     if ("1.0.0".equals(d.statementId())) {
@@ -190,8 +188,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 if (I.equals(d.variableName())) {
                     String expect0_100 = switch (d.iteration()) {
-                        case 0 -> I_DELAYED;
-                        case 1 -> "<vp:i:[11 delays]>";
+                        case 0, 1 -> "<f:i>";
                         default -> "instance type int";
                     };
                     if ("0".equals(d.statementId())) {
@@ -239,9 +236,9 @@ public class Test_00_Basics_7 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
-            int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
-            int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+            int timeI = d.statementAnalysis().statementTime(Stage.INITIAL);
+            int timeE = d.statementAnalysis().statementTime(Stage.EVALUATION);
+            int timeM = d.statementAnalysis().statementTime(Stage.MERGE);
 
             // method itself is synchronised, so statement time stands still
             if ("increment".equals(d.methodInfo().name)) {

@@ -127,7 +127,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(FIELD1, d.variableName());
                 assertTrue(d.variableInfo().isRead());
 
-                assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0;initial@Field_f1", "nullable instance type Set<String>");
+                assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0-C;initial@Field_f1", "nullable instance type Set<String>");
                 assertLinked(d, 0, "", "return getF1:0,this.f1:0");
                 assertTrue(d.variableInfo().getLinkedVariables().isDone());
 

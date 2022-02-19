@@ -461,13 +461,13 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Location getLocation() {
-            return evaluationContext.getLocation();
+        public Location getLocation(Stage level) {
+            return evaluationContext.getLocation(level);
         }
 
         @Override
-        public Location getLocation(Identifier identifier) {
-            return evaluationContext.getLocation(identifier);
+        public Location getEvaluationLocation(Identifier identifier) {
+            return evaluationContext.getEvaluationLocation(identifier);
         }
 
         @Override

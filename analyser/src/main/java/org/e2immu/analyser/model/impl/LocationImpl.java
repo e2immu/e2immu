@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.impl;
 
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -22,7 +23,7 @@ import java.util.Objects;
 
 public class LocationImpl implements Location {
     public final WithInspectionAndAnalysis info;
-    public final String statementIndexInMethod;
+    public final String statementIdentifier;
     public final Identifier identifier;
     // cached, speed-up because every CauseOfDelay has a location, and merging of causes of delay is big business
     private final int hashCode;
@@ -35,11 +36,16 @@ public class LocationImpl implements Location {
         this(info, null, identifier);
     }
 
-    public LocationImpl(WithInspectionAndAnalysis info, String statementIndexInMethod, Identifier identifier) {
+    /**
+     * @param info                type, method, field, parameter
+     * @param statementIdentifier within a method, index + level (or simply index, if no other info available)
+     * @param identifier          association with the source code
+     */
+    public LocationImpl(WithInspectionAndAnalysis info, String statementIdentifier, Identifier identifier) {
         this.info = Objects.requireNonNull(info);
-        this.statementIndexInMethod = statementIndexInMethod;
+        this.statementIdentifier = statementIdentifier;
         this.identifier = Objects.requireNonNull(identifier);
-        hashCode = Objects.hash(info, statementIndexInMethod);
+        hashCode = Objects.hash(info, statementIdentifier);
     }
 
     @Override
@@ -58,7 +64,15 @@ public class LocationImpl implements Location {
         if (o == null || getClass() != o.getClass()) return false;
         LocationImpl location = (LocationImpl) o;
         if (this == NOT_YET_SET || o == NOT_YET_SET) return false;
-        return info.equals(location.info) && Objects.equals(statementIndexInMethod, location.statementIndexInMethod);
+        return info.equals(location.info) && Objects.equals(statementIdentifier, location.statementIdentifier);
+    }
+
+    @Override
+    public boolean equalsIgnoreStage(Location other) {
+        if (this == other) return true;
+        if (other == null) return false;
+        if (this == NOT_YET_SET || other == NOT_YET_SET) return false;
+        return info.equals(other.getInfo()) && Objects.equals(Stage.without(statementIdentifier), Stage.without(other.statementIdentifierOrNull()));
     }
 
     @Override
@@ -73,14 +87,14 @@ public class LocationImpl implements Location {
         }
         return info.niceClassName() + " " + info.fullyQualifiedName()
                 + (identifier instanceof Identifier.PositionalIdentifier pi ? " (line " + pi.line() + ", pos " + pi.pos() + ")" :
-                (statementIndexInMethod == null ? "" : " (statement " + statementIndexInMethod + ")"));
+                (statementIdentifier == null ? "" : " (statement " + statementIdentifier + ")"));
     }
 
     public String detailedLocation() {
         if (info == null) {
             return "NOT_YET_SET";
         }
-        return info.niceClassName() + " " + info.fullyQualifiedName() + (statementIndexInMethod == null ? "" : ", statement " + statementIndexInMethod);
+        return info.niceClassName() + " " + info.fullyQualifiedName() + (statementIdentifier == null ? "" : ", statement " + statementIdentifier);
     }
 
     public int compareTo(Location otherLocation) {
@@ -94,8 +108,8 @@ public class LocationImpl implements Location {
         if (identifier != null && other.identifier != null) {
             return identifier.compareTo(other.identifier);
         }
-        if (statementIndexInMethod != null && other.statementIndexInMethod != null) {
-            return statementIndexInMethod.compareTo(other.statementIndexInMethod);
+        if (statementIdentifier != null && other.statementIdentifier != null) {
+            return statementIdentifier.compareTo(other.statementIdentifier);
         }
         return 0;
     }
@@ -105,11 +119,22 @@ public class LocationImpl implements Location {
      */
     public String toDelayString() {
         if (info == null) return "not_yet_set";
-        return info.niceClassName() + "_" + info.name() + (statementIndexInMethod == null ? "" : "_" + statementIndexInMethod);
+        return info.niceClassName() + "_" + info.name() + (statementIdentifier == null ? "" : "_" + statementIdentifier);
+    }
+
+    @Override
+    public String delayStringWithoutStatementIdentifier() {
+        if (info == null) return "not_yet_set";
+        return info.niceClassName() + "_" + info.name() + (statementIdentifier == null ? "" : "_" + Stage.without(statementIdentifier));
     }
 
     @Override
     public WithInspectionAndAnalysis getInfo() {
         return info;
+    }
+
+    @Override
+    public String statementIdentifierOrNull() {
+        return statementIdentifier;
     }
 }

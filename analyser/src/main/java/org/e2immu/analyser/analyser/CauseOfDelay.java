@@ -101,6 +101,8 @@ public interface CauseOfDelay {
     @NotNull
     Cause cause();
 
+    String withoutStatementIdentifier();
+
     @NotNull
     Location location();
 

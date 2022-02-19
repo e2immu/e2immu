@@ -38,6 +38,21 @@ public interface Location extends Comparable<Location> {
         public WithInspectionAndAnalysis getInfo() {
             return null;
         }
+
+        @Override
+        public String statementIdentifierOrNull() {
+            return null;
+        }
+
+        @Override
+        public String delayStringWithoutStatementIdentifier() {
+            return "NOT_YET_SET";
+        }
+
+        @Override
+        public boolean equalsIgnoreStage(Location location) {
+            return equals(location);
+        }
     };
 
     String toDelayString();
@@ -47,4 +62,11 @@ public interface Location extends Comparable<Location> {
     }
 
     WithInspectionAndAnalysis getInfo();
+
+    // if a location in a statement analyser, return the index + level; otherwise, return null
+    String statementIdentifierOrNull();
+
+    boolean equalsIgnoreStage(Location location);
+
+    String delayStringWithoutStatementIdentifier();
 }

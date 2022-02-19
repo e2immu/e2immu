@@ -73,7 +73,7 @@ public class AnnotationUploader {
         }
 
         messageStream.filter(message -> message.message().severity == Message.Severity.ERROR)
-                .filter(message -> ((LocationImpl) message.location()).statementIndexInMethod == null) // only type, field, method errors
+                .filter(message -> ((LocationImpl) message.location()).statementIdentifier == null) // only type, field, method errors
                 .forEach(message -> SMapList.add(map, fqn(((LocationImpl) message.location()).info),
                         "error" + suffix(((LocationImpl) message.location()).info)));
 

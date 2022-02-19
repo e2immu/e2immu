@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
+import static org.e2immu.analyser.analyser.Stage.MERGE;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -71,7 +72,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
-        VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
+        VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
         new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
                 atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
@@ -154,9 +155,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                 List<ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
-                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
+                evaluationContext.getCurrentStatement().index()) + Stage.EVALUATION;
         String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? "-" :
-                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
+                evaluationContext.getCurrentStatement().index()) + MERGE;
         boolean inSubBlocks =
                 merge.stream()
                         .map(ConditionAndVariableInfo::variableInfo)
@@ -169,9 +170,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                               List<ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
-                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
+                evaluationContext.getCurrentStatement().index()) + Stage.EVALUATION;
         String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? "-" :
-                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
+                evaluationContext.getCurrentStatement().index()) + MERGE;
         boolean inSubBlocks =
                 merge.stream()
                         .map(ConditionAndVariableInfo::variableInfo)
@@ -231,7 +232,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     }
 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
-        SimpleSet causes = new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.VALUES);
+        SimpleSet causes = new SimpleSet(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
         Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
         Expression value = new DelayedWrappedExpression(Identifier.generate(), vi.getValue(), vi, causes);
         return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
@@ -441,7 +442,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2);
             if (stateOfParent.isBoolValueTrue()) return two;
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
-            VariableInfoImpl vii = new VariableInfoImpl(vi.variable(), two.expression(), two.valueProperties()); // exact variable not relevant
+            VariableInfoImpl vii = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
+                    vi.variable(), two.expression(), two.valueProperties()); // exact variable not relevant
             return inlineConditional(stateOfParent, vii, vi);
         }
 
@@ -461,7 +463,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue.getValue(), ifFalse.getValue(), false));
         if (condition.isDelayed()) {
-            CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(), CauseOfDelay.Cause.CONDITION));
+            CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.CONDITION));
             Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);
         }

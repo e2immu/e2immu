@@ -55,11 +55,11 @@ public interface VariableInfoContainer {
 
     default boolean isNotAssignedInThisStatement() {
         return !hasEvaluation() ||
-                getPreviousOrInitial().getAssignmentIds().compareTo(best(Level.EVALUATION).getAssignmentIds()) >= 0;
+                getPreviousOrInitial().getAssignmentIds().compareTo(best(Stage.EVALUATION).getAssignmentIds()) >= 0;
     }
 
     default boolean isReadInThisStatement() {
-        return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
+        return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Stage.EVALUATION).getReadId()) < 0;
     }
 
     default boolean hasBeenAccessedInThisBlock(String blockIndex) {
@@ -70,39 +70,22 @@ public interface VariableInfoContainer {
     }
 
     @Modified
-    void setLinkedVariables(LinkedVariables linkedVariables, Level level);
+    void setLinkedVariables(LinkedVariables linkedVariables, Stage level);
 
     @Modified
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
     boolean isPrevious();
 
-    boolean has(Level level);
+    boolean has(Stage level);
 
     @Modified
     @NotNull
-    VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level);
+    VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Stage level);
 
     void ensureValuePropertiesInInitial(DV defaultNotNull);
 
-    void setDelayedValue(CausesOfDelay causesOfDelay, Level evaluation);
-
-    // suffixes in assignment id; these act as the 3 levels for setProperty
-    enum Level {
-        INITIAL("-C"), // C for creation, but essentially, it should be < E
-        EVALUATION("-E"), // the - comes before the digits
-        MERGE(":M"); // the : comes after the digits
-        public final String label;
-
-        Level(String label) {
-            this.label = label;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
+    void setDelayedValue(CausesOfDelay causesOfDelay, Stage evaluation);
 
     /*
     explicit freezing (DONE at the end of statement analyser): forbid any future writing
@@ -124,7 +107,7 @@ public interface VariableInfoContainer {
      * like current, but then with a limit
      */
     @NotNull
-    VariableInfo best(Level level);
+    VariableInfo best(Stage level);
 
     /**
      * Returns either the current() of the previous VIC, or the initial value if this is the first statement
@@ -154,7 +137,7 @@ public interface VariableInfoContainer {
     }
 
     @Modified
-    default void setProperty(Property property, DV value, Level level) {
+    default void setProperty(Property property, DV value, Stage level) {
         setProperty(property, value, false, level);
     }
 
@@ -169,7 +152,7 @@ public interface VariableInfoContainer {
      * @param level                                 the level to write
      */
     @Modified
-    void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Level level);
+    void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Stage level);
 
     /*
     copy from one statement to the next.
@@ -196,5 +179,5 @@ public interface VariableInfoContainer {
      *
      * @return if you access previous, do you get to EVAL or MERGE?
      */
-    Level getLevelForPrevious();
+    Stage getLevelForPrevious();
 }

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -45,7 +44,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final SetOnce<VariableInfoImpl> evaluation = new SetOnce<>();
     private final SetOnce<VariableInfoImpl> merge;
 
-    private final Level levelForPrevious;
+    private final Stage levelForPrevious;
 
     /*
     factory method for existing variables; potentially revert VariableDefinedOutsideLoop nature
@@ -58,7 +57,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return new VariableInfoContainerImpl(potentiallyRevertVariableDefinedOutsideLoop(previous, statementIndex),
                 Either.left(previous),
                 statementHasSubBlocks ? new SetOnce<>() : null,
-                previousIsParent ? Level.EVALUATION : Level.MERGE);
+                previousIsParent ? Stage.EVALUATION : Stage.MERGE);
     }
 
     /*
@@ -106,7 +105,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
-                Level.MERGE);
+                Stage.MERGE);
     }
 
     /*
@@ -132,8 +131,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              String index,
                                                              Instance value,
                                                              boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Level.INITIAL),
-                index + Level.EVALUATION, Set.of(), null, NOT_A_FIELD);
+        VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Stage.INITIAL),
+                index + Stage.EVALUATION, Set.of(), null, NOT_A_FIELD);
         initial.newVariable(true);
         initial.setValue(value);
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
@@ -152,13 +151,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 new VariableNature.VariableDefinedOutsideLoop(previous.variableNature(), statementIndex),
                 Either.left(previous),
                 new SetOnce<>(),
-                previousIsParent ? Level.EVALUATION : Level.MERGE);
+                previousIsParent ? Stage.EVALUATION : Stage.MERGE);
     }
 
     private VariableInfoContainerImpl(VariableNature variableNature,
                                       Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial,
                                       SetOnce<VariableInfoImpl> merge,
-                                      Level levelForPrevious) {
+                                      Stage levelForPrevious) {
         this.variableNature = Objects.requireNonNull(variableNature);
         this.previousOrInitial = previousOrInitial;
         this.merge = merge;
@@ -181,7 +180,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return currentExcludingMerge();
     }
 
-    private VariableInfoImpl getToWrite(Level level) {
+    private VariableInfoImpl getToWrite(Stage level) {
         return switch (level) {
             case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();
             case EVALUATION -> evaluation.get();
@@ -196,9 +195,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public VariableInfo best(Level level) {
-        if (level == Level.MERGE && merge != null && merge.isSet()) return merge.get();
-        if ((level == Level.MERGE || level == Level.EVALUATION) && evaluation.isSet()) return evaluation.get();
+    public VariableInfo best(Stage level) {
+        if (level == Stage.MERGE && merge != null && merge.isSet()) return merge.get();
+        if ((level == Stage.MERGE || level == Stage.EVALUATION) && evaluation.isSet()) return evaluation.get();
         return getPreviousOrInitial();
     }
 
@@ -241,10 +240,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
 
     @Override
-    public void setLinkedVariables(LinkedVariables linkedVariables, Level level) {
+    public void setLinkedVariables(LinkedVariables linkedVariables, Stage level) {
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
-        assert level != Level.INITIAL;
+        assert level != Stage.INITIAL;
         VariableInfoImpl variableInfo = getToWrite(level);
         variableInfo.setLinkedVariables(linkedVariables);
     }
@@ -253,9 +252,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setProperty(Property property,
                             DV value,
                             boolean doNotFailWhenTryingToWriteALowerValue,
-                            Level level) {
+                            Stage level) {
         // we do not write in some other VIC's merge or evaluation:
-        if (level == Level.INITIAL && !isInitial()) return;
+        if (level == Stage.INITIAL && !isInitial()) return;
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);
@@ -301,7 +300,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setDelayedValue(CausesOfDelay causesOfDelay, Level level) {
+    public void setDelayedValue(CausesOfDelay causesOfDelay, Stage level) {
         VariableInfoImpl vii = getToWrite(level);
         Expression merged = vii.getValue().mergeDelays(causesOfDelay);
         vii.setValue(merged);
@@ -312,7 +311,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert !hasMerge();
         assert !hasEvaluation();
         assert isInitial();
-        VariableInfoImpl initial = getToWrite(Level.INITIAL);
+        VariableInfoImpl initial = getToWrite(Stage.INITIAL);
         // even NOT_YET_ASSIGNED needs value properties (See TryStatement_2)
         initial.ensureProperty(NOT_NULL_EXPRESSION, defaultNotNull);
         initial.ensureProperty(IDENTITY, IDENTITY.falseDv);
@@ -323,15 +322,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level) {
-        if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
+    public VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Stage level) {
+        if (level.equals(Stage.EVALUATION) && !evaluation.isSet()) {
             VariableInfo vi1 = getPreviousOrInitial();
             VariableInfoImpl vi = prepareForWritingContextProperties(location, vi1);
             evaluation.set(vi);
             return vi;
         }
-        if (level.equals(Level.MERGE) && !has(Level.MERGE)) {
-            VariableInfo vi1 = best(Level.EVALUATION);
+        if (level.equals(Stage.MERGE) && !has(Stage.MERGE)) {
+            VariableInfo vi1 = best(Stage.EVALUATION);
             if (merge == null) {
                 throw new UnsupportedOperationException("Cannot have a merge on " + vi1.variable().fullyQualifiedName());
             }
@@ -348,7 +347,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public boolean has(Level level) {
+    public boolean has(Stage level) {
         return switch (level) {
             case INITIAL -> true;
             case EVALUATION -> evaluation.isSet();
@@ -392,7 +391,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                     .forEach(e -> {
                         assert !EvaluationContext.VALUE_PROPERTIES.contains(e.getKey()) || previous.getValue().isDelayed() || e.getValue().isDone();
-                        setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION);
+                        setProperty(e.getKey(), e.getValue(), false, Stage.EVALUATION);
                     });
 
             evaluation.setValue(previous.getValue());
@@ -409,7 +408,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void copyAllFromPreviousOrEvalIntoMergeIfMergeExists() {
         if (hasMerge()) {
-            VariableInfo best = best(Level.EVALUATION);
+            VariableInfo best = best(Stage.EVALUATION);
             VariableInfoImpl mergeImpl = merge.get();
             if (mergeImpl.getValue().isDelayed()) mergeImpl.setValue(best.getValue());
             mergeImpl.setLinkedVariables(best.getLinkedVariables());
@@ -423,7 +422,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues) {
         assert hasMerge();
-        VariableInfo eval = best(Level.EVALUATION);
+        VariableInfo eval = best(Stage.EVALUATION);
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue());
@@ -446,7 +445,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues) {
         assert hasMerge();
 
-        VariableInfo eval = best(Level.EVALUATION);
+        VariableInfo eval = best(Stage.EVALUATION);
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue());
@@ -481,7 +480,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     // mainly for debugging
-    public Level getLevelForPrevious() {
+    public Stage getLevelForPrevious() {
         return levelForPrevious;
     }
 

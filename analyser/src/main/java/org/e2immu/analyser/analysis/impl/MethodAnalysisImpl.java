@@ -160,7 +160,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Location location() {
+    public Location location(Stage stage) {
         return methodInfo.newLocation();
     }
 
@@ -312,7 +312,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Location location() {
+        public Location location(Stage stage) {
             return methodInfo.newLocation();
         }
 

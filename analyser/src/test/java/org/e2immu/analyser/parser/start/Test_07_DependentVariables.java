@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -70,7 +67,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals("31", d.variableInfo().getValue().toString());
                 }
                 if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                    assertEquals("4" + VariableInfoContainer.Level.EVALUATION, read);
+                    assertEquals("4" + Stage.EVALUATION, read);
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {

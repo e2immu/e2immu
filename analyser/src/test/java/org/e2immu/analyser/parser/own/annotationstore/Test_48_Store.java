@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.own.annotationstore;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -67,7 +64,7 @@ public class Test_48_Store extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         // EVAL level
-                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals("entry:0", eval.getLinkedVariables().toString());
                         assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));

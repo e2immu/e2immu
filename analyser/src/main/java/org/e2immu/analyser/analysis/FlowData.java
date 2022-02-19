@@ -74,21 +74,21 @@ public class FlowData {
     public void setInitialTime(int time, String index) {
         initialTime.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.INITIAL);
+            assignmentIdOfStatementTime.put(time, index + Stage.INITIAL);
         }
     }
 
     public void setTimeAfterEvaluation(int time, String index) {
         timeAfterEvaluation.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.EVALUATION);
+            assignmentIdOfStatementTime.put(time, index + Stage.EVALUATION);
         }
     }
 
     public void setTimeAfterSubBlocks(int time, String index) {
         timeAfterSubBlocks.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.MERGE);
+            assignmentIdOfStatementTime.put(time, index + Stage.MERGE);
         }
     }
 

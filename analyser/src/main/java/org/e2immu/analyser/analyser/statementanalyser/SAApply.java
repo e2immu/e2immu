@@ -37,13 +37,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnalyser) {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAApply.class);
 
     private Location getLocation() {
-        return statementAnalysis.location();
+        return statementAnalysis.location(EVALUATION);
     }
 
     private String index() {
@@ -385,7 +385,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
-        groupPropertyValues.addToMap(statementAnalysis, analyserContext);
+        groupPropertyValues.addToMap(statementAnalysis, analyserContext, EVALUATION);
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);

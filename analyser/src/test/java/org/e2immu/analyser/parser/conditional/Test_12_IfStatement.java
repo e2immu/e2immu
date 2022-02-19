@@ -370,7 +370,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "null!=<f:typeParameter>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
-                    String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1" : "NEVER:0";
+                    String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1-C" : "NEVER:0";
                     assertEquals(delay, dv.toString());
                     assertEquals(d.iteration() == 0, dv.isDelayed());
                 }

@@ -111,7 +111,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Location location() {
+    public Location location(Stage stage) {
         return typeInfo.newLocation();
     }
 
@@ -322,7 +322,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Location location() {
+        public Location location(Stage stage) {
             return typeInfo.newLocation();
         }
 

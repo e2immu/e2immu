@@ -53,7 +53,7 @@ public class MethodCallIncompatibleWithPrecondition {
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
-            VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
+            VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, Stage.MERGE);
             if (variableInfo == null) {
                 LOGGER.debug("While field {} is visible, it is not present in last statement of {};" +
                                 " skipping this method of detection",
@@ -63,7 +63,7 @@ public class MethodCallIncompatibleWithPrecondition {
             if (!variableInfo.valueIsSet()) {
                 LOGGER.debug("Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
-                return new SimpleSet(new VariableCause(fieldReference, statementAnalysis.location(),
+                return new SimpleSet(new VariableCause(fieldReference, statementAnalysis.location(Stage.MERGE),
                         CauseOfDelay.Cause.VALUE));
             }
             if (evaluationContext.hasState(variableInfo.getValue())) {

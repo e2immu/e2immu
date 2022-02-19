@@ -48,10 +48,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         return statementAnalysis.statement();
     }
 
-    private Location location() {
-        return statementAnalysis.location();
-    }
-
     private MethodInfo methodInfo() {
         return statementAnalysis.methodAnalysis().getMethodInfo();
     }
@@ -129,7 +125,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                                 isLocalAndLocalToThisBlock ||
                                 variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
                                         localVariableAssignmentInThisBlock(variableInfo)) {
-                            Location location = location();
+                            Location location = statementAnalysis.location(Stage.EVALUATION);
                             Message unusedLv = Message.newMessage(location,
                                     Message.Label.UNUSED_LOCAL_VARIABLE, variableInfo.name());
                             if (!statementAnalysis.containsMessage(unusedLv)) {
@@ -172,7 +168,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
-                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(location(),
+                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL),
                             Message.Label.UNUSED_LOCAL_VARIABLE, vi.name())));
         }
         return DONE;
@@ -191,7 +187,8 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                         StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
                         if (statementAnalysis == null || !statementAnalysis.variableIsSet(loopVarFqn) ||
                                 !statementAnalysis.getVariable(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(location(), Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
+                            this.statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL),
+                                    Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });
         }
@@ -249,7 +246,8 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                     }
                 }
 
-                statementAnalysis.ensure(Message.newMessage(location(), Message.Label.IGNORING_RESULT_OF_METHOD_CALL,
+                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL),
+                        Message.Label.IGNORING_RESULT_OF_METHOD_CALL,
                         methodCall.getMethodInfo().fullyQualifiedName()));
             }
         }

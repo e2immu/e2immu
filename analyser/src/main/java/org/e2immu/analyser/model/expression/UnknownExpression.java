@@ -32,7 +32,6 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static final String VARIABLE_VALUE = "variable value";
     public static final String NOT_YET_ASSIGNED = "not yet assigned";
     public static final String NO_RETURN_VALUE = "no return value";
-    public static final String ARRAY_LENGTH = "array length";
 
     private final ParameterizedType parameterizedType;
     private final String msg;
@@ -49,10 +48,6 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     public static UnknownExpression forNotYetAssigned(Identifier identifier, ParameterizedType parameterizedType) {
         return new UnknownExpression(identifier, parameterizedType, NOT_YET_ASSIGNED);
-    }
-
-    public static UnknownExpression forArrayLength(Identifier identifier, ParameterizedType parameterizedType) {
-        return new UnknownExpression(identifier, parameterizedType, ARRAY_LENGTH);
     }
 
     public static UnknownExpression forNoReturnValue(Identifier identifier, ParameterizedType parameterizedType) {
@@ -176,6 +171,6 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     @Override
     public boolean isNotYetAssigned() {
-        return NOT_YET_ASSIGNED.equals(msg);
+        return true;
     }
 }

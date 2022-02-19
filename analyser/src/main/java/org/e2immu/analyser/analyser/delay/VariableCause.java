@@ -18,9 +18,40 @@ import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.Variable;
 
-public record VariableCause(Variable variable, Location location, CauseOfDelay.Cause cause) implements CauseOfDelay {
+public class VariableCause implements CauseOfDelay {
+    private final Variable variable;
+    private final Location location;
+    private final CauseOfDelay.Cause cause;
+    private final String withoutStatementIdentifier;
+
+    public VariableCause(Variable variable, Location location, Cause cause) {
+        this.variable = variable;
+        this.location = location;
+        this.cause = cause;
+        this.withoutStatementIdentifier = cause.label + ":" + variable.debug() + "@" + location.delayStringWithoutStatementIdentifier();
+    }
+
     @Override
     public String toString() {
         return cause.label + ":" + variable.debug() + "@" + location.toDelayString();
+    }
+
+    @Override
+    public Cause cause() {
+        return cause;
+    }
+
+    @Override
+    public String withoutStatementIdentifier() {
+        return withoutStatementIdentifier;
+    }
+
+    @Override
+    public Location location() {
+        return location;
+    }
+
+    public Variable variable() {
+        return variable;
     }
 }

@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
@@ -43,9 +44,9 @@ API annotations are not loaded, so we don't know that System.out is never null.
 
  */
 public class Test_00_Basics_3 extends CommonTestRunner {
-    private static final String E = VariableInfoContainer.Level.EVALUATION.toString();
-    private static final String C = VariableInfoContainer.Level.INITIAL.toString();
-    private static final String M = VariableInfoContainer.Level.MERGE.toString();
+    private static final String E = Stage.EVALUATION.toString();
+    private static final String C = Stage.INITIAL.toString();
+    private static final String M = Stage.MERGE.toString();
     public static final String INSTANCE_PRINT_STREAM = "nullable instance type PrintStream";
 
     // not loading in the AnnotatedAPIs, so System.out will have @Modified=1 after println()
@@ -79,7 +80,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("getS".equals(d.methodInfo().name)) {
                 String expectValue = switch (d.iteration()) {
                     case 0 -> "<f:s>";
-                    case 1 -> "<vp:s:initial:this.s@Method_setS1_1;values:this.s@Field_s>";
+                    case 1 -> "<vp:s:initial:this.s@Method_setS1_1-C;values:this.s@Field_s>";
                     default -> "s$0";
                 };
                 assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -141,7 +142,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
                         assertCurrentValue(d, 2, INSTANCE_PRINT_STREAM);
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertSame(d.variableInfo(), d.variableInfoContainer().best(VariableInfoContainer.Level.MERGE));
+                        assertSame(d.variableInfo(), d.variableInfoContainer().best(Stage.MERGE));
 
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
@@ -220,7 +221,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(GET_S_RET_VAR, d.variableName());
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<f:s>";
-                        case 1 -> "<vp:s:initial:this.s@Method_setS1_1;values:this.s@Field_s>";
+                        case 1 -> "<vp:s:initial:this.s@Method_setS1_1-C;values:this.s@Field_s>";
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -294,7 +295,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1;values:this.s@Field_s"
+                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1-C;values:this.s@Field_s"
                         : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 

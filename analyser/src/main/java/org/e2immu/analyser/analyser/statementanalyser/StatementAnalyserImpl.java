@@ -376,10 +376,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
     }
 
-    private Location getLocation() {
-        return statementAnalysis.location();
-    }
-
     @Override
     public AnalyserComponents<String, StatementAnalyserSharedState> getAnalyserComponents() {
         return analyserComponents;
@@ -463,7 +459,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
-                            ? new ProgressWrapper(new SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
+                            ? new ProgressWrapper(new SimpleSet(statementAnalysis.location(Stage.MERGE), CauseOfDelay.Cause.REPLACEMENT))
                             : DONE, false)
                     .build();
 
@@ -590,7 +586,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         AnalysisStatus analysisStatus = statementAnalysis.flowData().computeGuaranteedToBeReachedReturnUnreachable
                 (sharedState.previous(), execution, state, state.causesOfDelay(), localConditionManagerIsDelayed);
         if (analysisStatus == DONE_ALL) {
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.UNREACHABLE_STATEMENT));
+            statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL), Message.Label.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
         return analysisStatus;

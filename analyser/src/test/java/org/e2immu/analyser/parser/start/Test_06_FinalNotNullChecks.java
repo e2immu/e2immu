@@ -15,8 +15,8 @@
 package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -67,7 +67,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
 
                     assertEquals("param/*@NotNull*/", d.variableInfoContainer()
-                            .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
+                            .best(Stage.EVALUATION).getValue().toString());
                     assertEquals("param/*@NotNull*/", d.currentValue().toString());
                     assertFalse(d.variableInfoContainer().hasMerge());
                 }

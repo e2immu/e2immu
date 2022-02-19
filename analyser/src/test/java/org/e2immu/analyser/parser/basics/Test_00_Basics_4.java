@@ -59,7 +59,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "<f:i>";
-                        case 1 -> "<vp:i:initial:this.i@Method_increment_0;values:this.i@Field_i>";
+                        case 1 -> "<vp:i:initial:this.i@Method_increment_0-C;values:this.i@Field_i>";
                         default -> "i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());

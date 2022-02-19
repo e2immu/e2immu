@@ -16,8 +16,8 @@
 package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -49,7 +49,7 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("1".equals(d.statementId())) {
-                        VariableInfo vi = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        VariableInfo vi = d.variableInfoContainer().best(Stage.EVALUATION);
                         if (d.iteration() > 0) {
                             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
                         }

@@ -43,8 +43,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.INITIAL;
 import static org.e2immu.analyser.model.MultiLevel.NULLABLE_DV;
 
 class SAEvaluationContext extends AbstractEvaluationContextImpl {
@@ -170,14 +170,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public LocationImpl getLocation() {
-        return new LocationImpl(methodInfo(), statementAnalysis.index(),
+    public LocationImpl getLocation(Stage level) {
+        return new LocationImpl(methodInfo(), statementAnalysis.index() + level.label,
                 statementAnalysis.statement().getIdentifier());
     }
 
     @Override
-    public Location getLocation(Identifier identifier) {
-        return new LocationImpl(methodInfo(), statementAnalysis.index(), identifier);
+    public Location getEvaluationLocation(Identifier identifier) {
+        return new LocationImpl(methodInfo(), statementAnalysis.index() + EVALUATION, identifier);
     }
 
     @Override
@@ -415,7 +415,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             assert !(variable instanceof ParameterInfo) :
                     "Parameter " + variable.fullyQualifiedName() + " should be known in " + methodInfo().fullyQualifiedName
                             + ", statement " + statementAnalysis.index();
-            return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime()); // no value, no state; will be created by a MarkRead
+            return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime()); // no value, no state; will be created by a MarkRead
         }
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
@@ -429,7 +429,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValuesYet(fieldAnalysis)) {
                         VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
                         if (breakDelay != null) return breakDelay;
-                        return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime());
+                        return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime());
                     }
                 }
                 // we still could have a delay to be broken (See e.g. E2Immutable_1)
@@ -446,7 +446,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
                 if (!relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    return new VariableInfoImpl(getLocation(), variable, getInitialStatementTime()); // no value, no state
+                    return new VariableInfoImpl(getLocation(INITIAL), variable, getInitialStatementTime()); // no value, no state
                 }
             }
         } // else we need to go to the variable itself
@@ -457,17 +457,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     // by returning a new VII object after having returned null here, we introduce the INITIAL_VALUE delay
     private VariableInfo breakDelay(FieldReference fr, FieldAnalysis fieldAnalysis) {
         CausesOfDelay causes = fieldAnalysis.valuesDelayed().causesOfDelay();
-        assert causes.isDelayed();
-        Location here = getLocation();
+        //assert causes.isDelayed();
+        Location here = getLocation(INITIAL);
         boolean cyclicDependency = causes.causesStream()
                 .anyMatch(cause -> cause instanceof VariableCause vc && vc.cause() == CauseOfDelay.Cause.INITIAL_VALUE
                         && vc.variable().equals(fr)
                         && vc.location().equals(here));
         if (cyclicDependency) {
-            LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, here);
+            LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, statementIndex());
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
             Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, getInitialStatementTime(), cause);
-            return new VariableInfoImpl(getLocation(), fr, dve);
+            return new VariableInfoImpl(getLocation(INITIAL), fr, dve);
         }
         return null;
     }
@@ -673,7 +673,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
         if (vi == null) {
             return new SimpleSet(new VariableCause(variable,
-                    getLocation(), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
+                    getLocation(INITIAL), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
         }
         return vi.getValue().causesOfDelay();
     }

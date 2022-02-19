@@ -22,11 +22,23 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfDelay {
+public class SimpleSet implements CausesOfDelay {
+    // DO NOT USE, use CausesOfDelay.EMPTY!
+    public static final SimpleSet EMPTY = new SimpleSet(Set.of());
+
+    private final Set<CauseOfDelay> causes;
+
+    // only to be used for CausesOfDelay.EMPTY
+
+    private SimpleSet(Set<CauseOfDelay> causes) {
+        this.causes = causes;
+    }
 
     public SimpleSet(Location location, CauseOfDelay.Cause cause) {
         this(new SimpleCause(location, cause));
@@ -37,7 +49,7 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
     }
 
     public static CausesOfDelay from(Set<CauseOfDelay> causes) {
-        return causes.isEmpty() ? EMPTY : new SimpleSet(causes);
+        return causes.isEmpty() ? CausesOfDelay.EMPTY : mergeIntoMapAndReturn(causes.stream(), new HashMap<>());
     }
 
     @Override
@@ -45,12 +57,31 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
         throw new UnsupportedOperationException("No label for delays");
     }
 
+    /*
+    A single merge will be slower, but we'll have fewer delays to merge in complex methods, which makes it faster again...
+     */
     @Override
     public CausesOfDelay merge(CausesOfDelay other) {
         if (other.isDone()) return this;
         if (isDone()) return other;
-        return new SimpleSet(Stream.concat(causesStream(), other.causesStream())
-                .collect(Collectors.toUnmodifiableSet()));
+        // more complicated than simply merge two sets. We keep only the earliest location of each delay
+        Map<String, CauseOfDelay> map = new HashMap<>();
+        causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
+            throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
+        }));
+        return mergeIntoMapAndReturn(other.causesStream(), map);
+    }
+
+    private static SimpleSet mergeIntoMapAndReturn(Stream<CauseOfDelay> causes, Map<String, CauseOfDelay> map) {
+        causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
+            String i1 = c1.location().statementIdentifierOrNull();
+            String i2 = c2.location().statementIdentifierOrNull();
+            if (i1 == null && i2 == null) return c1;
+            if (i1 == null) return c2;
+            if (i2 == null) return c1;
+            return i1.compareTo(i2) <= 0 ? c1 : c2;
+        }));
+        return new SimpleSet(Set.copyOf(map.values()));
     }
 
     @Override
@@ -132,8 +163,11 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
     }
 
     private DV merge(DV other) {
-        return new SimpleSet(Stream.concat(causesStream(),
-                other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
+        Map<String, CauseOfDelay> map = new HashMap<>();
+        causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
+            throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
+        }));
+        return mergeIntoMapAndReturn(other.causesOfDelay().causesStream(), map);
     }
 
     @Override

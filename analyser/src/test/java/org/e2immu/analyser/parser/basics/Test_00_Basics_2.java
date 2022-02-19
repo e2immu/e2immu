@@ -83,7 +83,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(COLLECTION, d.variableName());
 
                     if (d.iteration() == 0) {
-                        assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        assertEquals("0" + Stage.EVALUATION, d.variableInfo().getReadId());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertEquals("<p:collection>", d.currentValue().toString());
                         assertTrue(d.currentValue().isDelayed());
@@ -104,7 +104,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(STRING_FIELD, d.variableName());
 
                     assertCurrentValue(d, 1,
-                            "initial:this.string@Method_add_0;initial@Field_string", "nullable instance type String");
+                            "initial:this.string@Method_add_0-C;initial@Field_string", "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));

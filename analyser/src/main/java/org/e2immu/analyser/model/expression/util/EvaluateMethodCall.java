@@ -315,7 +315,7 @@ public class EvaluateMethodCall {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
                                             iv.expression().returnType(), linkedVariables,
                                             new SimpleSet(
-                                                    new SimpleCause(parameterAnalysis.location(),
+                                                    new SimpleCause(parameterAnalysis.location(Stage.EVALUATION),
                                                             CauseOfDelay.Cause.ASSIGNED_TO_FIELD))))
                                     .build();
                         }

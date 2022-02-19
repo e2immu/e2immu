@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
 /*
@@ -350,7 +351,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void raiseError(Identifier identifier, Message.Label messageLabel) {
             assert evaluationContext != null;
             if (evaluationContext.haveCurrentStatement()) {
-                Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel);
+                Message message = Message.newMessage(evaluationContext.getEvaluationLocation(identifier), messageLabel);
                 messages.add(message);
             } else { // e.g. companion analyser
                 LOGGER.warn("Analyser error: {}", messageLabel);
@@ -360,7 +361,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void raiseError(Identifier identifier, Message.Label messageLabel, String extra) {
             assert evaluationContext != null;
             if (evaluationContext.haveCurrentStatement()) {
-                Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel, extra);
+                Message message = Message.newMessage(evaluationContext.getEvaluationLocation(identifier), messageLabel, extra);
                 messages.add(message);
             } else {
                 LOGGER.warn("Analyser error: {}, {}", messageLabel, extra);
@@ -501,7 +502,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // will come back later
                 DV external = getPropertyFromInitial(variable, Property.EXTERNAL_CONTAINER);
                 if (external.equals(MultiLevel.NOT_CONTAINER_DV)) {
-                    Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+                    Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                     messages.add(message);
                 }
                 setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.CONTAINER_DV);
@@ -515,19 +516,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (container.equals(MultiLevel.CONTAINER_DV)) {
                 return;
             }
-            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+            Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
             messages.add(message);
             setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
 
         public Builder assignmentToSelfIgnored(Variable variable) {
-            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.ASSIGNMENT_TO_SELF, variable.fullyQualifiedName());
+            Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.ASSIGNMENT_TO_SELF, variable.fullyQualifiedName());
             messages.add(message);
             return this;
         }
 
         public void assignmentToCurrentValue(Variable variable) {
-            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.ASSIGNMENT_TO_CURRENT_VALUE, variable.fullyQualifiedName());
+            Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.ASSIGNMENT_TO_CURRENT_VALUE, variable.fullyQualifiedName());
             messages.add(message);
         }
 
@@ -580,7 +581,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                 && c instanceof VariableCause vc
                                 && vc.variable().equals(fieldReference));
                 if (selfReference) {
-                    CauseOfDelay cause = new VariableCause(fieldReference, evaluationContext.getLocation(), CauseOfDelay.Cause.BREAK_INIT_DELAY);
+                    CauseOfDelay cause = new VariableCause(fieldReference, evaluationContext.getLocation(EVALUATION),
+                            CauseOfDelay.Cause.BREAK_INIT_DELAY);
                     return new SimpleSet(cause).merge(stateIsDelayed);
                 }
             }
@@ -674,7 +676,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
             assert evaluationContext != null;
-            messages.add(Message.newMessage(evaluationContext.getLocation(),
+            messages.add(Message.newMessage(evaluationContext.getLocation(EVALUATION),
                     Message.Label.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE,
                     fieldInfo.fullyQualifiedName()));
         }

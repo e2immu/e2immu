@@ -88,7 +88,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Location location() {
+    public Location location(Stage stage) {
         return fieldInfo.newLocation();
     }
 
@@ -187,7 +187,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Location location() {
+        public Location location(Stage stage) {
             return fieldInfo.newLocation();
         }
 

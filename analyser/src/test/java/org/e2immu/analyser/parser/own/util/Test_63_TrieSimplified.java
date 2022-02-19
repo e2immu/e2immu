@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.own.util;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -155,7 +152,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         if (d.iteration() > 0) {
-                            VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                            VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                             assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         }
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -433,8 +430,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         // 2x potential null pointer warning, seems correct
         testClass("TrieSimplified_5", 3, 0, new DebugConfiguration.Builder()
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

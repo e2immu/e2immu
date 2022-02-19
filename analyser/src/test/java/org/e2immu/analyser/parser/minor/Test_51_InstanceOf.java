@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.minor;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -295,7 +292,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("create".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "object".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
@@ -312,7 +309,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("string".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("object/*(String)*/", prev.getValue().toString());
@@ -331,7 +328,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     String DELAY = "<vp:object:cnn@Parameter_s;ext_not_null@Parameter_s>/*(Boolean)*/";
 
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         String expected = d.iteration() == 0 ? DELAY : "object/*(Boolean)*/";
@@ -345,7 +342,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("integer".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         String expected = d.iteration() == 0 ? "<vp:object:cnn@Parameter_s;ext_not_null@Parameter_s>/*(Integer)*/"

@@ -116,7 +116,7 @@ public class MethodLevelData {
                                   String previousIndex,
                                   StateData stateData) {
         EvaluationContext evaluationContext = sharedState.evaluationContext();
-        String logLocation = statementAnalysis.location().toString();
+        String logLocation = statementAnalysis.location(Stage.EVALUATION).toString();
         try {
             AnalyserResult.Builder builder = sharedState.builder();
             SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,

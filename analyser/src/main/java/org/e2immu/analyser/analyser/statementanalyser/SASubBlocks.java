@@ -194,7 +194,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     flowData.setGuaranteedToBeReachedInMethod(FlowData.NEVER);
 
                     if (statement() instanceof LoopStatement) {
-                        statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(),
+                        statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.MERGE),
                                 Message.Label.EMPTY_LOOP));
                     }
 

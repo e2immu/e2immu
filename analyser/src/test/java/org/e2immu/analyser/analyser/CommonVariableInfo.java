@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -69,7 +68,7 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public Location getLocation() {
+        public Location getLocation(Stage level) {
             return Location.NOT_YET_SET;
         }
 

@@ -37,6 +37,8 @@ import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.INITIAL;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
@@ -92,7 +94,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 if (state.isDelayed()) return state.causesOfDelay();
                 Expression condition = sharedState.localConditionManager().condition();
                 if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
-                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(), Message.Label.INTERRUPT_IN_LOOP));
+                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
                 }
 
             } else if (statement() instanceof LocalClassDeclaration) {
@@ -187,7 +189,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
                 if (correspondingLoop != null &&
                         correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
-                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(), Message.Label.INTERRUPT_IN_LOOP));
+                    statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
                 }
             } else if (statement() instanceof ThrowStatement) {
                 value = noReturnValue();
@@ -382,7 +384,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (!never.isEmpty() || !always.isEmpty()) {
             String msg = !always.isEmpty() ? "Is always reached: " + String.join("; ", always) :
                     "Is never reached: " + String.join("; ", never);
-            statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(),
+            statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION),
                     Message.Label.TRIVIAL_CASES_IN_SWITCH, msg));
         }
     }
@@ -392,7 +394,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         if (sharedState.localConditionManager().isDelayed()) {
             CausesOfDelay causes = sharedState.localConditionManager().causesOfDelay();
-            if(causes.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
+            if (causes.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                 LOGGER.debug("Break init delay -- not delaying");
             } else {
                 return DelayedExpression.forCondition(statementAnalysis.primitives().booleanParameterizedType(),
@@ -412,7 +414,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
                         Message msg = Message.newMessage(new LocationImpl(methodInfo(),
-                                        firstStatement.index(), firstStatement.statement().getIdentifier()),
+                                        firstStatement.index() + INITIAL,
+                                        firstStatement.statement().getIdentifier()),
                                 Message.Label.UNREACHABLE_STATEMENT);
                         // let's add it to us, rather than to this unreachable statement
                         statementAnalysis.ensure(msg);
@@ -425,7 +428,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
                             Message msg = Message.newMessage(new LocationImpl(methodInfo(),
-                                            firstStatement.index(), firstStatement.statement().getIdentifier()),
+                                            firstStatement.index() + INITIAL,
+                                            firstStatement.statement().getIdentifier()),
                                     Message.Label.UNREACHABLE_STATEMENT);
                             statementAnalysis.ensure(msg);
                         }
@@ -442,13 +446,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData().setGuaranteedToBeReached(FlowData.NEVER);
-                        Message msg = Message.newMessage(new LocationImpl(methodInfo(), nextAnalysis.index(),
+                        Message msg = Message.newMessage(new LocationImpl(methodInfo(),
+                                nextAnalysis.index() + INITIAL,
                                 nextAnalysis.statement().getIdentifier()), Message.Label.UNREACHABLE_STATEMENT);
                         statementAnalysis.ensure(msg);
                     }
                 }
             } else throw new UnsupportedOperationException();
-            statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext().getLocation(), message));
+            statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext().getLocation(EVALUATION), message));
             return evaluated;
         }
         return value;

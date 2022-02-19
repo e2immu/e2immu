@@ -15,10 +15,7 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -38,7 +35,6 @@ import java.io.PrintStream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_6 extends CommonTestRunner {
@@ -175,9 +171,9 @@ public class Test_00_Basics_6 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
-            int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
-            int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+            int timeI = d.statementAnalysis().statementTime(Stage.INITIAL);
+            int timeE = d.statementAnalysis().statementTime(Stage.EVALUATION);
+            int timeM = d.statementAnalysis().statementTime(Stage.MERGE);
             int numVariables = d.statementAnalysis().numberOfVariables();
 
             if ("test1".equals(d.methodInfo().name)) {

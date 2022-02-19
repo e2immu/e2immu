@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.StringConcat;
-import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -125,13 +124,13 @@ public class Test_05_Final extends CommonTestRunner {
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().toString());
-                        VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        VariableInfo viE = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         assertEquals("null", d.currentValue().toString());
-                        VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        VariableInfo viE = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
                         assertDv(d, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }

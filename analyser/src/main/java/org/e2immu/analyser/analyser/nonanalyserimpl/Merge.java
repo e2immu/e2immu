@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Objects;
 
+import static org.e2immu.analyser.analyser.Stage.MERGE;
+
 public record Merge(EvaluationContext evaluationContext,
                     VariableInfoContainer vic) {
     private static final Logger LOGGER = LoggerFactory.getLogger(Merge.class);
@@ -107,7 +109,7 @@ public record Merge(EvaluationContext evaluationContext,
                 assert instance.isDone();
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate(),
                         instance,
-                        vii, new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
+                        vii, new SimpleSet(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
                 vii.setProperty(Property.IMMUTABLE_BREAK, properties.get(Property.IMMUTABLE));
                 vii.setProperty(Property.NOT_NULL_BREAK, properties.get(Property.NOT_NULL_EXPRESSION));
                 vii.setValue(wrapped);

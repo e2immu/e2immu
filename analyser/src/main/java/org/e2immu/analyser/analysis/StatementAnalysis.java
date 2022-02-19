@@ -18,8 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
@@ -30,7 +28,6 @@ import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 public interface StatementAnalysis extends Analysis,
@@ -90,7 +87,7 @@ public interface StatementAnalysis extends Analysis,
 
     Expression initialValueOfReturnVariable(@NotNull Variable variable);
 
-    VariableInfo findOrNull(@NotNull Variable variable, VariableInfoContainer.Level level);
+    VariableInfo findOrNull(@NotNull Variable variable, Stage level);
 
     VariableInfoContainer findOrNull(@NotNull Variable variable);
 
@@ -113,7 +110,7 @@ public interface StatementAnalysis extends Analysis,
     Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream();
 
     @NotNull1
-    Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level);
+    Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level);
 
     Expression notNullValuesAsExpression(EvaluationContext evaluationContext);
 
@@ -140,7 +137,7 @@ public interface StatementAnalysis extends Analysis,
 
     boolean inSyncBlock();
 
-    int statementTime(VariableInfoContainer.Level merge);
+    int statementTime(Stage merge);
 
     MethodAnalysis methodAnalysis();
 

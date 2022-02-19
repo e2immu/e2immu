@@ -15,7 +15,7 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -50,12 +50,12 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                         assertEquals("l", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId()) || "4".equals(d.statementId()) || "5".equals(d.statementId())) {
-                        assertEquals("3" + VariableInfoContainer.Level.EVALUATION,
+                        assertEquals("3" + Stage.EVALUATION,
                                 d.variableInfo().getAssignmentIds().toString());
                         assertEquals("1+l", d.currentValue().toString());
                     }
                     if ("6".equals(d.statementId())) {
-                        assertEquals("6" + VariableInfoContainer.Level.EVALUATION,
+                        assertEquals("6" + Stage.EVALUATION,
                                 d.variableInfo().getAssignmentIds().toString());
                         assertEquals("2+l", d.currentValue().toString());
                     }
@@ -170,9 +170,9 @@ public class Test_00_Basics_8 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
 
             if ("test4".equals(d.methodInfo().name)) {
-                int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
-                int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
-                int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+                int timeI = d.statementAnalysis().statementTime(Stage.INITIAL);
+                int timeE = d.statementAnalysis().statementTime(Stage.EVALUATION);
+                int timeM = d.statementAnalysis().statementTime(Stage.MERGE);
 
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, timeI);

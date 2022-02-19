@@ -80,8 +80,8 @@ public class VariableInfoImpl implements VariableInfo {
 
     // used as a temp in MergeHelper; make sure that this one is not used to generate VI objects for inclusion
     // in DelayedWrappedExpression: they need to be the original ones that will be updated in subsequent iterations
-    public VariableInfoImpl(Variable variable, Expression value, Properties properties) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
+    public VariableInfoImpl(Location location, Variable variable, Expression value, Properties properties) {
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value,
                 NOT_RELEVANT);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
@@ -123,6 +123,7 @@ public class VariableInfoImpl implements VariableInfo {
     }
 
     private static CausesOfDelay initialValue(Location location, Variable variable) {
+        assert Stage.isPresent(location.statementIdentifierOrNull()) : "no stage in location" + location;
         return new SimpleSet(new VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
     }
 

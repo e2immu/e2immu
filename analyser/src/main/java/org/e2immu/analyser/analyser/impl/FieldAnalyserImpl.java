@@ -634,7 +634,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (worstOverValues.lt(bestOverContext)) {
                 // see Basics_2b; we need the setter to run before the add-method can be called
                 // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
-                analyserResultBuilder.add(Message.newMessage(fieldAnalysis.location(),
+                analyserResultBuilder.add(Message.newMessage(fieldAnalysis.location(null),
                         Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
             }
         } else {
@@ -1581,12 +1581,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         @Override
-        public Location getLocation() {
+        public Location getLocation(Stage level) {
             return fieldInfo.newLocation();
         }
 
         @Override
-        public Location getLocation(Identifier identifier) {
+        public Location getEvaluationLocation(Identifier identifier) {
             return new LocationImpl(fieldInfo, identifier);
         }
 

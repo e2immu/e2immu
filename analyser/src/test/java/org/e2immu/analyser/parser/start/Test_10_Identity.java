@@ -14,17 +14,12 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -83,7 +78,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
                 } else if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isRead());
-                    assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                    assertEquals("1" + Stage.EVALUATION, d.variableInfo().getReadId());
 
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

@@ -19,7 +19,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -37,10 +40,6 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
     private String index() {
         return statementAnalysis.index();
-    }
-
-    private Location location() {
-        return statementAnalysis.location();
     }
 
     private Statement statement() {
@@ -87,7 +86,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         IDENTITY, IDENTITY.falseDv,
                         IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
                         NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
-                VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(location(), lvr, index(),
+                VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(
+                        statementAnalysis.location(Stage.INITIAL), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, properties),
                         statementAnalysis.navigationData().hasSubBlocks());
                 ((StatementAnalysisImpl) statementAnalysis).putVariable(name, vic);

@@ -16,7 +16,7 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -55,7 +55,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isFact".equals(d.methodInfo().name) || "isKnown".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
+                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
@@ -64,7 +64,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
             }
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
+                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
                 assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
                         d.methodAnalysis().getSingleReturnValue().toString());
@@ -73,7 +73,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
             }
             if ("test1".equals(d.methodInfo().name)) {
                 assertDv(d, 0, DV.FALSE_DV, MODIFIED_METHOD);
-                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
+                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
                 assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
                         d.methodAnalysis().getSingleReturnValue().toString());

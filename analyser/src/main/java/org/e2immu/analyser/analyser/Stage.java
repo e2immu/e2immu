@@ -14,24 +14,30 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.annotation.NotNull;
+// suffixes in assignment id; these act as the 3 levels for setProperty
+public enum Stage {
+    INITIAL("-C"), // C for creation, but essentially, it should be < E
+    EVALUATION("-E"), // the - comes before the digits
+    MERGE(":M"); // the : comes after the digits
+    public final String label;
 
-import java.util.Set;
-import java.util.stream.Stream;
+    Stage(String label) {
+        this.label = label;
+    }
 
-public interface CausesOfDelay extends DV, AnalysisStatus {
+    public static boolean isPresent(String s) {
+        return s != null && (s.endsWith(INITIAL.label) || s.endsWith(EVALUATION.label) || s.endsWith(MERGE.label));
+    }
 
-    CausesOfDelay EMPTY = SimpleSet.EMPTY;
+    public static String without(String s) {
+        if (isPresent(s)) {
+            return s.substring(0, s.length() - 2);
+        }
+        return s;
+    }
 
-    boolean contains(Variable variable);
-
-    @NotNull
-    CausesOfDelay merge(CausesOfDelay other);
-
-    @NotNull
-    Stream<CauseOfDelay> causesStream();
-
-    CausesOfDelay removeAll(Set<CauseOfDelay> breaks);
+    @Override
+    public String toString() {
+        return label;
+    }
 }

@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 public class GroupPropertyValues {
 
@@ -87,10 +87,10 @@ public class GroupPropertyValues {
     }
 
 
-    public void addToMap(StatementAnalysis statementAnalysis, AnalyserContext analyserContext) {
+    public void addToMap(StatementAnalysis statementAnalysis, AnalyserContext analyserContext, Stage stage) {
         addToMap(statementAnalysis, CONTEXT_NOT_NULL, x -> AnalysisProvider.defaultNotNull(x.parameterizedType()), true);
         addToMap(statementAnalysis, EXTERNAL_NOT_NULL, x ->
-                new SimpleSet(new VariableCause(x, statementAnalysis.location(),
+                new SimpleSet(new VariableCause(x, statementAnalysis.location(stage),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(statementAnalysis, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
         addToMap(statementAnalysis, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);

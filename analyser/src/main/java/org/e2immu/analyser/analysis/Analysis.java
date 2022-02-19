@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis;
 import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -119,7 +120,7 @@ public interface Analysis {
     DV getPropertyFromMapNeverDelay(Property property);
 
     @NotNull
-    Location location();
+    Location location(Stage stage);
 
     @NotNull
     @Modified
