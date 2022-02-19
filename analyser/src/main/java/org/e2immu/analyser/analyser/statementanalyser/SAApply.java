@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
+import static org.e2immu.analyser.analyser.Stage.INITIAL;
 
 record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnalyser) {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAApply.class);
@@ -120,11 +121,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
 
-        Location here = getLocation();
+        Location initialLocation = statementAnalysis.location(INITIAL);
         Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay().causesStream()
                 .filter(c -> c instanceof VariableCause vc
                         && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                        && vc.location().equals(here))
+                        && vc.location().equals(initialLocation))
                 .map(c -> (VariableCause) c).findFirst();
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {

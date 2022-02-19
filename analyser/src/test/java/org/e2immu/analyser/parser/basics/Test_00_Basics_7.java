@@ -63,7 +63,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId()) && d.iteration() > 0) {
-                String expected = d.iteration() == 1 ? "-1==<f:i>-<wrapped:i>" : "true";
+                String expected = d.iteration() == 1 ? "-1==<vp:i:[11 delays]>-<wrapped:i>" : "true";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -167,7 +167,8 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
                 if ("j".equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
-                        case 0, 1 -> "<f:i>";
+                        case 0 -> "<f:i>";
+                        case 1 -> "<vp:i:[11 delays]>";
                         default -> "i";
                     };
                     if ("1.0.0".equals(d.statementId())) {
@@ -188,7 +189,8 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 if (I.equals(d.variableName())) {
                     String expect0_100 = switch (d.iteration()) {
-                        case 0, 1 -> "<f:i>";
+                        case 0 -> "<f:i>";
+                        case 1 -> "<vp:i:[11 delays]>";
                         default -> "instance type int";
                     };
                     if ("0".equals(d.statementId())) {

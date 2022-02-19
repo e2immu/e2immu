@@ -46,6 +46,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        // unused local variable
         testClass("Loops_6", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
@@ -65,7 +66,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.2".equals(d.statementId())) {
                     // in the first iteration (0), we compare 1+<v:i> against <v:i>, which should be false but because of
                     // the equality in DVE, we cannot tell
-                    String expect = d.iteration() == 0 ? "-1==<v:i>-<v:i>" : "true";
+                    String expect = d.iteration() == 0 ? "false" : "true";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -121,12 +122,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     assertEquals(expectInterrupt, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                 }
                 if ("1.0.2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "-1!=<v:i>-<v:i>" : "false";
+                    String expect = d.iteration() == 0 ? "true" : "false";
                     assertEquals(expect, d.state().toString());
                     if (d.iteration() == 0) {
                         assertFalse(d.statementAnalysis().flowData().interruptsFlowIsSet());
                     } else {
-                        assertEquals("{break=CONDITIONALLY:1}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
+                        assertEquals("{}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     }
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {
@@ -146,9 +147,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // expression in if statement always true; unreachable statement
         testClass("Loops_7", 2, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -475,9 +476,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals("9==entry.getValue()?4:3", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "map.entrySet().isEmpty()?3:<merge:int>"
-                                : "map.entrySet().isEmpty()?3:instance type int";
-                        //       assertEquals(expected, d.currentValue().toString());
+                        String expected = "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?3:4";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }

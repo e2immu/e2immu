@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Test_01_Loops_20 extends CommonTestRunner {
 
     private static final String PATH_SPLIT = "path.split(\"/\")";
-    private static final String CAUSES_OF_DELAY = "initial:prefix@Method_loadBytes_1";
+    private static final String CAUSES_OF_DELAY = "initial:prefix@Method_loadBytes_1-C";
 
     public Test_01_Loops_20() {
         super(true);

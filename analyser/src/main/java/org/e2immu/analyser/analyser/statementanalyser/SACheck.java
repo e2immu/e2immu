@@ -168,7 +168,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
-                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL),
+                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.EVALUATION),
                             Message.Label.UNUSED_LOCAL_VARIABLE, vi.name())));
         }
         return DONE;
@@ -187,7 +187,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                         StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
                         if (statementAnalysis == null || !statementAnalysis.variableIsSet(loopVarFqn) ||
                                 !statementAnalysis.getVariable(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL),
+                            this.statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.EVALUATION),
                                     Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });
