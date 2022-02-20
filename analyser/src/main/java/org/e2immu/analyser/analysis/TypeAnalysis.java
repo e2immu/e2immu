@@ -124,7 +124,7 @@ public interface TypeAnalysis extends Analysis {
 
         switch (property) {
             case IMMUTABLE, PARTIAL_IMMUTABLE,
-                    CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
+                    CONTAINER, PARTIAL_CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
                 // ensure that we do not throw an exception
             }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);

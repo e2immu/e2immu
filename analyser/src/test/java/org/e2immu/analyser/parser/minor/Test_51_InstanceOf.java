@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.minor;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -627,15 +630,18 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("sum".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:expression>/*(Sum)*/"
-                                : "<vp:expression:container@Class_InstanceOf_11;immutable@Class_InstanceOf_11>/*(Sum)*/";
-                        //     assertEquals(expect, d.currentValue().toString());
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<f:expression>/*(Sum)*/";
+                            case 1, 2 -> "<vp:expression:container:this.lhs@Method_numericPartOfLhs_0-C>/*(Sum)*/";
+                            default -> "expression/*(Sum)*/";
+                        };
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "evaluationContext".equals(p.name)) {
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         // delays in clustering in iteration 2, otherwise we'd have CM
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -664,7 +670,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             switch (d.typeInfo().simpleName) {
                 case "$1" -> {
-
+                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
                     assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -683,7 +690,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
                                 : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
-                        assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {

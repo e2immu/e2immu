@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.Property.CONTAINER;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
 
 /**
@@ -689,12 +690,23 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus analyseContainer() {
-        DV container = typeAnalysis.getProperty(Property.CONTAINER);
+        DV container = typeAnalysis.getProperty(CONTAINER);
         if (container.isDone()) return DONE;
 
-        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.CONTAINER);
+        Property ALT_CONTAINER;
+        AnalysisStatus ALT_DONE;
+
+        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(CONTAINER);
         if (MARKER != parentOrEnclosing.status) {
-            return parentOrEnclosing.status;
+            if (parentOrEnclosing.status.isDelayed()) {
+                ALT_CONTAINER = Property.PARTIAL_CONTAINER;
+                ALT_DONE = AnalysisStatus.of(parentOrEnclosing.status.causesOfDelay());
+            } else {
+                return parentOrEnclosing.status;
+            }
+        } else {
+            ALT_CONTAINER = CONTAINER;
+            ALT_DONE = DONE;
         }
 
         CausesOfDelay allCauses = CausesOfDelay.EMPTY;
@@ -713,7 +725,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.getMethodInfo().distinguishingName());
-                        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+                        typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                         return DONE;
                     }
                 }
@@ -721,12 +733,16 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         if (allCauses.isDelayed()) {
             CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
-            typeAnalysis.setProperty(Property.CONTAINER, allCauses.causesOfDelay().merge(marker));
+            CausesOfDelay merge = allCauses.causesOfDelay().merge(marker);
+            typeAnalysis.setProperty(CONTAINER, merge);
+            if (ALT_CONTAINER != CONTAINER) {
+                typeAnalysis.setProperty(ALT_CONTAINER, merge);
+            }
             return AnalysisStatus.of(allCauses);
         }
-        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
-        LOGGER.debug("Mark {} as @Container", typeInfo.fullyQualifiedName);
-        return DONE;
+        typeAnalysis.setProperty(ALT_CONTAINER, MultiLevel.CONTAINER_DV);
+        LOGGER.debug("Mark {} as {}", typeInfo.fullyQualifiedName, ALT_CONTAINER);
+        return ALT_DONE;
     }
 
     /**
@@ -1077,7 +1093,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
                     typeAnalysis.addEventuallyImmutableField(fieldInfo);
                 }
-            } else if(typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
+            } else if (typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
                 LOGGER.debug("Field {} is guarded by preconditions", fieldFQN);
 
             } else if (!isPrimitive) {

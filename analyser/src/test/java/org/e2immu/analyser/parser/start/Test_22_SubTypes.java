@@ -284,8 +284,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("SubTypes_10".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    String expected = d.iteration() == 0 ? "<new:External>" : "new External(){}";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("new External(){}", d.currentValue().toString());
                 }
             }
             if ("go".equals(d.methodInfo().name)) {
@@ -297,11 +296,10 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("external".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
-                String expect = d.iteration() == 0 ? "container@Class_SubTypes_10;values:this.external@Field_external" : "";
-                assertEquals(expect, d.fieldAnalysis().valuesDelayed().toString());
+                assertEquals("", d.fieldAnalysis().valuesDelayed().toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
