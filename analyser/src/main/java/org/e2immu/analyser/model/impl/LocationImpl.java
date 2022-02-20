@@ -125,7 +125,7 @@ public class LocationImpl implements Location {
     @Override
     public String delayStringWithoutStatementIdentifier() {
         if (info == null) return "not_yet_set";
-        return info.niceClassName() + "_" + info.name() + (statementIdentifier == null ? "" : "_" + Stage.without(statementIdentifier));
+        return info.niceClassName() + "_" + info.name() ;
     }
 
     @Override

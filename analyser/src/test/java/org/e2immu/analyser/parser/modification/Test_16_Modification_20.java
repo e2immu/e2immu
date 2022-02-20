@@ -61,7 +61,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "assign_to_field@Parameter_setC;cm:this@Method_example1_0-E;immutable@Class_C1;initial:this.s2@Method_example1_0-C;link:this.s2@Method_example1_0-E";
                             case 1 -> "cm:this@Method_example1_0-E;initial@Field_set;link:this.s2@Method_example1_0-E";
-                            case 2, 3, 4 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:this@Method_example1_0-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_0-E;link:this.s2@Method_example1_2-E";
+                            case 2, 3, 4 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:this@Method_example1_0-E;initial@Field_set;link:c@Method_example1_2-E;link:this.s2@Method_example1_0-E";
                             default -> fail();
                         };
                         assertDv(d, expectedDelay, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
