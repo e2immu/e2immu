@@ -192,14 +192,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                     statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                 }
-                if (variable instanceof FieldReference fr) {
-                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
-                    DV effFinal = fieldAnalysis.getProperty(Property.FINAL);
-                    if (effFinal.isDelayed()) {
-                        LOGGER.debug("Delaying statement {}, assignment to field, no idea about @Final", index());
-                        delay = delay.merge(effFinal.causesOfDelay());
-                    }
-                }
             } else {
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.

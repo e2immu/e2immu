@@ -521,6 +521,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
     // 20211015: there's a 3rd linked1Variables value for 1.0.1.0.0: empty
+
+    // this is the "earliest" test with a DelayedVariableOutOfScope expression as part of the scope of a variable
     @Test
     public void test_18() throws IOException {
 
@@ -568,7 +570,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.OutOfScopeVariable);
                     }
+                    assertTrue(d.statementId().compareTo("2") < 0, "The variable should not exist beyond the merge!");
                 }
             }
         };

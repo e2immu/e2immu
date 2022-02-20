@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_51_InstanceOf extends CommonTestRunner {
 
+    public static final String NEW_EXPRESSION = "instance type Expression/*new Expression(){}*/";
+
     public Test_51_InstanceOf() {
         super(false);
     }
@@ -644,6 +646,28 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                    if ("0".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:expression>" : NEW_EXPRESSION;
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:expression>" : NEW_EXPRESSION;
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.1.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:expression>" : NEW_EXPRESSION;
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<instanceOf:Negation>?<f:expression>:<f:expression>" : NEW_EXPRESSION;
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -651,7 +675,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // only reason for waiting would be nonNumericPartOfLhs, where it appears as argument
                 // but there are still delays in clustering in 0.0.1.0.0 in iteration 2
@@ -688,10 +712,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 switch (d.fieldInfo().owner.simpleName) {
                     case "InstanceOf_11" -> {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
-                        String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
-                                : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                        assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        String expect = d.iteration() <= BIG ? "[11 delays]"
+                                : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
+                        //   assertDv(d, expect, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());

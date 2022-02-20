@@ -1014,7 +1014,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             VariableInfoContainer destination;
             if (!variables.isSet(renamed.fullyQualifiedName())) {
-                destination = createVariable(evaluationContext, renamed, statementTime, vic.variableNature(), true);
+                VariableNature variableNature;
+                if (renamed instanceof FieldReference fr && fr.scope instanceof DelayedVariableOutOfScope) {
+                    // FIXME recursively
+                    variableNature = new VariableNature.OutOfScopeVariable(index);
+                } else {
+                    variableNature = vic.variableNature();
+                }
+                destination = createVariable(evaluationContext, renamed, statementTime, variableNature, true);
             } else {
                 destination = vic;
             }
