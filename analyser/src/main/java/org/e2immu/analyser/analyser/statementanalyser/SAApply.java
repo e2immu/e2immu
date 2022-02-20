@@ -177,7 +177,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWritePossiblyDelayed, combined);
+                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite, valueToWritePossiblyDelayed, combined);
                 if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
                     // trying without setting properties -- too dangerous to set value properties
                     // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
@@ -301,10 +301,19 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private Expression detectBreakDelayInAssignment(Variable variable,
                                                     VariableInfo vi,
                                                     EvaluationResult.ChangeData changeData,
+                                                    Expression valueToWrite,
                                                     Expression valueToWritePossiblyDelayed,
                                                     Properties combined) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
+                if (valueToWrite instanceof NullConstant) {
+                    /*
+                    The null constant may have delayed value properties, but it is not useful to delay the whole evaluation
+                    for that reason. We cannot simply keep "null" and delayed properties at the same time, so we wrap.
+                    See E2Immutable_1 as the primary case; and FieldReference_3 as an example of why wrapping is needed.
+                    */
+                    return new DelayedWrappedExpression(Identifier.generate(), valueToWrite, vi, valueToWritePossiblyDelayed.causesOfDelay());
+                }
                 Set<CauseOfDelay> breaks = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
                 if (!breaks.isEmpty()) {
                     if (!combined.delays().isDelayed()) {

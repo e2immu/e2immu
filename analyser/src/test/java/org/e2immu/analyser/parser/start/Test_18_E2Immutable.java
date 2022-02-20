@@ -78,8 +78,22 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_1() throws IOException {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            // the constructor with 1 parameter
+            if ("E2Immutable_1".equals(d.methodInfo().name) &&
+                    d.methodInfo().methodInspection.get().getParameters().size() == 1) {
+                // this.parent2
 
-            // the constructor with the 2 parameters
+                /*
+                problematic here is that the null value relies on the value properties of the primary type, which have
+                not been determined yet. We wrap (see FieldReference_3) the null because we cannot write delayed value
+                properties on a non-delayed value (null).
+                 */
+                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                    String expected = d.iteration() <= 2 ? "<wrapped:parent2>" : "null";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+            // the constructor with 2 parameters
             if ("E2Immutable_1".equals(d.methodInfo().name) &&
                     d.methodInfo().methodInspection.get().getParameters().size() == 2) {
                 assertTrue(d.methodInfo().isConstructor);
@@ -97,8 +111,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 // this.level2
                 if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
                     if ("1".equals(d.statementId())) {
-                        // we never know in the first iteration...
-                        // note the * in field*: this is an indication for the field analyser to break the delay
+                        /*
+                         we never know in the first iteration...
+                         note the * in field*: this is an indication for the field analyser to break the delay
+
+                         this is the 2nd delay breaking after the null value in the other constructor
+                         */
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "2+<field:org.e2immu.analyser.parser.start.testexample.E2Immutable_1.level2#parent2Param>";
                             case 1 -> "<wrapped:level2>";
@@ -108,13 +126,18 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
 
+                // this.parent2
+                if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
+                    assertEquals("parent2Param", d.currentValue().toString());
+                }
+
                 // parent2Param
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type E2Immutable_1/*@Identity*/",
                                 d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<p:parent2Param>" :
@@ -130,10 +153,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("parent2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);
-                String expected = d.iteration() <= 1 ? "<f:parent2>" : "[null,parent2Param]";
+                String expected = "[null,parent2Param]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("level2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);
@@ -155,10 +178,16 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         testClass("E2Immutable_1", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
+    }
+
+
+    @Test
+    public void test_1_1() throws IOException {
+        testClass("E2Immutable_1_1", 0, 0, new DebugConfiguration.Builder().build());
     }
 
     @Test
@@ -555,7 +584,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
-              //  assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                //  assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
