@@ -672,6 +672,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 
+            if (!parameterAnalysis.properties.isDone(CONTAINER)) {
+                parameterAnalysis.setProperty(CONTAINER, CONTAINER.falseDv);
+            }
+            parameterAnalysis.setProperty(CONTEXT_CONTAINER, CONTAINER.falseDv);
+
             parameterAnalysis.resolveFieldDelays();
             return DONE_ALL; // no point visiting any of the other analysers
         }

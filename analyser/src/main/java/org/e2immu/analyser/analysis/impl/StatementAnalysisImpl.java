@@ -1015,8 +1015,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             VariableInfoContainer destination;
             if (!variables.isSet(renamed.fullyQualifiedName())) {
                 VariableNature variableNature;
-                if (renamed instanceof FieldReference fr && fr.scope instanceof DelayedVariableOutOfScope) {
-                    // FIXME recursively
+                if (renamed instanceof FieldReference fr && fr.anyScopeDelayedOutOfScope()) {
                     variableNature = new VariableNature.OutOfScopeVariable(index);
                 } else {
                     variableNature = vic.variableNature();

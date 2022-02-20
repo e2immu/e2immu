@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.output.Symbol;
@@ -211,6 +208,15 @@ public class FieldReference extends VariableWithConcreteReturnType {
         IsVariableExpression ive;
         if ((ive = scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof This thisVar) {
             return thisVar.typeInfo.equals(currentType);
+        }
+        return false;
+    }
+
+    public boolean anyScopeDelayedOutOfScope() {
+        if (scope instanceof DelayedVariableOutOfScope) return true;
+        IsVariableExpression ive;
+        if ((ive = scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr) {
+            return fr.anyScopeDelayedOutOfScope();
         }
         return false;
     }
