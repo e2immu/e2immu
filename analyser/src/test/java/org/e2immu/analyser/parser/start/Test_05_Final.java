@@ -108,7 +108,7 @@ public class Test_05_Final extends CommonTestRunner {
                     }
                 }
                 if (S1.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "s1+<f:s3>" : "s1+\"abc\"";
+                    String expectValue = d.iteration() == 0 ? "<s:String>" : "s1+\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);

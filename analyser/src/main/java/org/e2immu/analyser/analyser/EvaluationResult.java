@@ -553,7 +553,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // we do NOT take the delayed state into account when the assignment target is the reason for the delay
             // see FirstThen_0 and Singleton_7
             Expression value = stateIsDelayed.isDelayed()
-                    && !resultOfExpression.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
                     resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay(stateIsDelayed),

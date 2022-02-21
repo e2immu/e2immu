@@ -199,14 +199,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
-    /*
-    FIXME to do
-    - missing out on @NM on index() causes @PropMod to be activated, but if that's not on parameters then nothing happens and we end up in a delay loop
-    - once index() is @NM: guide should be @NM in apply, then in lookAhead
-     */
     @Test
     public void test_9() throws IOException {
-        int BIG = 10;
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
@@ -250,8 +244,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0 -> "<instanceOf:Guide>";
-                        case 1, 2 -> "<s:boolean>";
+                        case 0, 1, 2 -> "<s:boolean>";
                         default -> "list.get(forwardInfo.pos) instanceof Guide";
                     };
                     assertEquals(expect, d.currentValue().toString());

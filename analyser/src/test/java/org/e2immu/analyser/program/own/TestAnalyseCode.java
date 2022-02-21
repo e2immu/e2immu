@@ -19,6 +19,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,15 @@ public class TestAnalyseCode {
 
     @Test
     public void test() throws IOException {
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                if ("4.0.2".equals(d.statementId())) {
+                    assertEquals("!<m:isEmpty>", d.state().toString());
+                }
+            }
+        };
+
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/main/java")
@@ -56,6 +66,9 @@ public class TestAnalyseCode {
                 .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_1))
                 .build();
 
+        DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor).build();
+
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
         // want to see them as AnnotatedAPI
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
@@ -66,7 +79,8 @@ public class TestAnalyseCode {
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
-           //     .addDebugLogTargets("analyser")
+                .setDebugConfiguration(debugConfiguration)
+                //     .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

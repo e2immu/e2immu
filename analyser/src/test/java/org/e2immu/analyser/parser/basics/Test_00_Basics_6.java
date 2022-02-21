@@ -154,7 +154,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "field.toUpperCase()";
+                        String expectValue = d.iteration() == 0 ? "<s:String>" : "field.toUpperCase()";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }

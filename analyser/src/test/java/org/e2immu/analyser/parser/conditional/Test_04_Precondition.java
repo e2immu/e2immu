@@ -306,7 +306,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         if (d.iteration() <= 1) {
                             // not <s:Integer> because both state and value are delayed; preference to value (see EvaluationResult.assignment)
-                            assertEquals("<p:ii>>=0?<p:ii>:null", d.currentValue().toString());
+                            assertEquals("<s:Integer>", d.currentValue().toString());
                         } else {
                             assertEquals("ii", d.currentValue().toString());
                         }

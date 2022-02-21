@@ -122,7 +122,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "j:0" : "j:0,x.k:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -130,7 +130,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
                             if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
@@ -171,7 +171,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "j:0" : "j:0,x.k:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
