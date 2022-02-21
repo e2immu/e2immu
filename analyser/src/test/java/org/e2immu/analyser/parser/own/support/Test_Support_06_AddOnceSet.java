@@ -93,7 +93,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

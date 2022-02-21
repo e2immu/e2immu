@@ -229,7 +229,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         }
                         vic.setValue(value, vi1.getLinkedVariables(), merged, false);
                     } else {
-                        // delayed situation; do not copy the value properties UNLESS there is a break delay FIXME which hasn't been broken yet....
+                        // delayed situation; do not copy the value properties UNLESS there is a break delay
                         Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
                                 sharedState.evaluationContext(),
                                 variable, vi1.getProperties(),
@@ -492,12 +492,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // odds and ends
-
-        if (evaluationResult.causesOfDelay().isDone()) {
-            evaluationResult.messages().getMessageStream()
-                    .filter(this::acceptMessage)
-                    .forEach(statementAnalysis::ensure);
-        }
+        /*
+         this copying used to be restricted to absence of delays -- however, since the introduction of the re-evaluation
+         of variables in VariableExpression (forced by InstanceOf_11, variable d) we observe that the interaction between
+         the condition and the variable obscures potential null pointer exceptions when in "done" mode. This needs
+         revisiting at some point.
+         */
+        evaluationResult.messages().getMessageStream().filter(this::acceptMessage).forEach(statementAnalysis::ensure);
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         Precondition precondition = evaluationResult.precondition();
@@ -589,7 +590,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!localConditionManager.state().isBoolValueTrue()) {
                 Expression state = localConditionManager.state();
 
-                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), false,true, variable, true);
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), false, true, variable, true);
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
                 Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);
