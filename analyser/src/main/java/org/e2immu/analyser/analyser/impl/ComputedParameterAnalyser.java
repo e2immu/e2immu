@@ -651,7 +651,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             // @Container: handled separately
 
             // @IgnoreModifications
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
+            if(!parameterAnalysis.properties.isDone(IGNORE_MODIFICATIONS)) {
+                parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
+            }
 
             // @Independent
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {

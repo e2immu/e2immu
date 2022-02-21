@@ -550,11 +550,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public boolean notNullAccordingToConditionManager(Variable variable) {
-            return notNullAccordingToConditionManager(variable, evaluationContext::findOrThrow);
-        }
-
-        @Override
         public LinkedVariables linkedVariables(Variable variable) {
             ensureVariableIsKnown(variable);
             return LinkedVariables.EMPTY;

@@ -371,11 +371,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return cnnInMap.max(cm);
     }
 
-    @Override
-    public boolean notNullAccordingToConditionManager(Variable variable) {
-        return notNullAccordingToConditionManager(variable, statementAnalysis::findOrThrow);
-    }
-
     // specific implementation for SAEvaluationContext, currently only used by EvaluationResult.removeFromLinkedVariables
     // it does not use findForReading because it does not need to switch to local copies
     @Override

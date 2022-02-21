@@ -88,7 +88,8 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     code here because shared between EC in StatementAnalyser, InlinedMethod
      */
 
-    protected boolean notNullAccordingToConditionManager(Variable variable, Function<FieldReference, VariableInfo> findField) {
+    @Override
+    public boolean notNullAccordingToConditionManager(Variable variable) {
         LinkedVariables linkedVariables = linkedVariables(variable);
         Set<Variable> assignedVariables = linkedVariables == null ? Set.of(variable)
                 // always include myself!

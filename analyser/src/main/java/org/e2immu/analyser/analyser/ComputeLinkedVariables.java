@@ -114,17 +114,14 @@ public class ComputeLinkedVariables {
                 LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                         : vi1.getLinkedVariables().remove(reassigned);
                 LinkedVariables combined = external.merge(inVi);
-                LinkedVariables curated;
-                if (staticallyAssigned || !(variable instanceof ReturnVariable)) {
-                    curated = combined
-                            .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                                    immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
-                            .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-                } else {
-                    curated = LinkedVariables.EMPTY;
-                }
+                LinkedVariables curated = combined
+                        .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
+                                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
+                        .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
                 weightedGraph.addNode(variable, curated.variables(), true);
-                if (curated.isDelayed()) {
+                boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
+                // context modified for the return variable is never linked, but the variables themselves must be present
+                if (accountForDelay && curated.isDelayed()) {
                     curated.variables().forEach((v, value) -> {
                         if (value.isDelayed()) {
                             delaysInClustering.add(new VariableCause(v, statementAnalysis.location(stage), CauseOfDelay.Cause.LINKING));
