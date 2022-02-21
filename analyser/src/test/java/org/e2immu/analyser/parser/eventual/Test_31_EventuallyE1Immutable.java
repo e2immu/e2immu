@@ -227,7 +227,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                             default -> "i>=j$0";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                     }
                 }
             }

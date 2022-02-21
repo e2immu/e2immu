@@ -169,7 +169,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                             assertEquals("1", outside.statementIndex());
                         } else fail("Of " + variableNature.getClass());
-                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {

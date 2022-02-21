@@ -84,8 +84,10 @@ public interface ExpressionContext {
 
     TypeInfo enclosingType();
 
+    @NotNull
     TypeInfo primaryType();
 
+    @NotNull
     TypeContext typeContext();
 
     VariableContext variableContext();

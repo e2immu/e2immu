@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -158,9 +159,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // it should not be taken into account anymore. (See e.g. Loops_1)
                 Properties valueProperties = sharedState.evaluationContext()
                         .getValueProperties(variable.parameterizedType(), valueToWrite, true);
-                CausesOfDelay valuePropertiesIsDelayed = valueProperties.delays();
 
-                Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valuePropertiesIsDelayed);
+                Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
 
                 Properties changeDataProperties = Properties.of(changeData.properties());
                 boolean myself = sharedState.evaluationContext().isMyself(variable);
@@ -307,19 +307,33 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
                 Set<CauseOfDelay> breaks = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
                 if (!breaks.isEmpty()) {
-                    if (!combined.delays().isDelayed()) {
+                    /*
+                    deal with 2 situations: we have value properties in combined, or we don't, but we know that we're dealing
+                    with a variable of primitive type, so we know what the value properties should be.
+                    The reason for this second case is the BaseExpression.getPropertyForPrimitiveResults method, which
+                    forces delays on value properties even if we know their values.
+                     */
+                    Properties combinedOrPrimitive = valueToWrite.returnType().isPrimitiveExcludingVoid() || valueToWrite instanceof StringConcat
+                            ? EvaluationContext.PRIMITIVE_VALUE_PROPERTIES : combined;
+                    if (!combinedOrPrimitive.delays().isDelayed()) {
                         // we don't have a value, but can make a perfectly good "instance", with all the right value properties
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
-                                target.parameterizedType, combined);
+                                target.parameterizedType, combinedOrPrimitive);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
                         if (causes.isDone()) {
                             //just making sure that we are delayed
                             causes = new SimpleSet(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
                         }
-                        return new DelayedWrappedExpression(Identifier.generate("dwe break init delay"), instance, vi, causes);
+                        VariableInfo viCombinedOrPrimitive;
+                        if (combinedOrPrimitive == EvaluationContext.PRIMITIVE_VALUE_PROPERTIES) {
+                            viCombinedOrPrimitive = new VariableInfoImpl(getLocation(), vi.variable(), vi.getValue(), combinedOrPrimitive);
+                        } else {
+                            viCombinedOrPrimitive = vi;
+                        }
+                        return new DelayedWrappedExpression(Identifier.generate("dwe break init delay"), instance, viCombinedOrPrimitive, causes);
                     }
                 }
             } else {
@@ -538,7 +552,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!initialAbsoluteState.equals(myAbsoluteState)) return false;
             // now check if we're in loop block, and there was an assignment outside
             // this loop block will not have an effect on the absolute state (See Loops_2, Loops_13)
-            VariableInfoContainer initialVic = sa.getVariable(vi1.variable().fullyQualifiedName());
+            String fqn = vi1.variable().fullyQualifiedName();
+            if (!sa.variableIsSet(fqn)) {
+                // does not exist in previous statement, so no point...
+                return false;
+            }
+            VariableInfoContainer initialVic = sa.getVariable(fqn);
             // do raise an error when the assignment is in the loop condition
             return initialVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop ||
                     !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop) ||

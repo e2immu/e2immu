@@ -83,7 +83,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return UnknownExpression.primitiveGetProperty(property);
+        return getPropertyForPrimitiveResults(property);
     }
 
     @Override

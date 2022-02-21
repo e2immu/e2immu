@@ -117,8 +117,10 @@ public interface StatementAnalysis extends Analysis,
     @NotNull
     NavigationData<StatementAnalysis> navigationData();
 
+    @NotNull
     FlowData flowData();
 
+    @NotNull
     MethodLevelData methodLevelData();
 
     StatementAnalysis navigateTo(String target);
@@ -131,14 +133,17 @@ public interface StatementAnalysis extends Analysis,
 
     boolean variableIsSet(String fullyQualifiedName);
 
+    @NotNull
     StateData stateData();
 
+    @NotNull
     RangeData rangeData();
 
     boolean inSyncBlock();
 
     int statementTime(Stage merge);
 
+    @NotNull
     MethodAnalysis methodAnalysis();
 
     int numberOfVariables();

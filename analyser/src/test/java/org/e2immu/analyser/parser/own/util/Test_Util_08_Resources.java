@@ -17,22 +17,33 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.own.testexample.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Util_08_Resources extends CommonTestRunner {
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+public class Test_Util_08_Resources extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class, Logger.class),
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("fqnToPath".equals(d.methodInfo().name)) {
+                if ("parts[i]".equals(d.variableName())) {
+                    if ("1.0.4".equals(d.statementId())) {
+                        assertEquals("extension", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testSupportAndUtilClasses(List.of(Resources.class),//, Trie.class, Freezable.class),
                 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

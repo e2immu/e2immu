@@ -14,6 +14,7 @@
 
 package org.e2immu.annotatedapi.javaparser;
 
+import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -23,6 +24,8 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+
+import java.util.Optional;
 
 public class ComGithubJavaparserAstNodeTypes {
 
@@ -55,5 +58,12 @@ public class ComGithubJavaparserAstNodeTypes {
 
         @NotNull1
         NodeList<TypeParameter> getTypeParameters();
+    }
+
+    interface NodeWithRange$ {
+
+        @NotNull
+        Optional<Position> getBegin();
+
     }
 }

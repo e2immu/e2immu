@@ -610,6 +610,9 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull
         @Independent1
         <T> Stream<T> stream(@NotNull @NotModified @Independent1 T[] array);
+
+        @NotNull
+        <T> List<T> asList(T... ts);
     }
 
     @UtilityClass

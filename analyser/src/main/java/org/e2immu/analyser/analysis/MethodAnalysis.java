@@ -19,6 +19,8 @@ import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 
 public interface MethodAnalysis extends Analysis {
 
+    @NotNull
     MethodInfo getMethodInfo();
 
     /**
@@ -45,6 +48,7 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
+    @NotNull1
     List<ParameterAnalysis> getParameterAnalyses();
 
     /**

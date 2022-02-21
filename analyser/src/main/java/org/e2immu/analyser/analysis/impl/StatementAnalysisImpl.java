@@ -78,7 +78,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private final Map<Variable, DV> variablesModifiedBySubAnalysers = new HashMap<>(); // TODO protect
 
     // a variable that changes from iteration to iteration... should be moved out at some point
-    private Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
+    private final Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
 
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
@@ -374,6 +374,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public VariableInfoContainer getVariable(String fullyQualifiedName) {
+        assert variables.isSet(fullyQualifiedName);
         return variables.get(fullyQualifiedName);
     }
 

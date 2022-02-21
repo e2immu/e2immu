@@ -98,7 +98,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("parent".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() == 0 ? "<f:parent>" : "[null,parentContext/*@NotNull*/,parent/*@NotNull*/]";
+                String expected = "[null,parentContext/*@NotNull*/,parent/*@NotNull*/]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
             if ("typeMap".equals(d.fieldInfo().name)) {
@@ -114,9 +114,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
 
         testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -140,9 +140,17 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 }
             }
         };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("fullyQualifiedName".equals(d.fieldInfo().name)) {
+                String expected = d.iteration() == 0 ? "<f:fullyQualifiedName>" :
+                        "[instance type String,instance type String,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName,\"\".equals(packageName)?simpleName:\".\"+packageName+simpleName]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+            }
+        };
         // 4 errors: private fields not read outside constructors
         testClass("ExplicitConstructorInvocation_6", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

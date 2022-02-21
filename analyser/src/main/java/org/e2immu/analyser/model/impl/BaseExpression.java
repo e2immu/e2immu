@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.model.impl;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
@@ -144,5 +142,15 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     @Override
     public int compareTo(Expression v) {
         return ExpressionComparator.SINGLETON.compare(this, v);
+    }
+
+    protected DV getPropertyForPrimitiveResults(Property property) {
+        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
+            CausesOfDelay causesOfDelay = causesOfDelay();
+            if (causesOfDelay.isDelayed()) {
+                return causesOfDelay;
+            }
+        }
+        return UnknownExpression.primitiveGetProperty(property);
     }
 }

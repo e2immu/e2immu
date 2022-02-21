@@ -83,7 +83,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (parameterizedType.isPrimitiveExcludingVoid()) {
-            return primitiveGetProperty(property);
+            return getPropertyForPrimitiveResults(property);
         }
         TypeAnalysis typeAnalysis = parameterizedType.typeInfo == null ? null
                 : evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);

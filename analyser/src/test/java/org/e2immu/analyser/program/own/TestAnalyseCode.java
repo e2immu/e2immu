@@ -53,7 +53,7 @@ public class TestAnalyseCode {
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_0))
+                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_1))
                 .build();
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't

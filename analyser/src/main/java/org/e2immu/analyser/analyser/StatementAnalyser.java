@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.HasNavigationData;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,7 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser> 
 
     EvaluationContext newEvaluationContextForOutside();
 
+    @NotNull
     StatementAnalysis getStatementAnalysis();
 
     StatementAnalyser lastStatement();
@@ -43,11 +46,13 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser> 
 
     boolean isDone();
 
+    @NotNull
     NavigationData<StatementAnalyser> navigationData();
 
     StatementAnalyser lastStatementOfSwitchOldStyle(String key);
 
     void makeImmutable();
 
+    @NotNull1
     Stream<Message> getMessageStream();
 }

@@ -464,7 +464,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue.getValue(), ifFalse.getValue(), false));
-        if (condition.isDelayed()) {
+        // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
+        if (condition.isDelayed() && safe.isDelayed()) {
             CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.CONDITION));
             Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);

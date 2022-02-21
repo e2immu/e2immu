@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
@@ -108,7 +111,7 @@ public class Test_05_Final extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "s1+<f:s3>" : "s1+\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));

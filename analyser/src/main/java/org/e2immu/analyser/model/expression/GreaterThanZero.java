@@ -213,7 +213,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return UnknownExpression.primitiveGetProperty(property);
+        return getPropertyForPrimitiveResults(property);
     }
 
     @Override
@@ -320,7 +320,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         Expression translate = expression.translate(translationMap);
-        if(translate == expression) return this;
+        if (translate == expression) return this;
         return new GreaterThanZero(identifier, booleanParameterizedType, translate, allowEquals);
     }
 
@@ -331,7 +331,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        if(expression.isDelayed()) {
+        if (expression.isDelayed()) {
             return new GreaterThanZero(identifier, booleanParameterizedType,
                     expression.mergeDelays(causesOfDelay), allowEquals);
         }
