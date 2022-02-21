@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -243,7 +244,15 @@ public class Assignment extends BaseExpression implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
 
-        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyAddAssignmentTarget(ve == null ? null : ve.variable());
+        // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a primitve
+        ForwardEvaluationInfo fwd;
+        Variable variable = ve == null ? null : ve.variable();
+        if (target.returnType().isPrimitiveExcludingVoid()) {
+            fwd = forwardEvaluationInfo.copyAddAssignmentTargetEnsureNotNull(variable);
+        } else {
+            fwd = forwardEvaluationInfo.copyAddAssignmentTarget(variable);
+        }
+
         EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
 
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
@@ -330,6 +339,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (currentValue != null && (currentValue.equals(valueResultValue) ||
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
                         && newVariableTarget.equals(ive2.variable())) &&
+                !(newVariableTarget instanceof ReturnVariable) &&
                 !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             LOGGER.debug("Assigning identical value {} to {}", currentValue, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);

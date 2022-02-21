@@ -627,7 +627,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
@@ -684,6 +683,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2 -> "<m:nonNumericPartOfLhs>/*(Negation)*/";
                             default -> "expression.lhs/*(Negation)*/";
+                        };
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("b".equals(d.variableName())) {
+                    if ("0.0.1.0.4.0.2".equals(d.statementId())) {
+                        String expect = switch (d.iteration()) {
+                            case 0, 1 -> "<m:numericPartOfLhs>";
+                            default -> "3.0";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -759,10 +767,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // delays in clustering in iteration 2, otherwise we'd have CM
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);  // FIXME
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
@@ -798,6 +806,28 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.1.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:Sum>&&null!=<m:numericPartOfLhs>";
+                        case 1 -> "expression instanceof Sum&&null!=<m:numericPartOfLhs>";
+                        case 2 -> "<m:equals>&&expression instanceof Sum";
+                        default -> "expression.lhs.equals(expression.rhs)&&expression instanceof Sum";
+                    };
+                    assertEquals(expected, d.localConditionManager().absoluteState(d.evaluationContext()).toString());
+                }
+                if ("0.0.1.0.4.0.2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:Negation>&&<instanceOf:Sum>&&null!=<m:numericPartOfLhs>";
+                        case 1 -> "<instanceOf:Negation>&&expression instanceof Sum&&null!=<m:numericPartOfLhs>";
+                        case 2 -> "<instanceOf:Negation>&&<m:equals>&&expression instanceof Sum";
+                        default -> "expression.lhs.equals(expression.rhs)&&expression.lhs instanceof Negation&&expression instanceof Sum";
+                    };
+                    assertEquals(expected, d.localConditionManager().absoluteState(d.evaluationContext()).toString());
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expression".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -807,8 +837,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                 // only reason for waiting would be nonNumericPartOfLhs, where it appears as argument
                 // but there are still delays in clustering in 0.0.1.0.0 in iteration 2
-                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("nonNumericPartOfLhs".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -832,10 +862,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
-                    assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, expect, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 case "Expression", "EvaluationContext" -> assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "XB" -> assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
@@ -847,7 +877,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case "InstanceOf_11" -> {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                        assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
@@ -858,8 +888,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
             }
         };
-        testClass("InstanceOf_11", 0, 0, new DebugConfiguration.Builder()
+        // IMPROVE could have been 1 rather than 3 potential null pointers: expansion of non-modifying method replicates them
+        testClass("InstanceOf_11", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

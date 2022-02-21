@@ -48,7 +48,11 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null==<f:counter>" : "null==counter";
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "null==<f:counter>";
+                        case 1 -> "null==<f*:counter>";
+                        default -> "null==StaticSideEffects_1.counter";
+                    };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -56,14 +60,18 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param K]", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param K", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null==<f:counter>" : "null==counter";
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "null==<f:counter>";
+                        case 1 -> "null==<f*:counter>";
+                        default -> "null==StaticSideEffects_1.counter";
+                    };
                     assertEquals(expected, d.condition().toString());
                     assertTrue(d.statementAnalysis().flowData().interruptsFlowIsSet());
                 }
@@ -81,11 +89,13 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectedValue = d.iteration() == 0
-                                ? "null==<f:counter>?new AtomicInteger():<f:counter>"
-                                : "null==counter?new AtomicInteger():nullable instance type AtomicInteger";
+                        String expectedValue =switch(d.iteration()) {
+                            case 0 -> "null==<f:counter>?new AtomicInteger():<f:counter>";
+                            case 1 -> "<wrapped:counter>";
+                            default -> "null==StaticSideEffects_1.counter?new AtomicInteger():nullable instance type AtomicInteger";
+                        };
                         assertEquals(expectedValue, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
@@ -99,18 +109,19 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
             if ("counter".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-
-                String expected = "new AtomicInteger(),null";
-                assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+                if (d.iteration() > 0) {
+                    String expected = "new AtomicInteger(),null";
+                    assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+                }
             }
         };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                ///  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -590,7 +589,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!localConditionManager.state().isBoolValueTrue()) {
                 Expression state = localConditionManager.state();
 
-                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable, true);
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), false,true, variable, true);
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
                 Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);

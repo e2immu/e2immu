@@ -217,6 +217,10 @@ public final class VariableExpression extends CommonVariableExpression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        if(forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
+            return builder.setExpression(this).build();
+        }
+
         EvaluationResult scopeResult;
         if (variable instanceof FieldReference fr && fr.scope != null) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
@@ -229,7 +233,18 @@ public final class VariableExpression extends CommonVariableExpression {
         }
 
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
-        Expression adjustedScope = adjustScope(evaluationContext, scopeResult, currentValue);
+        Expression evaluated;
+        if (!currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
+            ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DO_NOT_REEVALUATE_VARIABLE_EXPRESSIONS;
+            EvaluationResult er = currentValue.evaluate(evaluationContext, fwd);
+            evaluated = er.getExpression();
+            // resolve conditions, but do not keep errors/warnings (no builder.compose(er);)
+            // InstanceOf_11 - 0.0.1.0.4.0.2-E is the first example where this re-evaluation is necessary
+        } else {
+            evaluated = currentValue;
+        }
+
+        Expression adjustedScope = adjustScope(evaluationContext, scopeResult, evaluated);
 
         builder.setExpression(adjustedScope);
 

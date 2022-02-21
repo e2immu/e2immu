@@ -41,6 +41,7 @@ public class InstanceOf_11 {
             return lhs.equals(rhs) ? 3.0 : null;
         }
 
+        // critical to this test was that evaluationContext is not used (20220220)
         public Expression nonNumericPartOfLhs(EvaluationContext evaluationContext) {
             return lhs;
         }

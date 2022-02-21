@@ -180,7 +180,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("(null==param?\"x\":param)+\"c\"", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "(<c:boolean>&&<m:contains>&&null==param?\"x\":param)+\"c\"" : "(null==param?\"x\":param)+\"c\"";
+                    assertEquals(expected, d.currentValue().toString());
                     if (d.iteration() == 0) {
                         assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
@@ -190,7 +191,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>"
+                    String expected = d.iteration() == 0 ? "<c:boolean>?(<c:boolean>&&<m:contains>&&null==param?\"x\":param)+\"c\":<return value>"
                             : "<return value>";
                     assertEquals(expected, d.currentValue().toString());
                     String expectLv = d.iteration() == 0 ? "return method3:0" : "";
@@ -199,7 +200,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "<m:contains>&&<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>"
+                            ? "<m:contains>&&<c:boolean>?(<c:boolean>&&<m:contains>&&null==param?\"x\":param)+\"c\":<return value>"
                             : "<return value>";
                     assertEquals(expected, d.currentValue().toString());
                     CausesOfDelay causesOfDelayOfLinkedVars = d.variableInfo().getLinkedVariables().causesOfDelay();

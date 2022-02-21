@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -700,5 +701,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives(), causes)));
         }
 
+        public boolean isNotNull(Expression expression) {
+            assert evaluationContext != null;
+            if (value instanceof VariableExpression variableExpression) {
+                ChangeData cd = valueChanges.get(variableExpression.variable());
+                if (cd != null) {
+                    DV inChangeData = cd.properties.getOrDefault(Property.CONTEXT_NOT_NULL, null);
+                    if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
+                }
+            }
+            return evaluationContext.isNotNull0(expression, false);
+        }
     }
 }

@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -551,5 +552,15 @@ public class Test_14_Warnings extends CommonTestRunner {
         // empty method with @Modified parameter
         testClass("Warnings_12", 1, 0, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test13() throws IOException {
+        // potential null pointer, but context properties over all methods must be false!
+        testClass("Warnings_13", 0, 1, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeContextPropertiesOverAllMethods(false)
+                        .build());
     }
 }

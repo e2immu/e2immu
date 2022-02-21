@@ -111,7 +111,7 @@ public class EvaluateParameters {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
             }
 
-            ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true,
+            ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
                     forwardEvaluationInfo.assignmentTarget(), true);
             parameterResult = parameterExpression.evaluate(evaluationContext, forward);
             parameterValue = parameterResult.value();

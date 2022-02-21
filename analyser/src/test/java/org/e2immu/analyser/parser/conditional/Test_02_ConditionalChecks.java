@@ -587,8 +587,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                             d.evaluationResult().value().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    assertEquals("(p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1)",
-                            d.evaluationResult().value().toString());
+                    assertEquals("true", d.evaluationResult().value().toString());
                 }
             }
         };

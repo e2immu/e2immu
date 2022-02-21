@@ -145,6 +145,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
+            return new EvaluationResult.Builder().setExpression(this).build();
+        }
         throw new UnsupportedOperationException();
     }
 
