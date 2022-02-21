@@ -32,7 +32,7 @@ public class Cast extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
 
     public Cast(Expression expression, ParameterizedType parameterizedType) {
-        super(Identifier.generate());
+        super(Identifier.generate("cast"));
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }

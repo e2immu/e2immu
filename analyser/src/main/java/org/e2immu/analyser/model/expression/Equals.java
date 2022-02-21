@@ -53,7 +53,7 @@ public class Equals extends BinaryOperator {
     }
 
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return equals(Identifier.generate(), evaluationContext, l, r, true);
+        return equals(Identifier.generate("equals"), evaluationContext, l, r, true);
     }
 
     public static Expression equals(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {

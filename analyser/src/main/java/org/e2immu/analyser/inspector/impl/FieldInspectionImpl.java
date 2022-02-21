@@ -17,10 +17,7 @@ package org.e2immu.analyser.inspector.impl;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInspection;
-import org.e2immu.analyser.model.FieldModifier;
+import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -114,11 +111,12 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
 
         @NotNull
         public FieldInspectionImpl build() {
-            return new FieldInspectionImpl(getModifiers(),
-                    fieldInitialiser != null ? fieldInitialiser :
-                            inspectedInitialiserExpression == null ? null
-                                    : new FieldInspection.FieldInitialiser(inspectedInitialiserExpression),
-                    getAnnotations(), getAccess(), isSynthetic());
+            Identifier id = initialiserExpression == null ? Identifier.generate("field initializer")
+                    : Identifier.from(initialiserExpression);
+            FieldInitialiser fi = fieldInitialiser != null ? fieldInitialiser :
+                    inspectedInitialiserExpression == null
+                            ? null : new FieldInitialiser(inspectedInitialiserExpression, id);
+            return new FieldInspectionImpl(getModifiers(), fi, getAnnotations(), getAccess(), isSynthetic());
         }
 
         @Override

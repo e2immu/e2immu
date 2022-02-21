@@ -36,7 +36,7 @@ public class TestEqualsMethod extends CommonAbstractValue {
 
     static {
         TypeInfo typeInfo = PRIMITIVES.objectTypeInfo();
-        ParameterInspection.Builder other = new ParameterInspectionImpl.Builder(Identifier.generate())
+        ParameterInspection.Builder other = new ParameterInspectionImpl.Builder(Identifier.generate("test"))
                 .setParameterizedType(PRIMITIVES.objectParameterizedType())
                 .setIndex(0).setVarArgs(false).setName("other");
         equalsMethodInfo = new MethodInspectionImpl.Builder(typeInfo, "equals")
@@ -46,7 +46,7 @@ public class TestEqualsMethod extends CommonAbstractValue {
     }
 
     private static Expression eqMethod(Expression lhs, Expression rhs) {
-        return new MethodCall(Identifier.generate(), lhs, equalsMethodInfo, List.of(rhs));
+        return new MethodCall(Identifier.generate("test"), lhs, equalsMethodInfo, List.of(rhs));
     }
 
     private static Expression newString(String s) {

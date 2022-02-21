@@ -428,7 +428,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
             catchClauses.add(new Pair<>(catchParameter, block));
         }
-        Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.emptyBlock(Identifier.generate()));
+        Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement)
+                .orElse(Block.emptyBlock(Identifier.generate("empty finally block")));
         return new TryStatement(identifier, resources, tryBlock, catchClauses, finallyBlock);
     }
 
@@ -715,7 +716,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 return ParseArrayCreationExpr.parse(this, expression.asArrayCreationExpr());
             }
             if (expression.isArrayInitializerExpr()) {
-                return new ArrayInitializer(typeContext, expression.asArrayInitializerExpr().getValues().stream()
+                return new ArrayInitializer(identifier, typeContext, expression.asArrayInitializerExpr().getValues().stream()
                         .map(this::parseExpressionStartVoid).collect(Collectors.toList()), forwardReturnTypeInfo.type());
             }
             if (expression.isEnclosedExpr()) {

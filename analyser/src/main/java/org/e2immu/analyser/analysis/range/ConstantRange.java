@@ -37,7 +37,7 @@ public record ConstantRange(ArrayInitializer initializer, VariableExpression var
     }
 
     private Expression equals(MethodInfo equalsMethodInfo, VariableExpression variableExpression, Expression e) {
-        return new MethodCall(Identifier.generate(), variableExpression, equalsMethodInfo, List.of(e));
+        return new MethodCall(Identifier.generate("equals in constant range"), variableExpression, equalsMethodInfo, List.of(e));
     }
 
     @Override

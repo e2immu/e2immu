@@ -40,7 +40,7 @@ public class And extends ExpressionCanBeTooComplex {
     public static final int COMPLEXITY = 3;
 
     public And(Primitives primitives, List<Expression> expressions) {
-        this(Identifier.generate(), primitives, expressions);
+        this(Identifier.joined("and", expressions.stream().map(Expression::getIdentifier).toList()), primitives, expressions);
     }
 
     private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {
@@ -49,8 +49,8 @@ public class And extends ExpressionCanBeTooComplex {
         this.expressions = Objects.requireNonNull(expressions);
     }
 
-    private And(Primitives primitives) {
-        this(Identifier.generate(), primitives, List.of());
+    private And(Identifier identifier, Primitives primitives) {
+        this(identifier, primitives, List.of());
     }
 
     private enum Action {
@@ -58,7 +58,8 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     public static Expression and(EvaluationContext evaluationContext, Expression... values) {
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, values);
+        Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
+        return new And(id, evaluationContext.getPrimitives()).append(evaluationContext, values);
     }
 
     // we try to maintain a CNF
@@ -155,7 +156,8 @@ public class And extends ExpressionCanBeTooComplex {
             LOGGER.debug("And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        And res = new And(identifier, primitives, List.copyOf(concat));
+        Identifier id = Identifier.joined("and", concat.stream().map(Expression::getIdentifier).toList());
+        And res = new And(id, primitives, List.copyOf(concat));
         LOGGER.debug("Constructed {}", res);
         return res;
     }
@@ -402,7 +404,8 @@ public class And extends ExpressionCanBeTooComplex {
                 List<Expression> result = new ArrayList<>(or.expressions().size());
                 boolean foundTrue = false;
                 for (Expression clause : or.expressions()) {
-                    Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, prev, clause);
+                    Expression and = new And(Identifier.joined("and", List.of(prev.getIdentifier(), clause.getIdentifier())),
+                            evaluationContext.getPrimitives()).append(evaluationContext, prev, clause);
                     if (and.isBoolValueTrue()) {
                         foundTrue = true;
                         break;

@@ -83,15 +83,16 @@ public class EnumMethods {
 
         // values() returns E[]
 
-        var arrayInitializer = new ArrayInitializer(typeContext,
+        var arrayInitializer = new ArrayInitializer(Identifier.generate("enum array init"), typeContext,
                 enumFields.stream().map(fieldInfo -> (Expression)
                                 new VariableExpression(new FieldReference(typeContext, fieldInfo, null)))
                         .toList(),
                 enumType.asParameterizedType(typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);
-        var returnNewArray = new ReturnStatement(Identifier.generate(),
-                ConstructorCall.withArrayInitialiser(null, valuesReturnType, List.of(), arrayInitializer));
-        var valuesBlock = new Block.BlockBuilder(Identifier.generate()).addStatement(returnNewArray).build();
+        var returnNewArray = new ReturnStatement(Identifier.generate("enum return new array"),
+                ConstructorCall.withArrayInitialiser(null, valuesReturnType, List.of(), arrayInitializer,
+                        arrayInitializer.identifier));
+        var valuesBlock = new Block.BlockBuilder(Identifier.generate("enum values block")).addStatement(returnNewArray).build();
         var valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values")
                 .setSynthetic(true)
                 .setReturnType(valuesReturnType)
@@ -111,7 +112,8 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
-        var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(Identifier.generate(),
+        var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(
+                        Identifier.generate("enum valueOf parameter"),
                         primitives.stringParameterizedType(), "name", 0)
                 .addAnnotation(eRContainer)
                 .addAnnotation(notNullContract);
@@ -152,7 +154,7 @@ public class EnumMethods {
 
         var enumTypeExpression = new TypeExpression(valuesMethod.getMethodInfo().typeInfo
                 .asParameterizedType(typeContext), Diamond.NO);
-        var values = new MethodCall(Identifier.generate(), true, enumTypeExpression,
+        var values = new MethodCall(Identifier.generate("enum valueOf values"), true, enumTypeExpression,
                 valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
         var arrays = typeContext.getFullyQualified(Arrays.class);
         var arraysInspection = typeContext.getTypeInspection(arrays);
@@ -167,7 +169,7 @@ public class EnumMethods {
                 }).findFirst().orElseThrow();
         var arraysType = new TypeExpression(arrays.asParameterizedType(typeContext), Diamond.NO);
         var streamArrayInspection = typeContext.getMethodInspection(streamArray);
-        var callStream = new MethodCall(Identifier.generate(), false, arraysType, streamArray,
+        var callStream = new MethodCall(Identifier.generate("enum call stream"), false, arraysType, streamArray,
                 streamArrayInspection.getReturnType(), List.of(values));
 
         var functionalInterfaceType = enumPredicate(typeContext, enumType);
@@ -175,24 +177,24 @@ public class EnumMethods {
                 expressionContext, enumType, notModifiedContract, nameMethod, nameParameter);
         var implementationMethod = predicateBuilder.getMethodInfo()
                 .typeInfo.asParameterizedType(typeContext);
-        var lambda = new Lambda(Identifier.generate(),
+        var lambda = new Lambda(Identifier.generate("enum lambda"),
                 typeContext, functionalInterfaceType, implementationMethod, List.of(Lambda.OutputVariant.EMPTY));
 
         var stream = typeContext.getFullyQualified(Stream.class);
         var filter = stream.findUniqueMethod(typeContext, "filter", 1);
-        var callFilter = new MethodCall(Identifier.generate(), false, callStream, filter,
+        var callFilter = new MethodCall(Identifier.generate("enum call filter"), false, callStream, filter,
                 typeContext.getMethodInspection(filter).getReturnType(), List.of(lambda));
 
         var findFirst = stream.findUniqueMethod(typeContext, "findFirst", 0);
-        var callFindFirst = new MethodCall(Identifier.generate(), false, callFilter, findFirst,
+        var callFindFirst = new MethodCall(Identifier.generate("enum call find first"), false, callFilter, findFirst,
                 typeContext.getMethodInspection(findFirst).getReturnType(), List.of());
 
         var optional = typeContext.getFullyQualified(Optional.class);
         var orElseThrow = optional.findUniqueMethod(typeContext, "orElseThrow", 0);
-        var callOrElseThrow = new MethodCall(Identifier.generate(), false, callFindFirst, orElseThrow,
+        var callOrElseThrow = new MethodCall(Identifier.generate("enum call or else throw"), false, callFindFirst, orElseThrow,
                 typeContext.getMethodInspection(orElseThrow).getReturnType(), List.of());
-        return new Block.BlockBuilder(Identifier.generate())
-                .addStatement(new ReturnStatement(Identifier.generate(), callOrElseThrow)).build();
+        return new Block.BlockBuilder(Identifier.generate("enum valueOf block"))
+                .addStatement(new ReturnStatement(Identifier.generate("enum valueOf return"), callOrElseThrow)).build();
     }
 
     private static ParameterizedType enumPredicate(TypeContext typeContext, TypeInfo enumType) {
@@ -224,7 +226,8 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
 
-        var predicate0Builder = predicate.newParameterInspectionBuilder(Identifier.generate(), enumPt, "v", 0);
+        var predicate0Builder = predicate.newParameterInspectionBuilder
+                (Identifier.generate("enum predicate param"), enumPt, "v", 0);
         predicate.addParameter(predicate0Builder);
         predicate.readyToComputeFQN(typeContext);
 
@@ -248,18 +251,18 @@ public class EnumMethods {
                                       ParameterInfo nameParameter,
                                       ParameterInfo v) {
 
-        var vName = new MethodCall(Identifier.generate(), false,
+        var vName = new MethodCall(Identifier.generate("enum equals param"), false,
                 new VariableExpression(v), nameMethod.getMethodInfo(), nameMethod.getReturnType(), List.of());
 
         var object = typeContext.getFullyQualified(Object.class);
         var equals = object.findUniqueMethod(typeContext, "equals", 1);
         var equalsInspection = typeContext.getMethodInspection(equals);
-        var callEquals = new MethodCall(Identifier.generate(), false,
+        var callEquals = new MethodCall(Identifier.generate("enum equals call"), false,
                 vName, equals, equalsInspection.getReturnType(),
                 List.of(new VariableExpression(nameParameter)));
 
-        return new Block.BlockBuilder(Identifier.generate())
-                .addStatement(new ReturnStatement(Identifier.generate(), callEquals)).build();
+        return new Block.BlockBuilder(Identifier.generate("enum equals block"))
+                .addStatement(new ReturnStatement(Identifier.generate("enum equals return"), callEquals)).build();
     }
 
 }

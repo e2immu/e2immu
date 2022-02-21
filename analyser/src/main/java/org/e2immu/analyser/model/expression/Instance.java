@@ -85,7 +85,7 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Instance forTesting(ParameterizedType parameterizedType) {
-        return new Instance(Identifier.generate(), parameterizedType,
+        return new Instance(Identifier.generate("test instance"), parameterizedType,
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 

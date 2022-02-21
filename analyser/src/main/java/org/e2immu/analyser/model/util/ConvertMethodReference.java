@@ -96,9 +96,9 @@ public class ConvertMethodReference {
         }
         Statement statement;
         if (methodBuilder.isVoid()) {
-            statement = new ExpressionAsStatement(Identifier.generate(), newReturnExpression);
+            statement = new ExpressionAsStatement(Identifier.generate("void converted method reference"), newReturnExpression);
         } else {
-            statement = new ReturnStatement(Identifier.generate(), newReturnExpression);
+            statement = new ReturnStatement(Identifier.generate("return converted method reference"), newReturnExpression);
         }
         Block block = new Block.BlockBuilder(methodReference.identifier).addStatement(statement).build();
 
@@ -111,7 +111,7 @@ public class ConvertMethodReference {
 
     private static Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(firstParameter);
-        return new MethodCall(Identifier.generate(), false, newScope, concreteMethod.getMethodInfo(),
+        return new MethodCall(Identifier.generate("method call no parameters"), false, newScope, concreteMethod.getMethodInfo(),
                 concreteMethod.getReturnType(), List.of());
     }
 
@@ -123,7 +123,7 @@ public class ConvertMethodReference {
                                                           MethodInspection interfaceMethod) {
         List<Expression> parameterExpressions = interfaceMethod
                 .getParameters().stream().map(VariableExpression::new).collect(Collectors.toList());
-        return new MethodCall(Identifier.generate(), false, scope, concreteMethod.getMethodInfo(),
+        return new MethodCall(Identifier.generate("method call copied parameters"), false, scope, concreteMethod.getMethodInfo(),
                 concreteMethod.getReturnType(), parameterExpressions);
     }
 

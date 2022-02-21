@@ -84,14 +84,14 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testInstanceOf() {
-        Expression iva = new InstanceOf(Identifier.generate(),
+        Expression iva = new InstanceOf(Identifier.generate("test"),
                 PRIMITIVES, PRIMITIVES.stringParameterizedType(), a, null);
         assertEquals("a instanceof String", iva.toString());
-        Expression ivb = new InstanceOf(Identifier.generate(),
+        Expression ivb = new InstanceOf(Identifier.generate("test"),
                 PRIMITIVES, PRIMITIVES.stringParameterizedType(), b, null);
         Expression or = newOrAppend(ivb, iva);
         assertEquals("a instanceof String||b instanceof String", or.toString());
-        Expression iva2 = new InstanceOf(Identifier.generate(),
+        Expression iva2 = new InstanceOf(Identifier.generate("test"),
                 PRIMITIVES, PRIMITIVES.objectParameterizedType(), a, null);
         Expression or2 = newOrAppend(iva, iva2);
         assertEquals("a instanceof Object||a instanceof String", or2.toString());
@@ -129,7 +129,7 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Expression v = Negation.negate(minimalEvaluationContext, new Equals(Identifier.generate(),
+        Expression v = Negation.negate(minimalEvaluationContext, new Equals(Identifier.generate("test"),
                 PRIMITIVES, NullConstant.NULL_CONSTANT, a));
         assertEquals("null!=a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);

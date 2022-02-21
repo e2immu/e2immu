@@ -68,7 +68,7 @@ public class ConvertExpressionWithTypeCreations {
 
     private static Block methodContent(Expression parsedExpression,
                                        Identifier identifier) {
-        ReturnStatement statement = new ReturnStatement(Identifier.generate(), parsedExpression);
+        ReturnStatement statement = new ReturnStatement(Identifier.generate("return in initializer"), parsedExpression);
         Block block = new Block.BlockBuilder(identifier).addStatement(statement).build();
 
         if (LOGGER.isDebugEnabled()) {

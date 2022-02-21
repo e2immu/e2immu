@@ -623,7 +623,7 @@ public class TypeInspectorImpl implements TypeInspector {
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
-        builder.setInspectedBlock(Block.emptyBlock(Identifier.generate()))
+        builder.setInspectedBlock(Block.emptyBlock(Identifier.generate("empty constructor block")))
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
                 .readyToComputeFQN(typeContext);

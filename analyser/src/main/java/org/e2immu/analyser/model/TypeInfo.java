@@ -199,7 +199,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
 
     public TypeInfo(String packageName, String simpleName) {
-        this(Identifier.generate(), packageName, simpleName);
+        this(Identifier.generate("type"), packageName, simpleName);
     }
 
     public TypeInfo(Identifier identifier, String packageName, String simpleName) {
@@ -216,7 +216,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
 
     public TypeInfo(TypeInfo enclosingType, String simpleName) {
-        this(Identifier.generate(), enclosingType, simpleName);
+        this(Identifier.generate("subtype"), enclosingType, simpleName);
     }
 
     public TypeInfo(Identifier identifier, TypeInfo enclosingType, String simpleName) {

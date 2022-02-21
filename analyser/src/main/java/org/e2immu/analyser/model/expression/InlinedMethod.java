@@ -352,7 +352,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                             ParameterInfo parameterInfo) {
         Expression replacement;
         if (parameterInfo.parameterInspection.get().isVarArgs()) {
-            replacement = new ArrayInitializer(inspectionProvider, parameters.subList(parameterInfo.index,
+            replacement = new ArrayInitializer(Identifier.generate("inlined method param replacement"),
+                    inspectionProvider, parameters.subList(parameterInfo.index,
                     parameters.size()), parameterInfo.parameterizedType);
         } else {
             replacement = parameters.get(parameterInfo.index);
@@ -387,7 +388,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
                     evaluationContext.linkedVariables(variable).changeAllToDelay(merged), merged);
         }
-        return Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
+        return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,
                 VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
     }
 

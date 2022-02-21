@@ -482,7 +482,7 @@ public class TypeMapImpl implements TypeMap {
             MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName);
             m.setReturnType(returnType);
             for (int i = 0; i < numberOfParameters; i++) {
-                m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("param synthetic function"),
                         new ParameterizedType(tps.get(i), 0, NONE), "p" + i, i));
             }
             m.readyToComputeFQN(this);

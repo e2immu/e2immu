@@ -205,7 +205,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         /* method */
 
         public Builder(TypeInfo owner, String name) {
-            this(Identifier.generate(), owner, name, false, false, NOT_A_STATIC_BLOCK);
+            this(Identifier.generate("method without id"), owner, name, false, false, NOT_A_STATIC_BLOCK);
         }
 
         public Builder(Identifier identifier, TypeInfo owner, String name) {
@@ -343,7 +343,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @NotNull
         public MethodInspectionImpl build(InspectionProvider inspectionProvider) {
             if (inspectedBlock == null) {
-                inspectedBlock = Block.emptyBlock(Identifier.generate());
+                inspectedBlock = Block.emptyBlock(Identifier.generate("empty method block"));
             }
 
             // all companion methods have to have been built already!

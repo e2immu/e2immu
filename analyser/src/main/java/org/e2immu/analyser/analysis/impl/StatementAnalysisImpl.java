@@ -1383,7 +1383,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (Property ext : EXTERNALS) {
             properties.put(ext, ext.valueWhenAbsent());
         }
-        Identifier identifier = Identifier.generate();
         Expression initialValue;
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
@@ -1400,7 +1399,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (causesOfDelay.isDelayed()) {
                     arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
                 } else {
-                    arrayValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayBase, dv);
+                    arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
                 }
                 valueProperties = evaluationContext.getValueProperties(arrayValue);
             } else {
@@ -1423,7 +1422,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
             valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
         } else {
-            initialValue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
+            initialValue = UnknownExpression.forNotYetAssigned(Identifier.generate("not yet assigned"), variable.parameterizedType());
             linkedVariables = LinkedVariables.EMPTY;
         }
         vic.setValue(initialValue, linkedVariables, properties, true);

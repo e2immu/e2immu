@@ -109,8 +109,8 @@ public final class VariableExpression extends CommonVariableExpression {
         super(Identifier.CONSTANT);
         this.variable = variable;
         this.suffix = suffix;
-        // a variable expression is never delayed
-        assert !(variable instanceof FieldReference fr) || fr.scope.isDone();
+        // a variable expression is never delayed; however, <out of scope> is possible (see Test_Util_06_DependencyGraph)
+        assert !(variable instanceof FieldReference fr) || fr.scope.isDone() || fr.anyScopeDelayedOutOfScope();
     }
 
     @Override

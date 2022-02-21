@@ -33,7 +33,7 @@ public class CommaExpression extends BaseExpression implements Expression {
     private final List<Expression> expressions;
 
     public CommaExpression(List<Expression> expressions) {
-        super(Identifier.generate());
+        super(Identifier.generate("comma expression"));
         assert expressions.size() > 1;
         this.expressions = expressions;
     }

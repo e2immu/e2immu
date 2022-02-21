@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.List;
 import java.util.Map;
 
 public class Product extends BinaryOperator {
@@ -47,7 +48,8 @@ public class Product extends BinaryOperator {
     }
 
     public static Expression product(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return product(Identifier.generate(), evaluationContext, l, r);
+        Identifier id = Identifier.joined("product", List.of(l.getIdentifier(), r.getIdentifier()));
+        return product(id, evaluationContext, l, r);
     }
 
     // we try to maintain a sum of products

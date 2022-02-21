@@ -170,7 +170,7 @@ public record ConditionManager(Expression condition,
             complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType());
+            return Instance.forTooComplex(Identifier.generate("too complex CM 1"), evaluationContext.getPrimitives().booleanParameterizedType());
         }
         return And.and(evaluationContext, expressions);
     }
@@ -232,7 +232,7 @@ public record ConditionManager(Expression condition,
         if (e1.isEmpty() || e2.isEmpty()) throw new UnsupportedOperationException();
         int complexity = e1.getComplexity() + e2.getComplexity();
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(Identifier.generate(),
+            return Instance.forTooComplex(Identifier.generate("too complex CM 2"),
                     evaluationContext.getPrimitives().booleanParameterizedType());
         }
         return And.and(evaluationContext, e1, e2);

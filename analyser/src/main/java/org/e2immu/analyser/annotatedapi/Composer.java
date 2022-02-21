@@ -137,7 +137,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
 
     private FieldInfo createField(FieldInfo fieldInfo, TypeInfo owner) {
         FieldInspection inspection = fieldInfo.fieldInspection.get();
-        FieldInfo newField = new FieldInfo(Identifier.generate(), fieldInfo.type, fieldInfo.name, owner);
+        FieldInfo newField = new FieldInfo(fieldInfo.getIdentifier(), fieldInfo.type, fieldInfo.name, owner);
         FieldInspectionImpl.Builder builder = new FieldInspectionImpl.Builder();
         inspection.getModifiers()
                 .stream().filter(m -> m != FieldModifier.PUBLIC).forEach(builder::addModifier);
@@ -167,13 +167,13 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             } else {
                 defaultReturnValue = NullConstant.NULL_CONSTANT;
             }
-            Statement returnStatement = new ReturnStatement(Identifier.generate(), defaultReturnValue);
-            Block block = new Block.BlockBuilder(Identifier.generate()).addStatement(returnStatement).build();
+            Statement returnStatement = new ReturnStatement(methodInfo.identifier, defaultReturnValue);
+            Block block = new Block.BlockBuilder(Identifier.generate("compose block")).addStatement(returnStatement).build();
             builder.setInspectedBlock(block);
         }
         for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInspection.Builder newParameterBuilder = builder.newParameterInspectionBuilder
-                    (Identifier.generate(), p.parameterizedType, p.name, p.index);
+                    (p.identifier, p.parameterizedType, p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);
             }
@@ -201,7 +201,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.PUBLIC);
-        FieldInfo packageField = new FieldInfo(Identifier.generate(), typeMap.getPrimitives().stringParameterizedType(),
+        FieldInfo packageField = new FieldInfo(Identifier.generate("PACKAGE NAME"), typeMap.getPrimitives().stringParameterizedType(),
                 "PACKAGE_NAME", typeInfo);
         FieldInspectionImpl.Builder packageFieldInspectionBuilder = new FieldInspectionImpl.Builder();
         packageFieldInspectionBuilder

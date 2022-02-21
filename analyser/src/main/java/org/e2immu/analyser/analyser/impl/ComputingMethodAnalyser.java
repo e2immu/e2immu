@@ -671,7 +671,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
      */
     private Expression createInlinedMethod(Expression value) {
         assert value.isDone();
-        return InlinedMethod.of(Identifier.generate(), methodInfo, value, analyserContext);
+        return InlinedMethod.of(Identifier.generate("inline method"), methodInfo, value, analyserContext);
     }
 
 

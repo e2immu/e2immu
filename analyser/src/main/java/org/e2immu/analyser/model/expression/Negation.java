@@ -99,7 +99,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         MethodInfo operator = v.isNumeric() ?
                 evaluationContext.getPrimitives().unaryMinusOperatorInt() :
                 evaluationContext.getPrimitives().logicalNotOperatorBool();
-        return new Negation(Identifier.generate(), operator, v);
+        return new Negation(Identifier.joined("neg", List.of(v.getIdentifier())), operator, v);
     }
 
     @Override

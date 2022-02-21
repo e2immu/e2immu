@@ -36,7 +36,7 @@ public class TestStatementAnalysisComparator {
     @BeforeEach
     public void before() {
         primitives = new PrimitivesImpl();
-        emptyStatement = new ExpressionAsStatement(Identifier.generate(), EmptyExpression.EMPTY_EXPRESSION);
+        emptyStatement = new ExpressionAsStatement(Identifier.generate("test"), EmptyExpression.EMPTY_EXPRESSION);
     }
 
     @Test

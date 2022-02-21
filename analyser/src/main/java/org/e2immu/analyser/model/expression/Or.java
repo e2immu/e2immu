@@ -47,7 +47,11 @@ public final class Or extends ExpressionCanBeTooComplex {
 
     // testing only
     public Or(Primitives primitives) {
-        this(Identifier.generate(), primitives, List.of());
+        this(Identifier.generate("or"), primitives, List.of());
+    }
+
+    private Or(Identifier identifier, Primitives primitives) {
+        this(Identifier.generate("or"), primitives, List.of());
     }
 
     public static Expression or(EvaluationContext evaluationContext, Expression... values) {
@@ -165,8 +169,8 @@ public final class Or extends ExpressionCanBeTooComplex {
             LOGGER.debug("Empty disjunction returned as false");
             return new BooleanConstant(primitives, false);
         }
-
-        return new Or(identifier, primitives, finalValues);
+        Identifier id = Identifier.joined("or", finalValues.stream().map(Expression::getIdentifier).toList());
+        return new Or(id, primitives, finalValues);
     }
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {

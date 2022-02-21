@@ -303,7 +303,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     for that reason. We cannot simply keep "null" and delayed properties at the same time, so we wrap.
                     See E2Immutable_1 as the primary case; and FieldReference_3 as an example of why wrapping is needed.
                     */
-                    return new DelayedWrappedExpression(Identifier.generate(), valueToWrite, vi, valueToWritePossiblyDelayed.causesOfDelay());
+                    return new DelayedWrappedExpression(Identifier.generate("dwe null constant"), valueToWrite, vi, valueToWritePossiblyDelayed.causesOfDelay());
                 }
                 Set<CauseOfDelay> breaks = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
                 if (!breaks.isEmpty()) {
@@ -311,14 +311,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         // we don't have a value, but can make a perfectly good "instance", with all the right value properties
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
-                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate(), target.parameterizedType, combined);
+                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
+                                target.parameterizedType, combined);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
                         if (causes.isDone()) {
                             //just making sure that we are delayed
                             causes = new SimpleSet(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
                         }
-                        return new DelayedWrappedExpression(Identifier.generate(), instance, vi, causes);
+                        return new DelayedWrappedExpression(Identifier.generate("dwe break init delay"), instance, vi, causes);
                     }
                 }
             } else {
@@ -327,7 +328,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     Set<CauseOfDelay> breaks = extractBreakInitCause(changeData.stateIsDelayed(), target);
                     if (!breaks.isEmpty()) {
                         // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
-                        Expression res = new DelayedWrappedExpression(Identifier.generate(), valueToWritePossiblyDelayed,
+                        Expression res = new DelayedWrappedExpression(Identifier.generate("dwe break delayed state"), valueToWritePossiblyDelayed,
                                 vi, changeData.stateIsDelayed());
                         assert res.isDelayed();
                         LOGGER.debug("Return wrapped expression to break state delay on {} in {}", target, index());
@@ -595,7 +596,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
                 Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);
 
-                InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
+                Identifier generate = Identifier.generate("inline condition var def outside loop");
+                InlineConditional inlineConditional = new InlineConditional(generate,
                         evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
                 return inlineConditional.optimise(evaluationContext.dropConditionManager());
             }

@@ -61,8 +61,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public static Expression withArrayInitialiser(MethodInfo arrayCreationConstructor,
                                                   ParameterizedType parameterizedType,
                                                   List<Expression> parameterExpressions,
-                                                  ArrayInitializer arrayInitializer) {
-        return new ConstructorCall(Identifier.generate(), arrayCreationConstructor, parameterizedType, Diamond.NO,
+                                                  ArrayInitializer arrayInitializer,
+                                                  Identifier identifier) {
+        return new ConstructorCall(identifier, arrayCreationConstructor, parameterizedType, Diamond.NO,
                 parameterExpressions, null, arrayInitializer);
     }
 
@@ -74,10 +75,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     /*
     When creating an anonymous instance of a class (new SomeType() { })
      */
-    public static ConstructorCall withAnonymousClass(@NotNull ParameterizedType parameterizedType,
+    public static ConstructorCall withAnonymousClass(Identifier identifier,
+                                                     @NotNull ParameterizedType parameterizedType,
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
-        return new ConstructorCall(Identifier.generate(), null, parameterizedType, diamond,
+        return new ConstructorCall(identifier, null, parameterizedType, diamond,
                 List.of(), anonymousClass, null);
     }
 
@@ -391,7 +393,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                     .collect(Collectors.toList());
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
-            builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), values, arrayInitializer.returnType()));
+            builder.setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(),
+                    values, arrayInitializer.returnType()));
             return builder.build();
         }
 

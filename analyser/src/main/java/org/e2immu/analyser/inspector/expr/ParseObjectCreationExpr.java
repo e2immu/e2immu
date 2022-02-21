@@ -59,6 +59,7 @@ public class ParseObjectCreationExpr {
             parameterizedType = typeAsIs;
         }
 
+        Identifier id = Identifier.from(objectCreationExpr);
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             assert parameterizedType != null;
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType(),
@@ -72,7 +73,7 @@ public class ParseObjectCreationExpr {
                     typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
-            return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
+            return ConstructorCall.withAnonymousClass(id, parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
@@ -104,7 +105,7 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return ConstructorCall.objectCreation(Identifier.generate(), candidate.method().methodInspection.getMethodInfo(),
+        return ConstructorCall.objectCreation(id, candidate.method().methodInspection.getMethodInfo(),
                 finalParameterizedType, diamond, candidate.newParameterExpressions());
     }
 

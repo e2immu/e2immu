@@ -81,7 +81,7 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(Identifier.generate(), primitives,
+        this(Identifier.generate("new assignment"), primitives,
                 target, value, null, null, true);
     }
 

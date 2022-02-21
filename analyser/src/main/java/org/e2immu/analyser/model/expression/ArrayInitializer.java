@@ -40,17 +40,18 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
-    public ArrayInitializer(InspectionProvider inspectionProvider, List<Expression> values) {
-        super(Identifier.generate());
+    public ArrayInitializer(Identifier identifier, InspectionProvider inspectionProvider, List<Expression> values) {
+        super(identifier);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = multiExpression.commonType(inspectionProvider);
         this.inspectionProvider = inspectionProvider;
     }
 
-    public ArrayInitializer(InspectionProvider inspectionProvider,
+    public ArrayInitializer(Identifier identifier,
+                            InspectionProvider inspectionProvider,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
-        super(Identifier.generate());
+        super(identifier);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.inspectionProvider = inspectionProvider;
@@ -70,7 +71,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), reValues, commonType))
+                .setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(), reValues, commonType))
                 .build();
     }
 
@@ -82,7 +83,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 .collect(TranslationCollectors.toList(exs));
         ParameterizedType translatedType = translationMap.translateType(commonType);
         if (translatedType == commonType && translated == exs) return this;
-        return new ArrayInitializer(inspectionProvider, translated, translatedType);
+        return new ArrayInitializer(identifier, inspectionProvider, translated, translatedType);
     }
 
     @Override
@@ -123,7 +124,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
-        builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), values, commonType));
+        builder.setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(), values, commonType));
 
         return builder.build();
     }

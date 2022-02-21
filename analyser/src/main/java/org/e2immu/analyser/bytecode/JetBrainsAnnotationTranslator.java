@@ -74,7 +74,8 @@ public class JetBrainsAnnotationTranslator {
         if ("false".equals(string)) return new BooleanConstant(primitives, false);
         if (string.length() > 2 && string.charAt(0) == '{' && string.charAt(string.length() - 1) == '}') {
             String[] splitComma = string.substring(1, string.length() - 1).split(",");
-            return new ArrayInitializer(InspectionProvider.DEFAULT, Arrays.stream(splitComma).map(this::convert).toList());
+            Identifier id = Identifier.generate("asm convert");
+            return new ArrayInitializer(id, InspectionProvider.DEFAULT, Arrays.stream(splitComma).map(this::convert).toList());
         }
         try {
             return new IntConstant(primitives, Integer.parseInt(string));

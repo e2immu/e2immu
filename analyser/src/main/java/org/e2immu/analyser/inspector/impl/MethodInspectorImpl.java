@@ -77,8 +77,8 @@ public class MethodInspectorImpl implements MethodInspector {
         if (fullInspection) {
             addModifiers(builder, amd.getModifiers());
             Expression expression = amd.getDefaultValue().map(expressionContext::parseExpressionStartVoid).orElse(EmptyExpression.EMPTY_EXPRESSION);
-            Block body = new Block.BlockBuilder(Identifier.generate())
-                    .addStatement(new ReturnStatement(Identifier.generate(), expression)).build();
+            Block body = new Block.BlockBuilder(Identifier.generate("annotation block"))
+                    .addStatement(new ReturnStatement(Identifier.generate("annotation return"), expression)).build();
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext(), amd.getType());
             builder.setReturnType(returnType);
@@ -197,7 +197,7 @@ public class MethodInspectorImpl implements MethodInspector {
         MethodInspection.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(identifier, typeInfo);
         int i = 0;
         for (RecordField recordField : fields) {
-            ParameterInspection.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
+            ParameterInspection.Builder pib = new ParameterInspectionImpl.Builder(recordField.fieldInfo().getIdentifier(),
                     recordField.fieldInfo().type, recordField.fieldInfo().name, i++);
             pib.setVarArgs(recordField.varargs());
             tempBuilder.addParameter(pib);

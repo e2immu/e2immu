@@ -35,12 +35,12 @@ public interface Identifier extends Comparable<Identifier> {
 
     int identifierOrder();
 
-    Identifier CONSTANT = new IncrementalIdentifier();
+    Identifier CONSTANT = new IncrementalIdentifier("constant");
 
     static Identifier from(Node node) {
-        if (node == null) return Identifier.generate();
+        if (node == null) return Identifier.generate("null node");
         Optional<Position> begin = node.getBegin();
-        if (begin.isEmpty()) return new IncrementalIdentifier();
+        if (begin.isEmpty()) return new IncrementalIdentifier("null begin");
         Optional<Position> end = node.getEnd();
         return from(begin.get(), end.orElseThrow());
     }
@@ -58,8 +58,8 @@ public interface Identifier extends Comparable<Identifier> {
                 (short) end.line, (short) end.column);
     }
 
-    static Identifier generate() {
-        return new IncrementalIdentifier();
+    static Identifier generate(String origin) {
+        return new IncrementalIdentifier(origin);
     }
 
     static Identifier stringConstant(String constant) {
@@ -74,8 +74,8 @@ public interface Identifier extends Comparable<Identifier> {
         return new LoopConditionIdentifier(index);
     }
 
-    static Identifier joined(List<Identifier> identifiers) {
-        return new ListOfIdentifiers(identifiers);
+    static Identifier joined(String expression, List<Identifier> identifiers) {
+        return new ListOfIdentifiers(expression, identifiers);
     }
 
     static Identifier forVariableOutOfScope(Variable toRemove, String index) {
@@ -108,10 +108,10 @@ public interface Identifier extends Comparable<Identifier> {
 
     class IncrementalIdentifier implements Identifier {
         private static final AtomicInteger generator = new AtomicInteger();
-        public final int identifier;
+        public final String identifier;
 
-        public IncrementalIdentifier() {
-            identifier = generator.incrementAndGet();
+        public IncrementalIdentifier(String origin) {
+            identifier = generator.incrementAndGet() + "_" + origin;
         }
 
         @Override
@@ -119,7 +119,7 @@ public interface Identifier extends Comparable<Identifier> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             IncrementalIdentifier that = (IncrementalIdentifier) o;
-            return identifier == that.identifier;
+            return identifier.equals(that.identifier);
         }
 
         @Override
@@ -129,7 +129,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int compareTo(Identifier o) {
-            if (o instanceof IncrementalIdentifier ii) return identifier - ii.identifier;
+            if (o instanceof IncrementalIdentifier ii) return identifier.compareTo(ii.identifier);
             return identifierOrder() - o.identifierOrder();
         }
 
@@ -144,10 +144,12 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
-    record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
+    record ListOfIdentifiers(String expression, List<Identifier> identifiers) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
-            if (o instanceof ListOfIdentifiers) {
+            if (o instanceof ListOfIdentifiers l) {
+                int c = expression.compareTo(l.expression);
+                if (c != 0) return c;
                 throw new UnsupportedOperationException("TODO");
             }
             return identifierOrder() - o.identifierOrder();

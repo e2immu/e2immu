@@ -183,12 +183,12 @@ public class ParseSwitchExpr {
                 if (st.isExpressionStmt()) {
                     com.github.javaparser.ast.expr.Expression e = st.asExpressionStmt().getExpression();
                     Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
-                    returnStatement = new ReturnStatement(Identifier.generate(), expression);
+                    returnStatement = new ReturnStatement(Identifier.from(e), expression);
                 } else if (st.isThrowStmt()) {
                     ThrowStmt throwStmt = st.asThrowStmt();
                     com.github.javaparser.ast.expr.Expression e = throwStmt.getExpression();
                     Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
-                    returnStatement = new ThrowStatement(Identifier.generate(), expression);
+                    returnStatement = new ThrowStatement(Identifier.from(e), expression);
                 } else {
                     throw new UnsupportedOperationException();
                 }
@@ -196,13 +196,13 @@ public class ParseSwitchExpr {
                     statement = returnStatement;
                 } else {
                     Block ifBlock = new Block.BlockBuilder(Identifier.from(switchEntry)).addStatement(returnStatement).build();
-                    statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock, Block.emptyBlock(Identifier.generate()));
+                    statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock, Block.emptyBlock(Identifier.generate("empty switch block")));
                 }
             } else if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.BLOCK) {
                 Block exec = newExpressionContext.parseBlockOrStatement(switchEntry.getStatements().get(0));
                 if (isDefault) statement = exec;
                 else {
-                    statement = new IfElseStatement(Identifier.from(switchEntry), or, exec, Block.emptyBlock(Identifier.generate()));
+                    statement = new IfElseStatement(Identifier.from(switchEntry), or, exec, Block.emptyBlock(Identifier.generate("empty switch entry")));
                 }
             } else {
                 throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
@@ -222,8 +222,8 @@ public class ParseSwitchExpr {
         TypeInspection typeInspection = ip.getTypeInspection(runtimeException);
         MethodInfo constructor = typeInspection.constructors().stream()
                 .filter(m -> ip.getMethodInspection(m).getParameters().isEmpty()).findFirst().orElseThrow();
-        return new ThrowStatement(Identifier.generate(),
-                ConstructorCall.objectCreation(Identifier.generate(), constructor,
+        return new ThrowStatement(Identifier.generate("throw at end of switch"),
+                ConstructorCall.objectCreation(Identifier.generate("throw at end of switch object"), constructor,
                         runtimeException.asParameterizedType(ip), Diamond.NO, List.of()));
     }
 }

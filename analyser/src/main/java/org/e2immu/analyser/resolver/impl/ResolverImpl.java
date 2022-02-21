@@ -426,13 +426,15 @@ public class ResolverImpl implements Resolver {
                 sam = null;
                 callGetOnSam = false;
             }
-            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, anonymousType, sam, callGetOnSam);
+            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, anonymousType, sam, callGetOnSam,
+                    Identifier.generate("resolved field initializer"));
             Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);
         } else {
-            fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION);
+            fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION,
+                    Identifier.generate("resolved empty initializer"));
             dependencies = List.of();
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
@@ -513,7 +515,8 @@ public class ResolverImpl implements Resolver {
         boolean doBlock = !methodInspection.inspectedBlockIsSet();
         if (doBlock) {
             BlockStmt block = methodInspection.getBlock();
-            Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ? Identifier.generate() : Identifier.from(block));
+            Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ?
+                    Identifier.generate("resolved empty block") : Identifier.from(block));
             if (methodInspection.compactConstructor) {
                 addCompactConstructorSyntheticAssignments(expressionContext.typeContext(), blockBuilder,
                         typeInspection, methodInspection);
@@ -553,7 +556,8 @@ public class ResolverImpl implements Resolver {
                 VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
                 VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                 Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
-                blockBuilder.addStatement(new ExpressionAsStatement(Identifier.generate(), assignment, true));
+                Identifier id = Identifier.generate("synthetic assignment compact constructor");
+                blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, true));
             }
         }
     }

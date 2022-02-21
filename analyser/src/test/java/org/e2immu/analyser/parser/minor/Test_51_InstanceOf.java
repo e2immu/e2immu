@@ -518,7 +518,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {

@@ -44,6 +44,10 @@ public class TestTypeInfoStream {
     public static final String JAVA_UTIL = "java.util";
     public static final String MODEL = "org.e2immu.analyser.model";
 
+    private static Identifier newId() {
+        return Identifier.generate("test");
+    }
+
     @Test
     public void test() {
         Primitives primitives = new PrimitivesImpl();
@@ -64,7 +68,7 @@ public class TestTypeInfoStream {
 
         TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
 
-        FieldInfo logger = new FieldInfo(Identifier.generate(),
+        FieldInfo logger = new FieldInfo(newId(),
                 loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);
 
         ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
@@ -133,25 +137,25 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType(), typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
-        Expression creationExpression = ConstructorCall.objectCreation(Identifier.generate(), hashMapConstructor,
+        Expression creationExpression = ConstructorCall.objectCreation(newId(), hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
-        ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(Identifier.generate(), typeT, "value", 0);
+        ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(newId(), typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)
                 .addParameter(p0)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setInspectedBlock(
-                        new Block.BlockBuilder(Identifier.generate())
+                        new Block.BlockBuilder(newId())
                                 .addStatement(
-                                        new ExpressionAsStatement(Identifier.generate(),
+                                        new ExpressionAsStatement(newId(),
                                                 new LocalVariableCreation(primitives,
-                                                        List.of(new LocalVariableCreation.Declaration(Identifier.generate(),
+                                                        List.of(new LocalVariableCreation.Declaration(newId(),
                                                                 mapLocalVariable, creationExpression)), false)
                                         )
                                 )
                                 .addStatement(
-                                        new ForEachStatement(Identifier.generate(), null,
+                                        new ForEachStatement(newId(), null,
                                                 new LocalVariableCreation(primitives,
                                                         new LocalVariable.Builder()
                                                                 .setOwningType(testTypeInfo)
@@ -160,11 +164,11 @@ public class TestTypeInfoStream {
                                                                 .build()),
                                                 new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),
                                                 null,
-                                                new Block.BlockBuilder(Identifier.generate())
-                                                        .addStatement(new IfElseStatement(Identifier.generate(),
+                                                new Block.BlockBuilder(newId())
+                                                        .addStatement(new IfElseStatement(newId(),
                                                                 new BooleanConstant(primitives, true),
-                                                                new Block.BlockBuilder(Identifier.generate()).build(),
-                                                                Block.emptyBlock(Identifier.generate())
+                                                                new Block.BlockBuilder(newId()).build(),
+                                                                Block.emptyBlock(newId())
                                                         ))
                                                         .build()
                                         )
@@ -173,22 +177,22 @@ public class TestTypeInfoStream {
                 .build(IP).getMethodInfo();
         put.methodResolution.set(new MethodResolution.Builder().build());
 
-        FieldInfo intFieldInContainer = new FieldInfo(Identifier.generate(), primitives.intParameterizedType(), "i", containerTypeInfo);
+        FieldInfo intFieldInContainer = new FieldInfo(newId(), primitives.intParameterizedType(), "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .setInspectedInitialiserExpression(new IntConstant(primitives, 27))
                 .build());
 
-        FieldInfo doubleFieldInContainer = new FieldInfo(Identifier.generate(), primitives.doubleParameterizedType(), "d", containerTypeInfo);
+        FieldInfo doubleFieldInContainer = new FieldInfo(newId(), primitives.doubleParameterizedType(), "d", containerTypeInfo);
         doubleFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.PRIVATE).build());
 
-        FieldInfo stringFieldInContainer = new FieldInfo(Identifier.generate(), primitives.stringParameterizedType(), "s", containerTypeInfo);
+        FieldInfo stringFieldInContainer = new FieldInfo(newId(), primitives.stringParameterizedType(), "s", containerTypeInfo);
         stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.FINAL)
                 .setInspectedInitialiserExpression(new StringConstant(primitives, "first value"))
                 .build());
 
-        FieldInfo tInContainer = new FieldInfo(Identifier.generate(), typeT, "t", containerTypeInfo);
+        FieldInfo tInContainer = new FieldInfo(newId(), typeT, "t", containerTypeInfo);
         tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .setInspectedInitialiserExpression(NullConstant.NULL_CONSTANT)
                 .build());
@@ -212,7 +216,7 @@ public class TestTypeInfoStream {
         TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
                 .setReturnType(primitives.stringParameterizedType())
-                .setInspectedBlock(new Block.BlockBuilder(Identifier.generate()).build())
+                .setInspectedBlock(new Block.BlockBuilder(newId()).build())
                 .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .noParent(primitives)
@@ -223,9 +227,9 @@ public class TestTypeInfoStream {
         MethodInspection.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
                 .setReturnType(primitives.intParameterizedType()).setStatic(true);
 
-        ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+        ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(newId(),
                 primitives.intParameterizedType(), "x", 0);
-        ParameterInspectionImpl.Builder yb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+        ParameterInspectionImpl.Builder yb = new ParameterInspectionImpl.Builder(newId(),
                 primitives.intParameterizedType(), "y", 1);
 
         ParameterizedType exceptionType = exception.asParameterizedType(inspectionProvider);
@@ -244,9 +248,9 @@ public class TestTypeInfoStream {
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(
                         new MemberValuePair(MemberValuePair.VALUE, new StringConstant(primitives, "hello")))))
                 .setInspectedBlock(
-                        new Block.BlockBuilder(Identifier.generate()).addStatement(
-                                new ReturnStatement(Identifier.generate(),
-                                        new BinaryOperator(Identifier.generate(), primitives,
+                        new Block.BlockBuilder(newId()).addStatement(
+                                new ReturnStatement(newId(),
+                                        new BinaryOperator(newId(), primitives,
                                                 new VariableExpression(x), primitives.plusOperatorInt(),
                                                 new VariableExpression(y), Precedence.ADDITIVE))).build())
                 .build(IP).getMethodInfo();

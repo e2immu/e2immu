@@ -113,7 +113,7 @@ public class TestParameterizedType {
             MethodInspectionImpl.Builder applyBuilder = new MethodInspectionImpl.Builder(function, "apply");
             MethodInfo apply = applyBuilder
                     .setReturnType(new ParameterizedType(functionR, 0, NONE))
-                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("apply"),
                             new ParameterizedType(functionT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             TypeInspection.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)

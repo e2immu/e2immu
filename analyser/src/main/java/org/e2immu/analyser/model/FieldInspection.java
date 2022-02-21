@@ -39,12 +39,13 @@ public interface FieldInspection extends Inspection {
     record FieldInitialiser(Expression initialiser,
                             TypeInfo anonymousTypeCreated,
                             MethodInfo implementationOfSingleAbstractMethod,
-                            boolean callGetOnSam) {
+                            boolean callGetOnSam,
+                            Identifier identifier) {
         public FieldInitialiser {
             Objects.requireNonNull(initialiser);
         }
-        public FieldInitialiser(Expression initialiser) {
-            this(initialiser, null, null, false);
+        public FieldInitialiser(Expression initialiser, Identifier identifier) {
+            this(initialiser, null, null, false, identifier);
         }
     }
 

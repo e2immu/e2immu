@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -77,7 +78,8 @@ public class Test_01_Loops_3 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement() instanceof ForEachStatement forEachStatement) {
                         DV exec = forEachStatement.structure.statementExecution()
-                                .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(),
+                                .apply(new ArrayInitializer(Identifier.generate("test"),
+                                        d.evaluationContext().getAnalyserContext(),
                                         List.of(), ((StatementAnalysisImpl) d.statementAnalysis()).primitives.stringParameterizedType()), d.evaluationContext());
                         assertSame(FlowData.NEVER, exec);
 

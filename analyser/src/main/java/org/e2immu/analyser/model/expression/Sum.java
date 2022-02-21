@@ -35,7 +35,7 @@ public class Sum extends BinaryOperator {
     public Expression translate(TranslationMap translationMap) {
         Expression tl = lhs.translate(translationMap);
         Expression tr = rhs.translate(translationMap);
-        if(tl == lhs && tr == rhs) return this;
+        if (tl == lhs && tr == rhs) return this;
         return new Sum(identifier, primitives, tl, tr);
     }
 
@@ -52,7 +52,7 @@ public class Sum extends BinaryOperator {
 
     // we try to maintain a sum of products
     public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return sum(Identifier.generate(), evaluationContext, l, r, true);
+        return sum(Identifier.generate("sum"), evaluationContext, l, r, true);
     }
 
     public static Expression sum(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
@@ -90,7 +90,8 @@ public class Sum extends BinaryOperator {
             newR = termsOfProducts[termsOfProducts.length - 1];
         }
 
-        Sum s = new Sum(Identifier.generate(), primitives, newL, newR);
+        Identifier id = Identifier.joined("sum", List.of(newL.getIdentifier(), newR.getIdentifier()));
+        Sum s = new Sum(id, primitives, newL, newR);
 
         // re-running the sum to solve substitutions of variables to constants
         if (tryAgain) {

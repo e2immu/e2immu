@@ -62,7 +62,7 @@ public class MyMethodVisitor extends MethodVisitor {
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspection.Builder[numberOfParameters];
         for (int i = 0; i < numberOfParameters; i++) {
-            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(Identifier.generate(), i);
+            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(Identifier.generate("asm param"), i);
         }
         this.lastParameterIsVarargs = lastParameterIsVarargs;
     }

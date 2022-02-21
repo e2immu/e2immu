@@ -103,8 +103,8 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
         testClass("Store_2", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

@@ -312,7 +312,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 if (expression instanceof MethodReference) {
                     toEvaluate = ConstructorCall.instanceFromSam(sam, fieldInfo.type);
                 } else if (fieldInitialiser.callGetOnSam()) {
-                    Expression object = ConstructorCall.withAnonymousClass(fieldInfo.type, sam.typeInfo, Diamond.NO);
+                    Expression object = ConstructorCall.withAnonymousClass(fieldInitialiser.identifier(),
+                            fieldInfo.type, sam.typeInfo, Diamond.NO);
                     toEvaluate = new MethodCall(expression.getIdentifier(), false, object, sam,
                             sam.returnType(), List.of());
                 } else {

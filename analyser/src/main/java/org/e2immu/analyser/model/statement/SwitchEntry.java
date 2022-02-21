@@ -81,7 +81,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(Identifier.generate(), primitives, or, primitives.orOperatorBool(),
+            or = new BinaryOperator(Identifier.generate("switch entry condition"), primitives, or, primitives.orOperatorBool(),
                     equality(primitives, labels.get(i), switchVariableAsExpression, operator),
                     Precedence.LOGICAL_OR);
         }
@@ -89,7 +89,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
     }
 
     private static Expression equality(Primitives primitives, Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
-        return new BinaryOperator(Identifier.generate(),
+        return new BinaryOperator(Identifier.generate("switch entry condition equality"),
                 primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
     }
 

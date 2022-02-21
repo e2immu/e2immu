@@ -340,7 +340,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
         if (directNN.equals(NULLABLE_DV)) {
-            Expression valueIsNull = Equals.equals(Identifier.generate(),
+            Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
                     this, value, NullConstant.NULL_CONSTANT, false);
             Expression evaluation = conditionManager.evaluate(this, valueIsNull);
             if (evaluation.isBoolValueFalse()) {

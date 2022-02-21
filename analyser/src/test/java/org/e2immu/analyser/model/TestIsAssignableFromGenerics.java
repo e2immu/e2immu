@@ -86,7 +86,7 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
             MethodInfo compareTo = compareToBuilder
                     .setReturnType(primitives.intParameterizedType())
-                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("compareTo"),
                             new ParameterizedType(myComparableT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             myComparable.typeInspection.set(myComparableInspection
@@ -128,7 +128,7 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
             add = addBuilder
                     .setReturnType(primitives.voidParameterizedType())
-                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("add"),
                             new ParameterizedType(t, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             add.methodResolution.set(new MethodResolution.Builder().build());

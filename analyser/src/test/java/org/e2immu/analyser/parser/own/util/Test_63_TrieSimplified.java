@@ -430,8 +430,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         // 2x potential null pointer warning, seems correct
         testClass("TrieSimplified_5", 3, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

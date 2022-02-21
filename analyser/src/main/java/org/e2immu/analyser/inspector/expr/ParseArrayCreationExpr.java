@@ -34,7 +34,7 @@ public class ParseArrayCreationExpr {
         TypeContext typeContext = expressionContext.typeContext();
         ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, arrayCreationExpr.createdType());
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
-                new ArrayInitializer(typeContext,
+                new ArrayInitializer(Identifier.from(arrayCreationExpr), typeContext,
                         i.getValues().stream()
                                 .map(expressionContext::parseExpressionStartVoid).collect(Collectors.toList()),
                         parameterizedType.copyWithOneFewerArrays())).orElse(null);
@@ -43,22 +43,22 @@ public class ParseArrayCreationExpr {
                         .orElse(new IntConstant(typeContext.getPrimitives(), 0))).collect(Collectors.toList());
         return ConstructorCall.withArrayInitialiser(
                 createArrayCreationConstructor(typeContext, parameterizedType),
-                parameterizedType, indexExpressions, arrayInitializer);
+                parameterizedType, indexExpressions, arrayInitializer, Identifier.from(arrayCreationExpr));
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
     static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInspection.Builder builder = new MethodInspectionImpl.Builder(parameterizedType.typeInfo)
-                .setInspectedBlock(Block.emptyBlock(Identifier.generate()))
+                .setInspectedBlock(Block.emptyBlock(Identifier.generate("empty block in array creation")))
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
-            ParameterInspection.Builder p = builder.newParameterInspectionBuilder(Identifier.generate(),
+            ParameterInspection.Builder p = builder.newParameterInspectionBuilder(Identifier.generate("param in array creation"),
                     typeContext.getPrimitives().intParameterizedType(), "dim" + i, i);
             builder.addParameter(p);
         }
         MethodInfo constructor = builder.build(typeContext).getMethodInfo();
-        constructor.setAnalysis( typeContext.getPrimitives().createEmptyMethodAnalysis(constructor));
+        constructor.setAnalysis(typeContext.getPrimitives().createEmptyMethodAnalysis(constructor));
         constructor.methodResolution.set(new MethodResolution.Builder().build());
         return constructor;
     }

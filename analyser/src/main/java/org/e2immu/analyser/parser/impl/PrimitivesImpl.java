@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser.impl;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.Analysis;
@@ -41,6 +40,7 @@ import static org.e2immu.analyser.inspector.InspectionState.BY_HAND_WITHOUT_STAT
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class PrimitivesImpl implements Primitives {
+    public static final String ANNOTATION_TYPE = "annotation type";
     public final TypeInfo intTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "int");
     public final ParameterizedType intParameterizedType = intTypeInfo.asSimpleParameterizedType();
 
@@ -141,7 +141,7 @@ public class PrimitivesImpl implements Primitives {
         int i = 0;
         MethodInspection.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
-            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate("operator param"),
                     parameterizedType, "p" + i, i++);
             builder.addParameter(pb); // inspection built when method is built
         }
@@ -151,21 +151,21 @@ public class PrimitivesImpl implements Primitives {
 
     public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
     private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
-    public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(ANNOTATION_TYPE),
             annotationTypePt, "COMPUTED", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerify = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationTypeVerify = new FieldInfo(Identifier.generate(ANNOTATION_TYPE),
             annotationTypePt, "VERIFY", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(Identifier.generate(ANNOTATION_TYPE),
             annotationTypePt, "VERIFY_ABSENT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContract = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationTypeContract = new FieldInfo(Identifier.generate(ANNOTATION_TYPE),
             annotationTypePt, "CONTRACT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(Identifier.generate(ANNOTATION_TYPE),
             annotationTypePt, "CONTRACT_ABSENT", annotationTypeTypeInfo);
 
     public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
-    public final FieldInfo annotationModeDefensive = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationModeDefensive = new FieldInfo(Identifier.generate("annotation mode"),
             annotationTypePt, "DEFENSIVE", annotationModeTypeInfo);
-    public final FieldInfo annotationModeOffensive = new FieldInfo(Identifier.generate(),
+    public final FieldInfo annotationModeOffensive = new FieldInfo(Identifier.generate("annotation mode"),
             annotationTypePt, "OFFENSIVE", annotationModeTypeInfo);
 
     public final TypeInfo functionalInterface = new TypeInfo(JAVA_LANG, "FunctionalInterface");
@@ -313,7 +313,7 @@ public class PrimitivesImpl implements Primitives {
     public void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInspection.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
         ParameterInspectionImpl.Builder valueOf0Builder =
-                new ParameterInspectionImpl.Builder(Identifier.generate(), stringParameterizedType, "s", 0);
+                new ParameterInspectionImpl.Builder(Identifier.generate("param valueOf enum"), stringParameterizedType, "s", 0);
         ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)

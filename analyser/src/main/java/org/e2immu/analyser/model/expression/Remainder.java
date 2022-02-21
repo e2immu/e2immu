@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.List;
+
 public class Remainder extends BinaryOperator {
 
     private Remainder(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
@@ -30,7 +32,8 @@ public class Remainder extends BinaryOperator {
     }
 
     public static Expression remainder(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return remainder(Identifier.generate(), evaluationContext, l, r).value();
+        Identifier id = Identifier.joined("remainder", List.of(l.getIdentifier(), r.getIdentifier()));
+        return remainder(id, evaluationContext, l, r).value();
     }
 
     public static EvaluationResult remainder(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {

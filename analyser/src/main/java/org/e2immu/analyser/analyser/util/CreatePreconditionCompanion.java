@@ -48,25 +48,25 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
                                        Expression value,
                                        String aspect) {
         MethodInspection mainInspection = mainMethod.methodInspection.get();
-        MethodInspection.Builder builder = inspectionProvider.newMethodInspectionBuilder(Identifier.generate(),
+        MethodInspection.Builder builder = inspectionProvider.newMethodInspectionBuilder(Identifier.generate("create companion"),
                 mainMethod.typeInfo, companionMethodName.composeMethodName());
         builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType());
 
         if (aspect != null) {
-            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate(),
+            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate("create companion aspect"),
                     inspectionProvider.getPrimitives().intParameterizedType(), aspect, 0).setVarArgs(false));
         }
         int offset = aspect == null ? 0 : 1;
         for (ParameterInfo parameterInfo : mainInspection.getParameters()) {
-            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate(),
-                    parameterInfo.parameterizedType(), parameterInfo.name, parameterInfo.index + offset)
+            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate("create companion param"),
+                            parameterInfo.parameterizedType(), parameterInfo.name, parameterInfo.index + offset)
                     .setVarArgs(false));
         }
         builder.readyToComputeFQN(inspectionProvider); // so we can grab the parameters
 
         Expression expression = parseEvaluatedExpression(value, aspect, mainInspection, builder.getParameters());
-        Block block = new Block.BlockBuilder(Identifier.generate())
-                .addStatement(new ReturnStatement(Identifier.generate(), expression)).build();
+        Block block = new Block.BlockBuilder(Identifier.generate("create companion block"))
+                .addStatement(new ReturnStatement(Identifier.generate("create companion return"), expression)).build();
         builder.setInspectedBlock(block);
         builder.addModifier(MethodModifier.PRIVATE);
         if (mainInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);
@@ -107,7 +107,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
     }
 
     private MethodCall aspectCall(MethodInfo aspectMethod) {
-        return new MethodCall(Identifier.generate(), new VariableExpression(new This(inspectionProvider, aspectMethod.typeInfo)),
-                aspectMethod, List.of());
+        return new MethodCall(Identifier.generate("aspect call"), new VariableExpression(new This(inspectionProvider,
+                aspectMethod.typeInfo)), aspectMethod, List.of());
     }
 }

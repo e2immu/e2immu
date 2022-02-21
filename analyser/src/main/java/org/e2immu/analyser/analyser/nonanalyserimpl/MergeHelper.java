@@ -111,9 +111,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         }
 
         // postProcess, if applied, uses evaluation in a child context
-        Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
+        Expression mergedValuePost = postProcess(evaluationContext, beforePostProcess, postProcessState);
 
-        mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(mergedValue);
+        Expression mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(mergedValuePost);
         // TODO do post-process and replace local variables change the value properties?
         try {
             vi.setValue(mergedValue); // copy the delayed value
@@ -121,9 +121,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             LOGGER.error("Problem overwriting!");
             throw ise;
         }
-        mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
-        assert mergedValue.isDelayed() || mergedValue.isNotYetAssigned() || allValuePropertiesSet();
-
+        if (!mergedValue.isDelayed() && !mergedValue.isNotYetAssigned()) {
+            mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
+            assert allValuePropertiesSet();
+        }
 
         // TODO maybe we should do these together with the value as well?
         mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
@@ -234,7 +235,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
         SimpleSet causes = new SimpleSet(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
         Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
-        Expression value = new DelayedWrappedExpression(Identifier.generate(), vi.getValue(), vi, causes);
+        Expression value = new DelayedWrappedExpression(Identifier.generate("dwe break init value props"),
+                vi.getValue(), vi, causes);
         return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
     }
 

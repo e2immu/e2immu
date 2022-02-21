@@ -631,7 +631,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         }
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
-            return new GreaterThanZero(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType(),
+            return new GreaterThanZero(Identifier.generate("gt0"), evaluationContext.getPrimitives().booleanParameterizedType(),
                     new ArrayLength(evaluationContext.getPrimitives(), value), false);
         }
         if (returnType.typeInfo != null) {
@@ -639,7 +639,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     "java.util.Collection");
             if (collection != null) {
                 MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
-                return Negation.negate(evaluationContext, new MethodCall(Identifier.generate(), false, value, isEmpty,
+                return Negation.negate(evaluationContext, new MethodCall(Identifier.generate("isEmpty call"), false, value, isEmpty,
                         isEmpty.returnType(), List.of()));
             }
         }

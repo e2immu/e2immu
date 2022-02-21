@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Message;
 
+import java.util.List;
+
 public class EvaluateInlineConditional {
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext,
@@ -120,7 +122,7 @@ public class EvaluateInlineConditional {
             Expression ifTrueCondition = removeCommonClauses(evaluationContext, condition, and);
             if (ifTrueCondition != ifTrueInline.condition) {
                 return conditionalValueConditionResolved(evaluationContext,
-                        condition, new InlineConditional(Identifier.generate(),
+                        condition, new InlineConditional(Identifier.generate("inline remove common clause"),
                                 evaluationContext.getAnalyserContext(), ifTrueCondition,
                                 ifTrueInline.ifTrue, ifTrueInline.ifFalse), ifFalse, complain);
             }
@@ -187,7 +189,9 @@ public class EvaluateInlineConditional {
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
-        return builder.setExpression(new InlineConditional(Identifier.generate(), evaluationContext.getAnalyserContext(),
+        Identifier id = Identifier.joined("inline conditional",
+                List.of(condition.getIdentifier(), ifTrue.getIdentifier(), ifFalse.getIdentifier()));
+        return builder.setExpression(new InlineConditional(id, evaluationContext.getAnalyserContext(),
                 condition, ifTrue, ifFalse)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
@@ -279,7 +283,7 @@ public class EvaluateInlineConditional {
                 TypeInfo.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
             VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
-            Expression knownValue = new MethodCall(Identifier.generate(),
+            Expression knownValue = new MethodCall(Identifier.generate("isKnown"),
                     object, methodValue.methodInfo, methodValue.parameterExpressions);
             return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
         }
