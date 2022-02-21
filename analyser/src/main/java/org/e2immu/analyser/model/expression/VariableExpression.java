@@ -234,12 +234,17 @@ public final class VariableExpression extends CommonVariableExpression {
 
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
         Expression evaluated;
-        if (!currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
+        if (!currentValue.isDelayed()
+                && evaluationContext.getConditionManager() != null
+                && !evaluationContext.getConditionManager().isDelayed()
+                && !evaluationContext.getConditionManager().isEmpty()
+                && !currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
             ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DO_NOT_REEVALUATE_VARIABLE_EXPRESSIONS;
             EvaluationResult er = currentValue.evaluate(evaluationContext, fwd);
             evaluated = er.getExpression();
             // resolve conditions, but do not keep errors/warnings (no builder.compose(er);)
             // InstanceOf_11 - 0.0.1.0.4.0.2-E is the first example where this re-evaluation is necessary
+            builder.compose(er);
         } else {
             evaluated = currentValue;
         }

@@ -390,6 +390,10 @@ public record ConditionManager(Expression condition,
         return this;
     }
 
+    public boolean isEmpty() {
+        return condition.isBoolValueTrue() && state.isBoolValueTrue() && precondition().isEmpty() && (parent == null || parent().isEmpty());
+    }
+
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
 
         @Override

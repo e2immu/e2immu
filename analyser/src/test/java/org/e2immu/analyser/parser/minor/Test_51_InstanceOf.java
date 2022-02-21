@@ -691,6 +691,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.4.0.2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1 -> "<m:numericPartOfLhs>";
+                            case 2 -> "<m:equals>?3.0:null";
                             default -> "3.0";
                         };
                         assertEquals(expect, d.currentValue().toString());

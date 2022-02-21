@@ -14,10 +14,14 @@
 
 package org.e2immu.analyser.parser.loops;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -153,6 +157,15 @@ public class Test_21_Range extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("out");
+                    DV cm = cd.getProperty(Property.CONTEXT_MODIFIED);
+                    assertEquals(DV.FALSE_DV, cm);
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
@@ -216,6 +229,7 @@ public class Test_21_Range extends CommonTestRunner {
         // 3x: always false, block not executed; 1x useless assignment
         testClass("Range_3", 7, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

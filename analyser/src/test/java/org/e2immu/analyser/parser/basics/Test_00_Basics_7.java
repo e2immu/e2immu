@@ -137,7 +137,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                                 "Delay: " + d.currentValue().causesOfDelay().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "1+(b&&(b?<f:i>:<f:i>)<=9?<f:i>:<f:i>)" : "1+(b&&(b?p:0)<=9?p:0)";
+                        String expected = d.iteration() == 0 ? "1+(b?<f:i>:<f:i>)" : "1+(b&&(b?p:0)<=9?p:0)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
