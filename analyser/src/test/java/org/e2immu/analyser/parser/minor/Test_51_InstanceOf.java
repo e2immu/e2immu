@@ -632,9 +632,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "b:-1,d:-1,evaluationContext:-1,return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
-                            case 1 -> "b:-1,d:-1,return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
-                            case 2 -> "return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 0 -> "evaluationContext:-1,return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 1, 2 -> "return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
                             default -> "return method:0,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:3,this.expression.lhs:3,v:3,x:3";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -704,9 +703,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "b:-1,d:-1,evaluationContext:-1,return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
-                            case 1 -> "b:-1,d:-1,return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
-                            case 2 -> "return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
+                            case 0 -> "evaluationContext:-1,return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
+                            case 1, 2 -> "return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
                             default -> "return method:3,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:0,this.expression.lhs:1,v:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -723,9 +721,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertTrue(d.variableInfoContainer().hasEvaluation());
-                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(expect, eval.getValue().toString());
+                        assertFalse(d.variableInfoContainer().hasEvaluation());
                     }
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
@@ -760,7 +756,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         // delays in clustering in iteration 2, otherwise we'd have CM
                         if ("0.0.1.0.5".equals(d.statementId())) {
                             String expectLv = d.iteration() == 0
-                                    ? "b:-1,d:-1,evaluationContext:0,return method:-1,sum:-1,this.expression:-1,v:-1,x:-1"
+                                    ? "evaluationContext:0,return method:-1,sum:-1,this.expression:-1,v:-1,x:-1"
                                     : "evaluationContext:0";
                             assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -777,9 +773,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "b:-1,d:-1,evaluationContext:-1,return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
-                            case 1 -> "b:-1,d:-1,return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
-                            case 2 -> "return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
+                            case 0 -> "evaluationContext:-1,return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
+                            case 1, 2 -> "return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
                             default -> "sum:0,this.expression:0"; // OK
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

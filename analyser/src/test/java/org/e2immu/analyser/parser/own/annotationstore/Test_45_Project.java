@@ -136,7 +136,7 @@ public class Test_45_Project extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
                             case 0 -> "<out of scope:container:2.0.1>.read,container,entry,key,kvStore,result";
-                            case 1, 2 -> "<out of scope:container:2.0.1>.read,<out of scope:container:2.0.1>.read,container,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 1, 2 -> "<out of scope:container:2.0.1>.read,container,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
                             case 3 -> "(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().updated,kvStore,now,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):1:readWithinMillis,result";
                             default -> "";
                         };

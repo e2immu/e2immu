@@ -118,6 +118,8 @@ public class StateData {
 
     public void setValueOfExpression(Expression value, boolean isDelayed) {
         if (isDelayed) {
+            assert valueOfExpression.isVariable()
+                    : "Already have final value '" + valueOfExpression.get() + "'; trying to write delayed value '" + value + "'";
             valueOfExpression.setVariable(value);
         } else setFinalAllowEquals(valueOfExpression, value);
     }

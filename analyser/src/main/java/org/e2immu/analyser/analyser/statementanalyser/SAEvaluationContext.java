@@ -695,10 +695,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     @Override
     public boolean hasState(Expression expression) {
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            VariableInfo vi = findForReading(ve.variable(), true);
-            return vi.getValue() != null && vi.getValue().hasState();
+        IsVariableExpression ive;
+        if ((ive = expression.asInstanceOf(IsVariableExpression.class)) != null) {
+            VariableInfo vi = findForReading(ive.variable(), true);
+            Expression v = vi.getValue();
+            return v != null && !(v.isInstanceOf(IsVariableExpression.class)) && v.hasState();
         }
         return expression.hasState();
     }

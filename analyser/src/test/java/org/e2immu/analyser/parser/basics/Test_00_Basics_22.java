@@ -53,9 +53,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:toByteArray>" : "byteArrayOutputStream.toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "byteArrayOutputStream:-1,return loadBytes:0"
-                                : "return loadBytes:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("return loadBytes:0", d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // try statement
