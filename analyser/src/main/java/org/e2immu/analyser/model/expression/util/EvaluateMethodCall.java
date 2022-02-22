@@ -62,8 +62,8 @@ public class EvaluateMethodCall {
                                         ParameterizedType concreteReturnType,
                                         List<Expression> parameters) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        boolean recursiveCall = context.evaluationContext().getCurrentMethod() != null &&
-                context.evaluationContext().getCurrentMethod().getMethodInfo() == methodInfo;
+        boolean recursiveCall = context.getCurrentMethod() != null &&
+                context.getCurrentMethod().getMethodInfo() == methodInfo;
         if (recursiveCall) {
             MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();

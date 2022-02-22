@@ -43,6 +43,15 @@ public interface Expression extends Element, Comparable<Expression> {
     @NotNull
     Precedence precedence();
 
+    /**
+     * Evaluate an expression
+     *
+     * @param context               rather than using an EvaluationContext, we use an EvaluationResult, for exactly one
+     *                              purpose: in CommaExpressions, we can analyse in the context of the earlier expressions
+     *                              in the list.
+     * @param forwardEvaluationInfo information to be passed on in the forward direction
+     * @return the independent evaluation result
+     */
     @NotModified
     @NotNull
     EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo);
@@ -196,7 +205,9 @@ public interface Expression extends Element, Comparable<Expression> {
 
     // goes together with causesOfDelay()
     @NotNull
-    default Expression mergeDelays(CausesOfDelay causesOfDelay) { return this; }
+    default Expression mergeDelays(CausesOfDelay causesOfDelay) {
+        return this;
+    }
 
     default boolean isDelayed() {
         return causesOfDelay().isDelayed();

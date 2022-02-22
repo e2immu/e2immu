@@ -266,7 +266,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         boolean recursiveCall;
 
-        MethodAnalyser currentMethod = context.evaluationContext().getCurrentMethod();
+        MethodAnalyser currentMethod = context.getCurrentMethod();
         if (currentMethod != null) {
             TypeInfo currentPrimaryType = context.getCurrentType().primaryType();
             TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
@@ -505,8 +505,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private boolean raiseErrorForFinalizer(EvaluationResult context,
                                            EvaluationResult.Builder builder, Variable variable) {
-        if (variable instanceof FieldReference && (context.evaluationContext().getCurrentMethod() == null ||
-                !context.evaluationContext().getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
+        if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
+                !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
             // ensure that the current method has been marked @Finalizer
             builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;
@@ -845,7 +845,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        boolean recursiveCall = context.evaluationContext().getCurrentMethod() != null && methodInfo == context.evaluationContext().getCurrentMethod().getMethodInfo();
+        boolean recursiveCall = context.getCurrentMethod() != null && methodInfo == context.getCurrentMethod().getMethodInfo();
         if (recursiveCall) {
             return property.bestDv;
         }

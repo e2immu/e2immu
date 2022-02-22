@@ -97,6 +97,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return evaluationContext.getCurrentType();
     }
 
+    public MethodAnalyser getCurrentMethod() {
+        return evaluationContext.getCurrentMethod();
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
 
     public Stream<Message> getMessageStream() {

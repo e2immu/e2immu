@@ -88,7 +88,7 @@ public class EvaluateParameters {
             // NOT_NULL, NOT_MODIFIED
             Map<Property, DV> map;
             try {
-                MethodAnalyser currentMethod = context.evaluationContext().getCurrentMethod();
+                MethodAnalyser currentMethod = context.getCurrentMethod();
                 if (currentMethod != null &&
                         currentMethod.getMethodInfo() == methodInfo) {
                     map = new HashMap<>(RECURSIVE_CALL);

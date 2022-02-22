@@ -105,7 +105,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
-            DV paramMod = d.context().evaluationContext().getCurrentMethod()
+            DV paramMod = d.context().getCurrentMethod()
                     .getParameterAnalyses().get(1).getProperty(Property.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
