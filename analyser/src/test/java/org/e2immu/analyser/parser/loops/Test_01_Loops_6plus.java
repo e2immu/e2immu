@@ -541,9 +541,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
-                                ? "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<v:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/"
-                                : "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<v:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<mmc:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         String expectVars = d.iteration() <= 1 ? "[<out of scope:container:1.0.1>.read, container, entry, key, kvStore, result]"
                                 : "[(instance type Entry<String,Container>).getValue().read, kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried]";

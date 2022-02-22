@@ -119,10 +119,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
             if ("3".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "a:-1,bs:-1,list:0,map:-1" : "list:0";
+                String expected = d.iteration() == 0 ? "bs:-1,list:0,map:-1" : "list:0";
                 assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
             } else {
-                String expected = d.iteration() == 0 ? "a:-1,list:0,map:-1" : "list:0";
+                String expected = d.iteration() == 0 ? "list:0,map:-1" : "list:0";
                 assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
             }
         }
@@ -145,7 +145,6 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("change".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:change>||null==<m:get>" : "change$1||null==destination.get(e$1.getKey())";
                     assertEquals("true", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
@@ -230,7 +229,6 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
         }
         if ("copy".equals(name)) {
-            VariableInfo returnValue = d.getReturnAsVariable();
             assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
         }
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
