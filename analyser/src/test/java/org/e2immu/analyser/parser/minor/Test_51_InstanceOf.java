@@ -894,4 +894,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_12() throws IOException {
+        testClass("InstanceOf_12", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

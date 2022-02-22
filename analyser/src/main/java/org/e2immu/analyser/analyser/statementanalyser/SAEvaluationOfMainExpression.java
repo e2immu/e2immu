@@ -211,6 +211,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // the value can be delayed even if it is "true", for example (Basics_3)
         // see Precondition_3 for an example where different values arise, because preconditions kick in
         boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
+        if(statement() instanceof ExplicitConstructorInvocation) {
+            value = UnknownExpression.forExplicitConstructorInvocation();
+            valueIsDelayed2 = false;
+        }
         statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
 
         return ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop);

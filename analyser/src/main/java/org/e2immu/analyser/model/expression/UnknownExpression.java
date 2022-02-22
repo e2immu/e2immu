@@ -67,6 +67,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
         return new UnknownExpression(Identifier.CONSTANT, ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, "?");
     }
 
+    public static Expression forExplicitConstructorInvocation() {
+        return new UnknownExpression(Identifier.CONSTANT, ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "eci");
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

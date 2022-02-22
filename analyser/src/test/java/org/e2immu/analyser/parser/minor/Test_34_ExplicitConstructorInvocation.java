@@ -153,4 +153,12 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }
