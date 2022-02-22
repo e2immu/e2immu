@@ -201,7 +201,7 @@ public abstract class VisitorTestSupport {
         }
         Range range = d.statementAnalysis().rangeData().getRange();
         assertEquals(rangeExpected, range.toString());
-        Expression conditions = range.conditions(d.evaluationContext());
+        Expression conditions = range.conditions(d.context().evaluationContext());
         assertEquals(conditionExpected, conditions.toString());
         return range;
     }

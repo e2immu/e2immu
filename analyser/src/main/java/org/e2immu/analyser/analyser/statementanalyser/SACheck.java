@@ -66,8 +66,9 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
         if (!escapeAlwaysExecuted.valueIsFalse()) {
             if (escapeAlwaysExecuted.valueIsTrue()) {
+                EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
                 Expression precondition = statementAnalysis.stateData().getConditionManagerForNextStatement()
-                        .precondition(sharedState.evaluationContext());
+                        .precondition(context);
                 CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
                 // is this an expression in terms of fields and parameters?
                 Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);

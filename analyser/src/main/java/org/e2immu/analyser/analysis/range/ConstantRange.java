@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
@@ -32,7 +33,7 @@ public record ConstantRange(ArrayInitializer initializer, VariableExpression var
         assert typeInfo != null : "Cannot find typeInfo in " + initializer;
         MethodInfo equalsMethodInfo = typeInfo.findUniqueMethod("equals", 1);
         assert equalsMethodInfo != null : "Cannot find equals method in type " + typeInfo;
-        return Or.or(evaluationContext, Arrays.stream(initializer.multiExpression.expressions())
+        return Or.or(EvaluationResult.from(evaluationContext), Arrays.stream(initializer.multiExpression.expressions())
                 .map(e -> equals(equalsMethodInfo, variableExpression, e)).toList());
     }
 

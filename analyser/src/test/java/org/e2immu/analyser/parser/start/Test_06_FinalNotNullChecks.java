@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -78,7 +79,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
                 FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
                 DV notNull = d.getFieldAsVariable(input).getValue()
-                        .getProperty(d.evaluationContext(), NOT_NULL_EXPRESSION, true);
+                        .getProperty(d.context(), NOT_NULL_EXPRESSION, true);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, notNull);
             }
             if ("debug".equals(d.methodInfo().name)) {
@@ -133,7 +134,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
 
                 Expression inputValue = vi.getValue();
-                DV notNull = inputValue.getProperty(d.evaluationContext(), NOT_NULL_EXPRESSION, true);
+                DV notNull = inputValue.getProperty(EvaluationResult.from(d.evaluationContext()), NOT_NULL_EXPRESSION, true);
                 assertEquals("param/*@NotNull*/", inputValue.toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, notNull);
             }

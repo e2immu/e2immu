@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
@@ -43,10 +40,10 @@ public record MultiExpression(Expression... expressions) {
                 .orElse(ParameterizedType.NULL_CONSTANT);
     }
 
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
-                .map(value -> evaluationContext.getProperty(value, property, duringEvaluation, false))
+                .map(value -> context.evaluationContext().getProperty(value, property, duringEvaluation, false))
                 .reduce(property.bestDv, DV::min);
     }
 

@@ -194,15 +194,15 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         Expression result;
 
-        if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = noLocalAnalysersYet(evaluationContext);
+        if (context.evaluationContext().getLocalPrimaryTypeAnalysers() == null) {
+            result = noLocalAnalysersYet(context);
         } else {
-            MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
+            MethodAnalysis methodAnalysis = context.evaluationContext().findMethodAnalysisOfLambda(methodInfo);
             result = withLocalAnalyser(parameterizedType, methodAnalysis);
         }
 
@@ -259,7 +259,7 @@ public class Lambda extends BaseExpression implements Expression {
         return result;
     }
 
-    private Expression noLocalAnalysersYet(EvaluationContext evaluationContext) {
+    private Expression noLocalAnalysersYet(EvaluationResult evaluationContext) {
         Expression result;
         CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
         result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),

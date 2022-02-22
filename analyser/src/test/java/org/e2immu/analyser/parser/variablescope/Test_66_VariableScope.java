@@ -114,7 +114,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else fail();
                     assertEquals("instance type IOException", d.currentValue().toString());
                     assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("ioe".equals(d.variableName())) {
@@ -208,7 +208,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("e".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                 }

@@ -90,13 +90,13 @@ public class InlineConditional extends BaseExpression implements Expression {
 
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reCondition = condition.reEvaluate(evaluationContext, translation);
-        EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
-        EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reCondition = condition.reEvaluate(context, translation);
+        EvaluationResult reTrue = ifTrue.reEvaluate(context, translation);
+        EvaluationResult reFalse = ifFalse.reEvaluate(context, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
         EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
-                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value(), false);
+                context, reCondition.value(), reTrue.value(), reFalse.value(), false);
         return builder.setExpression(res.value()).build();
     }
 
@@ -121,42 +121,42 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         // there is little we can say with certainty until we know that the condition is not trivial, and
         // one of ifTrue, ifFalse is chosen. See Precondition_3
         if (condition.isDelayed()) return condition.causesOfDelay();
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            EvaluationContext child = evaluationContext.child(condition);
-            DV nneIfTrue = child.getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
+            EvaluationResult child = context.child(condition);
+            DV nneIfTrue = child.evaluationContext().getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
                 return nneIfTrue;
             }
-            Expression notC = Negation.negate(evaluationContext, condition);
-            EvaluationContext notChild = evaluationContext.child(notC);
-            DV nneIfFalse = notChild.getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
+            Expression notC = Negation.negate(context, condition);
+            EvaluationResult notChild = context.child(notC);
+            DV nneIfFalse = notChild.evaluationContext().getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
             return nneIfFalse.min(nneIfTrue);
         }
         if (property == IDENTITY || property == IGNORE_MODIFICATIONS) {
-            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+            return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
         }
         if (property == IMMUTABLE || property == INDEPENDENT || property == CONTAINER) {
             if (ifTrue instanceof NullConstant) {
-                return evaluationContext.getProperty(ifFalse, property, duringEvaluation, false);
+                return context.evaluationContext().getProperty(ifFalse, property, duringEvaluation, false);
             }
             if (ifFalse instanceof NullConstant) {
-                return evaluationContext.getProperty(ifTrue, property, duringEvaluation, false);
+                return context.evaluationContext().getProperty(ifTrue, property, duringEvaluation, false);
             }
-            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+            return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
         }
-        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        LinkedVariables linkedVariablesTrue = ifTrue.linkedVariables(evaluationContext);
-        LinkedVariables linkedVariablesFalse = ifFalse.linkedVariables(evaluationContext);
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        LinkedVariables linkedVariablesTrue = ifTrue.linkedVariables(context);
+        LinkedVariables linkedVariablesFalse = ifFalse.linkedVariables(context);
         return linkedVariablesTrue.merge(linkedVariablesFalse);
     }
 
@@ -182,29 +182,29 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult conditionResult = condition.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult conditionResult = condition.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(conditionResult);
 
-        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
+        boolean resultIsBoolean = returnType().equals(context.getPrimitives().booleanParameterizedType());
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
 
-        Expression conditionAfterState = evaluationContext.getConditionManager().evaluate(evaluationContext, condition);
+        Expression conditionAfterState = context.evaluationContext().getConditionManager().evaluate(context, condition);
 
         boolean tooComplex = conditionAfterState.getComplexity() *
                 Math.max(ifTrue.getComplexity(), ifFalse.getComplexity()) >= 1000;
 
-        EvaluationContext copyForThen = resultIsBoolean || tooComplex ? evaluationContext :
-                evaluationContext.child(condition);
+        EvaluationResult copyForThen = resultIsBoolean || tooComplex ? context :
+                context.child(condition);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationContext copyForElse = resultIsBoolean ? evaluationContext :
-                evaluationContext.child(Negation.negate(evaluationContext, condition));
+        EvaluationResult copyForElse = resultIsBoolean ? context :
+                context.child(Negation.negate(context, condition));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
@@ -220,24 +220,24 @@ public class InlineConditional extends BaseExpression implements Expression {
             InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition, t, f);
             return builder.setExpression(inlineConditional).build();
         }
-        EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+        EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 conditionAfterState, t, f, forwardEvaluationInfo.complainInlineConditional());
         return builder.compose(cv).build();
     }
 
-    public Expression optimise(EvaluationContext evaluationContext) {
+    public Expression optimise(EvaluationResult evaluationContext) {
         return optimise(evaluationContext, false);
     }
 
-    private Expression optimise(EvaluationContext evaluationContext, boolean useState) {
+    private Expression optimise(EvaluationResult evaluationContext, boolean useState) {
         boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
-        EvaluationContext copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition);
+        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition);
         Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true) : ifTrue;
-        EvaluationContext copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition));
+        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition));
         Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true) : ifFalse;
 
         if (useState) {

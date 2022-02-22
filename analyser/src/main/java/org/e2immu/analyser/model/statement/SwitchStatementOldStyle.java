@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -115,13 +116,13 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         return res;
     }
 
-    public Map<String, Expression> startingPointToLabels(EvaluationContext evaluationContext,
+    public Map<String, Expression> startingPointToLabels(EvaluationResult context,
                                                          LimitedStatementAnalysis firstStatement) {
         return switchLabelMap(firstStatement).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> Or.or(evaluationContext, e.getValue().stream()
+                e -> Or.or(context, e.getValue().stream()
                         .map(switchLabel ->
                                 switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
-                                        Equals.equals(evaluationContext, expression, switchLabel.expression))
+                                        Equals.equals(context, expression, switchLabel.expression))
                         .toList())));
     }
 

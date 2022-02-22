@@ -27,8 +27,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import static org.e2immu.analyser.analyser.DV.FALSE_DV;
-
 @E2Container
 public class NullConstant extends BaseExpression implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
@@ -59,8 +57,8 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         DV max = forwardEvaluationInfo.getProperty(Property.NOT_NULL_EXPRESSION).max(
                 forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
         if (max.gt(MultiLevel.NULLABLE_DV)) {
@@ -70,7 +68,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS, IDENTITY -> property.falseDv;

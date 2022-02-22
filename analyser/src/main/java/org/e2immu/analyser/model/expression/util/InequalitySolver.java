@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
@@ -34,7 +35,7 @@ as object. Rat
  */
 public class InequalitySolver {
     private final Map<OneVariable, List<Expression>> perComponent;
-    private final EvaluationContext evaluationContext;
+    private final EvaluationResult evaluationContext;
 
     /*
     expression is the "given": we extract components that have only one variable (i>0, j<0, k!=3).
@@ -42,7 +43,7 @@ public class InequalitySolver {
     We're assuming that per single variable, the expressions are consistent (i.e., not i>0 and i<0 together),
     and not redundant (i>0, i>1).
      */
-    public InequalitySolver(EvaluationContext evaluationContext, Expression expression) {
+    public InequalitySolver(EvaluationResult evaluationContext, Expression expression) {
         this.evaluationContext = evaluationContext;
         Map<OneVariable, List<Expression>> builder = new HashMap<>();
         if (expression instanceof And and) {
@@ -53,7 +54,7 @@ public class InequalitySolver {
         perComponent = Map.copyOf(builder);
     }
 
-    public InequalitySolver(EvaluationContext evaluationContext, List<Expression> expressions) {
+    public InequalitySolver(EvaluationResult evaluationContext, List<Expression> expressions) {
         this.evaluationContext = evaluationContext;
         Map<OneVariable, List<Expression>> builder = new HashMap<>();
         expressions.forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));

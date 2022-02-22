@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.eventual;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -281,7 +282,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             assertEquals("new EventuallyFinal<>()", initializerValue.toString());
 
             // before mark because the value is a ConstructorCall
-            DV concrete = initializerValue.getProperty(d.evaluationContext(), Property.IMMUTABLE, true);
+            DV concrete = initializerValue.getProperty(EvaluationResult.from(d.evaluationContext()), Property.IMMUTABLE, true);
             assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, concrete);
 
             DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType(),

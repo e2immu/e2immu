@@ -31,17 +31,17 @@ public class TestInequalitySolver extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Expression iGt0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), false);
-        Expression jLt0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), false);
+        Expression iGt0 = GreaterThanZero.greater(context, i, newInt(0), false);
+        Expression jLt0 = GreaterThanZero.less(context, j, newInt(0), false);
         Expression iGt0AndJLt0 = newAndAppend(iGt0, jLt0);
-        InequalitySolver inequalitySolver = new InequalitySolver(minimalEvaluationContext, iGt0AndJLt0);
+        InequalitySolver inequalitySolver = new InequalitySolver(context, iGt0AndJLt0);
         assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerComponent()
                 .entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
 
-        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i);
-        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3)));
-        Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i2, minusJ3), newInt(1), true);
+        Expression i2 = Product.product(context, newInt(2), i);
+        Expression minusJ3 = negate(Product.product(context, j, newInt(3)));
+        Expression i2Minus3JGe1 = GreaterThanZero.greater(context,
+                Sum.sum(context, i2, minusJ3), newInt(1), true);
         assertEquals("-1+2*i>=3*j", i2Minus3JGe1.toString());
 
         assertTrue(inequalitySolver.evaluate(i2Minus3JGe1));

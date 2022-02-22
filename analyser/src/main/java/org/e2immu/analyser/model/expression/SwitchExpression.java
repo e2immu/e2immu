@@ -94,9 +94,9 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        EvaluationResult selectorResult = selector.evaluate(evaluationContext, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResult selectorResult = selector.evaluate(context, forwardEvaluationInfo);
 
         Expression selectorValue = selectorResult.value();
         List<Expression> newYieldExpressions = new ArrayList<>(expressions.expressions().length);
@@ -107,8 +107,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
             }
             if (switchEntry.structure.statements().size() == 1) {
                 // single expression
-                Expression condition = convertDefaultToNegationOfAllOthers(evaluationContext, switchEntry.structure.expression());
-                EvaluationContext localContext = evaluationContext.child(condition);
+                Expression condition = convertDefaultToNegationOfAllOthers(context, switchEntry.structure.expression());
+                EvaluationResult localContext = context.child(condition);
                 EvaluationResult entryResult;
                 Statement statement = switchEntry.structure.statements().get(0);
                 Expression expression = statement instanceof YieldStatement yieldStatement ? yieldStatement.expression
@@ -130,10 +130,10 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         return builder.build();
     }
 
-    private Expression convertDefaultToNegationOfAllOthers(EvaluationContext evaluationContext, Expression expression) {
+    private Expression convertDefaultToNegationOfAllOthers(EvaluationResult context, Expression expression) {
         if (!(expression instanceof EmptyExpression)) return expression;
-        return And.and(evaluationContext, switchEntries.stream().flatMap(se -> se.labels.stream()).map(label ->
-                        Negation.negate(evaluationContext, Equals.equals(evaluationContext, label, selector)))
+        return And.and(context, switchEntries.stream().flatMap(se -> se.labels.stream()).map(label ->
+                        Negation.negate(context, Equals.equals(context, label, selector)))
                 .toArray(Expression[]::new));
     }
 
@@ -157,8 +157,8 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return expressions.getProperty(evaluationContext, property, duringEvaluation);
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        return expressions.getProperty(context, property, duringEvaluation);
     }
 
     @Override

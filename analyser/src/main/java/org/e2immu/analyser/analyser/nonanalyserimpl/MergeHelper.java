@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
 import static org.e2immu.analyser.analyser.Stage.MERGE;
+import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -145,7 +145,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                    Expression postProcessState) {
         if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
-            Expression reEval = beforePostProcess.evaluate(child, ForwardEvaluationInfo.DEFAULT).getExpression();
+            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child), ForwardEvaluationInfo.DEFAULT).getExpression();
             LOGGER.debug("Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
             return reEval;
         }
@@ -275,12 +275,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                         evaluationContext.getVariableValue(variable, cav.variableInfo())));
         if (allReducedIdentical) return valueProperties(reduced.get(0).variableInfo());
 
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
         if (reduced.size() == 1) {
             ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
                 return valueProperties(e.variableInfo());
             }
-            Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(evaluationContext,
+            Expression reworkedCondition = RewriteCondition.rewriteConditionFromLoopVariableToParameter(context,
                     e.condition(), e.absoluteState());
             if (reworkedCondition.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY) && !e.variableInfo().getValue().isDelayed()) {
                 // simply accept this one, for now
@@ -292,7 +293,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         if (reduced.size() == 2 && atLeastOneBlockExecuted) {
             ConditionAndVariableInfo e = reduced.get(0);
-            Expression negated = Negation.negate(evaluationContext, e.condition());
+            Expression negated = Negation.negate(context, e.condition());
             ConditionAndVariableInfo e2 = reduced.get(1);
 
             if (e2.condition().equals(negated)) {
@@ -417,7 +418,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             if (vi.variable() instanceof ReturnVariable) {
                 if (stateOfParent.isBoolValueTrue()) return valueProperties(vi1);
                 if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType())) {
-                    return new Merge.ExpressionAndProperties(And.and(evaluationContext, stateOfParent, vi1value),
+                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    return new Merge.ExpressionAndProperties(And.and(context, stateOfParent, vi1value),
                             EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
                 }
                 return inlineConditional(stateOfParent, vi1, vi);
@@ -462,7 +464,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
         }
 
-        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(EvaluationResult.from(evaluationContext),
                 condition, ifTrue.getValue(), ifFalse.getValue(), false));
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {

@@ -64,8 +64,8 @@ public final class EmptyExpression  extends BaseExpression implements Expression
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).build();
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return new EvaluationResult.Builder(context).build();
     }
 
     @Override
@@ -79,7 +79,7 @@ public final class EmptyExpression  extends BaseExpression implements Expression
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return property.falseDv;
     }
 

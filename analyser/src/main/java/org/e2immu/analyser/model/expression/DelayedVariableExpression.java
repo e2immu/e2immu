@@ -154,16 +154,16 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         // CONTEXT NOT NULL as soon as possible, also for delayed values...
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
         if (variable instanceof FieldReference fr && fr.scope != null) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
             ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                     forwardEvaluationInfo.copyModificationEnsureNotNull();
-            EvaluationResult scopeResult = fr.scope.evaluate(evaluationContext, forward);
+            EvaluationResult scopeResult = fr.scope.evaluate(context, forward);
             builder.compose(scopeResult);
         }
 
@@ -175,7 +175,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return causesOfDelay;
     }
 
@@ -188,7 +188,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     // special treatment because of == equality
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         Optional<Map.Entry<Expression, Expression>> found = translation.entrySet().stream()
                 .filter(e -> e.getKey() instanceof VariableExpression ve && ve.variable().equals(variable))
                 .findFirst();
@@ -196,7 +196,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
         if (found.isPresent()) {
             result = found.get().getValue();
         } else if (variable instanceof FieldReference fr && fr.scope != null) {
-            EvaluationResult reEval = fr.scope.reEvaluate(evaluationContext, translation); // recurse
+            EvaluationResult reEval = fr.scope.reEvaluate(context, translation); // recurse
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
                 FieldReference newRef = new FieldReference(fr, replaceScope);
@@ -211,7 +211,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return new LinkedVariables(Map.of(variable, causesOfDelay));
     }
 

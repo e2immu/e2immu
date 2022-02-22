@@ -80,7 +80,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
             EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(e.getKey());
             if (cd != null && cd.isMarkedRead()) {
-                LinkedVariables lv = e.getValue().linkedVariables(sharedState.evaluationContext());
+                LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
                 builder.assignment(e.getKey(), e.getValue(), lv);
             }
         });
@@ -141,7 +141,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
             if (changeData.markAssignment()) {
                 if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
-                        sharedState.localConditionManager(), sharedState.evaluationContext())) {
+                        sharedState.localConditionManager(), sharedState.context())) {
                     statementAnalysis.ensure(Message.newMessage(getLocation(),
                             Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
                 }
@@ -283,7 +283,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                             CausesOfDelay valuePropertiesIsDelayed) {
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         if (!valueToWriteIsDelayed && valuePropertiesIsDelayed.isDelayed()) {
-            return valueToWrite.createDelayedValue(sharedState.evaluationContext(),
+            return valueToWrite.createDelayedValue(EvaluationResult.from(sharedState.evaluationContext()),
                     valuePropertiesIsDelayed);
         }
         return valueToWrite;
@@ -538,7 +538,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             VariableInfoContainer vic,
             EvaluationResult.ChangeData changeData,
             ConditionManager conditionManager,
-            EvaluationContext evaluationContext) {
+            EvaluationResult context) {
         if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
                 changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
             String index = vi1.getAssignmentIds().getLatestAssignmentIndex();
@@ -547,8 +547,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 return false; // we'll be back
             }
             ConditionManager atAssignment = sa.stateData().getConditionManagerForNextStatement();
-            Expression myAbsoluteState = conditionManager.absoluteState(evaluationContext);
-            Expression initialAbsoluteState = atAssignment.absoluteState(evaluationContext);
+            Expression myAbsoluteState = conditionManager.absoluteState(context);
+            Expression initialAbsoluteState = atAssignment.absoluteState(context);
             if (!initialAbsoluteState.equals(myAbsoluteState)) return false;
             // now check if we're in loop block, and there was an assignment outside
             // this loop block will not have an effect on the absolute state (See Loops_2, Loops_13)
@@ -618,7 +618,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Identifier generate = Identifier.generate("inline condition var def outside loop");
                 InlineConditional inlineConditional = new InlineConditional(generate,
                         evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
-                return inlineConditional.optimise(evaluationContext.dropConditionManager());
+                return inlineConditional.optimise(EvaluationResult.from(evaluationContext.dropConditionManager()));
             }
         }
         return value;

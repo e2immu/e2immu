@@ -100,7 +100,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     return causes;
                 }
                 StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
-                Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), correspondingLoop.steps());
+                Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state, state.isDelayed());
                 if (state.isDelayed()) return state.causesOfDelay();
                 Expression condition = sharedState.localConditionManager().condition();
@@ -115,7 +115,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 // empty parameters: this(); or super();
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
                 if (!assignments.isBooleanConstant()) {
-                    EvaluationResult result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+                    EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
+                            structure.forwardEvaluationInfo());
                     // FIXME clean up, AnalysisStatus -> Causes
                     AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
                     return applyResult.causesOfDelay().merge(causes);
@@ -139,7 +140,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
             result = createAndEvaluateReturnStatement(sharedState);
         } else {
-            result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+            result = toEvaluate.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
         }
         if (statementAnalysis.statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
@@ -154,7 +155,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         }
         if (statementAnalysis.statement() instanceof AssertStatement) {
-            result = handleNotNullClausesInAssertStatement(sharedState.evaluationContext(), result);
+            result = handleNotNullClausesInAssertStatement(sharedState.context(), result);
         }
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
@@ -170,7 +171,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
-                result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
+                result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
                 ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result);
                 statusPost = assignmentResult.status().merge(causes);
                 ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
@@ -227,8 +228,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private CausesOfDelay addLoopReturnStatesToState(StatementAnalyserSharedState sharedState) {
         StatementAnalysis.FindLoopResult loop = statementAnalysis.findLoopByLabel(null);
         if (loop != null) {
-            Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), loop.steps());
-            Expression notState = Negation.negate(sharedState.evaluationContext(), state);
+            Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), loop.steps());
+            Expression notState = Negation.negate(sharedState.context(), state);
             loop.statementAnalysis().stateData().addStateOfReturnInLoop(index(), notState, state.isDelayed());
             if (state.isDelayed()) {
                 // we'll have to come back
@@ -257,19 +258,20 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
                     new VariableExpression(returnVariable), newValue);
-            EvaluationResult assRes = assignment.evaluate(sharedState.evaluationContext(), ForwardEvaluationInfo.DEFAULT);
+            EvaluationResult assRes = assignment.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
+                    ForwardEvaluationInfo.DEFAULT);
             builder.compose(assRes);
             return builder.build();
         }
         return result;
     }
 
-    private EvaluationResult handleNotNullClausesInAssertStatement(EvaluationContext evaluationContext,
+    private EvaluationResult handleNotNullClausesInAssertStatement(EvaluationResult context,
                                                                    EvaluationResult evaluationResult) {
         Expression expression = evaluationResult.getExpression();
-        Filter.FilterResult<ParameterInfo> result = SAHelper.moveConditionToParameter(evaluationContext, expression);
+        Filter.FilterResult<ParameterInfo> result = SAHelper.moveConditionToParameter(context, expression);
         if (result != null) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             boolean changes = false;
             for (Map.Entry<ParameterInfo, Expression> e : result.accepted().entrySet()) {
                 boolean isNotNull = e.getValue().equalsNotNull();
@@ -317,7 +319,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         EvaluationResult translated = variableInfo.getValue()
-                                .reEvaluate(sharedState.evaluationContext(), translation);
+                                .reEvaluate(EvaluationResult.from(sharedState.evaluationContext()), translation);
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
@@ -328,7 +330,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 }
             }
         }
-        return CommaExpression.comma(sharedState.evaluationContext(), assignments);
+        return CommaExpression.comma(sharedState.context(), assignments);
     }
 
     /*
@@ -370,7 +372,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
-        return assignment.evaluate(evaluationContext, forwardEvaluationInfo);
+        return assignment.evaluate(EvaluationResult.from(evaluationContext), forwardEvaluationInfo);
     }
 
     /*
@@ -381,8 +383,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
         switchStatement.labels().forEach(label -> {
-            Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext(), label, switchExpression);
-            Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.evaluationContext(),
+            Expression labelEqualsSwitchExpression = Equals.equals(sharedState.context(), label, switchExpression);
+            Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(),
                     labelEqualsSwitchExpression);
             if (evaluated.isBoolValueTrue()) {
                 always.add(label.toString());
@@ -413,7 +415,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         }
 
-        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.evaluationContext(), value);
+        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(), value);
 
         if (evaluated.isConstant()) {
             Message.Label message;

@@ -144,7 +144,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
             return new EvaluationResult.Builder().setExpression(this).build();
         }
@@ -167,21 +167,21 @@ public class InlinedMethod extends BaseExpression implements Expression {
     a method call, and the result of the method should be used.
      */
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.NOT_NULL_EXPRESSION) {
-            return MethodReference.notNull(evaluationContext, methodInfo);
+            return MethodReference.notNull(context, methodInfo);
         }
-        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(property);
+        return context.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(property);
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         Set<Variable> targetVariables = translation.values().stream()
                 .flatMap(e -> e.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
-        EvaluationContext closure = new EvaluationContextImpl(evaluationContext, targetVariables);
-        EvaluationResult result = expression.reEvaluate(closure, translation);
+        EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext(), targetVariables);
+        EvaluationResult result = expression.reEvaluate(EvaluationResult.from(closure), translation);
         if (expression instanceof InlinedMethod im) {
-            Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), evaluationContext.getAnalyserContext());
+            Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), context.getAnalyserContext());
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
         }
         return result;
@@ -217,9 +217,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return variablesOfExpression.stream().flatMap(ve -> ve.variables(descendIntoFieldReferences).stream()).toList();
     }
 
-    public boolean canBeApplied(EvaluationContext evaluationContext) {
-        return !containsVariableFields ||
-                evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
+    public boolean canBeApplied(EvaluationResult context) {
+        return !containsVariableFields || context.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
     }
 
     public MethodInfo methodInfo() {
@@ -237,7 +236,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     /*
     We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
      */
-    public Map<Expression, Expression> translationMap(EvaluationContext evaluationContext,
+    public Map<Expression, Expression> translationMap(EvaluationResult evaluationContext,
                                                       List<Expression> parameters,
                                                       Expression scope,
                                                       TypeInfo typeOfTranslation,
@@ -318,21 +317,21 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return new VariableExpression(new FieldReference(inspectionProvider, fieldReference.fieldInfo, scope));
     }
 
-    private Expression replacementForScopeField(EvaluationContext evaluationContext,
+    private Expression replacementForScopeField(EvaluationResult context,
                                                 InspectionProvider inspectionProvider,
                                                 FieldReference fieldReference,
                                                 boolean staticField,
                                                 VariableExpression ve) {
         FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
                 staticField ? null : ve);
-        CausesOfDelay causesOfDelay = evaluationContext.variableIsDelayed(scopeField);
+        CausesOfDelay causesOfDelay = context.evaluationContext().variableIsDelayed(scopeField);
         if (causesOfDelay.isDelayed()) {
-            return DelayedVariableExpression.forField(scopeField, evaluationContext.getInitialStatementTime(), causesOfDelay);
+            return DelayedVariableExpression.forField(scopeField, context.evaluationContext().getInitialStatementTime(), causesOfDelay);
         }
         return new VariableExpression(scopeField);
     }
 
-    private Expression replacementForConstructorCall(EvaluationContext evaluationContext,
+    private Expression replacementForConstructorCall(EvaluationResult evaluationContext,
                                                      Expression scope,
                                                      FieldReference fieldReference) {
         ConstructorCall constructorCall = bestConstructorCall(evaluationContext, scope);
@@ -361,7 +360,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return replacement;
     }
 
-    private ConstructorCall bestConstructorCall(EvaluationContext evaluationContext, Expression scope) {
+    private ConstructorCall bestConstructorCall(EvaluationResult evaluationContext, Expression scope) {
         ConstructorCall constructorCall = scope.asInstanceOf(ConstructorCall.class);
         VariableExpression ve;
         if (constructorCall == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
@@ -373,7 +372,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return constructorCall;
     }
 
-    private Expression ensureReplacement(EvaluationContext evaluationContext,
+    private Expression ensureReplacement(EvaluationResult evaluationContext,
                                          Identifier identifierOfMethodCall,
                                          Variable variable,
                                          Expression replacement) {
@@ -386,17 +385,17 @@ public class InlinedMethod extends BaseExpression implements Expression {
         CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
             return DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
-                    evaluationContext.linkedVariables(variable).changeAllToDelay(merged), merged);
+                    evaluationContext.evaluationContext().linkedVariables(variable).changeAllToDelay(merged), merged);
         }
         return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,
                 VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
     }
 
-    private int indexOfParameterLinkedToFinalField(EvaluationContext evaluationContext,
+    private int indexOfParameterLinkedToFinalField(EvaluationResult context,
                                                    MethodInfo constructor,
                                                    FieldInfo fieldInfo) {
         int i = 0;
-        List<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(constructor).toList();
+        List<ParameterAnalysis> parameterAnalyses = context.evaluationContext().getParameterAnalyses(constructor).toList();
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                 return -2; // delays
@@ -623,11 +622,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public CausesOfDelay variableIsDelayed(Variable variable) {
-            return CausesOfDelay.EMPTY; // nothing can be delayed here
-        }
-
-        @Override
-        public CausesOfDelay isDelayed(Expression expression) {
             return CausesOfDelay.EMPTY; // nothing can be delayed here
         }
 

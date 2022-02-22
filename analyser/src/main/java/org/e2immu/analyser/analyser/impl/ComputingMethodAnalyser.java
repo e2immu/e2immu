@@ -262,7 +262,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis, typeAnalysis, analyserContext);
-        MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
+        MethodAnalysis.Eventual eventual = detectEventual.detect(EvaluationResult.from(sharedState.evaluationContext));
         if (eventual.causesOfDelay().isDelayed()) {
             methodAnalysis.setEventualDelay(eventual);
             return eventual.causesOfDelay();
@@ -381,6 +381,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return methodAnalysis.precondition.get().causesOfDelay();
         }
         Precondition precondition = methodAnalysis.precondition.get();
+        EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext);
+
         if (precondition.isEmpty()) {
 
             // code to detect the situation as in Lazy
@@ -400,13 +402,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         }
                         Expression state = cm.state();
                         if (!state.isBoolValueTrue()) {
-                            Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
+                            Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
                             Filter.FilterResult<FieldReference> filterResult = filter.filter(state,
                                     filter.individualFieldClause(analyserContext, true));
                             Expression inResult = filterResult.accepted().get(fr);
                             if (inResult != null) {
                                 Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
-                                combinedPrecondition = combinedPrecondition.combine(sharedState.evaluationContext, pc);
+                                combinedPrecondition = combinedPrecondition.combine(context, pc);
                             }
                         }
                     }
@@ -422,7 +424,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         FilterMode.ALL will find clauses in Or and in And constructs. See SetOnce.copy for an example of an Or
         construct.
          */
-        Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ALL);
+        Filter filter = new Filter(context, Filter.FilterMode.ALL);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {
@@ -435,7 +437,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         LOGGER.debug("Did prep work for @Only, @Mark, found precondition {} on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
 
-        Expression and = And.and(sharedState.evaluationContext, preconditionExpressions);
+        Expression and = And.and(context, preconditionExpressions);
         methodAnalysis.setPreconditionForEventual(new Precondition(and, precondition.causes()));
         return DONE;
     }
@@ -1048,7 +1050,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (value instanceof VariableExpression ve) {
                 return getProperty(ve.variable(), property);
             }
-            return value.getProperty(this, property, true);
+            return value.getProperty(EvaluationResult.from(this), property, true);
         }
 
         // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression

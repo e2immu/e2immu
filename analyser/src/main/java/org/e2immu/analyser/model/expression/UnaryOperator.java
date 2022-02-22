@@ -79,20 +79,20 @@ public class UnaryOperator extends BaseExpression implements Expression {
     // NOTE: we're not visiting here!
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
-        Expression value = computeValue(evaluationContext, evaluationContext.getPrimitives(), evaluationResult);
-        return new EvaluationResult.Builder(evaluationContext)
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult evaluationResult = expression.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        Expression value = computeValue(context, context.getPrimitives(), evaluationResult);
+        return new EvaluationResult.Builder(context)
                 .compose(evaluationResult)
                 .setExpression(value)
                 .build();
     }
 
-    private Expression computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
+    private Expression computeValue(EvaluationResult context, Primitives primitives, EvaluationResult evaluationResult) {
         Expression v = evaluationResult.value();
 
         if (operator == primitives.logicalNotOperatorBool() || operator == primitives.unaryMinusOperatorInt()) {
-            return Negation.negate(evaluationContext, v);
+            return Negation.negate(context, v);
         }
         if (operator == primitives.unaryPlusOperatorInt()) {
             return v;
@@ -197,7 +197,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 

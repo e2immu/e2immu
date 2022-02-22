@@ -79,8 +79,8 @@ public class Test_01_Loops_3 extends CommonTestRunner {
                     if (d.statementAnalysis().statement() instanceof ForEachStatement forEachStatement) {
                         DV exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(Identifier.generate("test"),
-                                        d.evaluationContext().getAnalyserContext(),
-                                        List.of(), ((StatementAnalysisImpl) d.statementAnalysis()).primitives.stringParameterizedType()), d.evaluationContext());
+                                        d.context().getAnalyserContext(),
+                                        List.of(), ((StatementAnalysisImpl) d.statementAnalysis()).primitives.stringParameterizedType()), d.context());
                         assertSame(FlowData.NEVER, exec);
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData().blocks.get().get(0).orElseThrow();

@@ -25,7 +25,7 @@ import java.util.Objects;
 public interface StatementAnalyserVariableVisitor {
 
     record Data(int iteration,
-                EvaluationContext evaluationContext,
+                EvaluationResult context,
                 MethodInfo methodInfo,
                 String statementId,
                 String variableName,

@@ -32,7 +32,7 @@ public class TestFilter extends CommonAbstractValue {
     public void test() {
         And andValue = (And) newAndAppend(a, b);
         assertEquals("a&&b", andValue.toString());
-        Filter filter = new Filter(minimalEvaluationContext, ALL);
+        Filter filter = new Filter(context, ALL);
         Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> new Filter.FilterResult<>(Map.of(), value));
         assertEquals(filterResult.rest(), andValue);
 
@@ -53,7 +53,7 @@ public class TestFilter extends CommonAbstractValue {
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         And andValue = (And) newAndAppend(a, sNotNull);
         assertEquals("a&&null!=s", andValue.toString());
-        Filter filter = new Filter(minimalEvaluationContext, ALL);
+        Filter filter = new Filter(context, ALL);
         Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> {
             if (value instanceof Equals equalsValue) {
                 if (equalsValue.rhs instanceof VariableExpression && ((VariableExpression) equalsValue.rhs).variable() == s.variable()) {

@@ -47,7 +47,7 @@ public final class ContractMark extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         return null;
     }
 
@@ -67,7 +67,7 @@ public final class ContractMark extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return DV.FALSE_DV;
     }
 

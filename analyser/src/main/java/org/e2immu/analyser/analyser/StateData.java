@@ -164,24 +164,24 @@ public class StateData {
     // (break 1 || ...|| breakN || !condition) && return 1 state && ... && return N state
     public Expression combineInterruptsAndExit(LoopStatement loopStatement,
                                                Expression negatedConditionOrExitState,
-                                               EvaluationContext evaluationContext) {
+                                               EvaluationResult context) {
 
         List<Expression> ors = new ArrayList<>();
         if (loopStatement.hasExitCondition()) {
             statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
-                    ors.add(evaluationContext.replaceLocalVariables(e.get())));
+                    ors.add(context.evaluationContext().replaceLocalVariables(e.get())));
             if (!negatedConditionOrExitState.isBoolValueFalse()) {
                 // the exit condition cannot contain local variables
-                ors.add(evaluationContext.replaceLocalVariables(negatedConditionOrExitState));
+                ors.add(context.evaluationContext().replaceLocalVariables(negatedConditionOrExitState));
             }
         }
         List<Expression> ands = new ArrayList<>();
         statesOfReturnInLoop.stream().map(Map.Entry::getValue).forEach(e ->
-                ands.add(evaluationContext.replaceLocalVariables(e.get())));
+                ands.add(context.evaluationContext().replaceLocalVariables(e.get())));
         if (!ors.isEmpty()) {
-            ands.add(Or.or(evaluationContext, ors.toArray(Expression[]::new)));
+            ands.add(Or.or(context, ors.toArray(Expression[]::new)));
         }
-        return And.and(evaluationContext, ands.toArray(Expression[]::new));
+        return And.and(context, ands.toArray(Expression[]::new));
     }
 
     public boolean noExitViaReturnOrBreak() {

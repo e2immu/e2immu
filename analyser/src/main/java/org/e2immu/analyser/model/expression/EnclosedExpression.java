@@ -89,8 +89,8 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return inner.evaluate(evaluationContext, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return inner.evaluate(context, forwardEvaluationInfo);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return evaluationContext.getProperty(inner, property, duringEvaluation, false);
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        return context.evaluationContext().getProperty(inner, property, duringEvaluation, false);
     }
 }

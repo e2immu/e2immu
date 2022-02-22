@@ -42,13 +42,13 @@ public class MethodCallIncompatibleWithPrecondition {
 
     return null upon delays.
      */
-    public static DV isMark(EvaluationContext evaluationContext,
+    public static DV isMark(EvaluationResult context,
                             Set<FieldInfo> fields,
                             MethodAnalyser methodAnalyser) {
         StatementAnalysis statementAnalysis = methodAnalyser.getMethodAnalysis().getLastStatement();
         assert statementAnalysis.methodLevelData().combinedPrecondition.isFinal();
         Expression precondition = statementAnalysis.methodLevelData().combinedPrecondition.get().expression();
-        Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(evaluationContext, precondition);
+        Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(context, precondition);
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
@@ -66,10 +66,10 @@ public class MethodCallIncompatibleWithPrecondition {
                 return new SimpleSet(new VariableCause(fieldReference, statementAnalysis.location(Stage.MERGE),
                         CauseOfDelay.Cause.VALUE));
             }
-            if (evaluationContext.hasState(variableInfo.getValue())) {
+            if (context.evaluationContext().hasState(variableInfo.getValue())) {
                 Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);
                 if (!state.isBoolValueTrue()) {
-                    Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);
+                    Expression stateWithInvariants = enrichWithInvariants(context, state);
 
                     /* Another issue that we have to deal with is that of overloaded methods
                        the precondition contains references to Set.size() while the invariants have been
@@ -77,9 +77,9 @@ public class MethodCallIncompatibleWithPrecondition {
 
                        We have to normalise, and cannot easily do that at equality level
                      */
-                    Expression normalisedPrecondition = normaliseMethods(evaluationContext, preconditionInTermsOfAspect);
-                    Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
-                    Expression and = And.and(evaluationContext, normalisedPrecondition, normalisedStateWithInvariants);
+                    Expression normalisedPrecondition = normaliseMethods(context, preconditionInTermsOfAspect);
+                    Expression normalisedStateWithInvariants = normaliseMethods(context, stateWithInvariants);
+                    Expression and = And.and(context, normalisedPrecondition, normalisedStateWithInvariants);
                     if (and.isBoolValueFalse()) return DV.TRUE_DV;
                 }
             }
@@ -87,7 +87,7 @@ public class MethodCallIncompatibleWithPrecondition {
         return DV.FALSE_DV;
     }
 
-    private static Expression normaliseMethods(EvaluationContext evaluationContext, Expression expression) {
+    private static Expression normaliseMethods(EvaluationResult evaluationContext, Expression expression) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall && !builder.translateMethod(methodCall.methodInfo)) {
@@ -107,14 +107,14 @@ public class MethodCallIncompatibleWithPrecondition {
     /*
     set.isEmpty() => we add 0==set.size()
      */
-    private static Expression replaceByAspectsWherePossible(EvaluationContext evaluationContext, Expression expression) {
+    private static Expression replaceByAspectsWherePossible(EvaluationResult context, Expression expression) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         expression.visit(e -> {
             VariableExpression ve;
             if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
-                MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
+                MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
                 for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
                     if (entry.getKey().action() == CompanionMethodName.Action.VALUE) {
                         CompanionMethodName companionMethodName = entry.getKey();
@@ -123,7 +123,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         if (companionMethodName.aspect() != null) {
                             LOGGER.debug("Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
 
-                            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
+                            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
                             MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                             This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
                             TranslationMap translationMap = new TranslationMapImpl.Builder()
@@ -139,7 +139,7 @@ public class MethodCallIncompatibleWithPrecondition {
         return expression.translate(builder.build());
     }
 
-    private static Expression enrichWithInvariants(EvaluationContext evaluationContext, Expression expression) {
+    private static Expression enrichWithInvariants(EvaluationResult evaluationContext, Expression expression) {
         List<Expression> additionalComponents = new ArrayList<>();
         additionalComponents.add(expression);
 

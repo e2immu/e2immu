@@ -45,31 +45,31 @@ public class Equals extends BinaryOperator {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(Equals.equals(context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return equals(Identifier.generate("equals"), evaluationContext, l, r, true);
+    public static Expression equals(EvaluationResult context, Expression l, Expression r) {
+        return equals(Identifier.generate("equals"), context, l, r, true);
     }
 
-    public static Expression equals(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
-        return equals(identifier, evaluationContext, l, r, true);
+    public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r) {
+        return equals(identifier, context, l, r, true);
     }
 
     public static Expression equals(Identifier identifier,
-                                    EvaluationContext evaluationContext, Expression l, Expression r, boolean checkForNull) {
-        Primitives primitives = evaluationContext.getPrimitives();
+                                    EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+        Primitives primitives = context.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
         //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (checkForNull) {
-            if (l instanceof NullConstant && evaluationContext.isNotNull0(r, false) ||
-                    r instanceof NullConstant && evaluationContext.isNotNull0(l, false))
+            if (l instanceof NullConstant && context.evaluationContext().isNotNull0(r, false) ||
+                    r instanceof NullConstant && context.evaluationContext().isNotNull0(l, false))
                 return new BooleanConstant(primitives, false);
         }
 
@@ -81,18 +81,18 @@ public class Equals extends BinaryOperator {
         }
 
         if (l instanceof InlineConditional inlineConditional) {
-            Expression result = tryToRewriteConstantEqualsInline(evaluationContext, r, inlineConditional);
+            Expression result = tryToRewriteConstantEqualsInline(context, r, inlineConditional);
             if (result != null) return result;
         }
         if (r instanceof InlineConditional inlineConditional) {
-            Expression result = tryToRewriteConstantEqualsInline(evaluationContext, l, inlineConditional);
+            Expression result = tryToRewriteConstantEqualsInline(context, l, inlineConditional);
             if (result != null) return result;
         }
 
-        Expression[] terms = Stream.concat(Sum.expandTerms(evaluationContext, l, false),
-                Sum.expandTerms(evaluationContext, r, true)).toArray(Expression[]::new);
+        Expression[] terms = Stream.concat(Sum.expandTerms(context, l, false),
+                Sum.expandTerms(context, r, true)).toArray(Expression[]::new);
         Arrays.sort(terms);
-        Expression[] termsOfProducts = Sum.makeProducts(evaluationContext, terms);
+        Expression[] termsOfProducts = Sum.makeProducts(context, terms);
 
         if (termsOfProducts.length == 0) {
             return new BooleanConstant(primitives, true);
@@ -120,32 +120,32 @@ public class Equals extends BinaryOperator {
             double d = numeric.doubleValue();
             if (d < 0 && termsOfProducts[1] instanceof Negation) {
                 newLeft = termsOfProducts[0];
-                newRight = wrapSum(evaluationContext, termsOfProducts, true);
+                newRight = wrapSum(context, termsOfProducts, true);
                 // 4 + i == 0 --> -4 == i
             } else if (d > 0 && !(termsOfProducts[1] instanceof Negation)) {
                 newLeft = IntConstant.intOrDouble(primitives, -d);
-                newRight = wrapSum(evaluationContext, termsOfProducts, false);
+                newRight = wrapSum(context, termsOfProducts, false);
                 // -4 + x == 0 --> 4 == x
             } else if (d < 0) {
                 newLeft = IntConstant.intOrDouble(primitives, -d);
-                newRight = wrapSum(evaluationContext, termsOfProducts, false);
+                newRight = wrapSum(context, termsOfProducts, false);
             } else {
                 newLeft = termsOfProducts[0];
-                newRight = wrapSum(evaluationContext, termsOfProducts, true);
+                newRight = wrapSum(context, termsOfProducts, true);
             }
         } else if (termsOfProducts[0] instanceof Negation neg) {
             newLeft = neg.expression;
-            newRight = wrapSum(evaluationContext, termsOfProducts, false);
+            newRight = wrapSum(context, termsOfProducts, false);
         } else {
             newLeft = termsOfProducts[0];
-            newRight = wrapSum(evaluationContext, termsOfProducts, true);
+            newRight = wrapSum(context, termsOfProducts, true);
         }
 
         // recurse
         return new Equals(identifier, primitives, newLeft, newRight);
     }
 
-    private static Expression wrapSum(EvaluationContext evaluationContext,
+    private static Expression wrapSum(EvaluationResult evaluationContext,
                                       Expression[] termsOfProducts,
                                       boolean negate) {
         if (termsOfProducts.length == 2) {
@@ -154,7 +154,7 @@ public class Equals extends BinaryOperator {
         return wrapSum(evaluationContext, termsOfProducts, 1, termsOfProducts.length, negate);
     }
 
-    private static Expression wrapSum(EvaluationContext evaluationContext,
+    private static Expression wrapSum(EvaluationResult evaluationContext,
                                       Expression[] termsOfProducts,
                                       int start, int end,
                                       boolean negate) {
@@ -179,15 +179,15 @@ public class Equals extends BinaryOperator {
     // (a ? x: y) == c  ; if x != c, guaranteed, then the result is !a&&y==c
 
     // see test ConditionalChecks_7; TestEqualsConstantInline
-    public static Expression tryToRewriteConstantEqualsInline(EvaluationContext evaluationContext,
+    public static Expression tryToRewriteConstantEqualsInline(EvaluationResult context,
                                                               Expression c,
                                                               InlineConditional inlineConditional) {
         if (c instanceof InlineConditional inline2) {
             // silly check a1?b1:c1 == a1?b2:c2 === b1 == b2 && c1 == c2
             if (inline2.condition.equals(inlineConditional.condition)) {
-                return And.and(evaluationContext,
-                        Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue),
-                        Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse));
+                return And.and(context,
+                        Equals.equals(context, inlineConditional.ifTrue, inline2.ifTrue),
+                        Equals.equals(context, inlineConditional.ifFalse, inline2.ifFalse));
             }
             return null;
         }
@@ -197,46 +197,46 @@ public class Equals extends BinaryOperator {
 
         Expression recursively1;
         if (inlineConditional.ifTrue instanceof InlineConditional inlineTrue) {
-            recursively1 = tryToRewriteConstantEqualsInline(evaluationContext, c, inlineTrue);
+            recursively1 = tryToRewriteConstantEqualsInline(context, c, inlineTrue);
             ifTrueGuaranteedNotEqual = recursively1 != null && recursively1.isBoolValueFalse();
         } else {
             recursively1 = null;
             if (c instanceof NullConstant) {
-                ifTrueGuaranteedNotEqual = evaluationContext.isNotNull0(inlineConditional.ifTrue, false);
+                ifTrueGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifTrue, false);
             } else {
-                ifTrueGuaranteedNotEqual = Equals.equals(evaluationContext, inlineConditional.ifTrue, c).isBoolValueFalse();
+                ifTrueGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueFalse();
             }
         }
 
         if (ifTrueGuaranteedNotEqual) {
-            Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return And.and(evaluationContext,
-                    notCondition, Equals.equals(evaluationContext, inlineConditional.ifFalse, c));
+            Expression notCondition = Negation.negate(context, inlineConditional.condition);
+            return And.and(context,
+                    notCondition, Equals.equals(context, inlineConditional.ifFalse, c));
         }
 
         Expression recursively2;
         if (inlineConditional.ifFalse instanceof InlineConditional inlineFalse) {
-            recursively2 = tryToRewriteConstantEqualsInline(evaluationContext, c, inlineFalse);
+            recursively2 = tryToRewriteConstantEqualsInline(context, c, inlineFalse);
             ifFalseGuaranteedNotEqual = recursively2 != null && recursively2.isBoolValueFalse();
         } else {
             recursively2 = null;
             if (c instanceof NullConstant) {
-                ifFalseGuaranteedNotEqual = evaluationContext.isNotNull0(inlineConditional.ifFalse, false);
+                ifFalseGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifFalse, false);
             } else {
-                ifFalseGuaranteedNotEqual = Equals.equals(evaluationContext, inlineConditional.ifFalse, c).isBoolValueFalse();
+                ifFalseGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueFalse();
             }
         }
 
         if (ifFalseGuaranteedNotEqual) {
-            return And.and(evaluationContext,
-                    inlineConditional.condition, Equals.equals(evaluationContext, inlineConditional.ifTrue, c));
+            return And.and(context,
+                    inlineConditional.condition, Equals.equals(context, inlineConditional.ifTrue, c));
         }
 
         // we try to do something with recursive results
         if (recursively1 != null && recursively2 != null) {
-            Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return Or.or(evaluationContext, And.and(evaluationContext, inlineConditional.condition, recursively1),
-                    And.and(evaluationContext, notCondition, recursively2));
+            Expression notCondition = Negation.negate(context, inlineConditional.condition);
+            return Or.or(context, And.and(context, inlineConditional.condition, recursively1),
+                    And.and(context, notCondition, recursively2));
         }
         return null;
     }
@@ -248,15 +248,15 @@ public class Equals extends BinaryOperator {
     // (a ? x: y) != c  ; if x == c, guaranteed, then the result is !a&&y!=c
 
     // see test ConditionalChecks_7; TestEqualsConstantInline
-    public static Expression tryToRewriteConstantEqualsInlineNegative(EvaluationContext evaluationContext,
+    public static Expression tryToRewriteConstantEqualsInlineNegative(EvaluationResult context,
                                                                       Expression c,
                                                                       InlineConditional inlineConditional) {
         if (c instanceof InlineConditional inline2) {
             // silly check a1?b1:c1 != a1?b2:c2 === b1 != b2 || c1 != c2
             if (inline2.condition.equals(inlineConditional.condition)) {
-                return Or.or(evaluationContext,
-                        Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue)),
-                        Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse)));
+                return Or.or(context,
+                        Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, inline2.ifTrue)),
+                        Negation.negate(context, Equals.equals(context, inlineConditional.ifFalse, inline2.ifFalse)));
             }
             return null;
         }
@@ -268,17 +268,17 @@ public class Equals extends BinaryOperator {
             ifTrueGuaranteedEqual = inlineConditional.ifTrue instanceof NullConstant;
             ifFalseGuaranteedEqual = inlineConditional.ifFalse instanceof NullConstant;
         } else {
-            ifTrueGuaranteedEqual = Equals.equals(evaluationContext, inlineConditional.ifTrue, c).isBoolValueTrue();
-            ifFalseGuaranteedEqual = Equals.equals(evaluationContext, inlineConditional.ifFalse, c).isBoolValueTrue();
+            ifTrueGuaranteedEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueTrue();
+            ifFalseGuaranteedEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueTrue();
         }
         if (ifTrueGuaranteedEqual) {
-            Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return And.and(evaluationContext,
-                    notCondition, Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifFalse, c)));
+            Expression notCondition = Negation.negate(context, inlineConditional.condition);
+            return And.and(context,
+                    notCondition, Negation.negate(context, Equals.equals(context, inlineConditional.ifFalse, c)));
         }
         if (ifFalseGuaranteedEqual) {
-            return And.and(evaluationContext, inlineConditional.condition,
-                    Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifTrue, c)));
+            return And.and(context, inlineConditional.condition,
+                    Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, c)));
         }
         return null;
     }

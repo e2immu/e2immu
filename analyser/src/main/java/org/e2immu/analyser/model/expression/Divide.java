@@ -30,7 +30,7 @@ public class Divide extends BinaryOperator {
     }
 
     public static EvaluationResult divide(Identifier identifier,
-                                          EvaluationContext evaluationContext, Expression l, Expression r) {
+                                          EvaluationResult evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();

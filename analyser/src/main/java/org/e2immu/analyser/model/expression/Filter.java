@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.Expression;
@@ -39,11 +39,11 @@ import java.util.stream.Collectors;
  * making it all pretty complex to understand.
  */
 public class Filter {
-    private final EvaluationContext evaluationContext;
+    private final EvaluationResult evaluationContext;
     private final BooleanConstant defaultRest;
     private final FilterMode filterMode;
 
-    public Filter(EvaluationContext evaluationContext, FilterMode filterMode) {
+    public Filter(EvaluationResult evaluationContext, FilterMode filterMode) {
         this.evaluationContext = evaluationContext;
         this.defaultRest = defaultRest(evaluationContext.getPrimitives(), filterMode);
         this.filterMode = filterMode;
@@ -149,7 +149,7 @@ public class Filter {
         List<FilterResult<X>> results = values.stream().map(v -> {
             FilterResult<X> sub = internalFilter(v, filterMethods);
             return sub == null ? new FilterResult<X>(Map.of(), v) : sub;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<Expression> restList = results.stream().map(r -> r.rest).collect(Collectors.toList());
         Map<X, Expression> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())

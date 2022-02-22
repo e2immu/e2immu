@@ -40,20 +40,20 @@ public class Product extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.multiplyOperatorInt(), rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Product.product(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(Product.product(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression product(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression product(EvaluationResult evaluationContext, Expression l, Expression r) {
         Identifier id = Identifier.joined("product", List.of(l.getIdentifier(), r.getIdentifier()));
         return product(id, evaluationContext, l, r);
     }
 
     // we try to maintain a sum of products
-    public static Expression product(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression product(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0 ||

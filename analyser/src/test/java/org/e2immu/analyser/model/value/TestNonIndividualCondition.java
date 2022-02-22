@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestNonIndividualCondition extends CommonAbstractValue {
 
     private Expression rest(Expression value, Filter.FilterMode filterMode) {
-        Filter filter = new Filter(minimalEvaluationContext, filterMode);
+        Filter filter = new Filter(context, filterMode);
         return filter.filter(value, filter.individualNullOrNotNullClauseOnParameter()).rest();
     }
 

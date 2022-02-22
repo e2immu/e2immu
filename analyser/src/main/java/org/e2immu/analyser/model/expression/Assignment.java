@@ -240,8 +240,8 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
 
         // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a primitve
@@ -253,9 +253,9 @@ public class Assignment extends BaseExpression implements Expression {
             fwd = forwardEvaluationInfo.copyAddAssignmentTarget(variable);
         }
 
-        EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
+        EvaluationResult valueResult = value.evaluate(context, fwd);
 
-        EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
+        EvaluationResult targetResult = target.evaluate(context, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
 
         Variable newVariableTarget = handleArrayAccess(targetResult.value());
@@ -264,7 +264,7 @@ public class Assignment extends BaseExpression implements Expression {
 
         E2 e2;
         if (binaryOperator != null) {
-            e2 = handleBinaryOperator(evaluationContext, forwardEvaluationInfo, newVariableTarget, builder);
+            e2 = handleBinaryOperator(context, forwardEvaluationInfo, newVariableTarget, builder);
         } else {
             /*
             we compare to value and not resultOfExpression here, to catch a literal j = j assignment
@@ -276,7 +276,7 @@ public class Assignment extends BaseExpression implements Expression {
             if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget)) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
-            e2 = handleNormalAssignment(evaluationContext, fwd, valueResult.value(), newVariableTarget, builder);
+            e2 = handleNormalAssignment(context, fwd, valueResult.value(), newVariableTarget, builder);
         }
         builder.composeIgnoreExpression(targetResult);
 
@@ -285,14 +285,14 @@ public class Assignment extends BaseExpression implements Expression {
         Expression finalValue;
         Expression expression;
         if (hackForUpdatersInForLoop) {
-            finalValue = makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay());
+            finalValue = makeHackInstance(context, e2.assignedToTarget.causesOfDelay());
             expression = e2.assignedToTarget;
         } else {
             finalValue = e2.assignedToTarget;
             expression = e2.resultOfExpression;
         }
         // we by-pass the result of normal assignment which raises the i=i assign to myself error
-        doAssignmentWork(builder, evaluationContext, newVariableTarget, finalValue);
+        doAssignmentWork(builder, context, newVariableTarget, finalValue);
         assert expression != null;
         return builder.setExpression(expression).build();
     }
@@ -305,12 +305,12 @@ public class Assignment extends BaseExpression implements Expression {
 
     We've chosen this approach over a blanket search for variables which should get an instance value.
      */
-    private Expression makeHackInstance(EvaluationContext evaluationContext, CausesOfDelay causes) {
+    private Expression makeHackInstance(EvaluationResult context, CausesOfDelay causes) {
         if (causes.isDelayed()) {
-            return DelayedVariableExpression.forVariable(variableTarget, evaluationContext.getInitialStatementTime(),
-                    causes);
+            return DelayedVariableExpression.forVariable(variableTarget,
+                    context.evaluationContext().getInitialStatementTime(), causes);
         }
-        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(target.returnType());
+        Properties valueProperties = context.getAnalyserContext().defaultValueProperties(target.returnType());
         return Instance.forVariableInLoopDefinedOutside(identifier, target.returnType(), valueProperties);
     }
 
@@ -327,31 +327,31 @@ public class Assignment extends BaseExpression implements Expression {
         return variableTarget;
     }
 
-    private E2 handleNormalAssignment(EvaluationContext evaluationContext,
+    private E2 handleNormalAssignment(EvaluationResult context,
                                       ForwardEvaluationInfo fwd,
                                       Expression valueResultValue,
                                       Variable newVariableTarget,
                                       EvaluationResult.Builder builder) {
 
-        EvaluationResult currentTargetValue = target.evaluate(evaluationContext, fwd);
+        EvaluationResult currentTargetValue = target.evaluate(context, fwd);
         Expression currentValue = currentTargetValue.value();
         IsVariableExpression ive2;
         if (currentValue != null && (currentValue.equals(valueResultValue) ||
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
                         && newVariableTarget.equals(ive2.variable())) &&
                 !(newVariableTarget instanceof ReturnVariable) &&
-                !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
+                !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             LOGGER.debug("Assigning identical value {} to {}", currentValue, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
             // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment
             // we'll assign to the value
-            Expression previous = evaluationContext.currentValue(newVariableTarget);
+            Expression previous = context.currentValue(newVariableTarget);
             return new E2(valueResultValue, previous);
         }
         return new E2(valueResultValue, valueResultValue);
     }
 
-    private E2 handleBinaryOperator(EvaluationContext evaluationContext,
+    private E2 handleBinaryOperator(EvaluationResult context,
                                     ForwardEvaluationInfo forwardEvaluationInfo,
                                     Variable newVariableTarget,
                                     EvaluationResult.Builder builder) {
@@ -359,8 +359,8 @@ public class Assignment extends BaseExpression implements Expression {
         Expression resultOfExpression;
         BinaryOperator operation = new BinaryOperator(identifier,
                 primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
-                BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
-        EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
+                BinaryOperator.precedence(context.getPrimitives(), binaryOperator));
+        EvaluationResult operationResult = operation.evaluate(context, forwardEvaluationInfo);
         builder.compose(operationResult);
 
         if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
@@ -369,7 +369,7 @@ public class Assignment extends BaseExpression implements Expression {
         } else {
             // i++
             Expression post = new VariableExpression(newVariableTarget);
-            EvaluationResult variableOnly = post.evaluate(evaluationContext, forwardEvaluationInfo);
+            EvaluationResult variableOnly = post.evaluate(context, forwardEvaluationInfo);
             resultOfExpression = variableOnly.value();
             // not composing, any error will have been raised already
         }
@@ -377,7 +377,7 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     private void doAssignmentWork(EvaluationResult.Builder builder,
-                                  EvaluationContext evaluationContext,
+                                  EvaluationResult context,
                                   Variable at,
                                   Expression resultOfExpression) {
 
@@ -386,8 +386,8 @@ public class Assignment extends BaseExpression implements Expression {
 
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
-                    checkIllAdvisedAssignment(fieldReference, evaluationContext.getCurrentType(),
-                            fieldReference.fieldInfo.isStatic(evaluationContext.getAnalyserContext()))) {
+                    checkIllAdvisedAssignment(fieldReference, context.getCurrentType(),
+                            fieldReference.fieldInfo.isStatic(context.getAnalyserContext()))) {
                 builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
@@ -395,7 +395,7 @@ public class Assignment extends BaseExpression implements Expression {
         }
 
         // may already be linked to others
-        LinkedVariables lvExpression = resultOfExpression.linkedVariables(evaluationContext).minimum(LinkedVariables.ASSIGNED_DV);
+        LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         LinkedVariables linkedVariables;
         IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
         if (ive != null) {

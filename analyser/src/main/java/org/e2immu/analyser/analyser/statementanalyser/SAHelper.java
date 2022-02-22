@@ -40,8 +40,8 @@ import static org.e2immu.analyser.analyser.Property.*;
 record SAHelper(StatementAnalysis statementAnalysis) {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAHelper.class);
 
-    static Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression) {
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+    static Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationResult context, Expression expression) {
+        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<ParameterInfo> result = filter.filter(expression, filter.individualNullOrNotNullClauseOnParameter());
         if (result != null && !result.accepted().isEmpty() && result.rest().isBoolValueTrue()) {
             return result;
@@ -162,7 +162,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     .forEach(variableInfoContainer -> statementAnalyserVariableVisitor.visit(
                             new StatementAnalyserVariableVisitor.Data(
                                     sharedState.evaluationContext().getIteration(),
-                                    sharedState.evaluationContext(),
+                                    sharedState.context(),
                                     methodInfo,
                                     statementId,
                                     variableInfoContainer.current().name(),
@@ -178,13 +178,13 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     new StatementAnalyserVisitor.Data(
                             result,
                             sharedState.evaluationContext().getIteration(),
-                            sharedState.evaluationContext(),
+                            sharedState.context(),
                             methodInfo,
                             statementAnalysis,
                             statementAnalysis.index(),
                             cm == null ? null : cm.condition(),
                             cm == null ? null : cm.state(),
-                            cm == null ? null : cm.absoluteState(sharedState.evaluationContext()),
+                            cm == null ? null : cm.absoluteState(sharedState.context()),
                             cm,
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));

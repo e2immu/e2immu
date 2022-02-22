@@ -185,15 +185,15 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         // instance, no constructor parameter expressions
         if (constructor == null) return LinkedVariables.EMPTY;
 
-        return linkedVariablesFromParameters(evaluationContext, constructor.methodInspection.get(),
+        return linkedVariablesFromParameters(context, constructor.methodInspection.get(),
                 parameterExpressions);
     }
 
-    static LinkedVariables linkedVariablesFromParameters(EvaluationContext evaluationContext,
+    static LinkedVariables linkedVariablesFromParameters(EvaluationResult evaluationContext,
                                                          MethodInspection methodInspection,
                                                          List<Expression> parameterExpressions) {
         // quick shortcut
@@ -232,9 +232,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         ParameterizedType pt;
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+        AnalyserContext analyserContext = context.getAnalyserContext();
         if (anonymousClass != null) {
             pt = anonymousClass.asParameterizedType(analyserContext);
         } else {
@@ -366,34 +366,34 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         Expression expression;
         CausesOfDelay causesOfDelay = reParamValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
-            expression = createDelayedValue(evaluationContext, causesOfDelay);
+            expression = createDelayedValue(context, causesOfDelay);
         } else {
             expression = new ConstructorCall(identifier, constructor, parameterizedType,
                     diamond, reParamValues, anonymousClass, arrayInitializer);
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams);
         return builder.setExpression(expression).build();
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
 
         // arrayInitializer variant
 
         if (arrayInitializer != null) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             List<EvaluationResult> results = arrayInitializer.multiExpression.stream()
-                    .map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT))
+                    .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
-            builder.setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(),
+            builder.setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(),
                     values, arrayInitializer.returnType()));
             return builder.build();
         }
@@ -401,24 +401,24 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // "normal"
 
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext, forwardEvaluationInfo, constructor, false, null);
+                context, forwardEvaluationInfo, constructor, false, null);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(evaluationContext, res.k, parameterDelays);
+            return delayedConstructorCall(context, res.k, parameterDelays);
         }
 
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
-            MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
-            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext,
+            MethodAnalysis constructorAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
+            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, context,
                     constructor, constructorAnalysis, null, this, res.v);
             if (modifiedInstance == null) {
                 instance = this;
             } else {
                 instance = modifiedInstance.isDelayed()
                         ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        linkedVariables(evaluationContext).changeAllToDelay(modifiedInstance.causesOfDelay()),
+                        linkedVariables(context).changeAllToDelay(modifiedInstance.causesOfDelay()),
                         modifiedInstance.causesOfDelay())
                         : modifiedInstance;
             }
@@ -439,11 +439,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return res.k.build();
     }
 
-    private EvaluationResult delayedConstructorCall(EvaluationContext evaluationContext,
+    private EvaluationResult delayedConstructorCall(EvaluationResult context,
                                                     EvaluationResult.Builder builder,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
-        builder.setExpression(createDelayedValue(evaluationContext, causesOfDelay));
+        builder.setExpression(createDelayedValue(context, causesOfDelay));
         // set scope delay
         return builder.build();
     }
@@ -454,9 +454,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
+    public Expression createDelayedValue(EvaluationResult context, CausesOfDelay causes) {
         return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                linkedVariables(evaluationContext).changeAllToDelay(causes), causes);
+                linkedVariables(context).changeAllToDelay(causes), causes);
     }
 
     public MethodInfo constructor() {

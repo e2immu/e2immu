@@ -39,14 +39,14 @@ public class ShiftLeft extends BinaryOperator {
         return new ShiftLeft(identifier, primitives, tl, tr);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(ShiftLeft.shiftLeft(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(ShiftLeft.shiftLeft(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression shiftLeft(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression shiftLeft(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
         if (r instanceof Numeric rn && rn.doubleValue() == 0) return l;
 

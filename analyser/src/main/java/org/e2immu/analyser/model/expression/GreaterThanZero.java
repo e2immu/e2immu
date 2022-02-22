@@ -55,11 +55,11 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        Expression gt0 = GreaterThanZero.greater(evaluationContext,
-                reValue.getExpression(), new IntConstant(evaluationContext.getPrimitives(), 0),
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reValue = expression.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reValue);
+        Expression gt0 = GreaterThanZero.greater(context,
+                reValue.getExpression(), new IntConstant(context.getPrimitives(), 0),
                 allowEquals);
         return builder.setExpression(gt0).build();
     }
@@ -76,7 +76,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     // NOT (x >= 0) == x < 0  == (not x) > 0
     // NOT (x > 0)  == x <= 0 == (not x) >= 0
-    public Expression negate(EvaluationContext evaluationContext) {
+    public Expression negate(EvaluationResult evaluationContext) {
         IntConstant zero = new IntConstant(evaluationContext.getPrimitives(), 0);
         if (expression instanceof Sum sum) {
             if (sum.lhs instanceof Numeric ln && sum.lhs.isDiscreteType()) {
@@ -100,7 +100,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     public record XB(Expression x, double b, boolean lessThan) {
     }
 
-    public XB extract(EvaluationContext evaluationContext) {
+    public XB extract(EvaluationResult evaluationContext) {
         if (expression instanceof Sum sumValue) {
             Double d = sumValue.numericPartOfLhs();
             if (d != null) {
@@ -132,12 +132,12 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         return new XB(x, 0.0d, lessThan);
     }
 
-    public static Expression greater(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
+    public static Expression greater(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
         return greater(Identifier.generate("gt0 greater"), evaluationContext, l, r, allowEquals);
     }
 
     public static Expression greater(Identifier identifier,
-                                     EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
+                                     EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
@@ -170,12 +170,12 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     // mainly for testing
-    public static Expression less(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
+    public static Expression less(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
         return less(Identifier.generate("gt0 less"), evaluationContext, l, r, allowEquals);
     }
 
     public static Expression less(Identifier identifier,
-                                  EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
+                                  EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
         if (l.isEmpty() || r.isEmpty()) throw new UnsupportedOperationException();
@@ -212,7 +212,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return getPropertyForPrimitiveResults(property);
     }
 
@@ -274,11 +274,11 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
         Expression expression;
         if (er.value() instanceof Numeric numeric) {
-            expression = new BooleanConstant(evaluationContext.getPrimitives(), numeric.doubleValue() == 0);
+            expression = new BooleanConstant(context.getPrimitives(), numeric.doubleValue() == 0);
         } else {
             expression = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
         }

@@ -84,7 +84,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         assertTrue(d.currentValue().isDelayed());
                     } else {
-                        assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
+                        assertEquals(new StringConstant(d.context().getPrimitives(), "abc"), d.currentValue());
                     }
                     assertDvInitial(d, "ext_not_null@Field_explicitlyFinal",
                             1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);

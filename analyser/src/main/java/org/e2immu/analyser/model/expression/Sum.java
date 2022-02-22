@@ -43,24 +43,24 @@ public class Sum extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.plusOperatorInt(), rhs, Precedence.ADDITIVE);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Sum.sum(identifier, evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(Sum.sum(identifier, context, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
     // we try to maintain a sum of products
-    public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression sum(EvaluationResult evaluationContext, Expression l, Expression r) {
         return sum(Identifier.generate("sum"), evaluationContext, l, r, true);
     }
 
-    public static Expression sum(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression sum(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         return sum(identifier, evaluationContext, l, r, true);
     }
 
     private static Expression sum(Identifier identifier,
-                                  EvaluationContext evaluationContext, Expression l, Expression r, boolean tryAgain) {
+                                  EvaluationResult evaluationContext, Expression l, Expression r, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l.equals(r)) return Product.product(evaluationContext, new IntConstant(primitives, 2), l);
@@ -101,7 +101,7 @@ public class Sum extends BinaryOperator {
         return s;
     }
 
-    static Expression[] makeProducts(EvaluationContext evaluationContext, Expression[] terms) {
+    static Expression[] makeProducts(EvaluationResult evaluationContext, Expression[] terms) {
         Primitives primitives = evaluationContext.getPrimitives();
         List<Expression> result = new ArrayList<>(terms.length);
         int pos = 1;
@@ -151,13 +151,13 @@ public class Sum extends BinaryOperator {
 
 
     // we have more than 2 terms, that's a sum of sums...
-    static Expression wrapInSum(EvaluationContext evaluationContext, Expression[] expressions, int i) {
+    static Expression wrapInSum(EvaluationResult evaluationContext, Expression[] expressions, int i) {
         assert i >= 2;
         if (i == 2) return Sum.sum(evaluationContext, expressions[0], expressions[1]);
         return Sum.sum(evaluationContext, wrapInSum(evaluationContext, expressions, i - 1), expressions[i - 1]);
     }
 
-    public static Stream<Expression> expandTerms(EvaluationContext evaluationContext, Expression expression, boolean negate) {
+    public static Stream<Expression> expandTerms(EvaluationResult evaluationContext, Expression expression, boolean negate) {
         if (expression instanceof Sum sum) {
             return Stream.concat(expandTerms(evaluationContext, sum.lhs, negate),
                     expandTerms(evaluationContext, sum.rhs, negate));
@@ -174,7 +174,7 @@ public class Sum extends BinaryOperator {
     }
 
     // -(lhs + rhs) = -lhs + -rhs
-    public Expression negate(EvaluationContext evaluationContext) {
+    public Expression negate(EvaluationResult evaluationContext) {
         return Sum.sum(identifier, evaluationContext,
                 Negation.negate(evaluationContext, lhs),
                 Negation.negate(evaluationContext, rhs));
@@ -196,7 +196,7 @@ public class Sum extends BinaryOperator {
         return outputBuilder.add(outputInParenthesis(qualification, precedence(), rhs));
     }
 
-    public Expression isZero(EvaluationContext evaluationContext) {
+    public Expression isZero(EvaluationResult evaluationContext) {
         if (lhs instanceof Negation negation && !(rhs instanceof Negation)) {
             return Equals.equals(evaluationContext, negation.expression, rhs);
         }
@@ -227,7 +227,7 @@ public class Sum extends BinaryOperator {
     }
 
     // can only be called when there is a numeric part somewhere!
-    public Expression nonNumericPartOfLhs(EvaluationContext evaluationContext) {
+    public Expression nonNumericPartOfLhs(EvaluationResult evaluationContext) {
         if (lhs instanceof Numeric) return rhs;
         if (lhs instanceof Sum s) {
             // the numeric part is somewhere inside lhs

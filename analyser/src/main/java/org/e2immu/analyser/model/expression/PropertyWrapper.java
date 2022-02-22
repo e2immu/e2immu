@@ -75,18 +75,18 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
-        return reEvaluated(evaluationContext, reValue);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reValue = expression.reEvaluate(context, translation);
+        return reEvaluated(context, reValue);
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult reValue = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-        return reEvaluated(evaluationContext, reValue);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult reValue = expression.evaluate(context, forwardEvaluationInfo);
+        return reEvaluated(context, reValue);
     }
 
-    private EvaluationResult reEvaluated(EvaluationContext evaluationContext, EvaluationResult reValue) {
+    private EvaluationResult reEvaluated(EvaluationResult evaluationContext, EvaluationResult reValue) {
         Expression newValue = reValue.value();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
 
@@ -105,12 +105,12 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return builder.setExpression(result).build();
     }
 
-    private static Map<Property, DV> reduce(EvaluationContext evaluationContext,
+    private static Map<Property, DV> reduce(EvaluationResult context,
                                             Expression expression,
                                             Map<Property, DV> map) {
         return map.entrySet().stream()
                 .filter(e -> {
-                    DV v = evaluationContext.getProperty(expression, e.getKey(), true, false);
+                    DV v = context.evaluationContext().getProperty(expression, e.getKey(), true, false);
                     return !v.equals(e.getValue());
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -238,21 +238,21 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (castType != null && (
                 property == Property.IMMUTABLE || property == Property.CONTAINER ||
                         property == Property.INDEPENDENT)) {
-            return evaluationContext.getAnalyserContext().getProperty(castType, property, false);
+            return context.getAnalyserContext().getProperty(castType, property, false);
         }
         DV inMap = properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
-        return evaluationContext.getProperty(expression, property, duringEvaluation, false);
+        return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         if (linkedVariables != null) return linkedVariables;
-        return expression.linkedVariables(evaluationContext);
+        return expression.linkedVariables(context);
     }
 
     @Override

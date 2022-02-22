@@ -65,6 +65,7 @@ public class AssignmentIncompatibleWithPrecondition {
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
                     StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
+                    EvaluationResult context = EvaluationResult.from(evaluationContext);
 
                     VariableExpression ve;
                     if (fieldInfo.type.isNumeric()) {
@@ -76,12 +77,13 @@ public class AssignmentIncompatibleWithPrecondition {
                         } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
                             Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
-                                    .individualStateInfo(evaluationContext, ve.variable());
+                                    .individualStateInfo(context, ve.variable());
                             if (!state.isBoolValueTrue()) {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
-                                Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                                return DV.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
+                                EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
+                                Expression stateInTermsOfField = state.reEvaluate(neutralContext, map).getExpression();
+                                return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
                             }
                         }
                     } else if (fieldInfo.type.isBoolean()) {
@@ -92,9 +94,9 @@ public class AssignmentIncompatibleWithPrecondition {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
                         Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement().state();
-                        Expression combined = And.and(evaluationContext, state, notNull);
+                        Expression combined = And.and(context, state, notNull);
 
-                        if (isCompatible(evaluationContext, combined, pcExpression)) {
+                        if (isCompatible(context, combined, pcExpression)) {
                             CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
                             if (delays.isDelayed()) {
                                 return delays; // IMPROVE we're not gathering them, rather returning the first one here
@@ -143,13 +145,13 @@ public class AssignmentIncompatibleWithPrecondition {
                                                    Expression value,
                                                    Expression precondition) {
         Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
-        Expression reEvaluated = precondition.reEvaluate(evaluationContext, map).getExpression();
+        Expression reEvaluated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), map).getExpression();
         // false ~ incompatible with precondition
         if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
         return null;
     }
 
-    private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {
+    private static boolean isCompatible(EvaluationResult evaluationContext, Expression v1, Expression v2) {
         Expression and = And.and(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }

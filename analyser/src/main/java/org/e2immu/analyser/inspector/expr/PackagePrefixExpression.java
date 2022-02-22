@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.inspector.expr;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
@@ -48,7 +47,7 @@ final class PackagePrefixExpression extends BaseExpression implements Expression
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 

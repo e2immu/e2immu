@@ -455,7 +455,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setI".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
                     assertEquals("b&&i<=-1", d.statementAnalysis().stateData()
-                            .getConditionManagerForNextStatement().absoluteState(d.evaluationContext()).toString());
+                            .getConditionManagerForNextStatement().absoluteState(d.context()).toString());
 
                     assertEquals("!b||i>=0", d.statementAnalysis()
                             .stateData().getPrecondition().expression().toString());

@@ -67,7 +67,7 @@ public class TestLinkingExpression {
         typeContext = parser.getTypeContext();
     }
 
-    private static final EvaluationContext evaluationContext = new EvaluationContext() {
+    private static final EvaluationResult context = EvaluationResult.from(new EvaluationContext() {
         @Override
         public AnalyserContext getAnalyserContext() {
             return new AnalyserContext() {
@@ -82,7 +82,7 @@ public class TestLinkingExpression {
                 }
             };
         }
-    };
+    });
 
     @Test
     public void testNewObject1() {
@@ -93,7 +93,7 @@ public class TestLinkingExpression {
         ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
                 Diamond.YES, List.of());
-        LinkedVariables linkedVariables = newObject.linkedVariables(evaluationContext);
+        LinkedVariables linkedVariables = newObject.linkedVariables(context);
         assertTrue(linkedVariables.isEmpty());
     }
 
@@ -112,7 +112,7 @@ public class TestLinkingExpression {
         ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
                 Diamond.YES, List.of(ve));
-        LinkedVariables linkedVariables = newObject.linkedVariables(evaluationContext);
+        LinkedVariables linkedVariables = newObject.linkedVariables(context);
         assertEquals("v:2", linkedVariables.toString());
 
         // new ArrayList<>(v).get(0)
@@ -123,7 +123,7 @@ public class TestLinkingExpression {
         MethodCall get0 = new MethodCall(Identifier.CONSTANT, newObject, listGet,
                 List.of(newInt(0)));
 
-        LinkedVariables lvGet = get0.linkedVariables(evaluationContext);
+        LinkedVariables lvGet = get0.linkedVariables(context);
         assertEquals("v:3", lvGet.toString());
 
         // new ArrayList<>(v).subList(1, 2)
@@ -132,12 +132,12 @@ public class TestLinkingExpression {
         MethodCall subList12 = new MethodCall(Identifier.CONSTANT, newObject, listSubList,
                 List.of(newInt(1), newInt(2)));
 
-        LinkedVariables lvSubList = subList12.linkedVariables(evaluationContext);
+        LinkedVariables lvSubList = subList12.linkedVariables(context);
         assertEquals("v:2", lvSubList.toString());
 
         // (Collection<Integer>) new ArrayList<>(v)
         Cast collectionIntCast = new Cast(newObject, collectionInteger);
-        LinkedVariables lvCast = collectionIntCast.linkedVariables(evaluationContext);
+        LinkedVariables lvCast = collectionIntCast.linkedVariables(context);
         assertEquals("v:2", lvCast.toString());
     }
 
@@ -164,10 +164,10 @@ public class TestLinkingExpression {
 
         // v.add(0, i)
         MethodCall add12 = new MethodCall(Identifier.CONSTANT, ve, addIndex, List.of(newInt(0), vi));
-        LinkedVariables lvAdd12 = add12.linkedVariables(evaluationContext);
+        LinkedVariables lvAdd12 = add12.linkedVariables(context);
         assertTrue(lvAdd12.isEmpty()); // because void method!
 
-        LinkedVariables lvAdd12Scope = add12.linked1VariablesScope(evaluationContext);
+        LinkedVariables lvAdd12Scope = add12.linked1VariablesScope(context);
         assertEquals("i:3", lvAdd12Scope.toString());
     }
 
@@ -196,8 +196,8 @@ public class TestLinkingExpression {
                 new TypeExpression(collectionInteger, Diamond.NO), addAll,
                 List.of(ve, vi, vj));
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        methodCall.linksBetweenParameters(builder, evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        methodCall.linksBetweenParameters(builder, context);
         // v links @Independent1 to i and j
         assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());

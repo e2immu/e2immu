@@ -96,7 +96,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
         if (base) {
-            Expression absoluteState = conditionManager.absoluteState(this);
+            Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(this));
             if (absoluteState.isDone()) {
                 List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);
                 for (LhsRhs lhsRhs : equalities) {
@@ -292,12 +292,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         // this one is more difficult to vectorize
         Properties properties = Properties.writable();
+        EvaluationResult context = EvaluationResult.from(this);
         for (Property property : toCompute) {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else {
-                dv = value.getProperty(this, property, duringEvaluation);
+                dv = value.getProperty(context, property, duringEvaluation);
             }
             properties.put(property, dv);
         }
@@ -326,7 +327,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // redirect to Value.getProperty()
         // this is the only usage of this method; all other evaluation of a Value in an evaluation context
         // must go via the current method
-        return value.getProperty(this, property, true);
+        return value.getProperty(EvaluationResult.from(this), property, true);
     }
 
     private DV nneForValue(Expression value, boolean ignoreStateInConditionManager) {
@@ -335,14 +336,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                     iteration, conditionManager.withoutState(getPrimitives()), closure, false, false,
                     preventAbsoluteStateComputation);
-            return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
+            EvaluationResult context = EvaluationResult.from(customEc);
+            return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }
 
-        DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
+        EvaluationResult context = EvaluationResult.from(this);
+        DV directNN = value.getProperty(context, NOT_NULL_EXPRESSION, true);
         if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
-                    this, value, NullConstant.NULL_CONSTANT, false);
-            Expression evaluation = conditionManager.evaluate(this, valueIsNull);
+                    context, value, NullConstant.NULL_CONSTANT, false);
+            Expression evaluation = conditionManager.evaluate(context, valueIsNull);
             if (evaluation.isBoolValueFalse()) {
                 // IMPROVE should not necessarily be ENN, could be ContentNN depending
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(directNN);
@@ -638,7 +641,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         } else {
             // we need an evaluation context that simply translates, but does not interpret stuff
             EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
-            translated = precondition.reEvaluate(evaluationContext, translationMap).getExpression();
+            translated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), translationMap).getExpression();
         }
         if (translated.variables(false).stream()
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {

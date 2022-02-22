@@ -29,7 +29,7 @@ public class TestEquals extends CommonAbstractValue {
     }
 
     private static Expression eq(Expression e1, Expression e2) {
-        return Equals.equals(minimalEvaluationContext, e1, e2);
+        return Equals.equals(context, e1, e2);
     }
 
     @Test
@@ -43,23 +43,23 @@ public class TestEquals extends CommonAbstractValue {
     public void testCommonTerms() {
         Expression int3 = newInt(3);
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, int3, i);
-        Expression right = Sum.sum(minimalEvaluationContext, int5, i);
+        Expression left = Sum.sum(context, int3, i);
+        Expression right = Sum.sum(context, int5, i);
         assertEquals("false", eq(left, right).toString());
     }
 
     @Test
     public void testCommonTerms2() {
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, i, int5);
-        Expression right = Sum.sum(minimalEvaluationContext, int5, i);
+        Expression left = Sum.sum(context, i, int5);
+        Expression right = Sum.sum(context, int5, i);
         assertEquals("true", eq(left, right).toString());
     }
 
     @Test
     public void testCommonTerms3() {
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, i, int5);
+        Expression left = Sum.sum(context, i, int5);
         Expression right = i;
         assertEquals("false", eq(left, right).toString());
     }
@@ -78,47 +78,47 @@ public class TestEquals extends CommonAbstractValue {
 
     @Test
     public void test2() {
-        Expression sum = Sum.sum(minimalEvaluationContext, i, j);
+        Expression sum = Sum.sum(context, i, j);
         assertEquals("i+j", sum.toString());
         assertEquals("-4==i+j", eq(sum, newInt(-4)).toString());
     }
 
     @Test
     public void testModulo1() {
-        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression iMod2 = Remainder.remainder(context, i, newInt(2));
         Expression e1 = eq(newInt(1), iMod2);
         Expression e2 = eq(newInt(4), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("4==i", e2.toString());
         assertTrue(i.compareTo(iMod2) > 0);
-        assertEquals("false", And.and(minimalEvaluationContext, e1, e2).toString());
+        assertEquals("false", And.and(context, e1, e2).toString());
     }
 
     @Test
     public void testModulo2() {
-        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression iMod2 = Remainder.remainder(context, i, newInt(2));
         Expression e1 = eq(newInt(1), iMod2);
         Expression e2 = eq(newInt(5), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("5==i", e2.toString());
-        assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
+        assertEquals("5==i", And.and(context, e1, e2).toString());
     }
 
     @Test
     public void testModulo3() {
-        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression iMod2 = Remainder.remainder(context, i, newInt(2));
         Expression e1 = eq(newInt(1), iMod2);
         Expression e2 = eq(newInt(5), i);
         assertEquals("1==i%2", e1.toString());
         assertEquals("5==i", e2.toString());
-        assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
+        assertEquals("5==i", And.and(context, e1, e2).toString());
     }
 
     @Test
     public void testEqualsOr() {
         Expression eq1 = eq(newInt(1), i);
-        Expression ge10 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(10), true);
-        Expression leM1 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(-1), true);
+        Expression ge10 = GreaterThanZero.greater(context, i, newInt(10), true);
+        Expression leM1 = GreaterThanZero.less(context, i, newInt(-1), true);
         // 1==i && (i >= 10 || i <= -1)
         Or or = (Or) newOrAppend(ge10, leM1);
         assertTrue(And.safeToExpandOr(i, or));

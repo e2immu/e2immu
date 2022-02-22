@@ -165,7 +165,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     if (d.iteration() > 1) {
                         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.currentValue()
-                                .getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                                .getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true));
                     }
                 }
             }

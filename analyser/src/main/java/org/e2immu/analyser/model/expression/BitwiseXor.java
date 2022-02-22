@@ -30,14 +30,14 @@ public class BitwiseXor extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.OR);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseXor.bitwiseXor(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(BitwiseXor.bitwiseXor(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression bitwiseXor(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression bitwiseXor(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
             return new IntConstant(primitives, li.constant() ^ ri.constant());

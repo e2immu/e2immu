@@ -811,7 +811,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         case 2 -> "<m:equals>&&expression instanceof Sum";
                         default -> "expression.lhs.equals(expression.rhs)&&expression instanceof Sum";
                     };
-                    assertEquals(expected, d.localConditionManager().absoluteState(d.evaluationContext()).toString());
+                    assertEquals(expected, d.localConditionManager().absoluteState(d.context()).toString());
                 }
                 if ("0.0.1.0.4.0.2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -820,7 +820,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         case 2 -> "<instanceOf:Negation>&&<m:equals>&&expression instanceof Sum";
                         default -> "expression.lhs.equals(expression.rhs)&&expression.lhs instanceof Negation&&expression instanceof Sum";
                     };
-                    assertEquals(expected, d.localConditionManager().absoluteState(d.evaluationContext()).toString());
+                    assertEquals(expected, d.localConditionManager().absoluteState(d.context()).toString());
                 }
             }
         };

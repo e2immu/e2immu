@@ -29,14 +29,14 @@ public class BooleanXor extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.XOR);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BooleanXor.booleanXor(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(BooleanXor.booleanXor(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression booleanXor(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression booleanXor(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof BooleanConstant li && r instanceof BooleanConstant ri)
             return new BooleanConstant(primitives, li.constant() ^ ri.constant());

@@ -69,7 +69,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
 
                     // <return value> is nullable
-                    assertEquals(MultiLevel.NULLABLE_DV, d.currentValue().getProperty(d.evaluationContext(),
+                    assertEquals(MultiLevel.NULLABLE_DV, d.currentValue().getProperty(d.context(),
                             Property.NOT_NULL_EXPRESSION, true));
 
                     assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
@@ -78,7 +78,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals("null==map.get(a)?List.of():map.get(a)", d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                            d.currentValue().getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true));
 
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
@@ -105,7 +105,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
-            DV paramMod = d.evaluationContext().getCurrentMethod()
+            DV paramMod = d.context().evaluationContext().getCurrentMethod()
                     .getParameterAnalyses().get(1).getProperty(Property.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {

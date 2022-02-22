@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
@@ -54,7 +55,7 @@ public record NumericRange(int startIncl,
         if (variableExpression.getSuffix() instanceof VariableExpression.VariableInLoop) {
             Expression exitValue = exitValue(evaluationContext.getPrimitives(), variableExpression.variable());
             assert exitValue != null;
-            return Equals.equals(evaluationContext, variableExpression, exitValue);
+            return Equals.equals(EvaluationResult.from(evaluationContext), variableExpression, exitValue);
         }
         return new BooleanConstant(evaluationContext.getPrimitives(), true);
     }
@@ -73,34 +74,35 @@ public record NumericRange(int startIncl,
 
     @Override
     public Expression conditions(EvaluationContext evaluationContext) {
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
         int count = loopCount();
         IntConstant start = new IntConstant(evaluationContext.getPrimitives(), startIncl);
         if (count == 1) {
-            return Equals.equals(evaluationContext, start, variableExpression);
+            return Equals.equals(context, start, variableExpression);
         }
-        IntConstant end = new IntConstant(evaluationContext.getPrimitives(), endExcl);
+        IntConstant end = new IntConstant(context.getPrimitives(), endExcl);
         Expression geStart;
         Expression ltEnd;
         if (startIncl < endExcl) {
-            geStart = GreaterThanZero.greater(evaluationContext, variableExpression, start, true);
-            ltEnd = GreaterThanZero.less(evaluationContext, variableExpression, end, false);
+            geStart = GreaterThanZero.greater(context, variableExpression, start, true);
+            ltEnd = GreaterThanZero.less(context, variableExpression, end, false);
         } else {
-            geStart = GreaterThanZero.less(evaluationContext, variableExpression, start, true);
-            ltEnd = GreaterThanZero.greater(evaluationContext, variableExpression, end, false);
+            geStart = GreaterThanZero.less(context, variableExpression, start, true);
+            ltEnd = GreaterThanZero.greater(context, variableExpression, end, false);
         }
         int absIncrement = increment < 0 ? -increment : increment;
         if (absIncrement == 1) {
-            return And.and(evaluationContext, geStart, ltEnd);
+            return And.and(context, geStart, ltEnd);
         }
 
         // if increment == 2, we have either odd or even values, depending on the start value
         // so we add (i % increment)==modOfStart
         int moduloOfStart = startIncl % absIncrement;
-        Expression modulo = Remainder.remainder(evaluationContext, variableExpression,
-                new IntConstant(evaluationContext.getPrimitives(), absIncrement));
-        Expression moduloEquals = Equals.equals(evaluationContext, modulo,
-                new IntConstant(evaluationContext.getPrimitives(), moduloOfStart));
-        return And.and(evaluationContext, geStart, ltEnd, moduloEquals);
+        Expression modulo = Remainder.remainder(context, variableExpression,
+                new IntConstant(context.getPrimitives(), absIncrement));
+        Expression moduloEquals = Equals.equals(context, modulo,
+                new IntConstant(context.getPrimitives(), moduloOfStart));
+        return And.and(context, geStart, ltEnd, moduloEquals);
     }
 
     @Override

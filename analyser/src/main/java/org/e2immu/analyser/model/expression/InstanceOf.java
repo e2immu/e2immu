@@ -69,7 +69,7 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return getPropertyForPrimitiveResults(property);
     }
 
@@ -132,8 +132,8 @@ public class InstanceOf extends BaseExpression implements Expression {
     // makes sense if there is a patternVariable, and we continue with that patternVariable
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return expression.linkedVariables(evaluationContext);
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return expression.linkedVariables(context);
     }
 
     @Override
@@ -142,26 +142,26 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         // do not pass on the forward requirements on to expression! See e.g. InstanceOf_8
-        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult);
+        EvaluationResult evaluationResult = expression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(evaluationResult);
 
 
-        Primitives primitives = evaluationContext.getPrimitives();
+        Primitives primitives = context.getPrimitives();
         Expression value = evaluationResult.value();
 
         if (value.isEmpty()) {
             return builder.setExpression(value).build();
         }
         if (value.isDelayed()) {
-            LinkedVariables linkedVariables = value.linkedVariables(evaluationContext);
-            return builder.setExpression(DelayedExpression.forInstanceOf(evaluationContext.getPrimitives(),
+            LinkedVariables linkedVariables = value.linkedVariables(context);
+            return builder.setExpression(DelayedExpression.forInstanceOf(context.getPrimitives(),
                             parameterizedType, linkedVariables.changeAllToDelay(value.causesOfDelay()), value.causesOfDelay()))
                     .build();
         }
         if (value instanceof NullConstant) {
-            return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
+            return builder.setExpression(new BooleanConstant(context.getPrimitives(), false)).build();
         }
         VariableExpression ve;
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
@@ -172,7 +172,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         Instance instance;
         if ((instance = value.asInstanceOf(Instance.class)) != null) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    instance.parameterizedType()), evaluationContext);
+                    instance.parameterizedType()), context);
             return builder.compose(er).setExpression(er.value()).build();
         }
         if (value.isInstanceOf(MethodCall.class)) {
@@ -180,12 +180,12 @@ public class InstanceOf extends BaseExpression implements Expression {
         }
 
         // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
-        Expression notNull = Negation.negate(evaluationContext,
-                Equals.equals(evaluationContext, expression, NullConstant.NULL_CONSTANT));
+        Expression notNull = Negation.negate(context,
+                Equals.equals(context, expression, NullConstant.NULL_CONSTANT));
         InstanceOf newInstanceOf = new InstanceOf(identifier,
                 primitives, parameterizedType, evaluationResult.getExpression(), null);
         return builder
-                .setExpression(And.and(evaluationContext, newInstanceOf, notNull))
+                .setExpression(And.and(context, newInstanceOf, notNull))
                 .build();
     }
 

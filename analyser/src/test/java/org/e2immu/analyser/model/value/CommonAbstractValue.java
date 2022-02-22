@@ -81,7 +81,7 @@ public abstract class CommonAbstractValue {
 
         TRUE = new BooleanConstant(PRIMITIVES, true);
         FALSE = new BooleanConstant(PRIMITIVES, false);
-        minimalEvaluationContext = new EvaluationContextImpl();
+        context = EvaluationResult.from(new EvaluationContextImpl());
         va = createVariable("a");
         vb = createVariable("b");
         vc = createVariable("c");
@@ -155,7 +155,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newAndAppend(Expression... values) {
-        return And.and(minimalEvaluationContext, values);
+        return And.and(context, values);
     }
 
     protected static Expression newAnd(Expression... values) {
@@ -163,7 +163,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newOrAppend(Expression... values) {
-        return Or.or(minimalEvaluationContext, values);
+        return Or.or(context, values);
     }
 
     protected static Expression newOr(Expression... values) {
@@ -171,7 +171,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression negate(Expression value) {
-        return Negation.negate(minimalEvaluationContext, value);
+        return Negation.negate(context, value);
     }
 
     protected static Expression newInt(int i) {
@@ -179,7 +179,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static InlineConditional newInline(Expression c, Expression l, Expression r) {
-        return new InlineConditional(Identifier.CONSTANT, minimalEvaluationContext.getAnalyserContext(),
+        return new InlineConditional(Identifier.CONSTANT, context.getAnalyserContext(),
                 c, l, r);
     }
 
@@ -214,7 +214,7 @@ public abstract class CommonAbstractValue {
 
     protected final static AnalyserContext analyserContext = () -> PRIMITIVES;
 
-    protected static EvaluationContext minimalEvaluationContext;
+    protected static EvaluationResult context;
 
     static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
@@ -258,7 +258,7 @@ public abstract class CommonAbstractValue {
                     return MultiLevel.NULLABLE_DV;
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
-            return value.getProperty(minimalEvaluationContext, property, true);
+            return value.getProperty(context, property, true);
         }
 
         @Override
@@ -268,6 +268,6 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression equals(Expression v1, Expression v2) {
-        return Equals.equals(minimalEvaluationContext, v1, v2);
+        return Equals.equals(context, v1, v2);
     }
 }

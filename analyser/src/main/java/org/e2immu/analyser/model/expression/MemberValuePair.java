@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
@@ -102,7 +101,7 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 
 public record StatementAnalyserSharedState(EvaluationContext evaluationContext,
+                                           EvaluationResult context,
                                            AnalyserResult.Builder builder,
                                            StatementAnalysis previous,
                                            ForwardAnalysisInfo forwardAnalysisInfo,

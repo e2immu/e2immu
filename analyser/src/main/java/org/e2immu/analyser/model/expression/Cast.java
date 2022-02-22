@@ -65,18 +65,18 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
 
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
         Expression result = PropertyWrapper.propertyWrapper(expression, Map.of(), parameterizedType);
 
-        return new EvaluationResult.Builder(evaluationContext).compose(er).setExpression(result).build();
+        return new EvaluationResult.Builder(context).compose(er).setExpression(result).build();
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return expression.linkedVariables(evaluationContext);
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return expression.linkedVariables(context);
     }
 
     @Override
@@ -113,11 +113,11 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.IMMUTABLE || property == Property.CONTAINER || property == Property.INDEPENDENT) {
-            return evaluationContext.getAnalyserContext().getProperty(parameterizedType, property, false);
+            return context.getAnalyserContext().getProperty(parameterizedType, property, false);
         }
-        return evaluationContext.getProperty(expression, property, duringEvaluation, false);
+        return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }
 
     @Override

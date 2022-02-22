@@ -162,7 +162,7 @@ public final class VariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
     }
 
@@ -181,12 +181,12 @@ public final class VariableExpression extends CommonVariableExpression {
     Full evaluation causes a lot of trouble with improper delays because we have no decent ForwardEvaluationInfo
      */
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         if (inMap != null) {
             VariableExpression ve;
             if ((ve = inMap.asInstanceOf(VariableExpression.class)) != null) {
-                return ve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                return ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             }
             DelayedVariableExpression dve;
             EvaluationResult.Builder builder = new EvaluationResult.Builder();
@@ -198,7 +198,7 @@ public final class VariableExpression extends CommonVariableExpression {
             }
             return builder.setExpression(inMap).build();
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).markRead(variable);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).markRead(variable);
         if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
             // the variable itself is not in the map, but we may have to substitute
             // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
@@ -207,7 +207,7 @@ public final class VariableExpression extends CommonVariableExpression {
             Expression scopeInMap = translation.get(ve);
             VariableExpression newScope;
             if (scopeInMap != null && (newScope = scopeInMap.asInstanceOf(VariableExpression.class)) != null) {
-                Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
+                Variable newFieldRef = new FieldReference(context.getAnalyserContext(), fieldReference.fieldInfo, newScope);
                 return builder.setExpression(new VariableExpression(newFieldRef)).build();
             }
         }
@@ -215,9 +215,9 @@ public final class VariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        if(forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }
 
@@ -226,21 +226,19 @@ public final class VariableExpression extends CommonVariableExpression {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
             ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                     forwardEvaluationInfo.copyModificationEnsureNotNull();
-            scopeResult = fr.scope.evaluate(evaluationContext, forward);
+            scopeResult = fr.scope.evaluate(context, forward);
             builder.compose(scopeResult);
         } else {
             scopeResult = null;
         }
 
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
+        ConditionManager cm = context.evaluationContext().getConditionManager();
         Expression evaluated;
-        if (!currentValue.isDelayed()
-                && evaluationContext.getConditionManager() != null
-                && !evaluationContext.getConditionManager().isDelayed()
-                && !evaluationContext.getConditionManager().isEmpty()
+        if (!currentValue.isDelayed() && cm != null && !cm.isDelayed() && !cm.isEmpty()
                 && !currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
             ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DO_NOT_REEVALUATE_VARIABLE_EXPRESSIONS;
-            EvaluationResult er = currentValue.evaluate(evaluationContext, fwd);
+            EvaluationResult er = currentValue.evaluate(context, fwd);
             evaluated = er.getExpression();
             // resolve conditions, but do not keep errors/warnings (no builder.compose(er);)
             // InstanceOf_11 - 0.0.1.0.4.0.2-E is the first example where this re-evaluation is necessary
@@ -249,27 +247,27 @@ public final class VariableExpression extends CommonVariableExpression {
             evaluated = currentValue;
         }
 
-        Expression adjustedScope = adjustScope(evaluationContext, scopeResult, evaluated);
+        Expression adjustedScope = adjustScope(context, scopeResult, evaluated);
 
         builder.setExpression(adjustedScope);
 
         // no statement analyser... no need to compute all these properties
         // mind that all evaluation contexts deriving from the one in StatementAnalyser must have
         // non-null current statement!! (see e.g. InlinedMethod)
-        if (evaluationContext.getCurrentStatement() == null) {
+        if (context.evaluationContext().getCurrentStatement() == null) {
             return builder.build();
         }
 
-        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-            builder.markRead(evaluationContext.currentThis());
+        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(context.getCurrentType())) {
+            builder.markRead(context.evaluationContext().currentThis());
         }
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
             VariableExpression ve;
             if ((ve = adjustedScope.asInstanceOf(VariableExpression.class)) != null) {
                 builder.markRead(ve.variable);
-                if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                    builder.markRead(evaluationContext.currentThis());
+                if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(context.getCurrentType())) {
+                    builder.markRead(context.evaluationContext().currentThis());
                 }
             }
         }
@@ -282,8 +280,8 @@ public final class VariableExpression extends CommonVariableExpression {
         // do not check for implicit this!! otherwise, any x.y will also affect this.y
 
         // if super is modified, then this should be modified to
-        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-            builder.markContextModified(evaluationContext.currentThis(), modified);
+        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(context.getCurrentType())) {
+            builder.markContextModified(context.evaluationContext().currentThis(), modified);
         }
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
@@ -296,7 +294,7 @@ public final class VariableExpression extends CommonVariableExpression {
 
         // having done all this, we do try for a shortcut
         if (scopeResult != null) {
-            Expression shortCut = tryShortCut(evaluationContext, scopeResult.value(), adjustedScope);
+            Expression shortCut = tryShortCut(context, scopeResult.value(), adjustedScope);
             if (shortCut != null) {
                 builder.setExpression(shortCut);
             }
@@ -304,12 +302,13 @@ public final class VariableExpression extends CommonVariableExpression {
         return builder.build(forwardEvaluationInfo.isNotAssignmentTarget());
     }
 
-    static Expression adjustScope(EvaluationContext evaluationContext,
+    static Expression adjustScope(EvaluationResult context,
                                   EvaluationResult scopeResult,
                                   Expression currentValue) {
         if (scopeResult != null) {
-            CausesOfDelay scopeResultIsDelayed = evaluationContext.isDelayed(scopeResult.getExpression());
-            InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
+            CausesOfDelay scopeResultIsDelayed = scopeResult.getExpression().causesOfDelay();
+            InspectionProvider inspectionProvider = context.getAnalyserContext();
+            int initialStatementTime = context.evaluationContext().getInitialStatementTime();
             if (currentValue instanceof VariableExpression ve
                     && ve.variable() instanceof FieldReference fr
                     && !fr.scope.equals(scopeResult.value())) {
@@ -317,23 +316,22 @@ public final class VariableExpression extends CommonVariableExpression {
                     FieldReference newFieldRef = new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression());
                     return new VariableExpression(newFieldRef, ve.suffix);
                 }
-                return DelayedVariableExpression.forField(fr, evaluationContext.getInitialStatementTime(), scopeResultIsDelayed);
+                return DelayedVariableExpression.forField(fr, initialStatementTime, scopeResultIsDelayed);
             }
             if (currentValue instanceof DelayedVariableExpression ve
                     && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
                 if (!scopeResultIsDelayed.isDelayed()) {
                     return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()),
-                            evaluationContext.getInitialStatementTime(),
-                            ve.causesOfDelay);
+                            initialStatementTime, ve.causesOfDelay);
                 }
-                return DelayedVariableExpression.forField(fr, evaluationContext.getInitialStatementTime(), ve.causesOfDelay);
+                return DelayedVariableExpression.forField(fr, initialStatementTime, ve.causesOfDelay);
             }
         }
         return currentValue;
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV));
     }
 
@@ -383,7 +381,7 @@ public final class VariableExpression extends CommonVariableExpression {
         return List.of();
     }
 
-    private static Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
+    private static Expression tryShortCut(EvaluationResult evaluationContext, Expression scopeValue, Expression variableValue) {
         if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
             ConstructorCall constructorCall;
             if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
@@ -401,11 +399,11 @@ public final class VariableExpression extends CommonVariableExpression {
         return null;
     }
 
-    private static Expression extractNewObject(EvaluationContext evaluationContext,
+    private static Expression extractNewObject(EvaluationResult context,
                                                ConstructorCall constructorCall,
                                                FieldInfo fieldInfo) {
         int i = 0;
-        List<ParameterAnalysis> parameterAnalyses = evaluationContext
+        List<ParameterAnalysis> parameterAnalyses = context.evaluationContext()
                 .getParameterAnalyses(constructorCall.constructor()).toList();
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();

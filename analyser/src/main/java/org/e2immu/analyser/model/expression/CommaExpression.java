@@ -38,9 +38,9 @@ public class CommaExpression extends BaseExpression implements Expression {
         this.expressions = expressions;
     }
 
-    public static Expression comma(EvaluationContext evaluationContext, List<Expression> input) {
+    public static Expression comma(EvaluationResult context, List<Expression> input) {
         List<Expression> expressions = input.stream().filter(e -> !(e instanceof ConstantExpression)).toList();
-        if (expressions.size() == 0) return new BooleanConstant(evaluationContext.getPrimitives(), true);
+        if (expressions.size() == 0) return new BooleanConstant(context.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
         if (expressions.stream().anyMatch(Expression::isEmpty)) throw new UnsupportedOperationException();
         return new CommaExpression(List.copyOf(expressions));
@@ -62,12 +62,13 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         int count = 0;
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
-            EvaluationResult result = expression.evaluate(evaluationContext, fwd);
+            EvaluationResult cumulativeResult = builder.build();
+            EvaluationResult result = expression.evaluate(context, fwd);
             builder.composeStore(result);
             count++;
         }
@@ -81,15 +82,15 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         List<Expression> newExpressions = new ArrayList<>(this.expressions.size());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         for (Expression expression : this.expressions) {
-            EvaluationResult result = expression.reEvaluate(evaluationContext, translation);
+            EvaluationResult result = expression.reEvaluate(context, translation);
             newExpressions.add(result.getExpression());
             builder.compose(result);
         }
-        Expression newComma = CommaExpression.comma(evaluationContext, newExpressions);
+        Expression newComma = CommaExpression.comma(context, newExpressions);
         return builder.setExpression(newComma).build();
     }
 

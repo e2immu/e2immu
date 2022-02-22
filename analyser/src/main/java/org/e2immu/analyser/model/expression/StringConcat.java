@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
@@ -38,7 +37,7 @@ public class StringConcat extends BinaryOperator {
         return new StringConcat(identifier, primitives, tl, tr);
     }
 
-    public static Expression stringConcat(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression stringConcat(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         StringConstant lsv = l.asInstanceOf(StringConstant.class);
         StringConstant rsv = r.asInstanceOf(StringConstant.class);
         Primitives primitives = evaluationContext.getPrimitives();
@@ -85,11 +84,11 @@ public class StringConcat extends BinaryOperator {
         return new StringConcat(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(stringConcat(identifier, evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(stringConcat(identifier, context, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
     @Override

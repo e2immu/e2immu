@@ -48,7 +48,7 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
     /*
         this is the statement to be executed (with an ID that can match one of the elements in the map
          */
-    public Expression conditionInSwitchStatement(EvaluationContext evaluationContext,
+    public Expression conditionInSwitchStatement(EvaluationResult evaluationContext,
                                                  StatementAnalyser previousStatement,
                                                  Expression previous,
                                                  StatementAnalysis statementAnalysis) {
@@ -61,7 +61,7 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
         return expression;
     }
 
-    private Expression computeConditionInSwitchStatement(EvaluationContext evaluationContext,
+    private Expression computeConditionInSwitchStatement(EvaluationResult context,
                                                          StatementAnalyser previousStatement,
                                                          Expression previous,
                                                          StatementAnalysis statementAnalysis) {
@@ -78,14 +78,14 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
             if (label != null) {
                 Expression toAdd;
                 if (label == EmptyExpression.DEFAULT_EXPRESSION) {
-                    toAdd = Negation.negate(evaluationContext,
-                            Or.or(evaluationContext, switchIdToLabels().values().stream()
+                    toAdd = Negation.negate(context,
+                            Or.or(context, switchIdToLabels().values().stream()
                                     .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toList()));
                 } else {
                     toAdd = label;
                 }
                 if (startFrom.isBoolValueTrue()) return toAdd;
-                return And.and(evaluationContext, startFrom, toAdd);
+                return And.and(context, startFrom, toAdd);
             }
             return startFrom;
         }

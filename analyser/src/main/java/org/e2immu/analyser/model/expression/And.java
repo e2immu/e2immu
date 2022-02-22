@@ -57,13 +57,13 @@ public class And extends ExpressionCanBeTooComplex {
         SKIP, REPLACE, FALSE, TRUE, ADD, ADD_CHANGE
     }
 
-    public static Expression and(EvaluationContext evaluationContext, Expression... values) {
+    public static Expression and(EvaluationResult context, Expression... values) {
         Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        return new And(id, evaluationContext.getPrimitives()).append(evaluationContext, values);
+        return new And(id, context.getPrimitives()).append(context, values);
     }
 
     // we try to maintain a CNF
-    private Expression append(EvaluationContext evaluationContext, Expression... values) {
+    private Expression append(EvaluationResult context, Expression... values) {
 
         // STEP 1: check that all values return boolean!
         int complexity = 0;
@@ -88,10 +88,10 @@ public class And extends ExpressionCanBeTooComplex {
 
         // STEP 4: loop
 
-        boolean changes = complexity < evaluationContext.limitOnComplexity();
+        boolean changes = complexity < context.evaluationContext().limitOnComplexity();
         if (!changes) {
             LOGGER.debug("Not analysing AND operation, complexity {}", complexity);
-            return reducedComplexity(evaluationContext, expressions, values);
+            return reducedComplexity(context, expressions, values);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 
@@ -119,7 +119,7 @@ public class And extends ExpressionCanBeTooComplex {
             int pos = 0;
             for (Expression value : concat) {
 
-                Action action = analyse(evaluationContext, pos, newConcat, prev, value);
+                Action action = analyse(context, pos, newConcat, prev, value);
                 switch (action) {
                     case FALSE:
                         return new BooleanConstant(primitives, false);
@@ -162,7 +162,7 @@ public class And extends ExpressionCanBeTooComplex {
         return res;
     }
 
-    private Action analyse(EvaluationContext evaluationContext, int pos, ArrayList<Expression> newConcat,
+    private Action analyse(EvaluationResult evaluationContext, int pos, ArrayList<Expression> newConcat,
                            Expression prev, Expression value) {
         // A && A
         if (value.equals(prev)) return Action.SKIP;
@@ -304,7 +304,7 @@ public class And extends ExpressionCanBeTooComplex {
         return Action.ADD;
     }
 
-    private Action analyseEqualsEquals(EvaluationContext evaluationContext,
+    private Action analyseEqualsEquals(EvaluationResult evaluationContext,
                                        Expression prev,
                                        Expression value,
                                        ArrayList<Expression> newConcat) {
@@ -338,7 +338,7 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseEqEq(EvaluationContext evaluationContext, Expression prev, Expression value, ArrayList<Expression> newConcat) {
+    private Action analyseEqEq(EvaluationResult evaluationContext, Expression prev, Expression value, ArrayList<Expression> newConcat) {
         if (prev instanceof Equals ev1) {
             Action skip = equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs);
             if (skip != null) return skip;
@@ -393,7 +393,7 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action equalsAndOr(EvaluationContext evaluationContext,
+    private Action equalsAndOr(EvaluationResult evaluationContext,
                                Expression prev,
                                Expression value,
                                ArrayList<Expression> newConcat,
@@ -448,7 +448,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
 
-    private Action analyseGeNotEq(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
+    private Action analyseGeNotEq(EvaluationResult evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         //  GE and NOT EQ
         if (value instanceof GreaterThanZero ge && prev instanceof Negation prevNeg &&
                 prevNeg.expression instanceof Equals equalsValue) {
@@ -472,7 +472,7 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseGeGe(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
+    private Action analyseGeGe(EvaluationResult evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         // GE and GE
         if (value instanceof GreaterThanZero ge2 && prev instanceof GreaterThanZero ge1) {
             GreaterThanZero.XB xb1 = ge1.extract(evaluationContext);
@@ -537,7 +537,7 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseInstanceOf(EvaluationContext evaluationContext, Expression prev, Expression value) {
+    private Action analyseInstanceOf(EvaluationResult evaluationContext, Expression prev, Expression value) {
         // a instanceof A && a instanceof B
         if (value instanceof InstanceOf i1 && prev instanceof InstanceOf i2 && i1.expression().equals(i2.expression())) {
             if (i1.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i2.parameterizedType())) {
@@ -644,21 +644,21 @@ public class And extends ExpressionCanBeTooComplex {
     For this to work, it is crucial that the clauses are presented in the correct order!
      */
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo
+    public EvaluationResult evaluate(EvaluationResult evaluationResult, ForwardEvaluationInfo
             forwardEvaluationInfo) {
         List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
-        EvaluationContext context = evaluationContext;
+        EvaluationContext context = evaluationResult.evaluationContext();
         List<Expression> sortedExpressions = new ArrayList<>(expressions);
         Collections.sort(sortedExpressions);
         for (Expression expression : sortedExpressions) {
-            EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
+            EvaluationResult result = expression.evaluate(EvaluationResult.from(context), forwardEvaluationInfo);
             clauseResults.add(result);
             context = context.child(result.value());
         }
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(clauseResults)
-                .setExpression(And.and(evaluationContext, clauses))
+                .setExpression(And.and(evaluationResult, clauses))
                 .build();
     }
 
@@ -683,14 +683,14 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext
-                                               evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult
+                                               context, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = expressions.stream()
-                .map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+                .map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(And.and(evaluationContext, reClauses))
+                .setExpression(And.and(context, reClauses))
                 .build();
     }
 
@@ -702,7 +702,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return getPropertyForPrimitiveResults(property);
     }
 
@@ -740,7 +740,7 @@ public class And extends ExpressionCanBeTooComplex {
                 .toList());
     }
 
-    public Expression removePartsNotReferringTo(EvaluationContext evaluationContext, Variable variable) {
+    public Expression removePartsNotReferringTo(EvaluationResult evaluationContext, Variable variable) {
         Expression[] filtered = this.expressions.stream()
                 .filter(e -> e.variables(true).contains(variable))
                 .toArray(Expression[]::new);

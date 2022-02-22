@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
@@ -66,7 +65,7 @@ public final class UnevaluatedAnnotationParameterValue extends BaseExpression im
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 

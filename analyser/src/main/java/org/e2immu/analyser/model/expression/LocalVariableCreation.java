@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
@@ -165,25 +164,25 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = null;
         EvaluationResult result = null;
         for (Declaration declaration : declarations) {
             EvaluationResult assigned;
             if (declaration.expression == EmptyExpression.EMPTY_EXPRESSION) {
-                assigned = new EvaluationResult.Builder(evaluationContext)
+                assigned = new EvaluationResult.Builder(context)
                         .setExpression(declaration.expression)
                         .build();
             } else {
-                Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
+                Assignment assignment = new Assignment(context.getPrimitives(),
                         new VariableExpression(declaration.localVariableReference()), declaration.expression);
-                assigned = assignment.evaluate(evaluationContext, forwardEvaluationInfo);
+                assigned = assignment.evaluate(context, forwardEvaluationInfo);
             }
             if (result == null) {
                 result = assigned;
             } else {
                 if (builder == null) {
-                    builder = new EvaluationResult.Builder(evaluationContext);
+                    builder = new EvaluationResult.Builder(context);
                     builder.compose(result);
                 }
                 builder.compose(assigned);

@@ -48,7 +48,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    assertFalse(d.evaluationContext().isMyself(d.variable()));
+                    assertFalse(d.context().evaluationContext().isMyself(d.variable()));
 
                     assertEquals("setC", d.currentValue().toString());
                     assertEquals("setC:0,this.set:0", d.variableInfo().getLinkedVariables().toString());

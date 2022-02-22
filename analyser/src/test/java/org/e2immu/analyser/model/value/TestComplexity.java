@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.junit.jupiter.api.Test;
 
@@ -77,11 +76,11 @@ public class TestComplexity extends CommonAbstractValue {
                 overall.toString());
         assertEquals(115, overall.getComplexity());
 
-        Expression better = overall.optimise(minimalEvaluationContext);
+        Expression better = overall.optimise(context);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:!a&&null==s&&s1==s2?s5:s6", better.toString());
 
         Assignment assignment = new Assignment(PRIMITIVES, s1, overall);
-        EvaluationResult res = assignment.evaluate(minimalEvaluationContext, ForwardEvaluationInfo.DEFAULT);
+        EvaluationResult res = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:!a&&null==s&&s1==s2?s5:s6", res.value().toString());
     }
 }

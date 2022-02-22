@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -67,7 +66,7 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 

@@ -112,8 +112,8 @@ public record ConditionManager(Expression condition,
     /*
     we guarantee a parent so that the condition counts!
      */
-    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition) {
-        return new ConditionManager(combine(evaluationContext, condition, switchCondition),
+    public ConditionManager withCondition(EvaluationResult context, Expression switchCondition) {
+        return new ConditionManager(combine(context, condition, switchCondition),
                 state, precondition, this);
     }
 
@@ -150,7 +150,7 @@ public record ConditionManager(Expression condition,
     /*
     stays at the same level (parent parent)
      */
-    public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext,
+    public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationResult evaluationContext,
                                                                        Expression addToState) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
@@ -158,7 +158,7 @@ public record ConditionManager(Expression condition,
         return new ConditionManager(condition, newState, precondition, parent);
     }
 
-    public Expression absoluteState(EvaluationContext evaluationContext) {
+    public Expression absoluteState(EvaluationResult evaluationContext) {
         Expression[] expressions;
         int complexity;
         if (parent == null) {
@@ -175,16 +175,16 @@ public record ConditionManager(Expression condition,
         return And.and(evaluationContext, expressions);
     }
 
-    public Expression stateUpTo(EvaluationContext evaluationContext, int recursions) {
+    public Expression stateUpTo(EvaluationResult context, int recursions) {
         Expression[] expressions;
         if (parent == null) {
             expressions = new Expression[]{state};
         } else if (recursions == 0) {
             expressions = new Expression[]{condition};
         } else {
-            expressions = new Expression[]{condition, state, parent.stateUpTo(evaluationContext, recursions - 1)};
+            expressions = new Expression[]{condition, state, parent.stateUpTo(context, recursions - 1)};
         }
-        return And.and(evaluationContext, expressions);
+        return And.and(context, expressions);
     }
 
     /**
@@ -192,42 +192,42 @@ public record ConditionManager(Expression condition,
      *
      * @return a value without the precondition attached
      */
-    public Expression evaluate(EvaluationContext evaluationContext, Expression value) {
-        return evaluate(evaluationContext, value, false);
+    public Expression evaluate(EvaluationResult context, Expression value) {
+        return evaluate(context, value, false);
     }
 
-    public Expression evaluate(EvaluationContext evaluationContext, Expression value, boolean negate) {
+    public Expression evaluate(EvaluationResult context, Expression value, boolean negate) {
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
 
-        Expression absoluteState = absoluteState(evaluationContext);
+        Expression absoluteState = absoluteState(context);
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
          */
         boolean reallyNegate = negate && !absoluteState.isBoolValueTrue();
         Expression negated = reallyNegate
-                ? Negation.negate(evaluationContext, absoluteState)
+                ? Negation.negate(context, absoluteState)
                 : absoluteState;
 
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
             combinedWithPrecondition = negated;
         } else {
-            combinedWithPrecondition = And.and(evaluationContext, negated, precondition.expression());
+            combinedWithPrecondition = And.and(context, negated, precondition.expression());
         }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = And.and(evaluationContext, combinedWithPrecondition, value);
+        Expression resultWithPrecondition = And.and(context, combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
-            return new BooleanConstant(evaluationContext.getPrimitives(), true);
+            return new BooleanConstant(context.getPrimitives(), true);
         }
         // return the result without precondition
-        return reallyNegate ? Or.or(evaluationContext, negated, value) : And.and(evaluationContext, negated, value);
+        return reallyNegate ? Or.or(context, negated, value) : And.and(context, negated, value);
     }
 
 
-    private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
+    private static Expression combine(EvaluationResult evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isEmpty() || e2.isEmpty()) throw new UnsupportedOperationException();
         int complexity = e1.getComplexity() + e2.getComplexity();
@@ -244,7 +244,7 @@ public record ConditionManager(Expression condition,
      *
      * @return individual variables that appear in a top-level conjunction as variable == null
      */
-    public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+    public Set<Variable> findIndividualNullInCondition(EvaluationResult evaluationContext, boolean requireEqualsNull) {
         return findIndividualNull(condition, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
     }
 
@@ -253,18 +253,18 @@ public record ConditionManager(Expression condition,
      *
      * @return individual variables that appear in the conjunction as variable == null
      */
-    public Set<Variable> findIndividualNullInState(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+    public Set<Variable> findIndividualNullInState(EvaluationResult context, boolean requireEqualsNull) {
         Expression state;
-        if (evaluationContext.preventAbsoluteStateComputation()) {
+        if (context.evaluationContext().preventAbsoluteStateComputation()) {
             state = this.state;
         } else {
-            state = absoluteState(evaluationContext);
+            state = absoluteState(context);
         }
-        return findIndividualNull(state, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
+        return findIndividualNull(state, context, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
     }
 
-    public Set<Variable> findIndividualNullInPrecondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+    public Set<Variable> findIndividualNullInPrecondition(EvaluationResult evaluationContext, boolean requireEqualsNull) {
         return findIndividualNull(precondition.expression(), evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
     }
 
@@ -274,7 +274,7 @@ public record ConditionManager(Expression condition,
      * @return individual variables that appear in a top-level conjunction or disjunction as variable == null
      */
     public static Set<Variable> findIndividualNull(Expression value,
-                                                   EvaluationContext evaluationContext,
+                                                   EvaluationResult evaluationContext,
                                                    Filter.FilterMode filterMode,
                                                    boolean requireEqualsNull) {
         if (value.isEmpty()) {
@@ -292,7 +292,7 @@ public record ConditionManager(Expression condition,
      return that part of the absolute conditional that is NOT covered by @NotNull (individual not null clauses), as
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
-    public Expression precondition(EvaluationContext evaluationContext) {
+    public Expression precondition(EvaluationResult evaluationContext) {
         Expression absoluteState = absoluteState(evaluationContext);
         if (absoluteState.isEmpty()) throw new UnsupportedOperationException();
         Expression negated = Negation.negate(evaluationContext, absoluteState);
@@ -314,7 +314,7 @@ public record ConditionManager(Expression condition,
     /*
     any info there is about this variable
      */
-    public Expression individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
+    public Expression individualStateInfo(EvaluationResult evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Expression absoluteState = absoluteState(evaluationContext);
         Expression combinedWithPrecondition;
@@ -373,7 +373,7 @@ public record ConditionManager(Expression condition,
         return expression;
     }
 
-    public ConditionManager removeFromState(EvaluationContext evaluationContext, Set<Variable> variablesAssigned) {
+    public ConditionManager removeFromState(EvaluationResult evaluationContext, Set<Variable> variablesAssigned) {
         Primitives primitives = evaluationContext.getPrimitives();
         Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
         if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {

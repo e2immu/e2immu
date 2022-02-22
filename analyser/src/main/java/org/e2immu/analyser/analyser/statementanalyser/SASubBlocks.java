@@ -56,7 +56,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         // FIXME this should also be implemented on the haveSubBlocks side
         Set<Variable> variablesAssigned = statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
                 .map(VariableInfo::variable).collect(Collectors.toUnmodifiableSet());
-        ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.evaluationContext(),
+        ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.context(),
                 variablesAssigned);
 
         if (statement() instanceof AssertStatement) {
@@ -65,7 +65,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
             // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
 
-            if (SAHelper.moveConditionToParameter(sharedState.evaluationContext(), assertion) == null) {
+            if (SAHelper.moveConditionToParameter(sharedState.context(), assertion) == null) {
                 // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
                 // it turns out the condition will always be false. We really need the local condition manager for next
                 // statement to be delayed until we know the precondition can be accepted.
@@ -173,7 +173,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     if (statement() instanceof SwitchStatementOldStyle switchStatement) {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                switchStatement.startingPointToLabels(evaluationContext,
+                                switchStatement.startingPointToLabels(sharedState.context(),
                                         executionOfBlock.startOfBlock.getStatementAnalysis()),
                                 statementAnalysis.stateData().valueOfExpression.get(),
                                 statementAnalysis.stateData().valueOfExpression.get().causesOfDelay());
@@ -211,7 +211,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             List<StatementAnalysisImpl.ConditionAndLastStatement> lastStatements;
             int maxTime;
             if (statement() instanceof SwitchStatementOldStyle switchStatementOldStyle) {
-                lastStatements = composeLastStatements(evaluationContext, switchStatementOldStyle, executions.get(0).startOfBlock);
+                lastStatements = composeLastStatements(sharedState.context(), switchStatementOldStyle, executions.get(0).startOfBlock);
                 maxTime = executions.get(0).startOfBlock == null ? statementAnalysis.flowData().getTimeAfterEvaluation() :
                         executions.get(0).startOfBlock.lastStatement().getStatementAnalysis().flowData().getTimeAfterSubBlocks();
             } else {
@@ -244,8 +244,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTimeWithEscape, index());
             }
 
-            Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
-            Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(evaluationContext, executions);
+            Expression addToStateAfterStatement = addToStateAfterStatement(sharedState.context(), executions);
+            Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(sharedState.context(), executions);
 
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
@@ -257,7 +257,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             if (!addToStateAfterStatement.isBoolValueTrue()) {
                 ConditionManager newLocalConditionManager = sharedState.localConditionManager()
-                        .newForNextStatementDoNotChangePrecondition(evaluationContext, addToStateAfterStatement);
+                        .newForNextStatementDoNotChangePrecondition(sharedState.context(), addToStateAfterStatement);
                 statementAnalysis.stateData().setLocalConditionManagerForNextStatement(newLocalConditionManager);
                 keepCurrentLocalConditionManager = false;
                 LOGGER.debug("Continuing beyond default condition with conditional {}", addToStateAfterStatement);
@@ -291,7 +291,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
      */
 
     private List<StatementAnalysisImpl.ConditionAndLastStatement> composeLastStatements(
-            EvaluationContext evaluationContext,
+            EvaluationResult evaluationContext,
             SwitchStatementOldStyle switchStatementOldStyle,
             StatementAnalyser startOfBlock) {
         Map<String, Expression> startingPointToLabels = switchStatementOldStyle
@@ -339,12 +339,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         && e.startOfBlock != null);
     }
 
-    private Map<Variable, DV> addToContextNotNullAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+    private Map<Variable, DV> addToContextNotNullAfterStatement(EvaluationResult context, List<ExecutionOfBlock> list) {
         if (statement() instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesWithPrecondition()) {
-                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
+                    return findNotNullVariablesInRejectMode(context, list.get(0).condition);
                 }
                 return Map.of();
             }
@@ -357,11 +357,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         return Map.of();
                     }
                     // if escapes
-                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(1).condition);
+                    return findNotNullVariablesInRejectMode(context, list.get(1).condition);
                 }
                 if (escape1) {
                     // else escapes
-                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
+                    return findNotNullVariablesInRejectMode(context, list.get(0).condition);
                 }
                 return Map.of();
             }
@@ -370,7 +370,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return Map.of();
     }
 
-    private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationContext evaluationContext, Expression condition) {
+    private Map<Variable, DV> findNotNullVariablesInRejectMode(EvaluationResult evaluationContext, Expression condition) {
         Set<Variable> set = ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
         if (condition.isDelayed()) {
             List<Variable> variables = statement().getStructure().expression().variables(false);
@@ -379,8 +379,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return set.stream().collect(Collectors.toUnmodifiableMap(e -> e, e -> MultiLevel.EFFECTIVELY_NOT_NULL_DV));
     }
 
-    private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
-        BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
+    private Expression addToStateAfterStatement(EvaluationResult context, List<ExecutionOfBlock> list) {
+        BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
         Statement statement = statement();
         if (statement instanceof TryStatement) {
             ExecutionOfBlock main = list.get(0);
@@ -390,20 +390,20 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         .filter(executionOfBlock -> !executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
                         .map(executionOfBlock -> executionOfBlock.condition)
                         .toArray(Expression[]::new);
-                return Or.or(evaluationContext, conditionsWithoutEscape);
+                return Or.or(context, conditionsWithoutEscape);
             }
             Expression[] conditionsWithEscape = list.stream()
                     // with escape, and remove main and finally
                     .filter(executionOfBlock -> executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
-                    .map(executionOfBlock -> Negation.negate(evaluationContext, executionOfBlock.condition))
+                    .map(executionOfBlock -> Negation.negate(context, executionOfBlock.condition))
                     .toArray(Expression[]::new);
-            return And.and(evaluationContext, conditionsWithEscape);
+            return And.and(context, conditionsWithEscape);
         }
         if (statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesAlwaysButNotWithPrecondition()) {
-                    return Negation.negate(evaluationContext, list.get(0).condition);
+                    return Negation.negate(context, list.get(0).condition);
                 }
                 return TRUE;
             }
@@ -413,7 +413,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (e0.escapesAlwaysButNotWithPrecondition()) {
                     if (escape1) {
                         // both if and else escape
-                        return new BooleanConstant(evaluationContext.getPrimitives(), false);
+                        return new BooleanConstant(context.getPrimitives(), false);
                     }
                     // if escapes
                     return list.get(1).condition;
@@ -433,7 +433,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition)
                     .map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
-            return And.and(evaluationContext, components);
+            return And.and(context, components);
         }
 
         /*
@@ -448,21 +448,21 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         .booleanParameterizedType(), LinkedVariables.delayedEmpty(range.causesOfDelay()), range.causesOfDelay());
             } else {
                 // at the moment there is no Range which does not return a boolean constant
-                Expression exit = range.exitState(evaluationContext);
+                Expression exit = range.exitState(context.evaluationContext());
                 if (exit.isBooleanConstant() && !(statement instanceof ForEachStatement)) {
-                    negatedConditionOrExitState = Negation.negate(evaluationContext, list.get(0).condition);
+                    negatedConditionOrExitState = Negation.negate(context, list.get(0).condition);
                 } else {
                     negatedConditionOrExitState = exit;
                 }
             }
             return statementAnalysis.stateData()
-                    .combineInterruptsAndExit(loopStatement, negatedConditionOrExitState, evaluationContext);
+                    .combineInterruptsAndExit(loopStatement, negatedConditionOrExitState, context);
         }
 
         if (statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
             Expression lastState = list.get(0).startOfBlock.lastStatement()
                     .getStatementAnalysis().stateData().getConditionManagerForNextStatement().state();
-            return evaluationContext.replaceLocalVariables(lastState);
+            return context.evaluationContext().replaceLocalVariables(lastState);
         }
         return TRUE;
     }
@@ -475,7 +475,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         CausesOfDelay valueIsDelayed = statementAnalysis.stateData().valueOfExpressionIsDelayed();
         assert value.isDone() || valueIsDelayed.isDelayed(); // sanity check
         Structure structure = statement().getStructure();
-        EvaluationContext evaluationContext = sharedState.evaluationContext();
 
         // main block
 
@@ -484,10 +483,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (statement() instanceof SwitchStatementNewStyle) {
             start = 0;
         } else {
-            DV firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
+            DV firstBlockStatementsExecution = structure.statementExecution().apply(value, sharedState.context());
             DV firstBlockExecution = statementAnalysis.flowData().execution(firstBlockStatementsExecution);
 
-            executions.add(makeExecutionOfPrimaryBlock(sharedState.evaluationContext(),
+            executions.add(makeExecutionOfPrimaryBlock(sharedState.context(),
                     sharedState.localConditionManager(),
                     firstBlockExecution, startOfBlocks, value,
                     valueIsDelayed));
@@ -499,11 +498,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression conditionForSubStatement;
 
             boolean isDefault;
-            DV statementsExecution = subStatements.statementExecution().apply(value, evaluationContext);
+            DV statementsExecution = subStatements.statementExecution().apply(value, sharedState.context());
             DV newExecution;
             if (statementsExecution.equals(FlowData.DEFAULT_EXECUTION)) {
                 isDefault = true;
-                conditionForSubStatement = defaultCondition(evaluationContext, executions);
+                conditionForSubStatement = defaultCondition(sharedState.context(), executions);
                 if (conditionForSubStatement.isBoolValueFalse()) newExecution = FlowData.NEVER;
                 else if (conditionForSubStatement.isBoolValueTrue()) newExecution = FlowData.ALWAYS;
                 else if (conditionForSubStatement.isDelayed())
@@ -522,7 +521,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     // extract them from the condition of the main block; it's got to be the same Instance objects
                     Expression condition = executions.get(0).conditionManager.condition();
                     Expression negated = condition instanceof And and ? and.getExpressions().get(count - 1) : condition;
-                    conditionForSubStatement = Negation.negate(evaluationContext, negated);
+                    conditionForSubStatement = Negation.negate(sharedState.context(), negated);
                     assert conditionForSubStatement.isDone();
 
                 } else throw new UnsupportedOperationException();
@@ -534,7 +533,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
                             conditionForSubStatement);
-            Expression absoluteState = subCm == null ? null : subCm.absoluteState(evaluationContext);
+            Expression absoluteState = subCm == null ? null : subCm.absoluteState(sharedState.context());
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,
@@ -544,7 +543,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return executions;
     }
 
-    private ExecutionOfBlock makeExecutionOfPrimaryBlock(EvaluationContext evaluationContext,
+    private ExecutionOfBlock makeExecutionOfPrimaryBlock(EvaluationResult evaluationContext,
                                                          ConditionManager localConditionManager,
                                                          DV firstBlockExecution,
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
@@ -572,7 +571,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     }
 
     private ConditionManager conditionManagerForFirstBlock(ConditionManager localConditionManager,
-                                                           EvaluationContext evaluationContext,
+                                                           EvaluationResult context,
                                                            Primitives primitives,
                                                            Expression value,
                                                            CausesOfDelay valueIsDelayed) {
@@ -587,11 +586,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             for (Structure s : structure.subStatements()) {
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
                     String index = index() + "." + (cnt++) + ".0";
-                    booleanVars.add(Instance.forUnspecifiedCatchCondition(index, evaluationContext.getPrimitives()));
+                    booleanVars.add(Instance.forUnspecifiedCatchCondition(index, context.getPrimitives()));
                 }
             }
-            Expression condition = And.and(evaluationContext, booleanVars.stream()
-                    .map(v -> Negation.negate(evaluationContext, v)).toArray(Expression[]::new));
+            Expression condition = And.and(context, booleanVars.stream()
+                    .map(v -> Negation.negate(context, v)).toArray(Expression[]::new));
             return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition);
         }
         if (statement() instanceof LoopStatement) {
@@ -604,13 +603,13 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
 
             if (range != Range.NO_RANGE) {
-                Expression condition = statementAnalysis.rangeData().extraState(evaluationContext);
+                Expression condition = statementAnalysis.rangeData().extraState(context.evaluationContext());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         condition);
             }
             if (statement() instanceof ForEachStatement) {
                 // the expression is not a condition; however, we add one to ensure that the content is not empty
-                Expression condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
+                Expression condition = isNotEmpty(context, value, valueIsDelayed.isDelayed());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition);
             }
         }
@@ -621,41 +620,41 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return localConditionManager;
     }
 
-    private Expression isNotEmpty(EvaluationContext evaluationContext, Expression value, boolean valueIsDelayed) {
+    private Expression isNotEmpty(EvaluationResult context, Expression value, boolean valueIsDelayed) {
         if (valueIsDelayed) {
-            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType(),
-                    value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
+            return DelayedExpression.forUnspecifiedLoopCondition(context.getPrimitives().booleanParameterizedType(),
+                    value.linkedVariables(context).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
         }
         if (value instanceof ArrayInitializer ai) {
-            return new BooleanConstant(evaluationContext.getPrimitives(), ai.multiExpression.expressions().length > 0);
+            return new BooleanConstant(context.getPrimitives(), ai.multiExpression.expressions().length > 0);
         }
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
-            return new GreaterThanZero(Identifier.generate("gt0"), evaluationContext.getPrimitives().booleanParameterizedType(),
-                    new ArrayLength(evaluationContext.getPrimitives(), value), false);
+            return new GreaterThanZero(Identifier.generate("gt0"), context.getPrimitives().booleanParameterizedType(),
+                    new ArrayLength(context.getPrimitives(), value), false);
         }
         if (returnType.typeInfo != null) {
-            TypeInfo collection = returnType.typeInfo.recursivelyImplements(evaluationContext.getAnalyserContext(),
+            TypeInfo collection = returnType.typeInfo.recursivelyImplements(context.getAnalyserContext(),
                     "java.util.Collection");
             if (collection != null) {
                 MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
-                return Negation.negate(evaluationContext, new MethodCall(Identifier.generate("isEmpty call"), false, value, isEmpty,
+                return Negation.negate(context, new MethodCall(Identifier.generate("isEmpty call"), false, value, isEmpty,
                         isEmpty.returnType(), List.of()));
             }
         }
-        return Instance.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());
+        return Instance.forUnspecifiedLoopCondition(index(), context.getPrimitives());
     }
 
-    private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
+    private Expression defaultCondition(EvaluationResult context, List<ExecutionOfBlock> executions) {
         List<Expression> previousConditions = executions.stream().map(e -> e.condition).toList();
         if (previousConditions.isEmpty()) {
-            return new BooleanConstant(evaluationContext.getPrimitives(), true);
+            return new BooleanConstant(context.getPrimitives(), true);
         }
         Expression[] negated = previousConditions.stream()
                 .filter(Objects::nonNull)
-                .map(c -> Negation.negate(evaluationContext, c))
+                .map(c -> Negation.negate(context, c))
                 .toArray(Expression[]::new);
-        return And.and(evaluationContext, negated);
+        return And.and(context, negated);
     }
 
 }

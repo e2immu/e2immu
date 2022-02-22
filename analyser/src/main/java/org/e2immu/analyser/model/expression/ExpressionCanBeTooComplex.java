@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -38,7 +39,7 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
     // make a MultiValue with one component per variable (so that they are marked "read")
     // and one per assignment. Even though the And may be too complex, we should not ignore READ/ASSIGNED AT
     // information
-    protected Expression reducedComplexity(EvaluationContext evaluationContext,
+    protected Expression reducedComplexity(EvaluationResult evaluationContext,
                                            List<Expression> expressions,
                                            Expression[] values) {
         ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();

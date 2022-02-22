@@ -30,14 +30,14 @@ public class BitwiseOr extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.OR);
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseOr.bitwiseOr(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
+        return builder.setExpression(BitwiseOr.bitwiseOr(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression bitwiseOr(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression bitwiseOr(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return r;
         if (r instanceof Numeric rn && rn.doubleValue() == 0) return l;
 

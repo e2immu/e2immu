@@ -36,7 +36,7 @@ public class EvaluateParameters {
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
-                                                                             EvaluationContext evaluationContext,
+                                                                             EvaluationResult context,
                                                                              ForwardEvaluationInfo forwardEvaluationInfo,
                                                                              MethodInfo methodInfo,
                                                                              boolean recursiveOrPartOfCallCycle,
@@ -46,13 +46,13 @@ public class EvaluateParameters {
         int i = 0;
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
         DV scopeIsContainer = scopeObject == null || recursiveOrPartOfCallCycle ? MultiLevel.NOT_CONTAINER_DV
-                : evaluationContext.getProperty(scopeObject, Property.CONTAINER, true, true);
+                : context.evaluationContext().getProperty(scopeObject, Property.CONTAINER, true, true);
 
         for (Expression parameterExpression : parameterExpressions) {
-            minCnnOverParameters = oneParameterReturnCnn(evaluationContext, forwardEvaluationInfo,
+            minCnnOverParameters = oneParameterReturnCnn(context, forwardEvaluationInfo,
                     methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
                     scopeIsContainer);
             i++;
@@ -71,7 +71,7 @@ public class EvaluateParameters {
         return new Pair<>(builder, parameterValues);
     }
 
-    private static DV oneParameterReturnCnn(EvaluationContext evaluationContext,
+    private static DV oneParameterReturnCnn(EvaluationResult context,
                                             ForwardEvaluationInfo forwardEvaluationInfo,
                                             MethodInfo methodInfo,
                                             boolean recursiveOrPartOfCallCycle,
@@ -88,12 +88,13 @@ public class EvaluateParameters {
             // NOT_NULL, NOT_MODIFIED
             Map<Property, DV> map;
             try {
-                if (evaluationContext.getCurrentMethod() != null &&
-                        evaluationContext.getCurrentMethod().getMethodInfo() == methodInfo) {
+                MethodAnalyser currentMethod = context.evaluationContext().getCurrentMethod();
+                if (currentMethod != null &&
+                        currentMethod.getMethodInfo() == methodInfo) {
                     map = new HashMap<>(RECURSIVE_CALL);
                 } else {
                     // copy from parameter into map used for forwarding
-                    ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+                    ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
                     map = new HashMap<>();
                     map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
                     map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
@@ -113,10 +114,10 @@ public class EvaluateParameters {
 
             ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
                     forwardEvaluationInfo.assignmentTarget(), true);
-            parameterResult = parameterExpression.evaluate(evaluationContext, forward);
+            parameterResult = parameterExpression.evaluate(context, forward);
             parameterValue = parameterResult.value();
         } else {
-            parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            parameterResult = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             parameterValue = parameterResult.value();
             contextNotNull = Property.CONTEXT_NOT_NULL.bestDv;
         }

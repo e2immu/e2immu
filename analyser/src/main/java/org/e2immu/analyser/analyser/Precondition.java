@@ -108,8 +108,8 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
         return expression.isBoolValueTrue();
     }
 
-    public Precondition combine(EvaluationContext evaluationContext, Precondition other) {
-        Expression combinedExpression = And.and(evaluationContext, expression, other.expression);
+    public Precondition combine(EvaluationResult context, Precondition other) {
+        Expression combinedExpression = And.and(context, expression, other.expression);
         return new Precondition(combinedExpression, ListUtil.concatImmutable(causes, other.causes));
     }
 

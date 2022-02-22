@@ -102,15 +102,15 @@ public class ArrayLength extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult result = scope.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult result = scope.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(result);
 
         if (result.value() instanceof ArrayInitializer arrayInitializer) {
-            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
+            Expression size = new IntConstant(context.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
             builder.setExpression(size);
         } else if (result.value().isDelayed()) {
-            builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives(), result.value().causesOfDelay()));
+            builder.setExpression(DelayedExpression.forArrayLength(context.getPrimitives(), result.value().causesOfDelay()));
         } else {
             builder.setExpression(this);
         }
@@ -118,7 +118,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return ConstantExpression.propertyOfConstant(property);
     }
 }

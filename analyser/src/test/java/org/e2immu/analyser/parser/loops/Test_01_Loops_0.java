@@ -110,7 +110,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                 if (d.statementAnalysis().statement() instanceof WhileStatement whileStatement) {
                     DV exec = whileStatement.structure.statementExecution()
                             .apply(new BooleanConstant(((StatementAnalysisImpl) d.statementAnalysis()).primitives, true),
-                                    d.evaluationContext());
+                                    d.context());
                     assertEquals(ALWAYS, exec);
                 } else fail();
                 String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+i>=n";

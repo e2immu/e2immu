@@ -138,6 +138,7 @@ public interface EvaluationContext {
     }
 
     /**
+     * FIXME move to evaluationResult?
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
@@ -158,11 +159,11 @@ public interface EvaluationContext {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
             }
             if (variable instanceof PreAspectVariable pre) {
-                return pre.valueForProperties().getProperty(this, property, true);
+                return pre.valueForProperties().getProperty(EvaluationResult.from(this), property, true);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
         }
-        return value.getProperty(this, property, true); // will work in many cases
+        return value.getProperty(EvaluationResult.from(this), property, true); // will work in many cases
     }
 
     /*
@@ -313,10 +314,6 @@ public interface EvaluationContext {
 
     default CausesOfDelay variableIsDelayed(Variable variable) {
         return CausesOfDelay.EMPTY;
-    }
-
-    default CausesOfDelay isDelayed(Expression expression) {
-        return expression.causesOfDelay();
     }
 
     default This currentThis() {

@@ -19,13 +19,13 @@ import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +74,29 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 : "Causes of delay: " + causesOfDelay;
     }
 
+    private EvaluationResult copy(EvaluationContext evaluationContext) {
+        return new EvaluationResult(evaluationContext, statementTime, value, storedValues, causesOfDelay, messages,
+                changeData, precondition, addCircularCall);
+    }
+
+    public static EvaluationResult from(EvaluationContext evaluationContext) {
+        return new EvaluationResult(evaluationContext, VariableInfoContainer.NOT_RELEVANT, null, List.of(),
+                CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()),
+                false);
+    }
+
+    public AnalyserContext getAnalyserContext() {
+        return evaluationContext.getAnalyserContext();
+    }
+
+    public Primitives getPrimitives() {
+        return evaluationContext.getPrimitives();
+    }
+
+    public TypeInfo getCurrentType() {
+        return evaluationContext.getCurrentType();
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
 
     public Stream<Message> getMessageStream() {
@@ -104,6 +127,30 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
         return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
+    }
+
+    public Expression currentValue(Variable variable) {
+        ChangeData cd = changeData.get(variable);
+        if (cd != null && cd.value != null) {
+            return value;
+        }
+        return evaluationContext.currentValue(variable);
+    }
+
+    public EvaluationResult child(Expression condition) {
+        EvaluationContext child = evaluationContext.child(condition);
+        return copy(child);
+    }
+
+    public EvaluationResult child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+        EvaluationContext child = evaluationContext.child(condition, disableEvaluationOfMethodCallsUsingCompanionMethods);
+        return copy(child);
+
+    }
+
+    public EvaluationResult copyToPreventAbsoluteStateComputation() {
+        EvaluationContext child = evaluationContext.copyToPreventAbsoluteStateComputation();
+        return copy(child);
     }
 
     /**
@@ -162,7 +209,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), property);
         }
-        return expression.getProperty(evaluationContext, property, true);
+        return expression.getProperty(this, property, true);
     }
 
     // lazy creation of lists
@@ -184,6 +231,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public Builder(EvaluationContext evaluationContext) {
             this.evaluationContext = evaluationContext;
+            this.statementTime = evaluationContext.getInitialStatementTime();
+        }
+
+        public Builder(EvaluationResult evaluationResult) {
+            this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
             this.statementTime = evaluationContext.getInitialStatementTime();
         }
 
@@ -232,7 +284,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (precondition == null) {
                     precondition = evaluationResult.precondition;
                 } else {
-                    precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
+                    EvaluationResult context = EvaluationResult.from(evaluationContext);
+                    precondition = precondition.combine(context, evaluationResult.precondition);
                 }
             }
         }
@@ -555,7 +608,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Expression value = stateIsDelayed.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
-                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay(stateIsDelayed),
+                    resultOfExpression.linkedVariables(EvaluationResult.from(evaluationContext)).changeAllToDelay(stateIsDelayed),
                     stateIsDelayed) : resultOfExpression;
 
             ChangeData newEcd;
@@ -666,7 +719,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (precondition == null) {
                 precondition = newPrecondition;
             } else {
-                precondition = precondition.combine(evaluationContext, newPrecondition);
+                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                precondition = precondition.combine(context, newPrecondition);
             }
         }
 

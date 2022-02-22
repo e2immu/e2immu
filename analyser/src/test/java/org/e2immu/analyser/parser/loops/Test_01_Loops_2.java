@@ -52,7 +52,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertEquals("{\"a\",\"b\",\"c\"}", d.evaluationResult().value().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.evaluationResult().value()
-                            .getProperty(d.evaluationResult().evaluationContext(), NOT_NULL_EXPRESSION, true));
+                            .getProperty(d.evaluationResult(), NOT_NULL_EXPRESSION, true));
                 }
                 // res = s, only statement in loop
                 if ("1.0.0".equals(d.statementId())) {

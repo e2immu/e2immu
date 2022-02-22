@@ -25,8 +25,6 @@ import org.e2immu.analyser.output.Text;
 import java.util.List;
 import java.util.Objects;
 
-import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-
 /*
 differs from DelayedExpression in equality; this one is based on identifier.
 The identifier will be tied to the field reference, so that only one delayed scope, with different
@@ -93,8 +91,8 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override
@@ -103,7 +101,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return causesOfDelay;
     }
 
@@ -127,7 +125,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return linkedVariables;
     }
 

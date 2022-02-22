@@ -82,7 +82,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return getPropertyForPrimitiveResults(property);
     }
 
@@ -122,22 +122,22 @@ public class BinaryOperator extends BaseExpression implements Expression {
     // NOTE: we're not visiting here!
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         // we need to handle the short-circuit operators differently
-        Primitives primitives = evaluationContext.getPrimitives();
+        Primitives primitives = context.getPrimitives();
         if (operator == primitives.orOperatorBool()) {
-            return shortCircuit(evaluationContext, forwardEvaluationInfo, false);
+            return shortCircuit(context, forwardEvaluationInfo, false);
         }
         if (operator == primitives.andOperatorBool()) {
-            return shortCircuit(evaluationContext, forwardEvaluationInfo, true);
+            return shortCircuit(context, forwardEvaluationInfo, true);
         }
 
         ForwardEvaluationInfo forward = allowsForNullOperands(primitives)
                 ? forwardEvaluationInfo.copyDefault() : forwardEvaluationInfo.notNullNotAssignment();
-        EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
-        EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
-        builder.setExpression(determineValue(primitives, builder, leftResult, rightResult, evaluationContext));
+        EvaluationResult leftResult = lhs.evaluate(context, forward);
+        EvaluationResult rightResult = rhs.evaluate(context, forward);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
+        builder.setExpression(determineValue(primitives, builder, leftResult, rightResult, context));
         return builder.build();
     }
 
@@ -145,7 +145,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
                                       EvaluationResult.Builder builder,
                                       EvaluationResult left,
                                       EvaluationResult right,
-                                      EvaluationContext evaluationContext) {
+                                      EvaluationResult context) {
         Expression l = left.value();
         Expression r = right.value();
 
@@ -165,14 +165,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true) && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
-            return Equals.equals(identifier, evaluationContext, l, r);
+            return Equals.equals(identifier, context, l, r);
         }
         if (operator == primitives.equalsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return Equals.equals(identifier, evaluationContext, l, r);
+            return Equals.equals(identifier, context, l, r);
         }
         if (operator == primitives.notEqualsOperatorObject()) {
             if (l.equals(r)) new BooleanConstant(primitives, false);
@@ -182,98 +182,96 @@ public class BinaryOperator extends BaseExpression implements Expression {
                     r == NullConstant.NULL_CONSTANT && left.isNotNull0(false)) {
                 return new BooleanConstant(primitives, true);
             }
-            return Negation.negate(evaluationContext,
-                    Equals.equals(identifier, evaluationContext, l, r));
+            return Negation.negate(context,                    Equals.equals(identifier, context, l, r));
         }
         if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return Negation.negate(evaluationContext,
-                    Equals.equals(identifier, evaluationContext, l, r));
+            return Negation.negate(context,                    Equals.equals(identifier, context, l, r));
         }
 
         // from here on, straightforward operations
         if (operator == primitives.plusOperatorInt()) {
-            return Sum.sum(identifier, evaluationContext, l, r);
+            return Sum.sum(identifier, context, l, r);
         }
         if (operator == primitives.minusOperatorInt()) {
-            return Sum.sum(identifier, evaluationContext, l, Negation.negate(evaluationContext, r));
+            return Sum.sum(identifier, context, l, Negation.negate(context, r));
         }
         if (operator == primitives.multiplyOperatorInt()) {
-            return Product.product(identifier, evaluationContext, l, r);
+            return Product.product(identifier, context, l, r);
         }
         if (operator == primitives.divideOperatorInt()) {
-            EvaluationResult er = Divide.divide(identifier, evaluationContext, l, r);
+            EvaluationResult er = Divide.divide(identifier, context, l, r);
             builder.compose(er);
             return er.value();
         }
         if (operator == primitives.remainderOperatorInt()) {
-            EvaluationResult er = Remainder.remainder(identifier, evaluationContext, l, r);
+            EvaluationResult er = Remainder.remainder(identifier, context, l, r);
             builder.compose(er);
             return er.value();
         }
         if (operator == primitives.lessEqualsOperatorInt()) {
-            return GreaterThanZero.less(identifier, evaluationContext, l, r, true);
+            return GreaterThanZero.less(identifier, context, l, r, true);
         }
         if (operator == primitives.lessOperatorInt()) {
-            return GreaterThanZero.less(identifier, evaluationContext, l, r, false);
+            return GreaterThanZero.less(identifier, context, l, r, false);
         }
         if (operator == primitives.greaterEqualsOperatorInt()) {
-            return GreaterThanZero.greater(identifier, evaluationContext, l, r, true);
+            return GreaterThanZero.greater(identifier, context, l, r, true);
         }
         if (operator == primitives.greaterOperatorInt()) {
-            return GreaterThanZero.greater(identifier, evaluationContext, l, r, false);
+            return GreaterThanZero.greater(identifier, context, l, r, false);
         }
         if (operator == primitives.plusOperatorString()) {
-            return StringConcat.stringConcat(identifier, evaluationContext, l, r);
+            return StringConcat.stringConcat(identifier, context, l, r);
         }
 
         // more obscure operators
 
         if (operator == primitives.xorOperatorBool()) {
-            return BooleanXor.booleanXor(identifier, evaluationContext, l, r);
+            return BooleanXor.booleanXor(identifier, context, l, r);
         }
         if (operator == primitives.bitwiseAndOperatorInt()) {
-            return BitwiseAnd.bitwiseAnd(identifier, evaluationContext, l, r);
+            return BitwiseAnd.bitwiseAnd(identifier, context, l, r);
         }
         if (operator == primitives.bitwiseOrOperatorInt()) {
-            return BitwiseOr.bitwiseOr(identifier, evaluationContext, l, r);
+            return BitwiseOr.bitwiseOr(identifier, context, l, r);
         }
         if (operator == primitives.bitwiseXorOperatorInt()) {
-            return BitwiseXor.bitwiseXor(identifier, evaluationContext, l, r);
+            return BitwiseXor.bitwiseXor(identifier, context, l, r);
         }
         if (operator == primitives.leftShiftOperatorInt()) {
-            return ShiftLeft.shiftLeft(identifier, evaluationContext, l, r);
+            return ShiftLeft.shiftLeft(identifier, context, l, r);
         }
         if (operator == primitives.signedRightShiftOperatorInt()) {
-            return SignedShiftRight.shiftRight(identifier, evaluationContext, l, r);
+            return SignedShiftRight.shiftRight(identifier, context, l, r);
         }
         if (operator == primitives.unsignedRightShiftOperatorInt()) {
-            return UnsignedShiftRight.unsignedShiftRight(identifier, evaluationContext, l, r);
+            return UnsignedShiftRight.unsignedShiftRight(identifier, context, l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
-    private EvaluationResult shortCircuit(EvaluationContext evaluationContext,
+    private EvaluationResult shortCircuit(EvaluationResult context,
                                           ForwardEvaluationInfo forwardEvaluationInfo,
                                           boolean and) {
         ForwardEvaluationInfo forward = forwardEvaluationInfo.notNullNotAssignment();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Primitives primitives = evaluationContext.getPrimitives();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        Primitives primitives = context.getPrimitives();
 
-        EvaluationResult l = lhs.evaluate(evaluationContext, forward);
+        EvaluationResult l = lhs.evaluate(context, forward);
         Expression constant = new BooleanConstant(primitives, !and);
         if (l.value().equals(constant)) {
             builder.raiseError(lhs.getIdentifier(), Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
-        Expression state = and ? l.value() : Negation.negate(evaluationContext, l.value());
-        EvaluationContext child = evaluationContext.childState(state);
+        Expression state = and ? l.value() : Negation.negate(context, l.value());
+        EvaluationContext child = context.evaluationContext().childState(state);
         assert child != null;
-        EvaluationResult r = rhs.evaluate(child, forward);
+        EvaluationResult r = rhs.evaluate(EvaluationResult.from(child), forward);
         builder.compose(l, r);
         if (r.value() instanceof BooleanConstant booleanConstant) {
             builder.raiseError(rhs.getIdentifier(), Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
@@ -287,9 +285,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
             return builder.build();
         }
         if (and) {
-            builder.setExpression(And.and(evaluationContext, l.value(), r.value()));
+            builder.setExpression(And.and(context, l.value(), r.value()));
         } else {
-            builder.setExpression(Or.or(evaluationContext, l.value(), r.value()));
+            builder.setExpression(Or.or(context, l.value(), r.value()));
         }
         return builder.build();
     }

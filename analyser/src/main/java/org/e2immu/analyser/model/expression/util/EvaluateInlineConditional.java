@@ -27,15 +27,15 @@ import java.util.List;
 
 public class EvaluateInlineConditional {
 
-    public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext,
+    public static EvaluationResult conditionalValueCurrentState(EvaluationResult context,
                                                                 Expression conditionBeforeState,
                                                                 Expression ifTrue,
                                                                 Expression ifFalse) {
-        Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
-        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, false);
+        Expression condition = context.evaluationContext().getConditionManager().evaluate(context, conditionBeforeState);
+        return conditionalValueConditionResolved(context, condition, ifTrue, ifFalse, false);
     }
 
-    public static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext,
+    public static EvaluationResult conditionalValueConditionResolved(EvaluationResult evaluationContext,
                                                                      Expression condition,
                                                                      Expression ifTrue,
                                                                      Expression ifFalse,
@@ -196,7 +196,7 @@ public class EvaluateInlineConditional {
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
-    private static Expression removeCommonClauses(EvaluationContext evaluationContext, Expression condition, And and) {
+    private static Expression removeCommonClauses(EvaluationResult evaluationContext, Expression condition, And and) {
         Expression[] filtered = and.getExpressions().stream().filter(e -> !inExpression(e, condition)).toArray(Expression[]::new);
         if (filtered.length == and.getExpressions().size()) return and;
         return And.and(evaluationContext, filtered);
@@ -209,7 +209,7 @@ public class EvaluateInlineConditional {
         return container.equals(e);
     }
 
-    private static Expression edgeCases(EvaluationContext evaluationContext,
+    private static Expression edgeCases(EvaluationResult evaluationContext,
                                         Expression condition, Expression ifTrue, Expression ifFalse) {
         // x ? a : a == a
         if (ifTrue.equals(ifFalse)) return ifTrue;
@@ -261,7 +261,7 @@ public class EvaluateInlineConditional {
     // isFact(contains(e)) will check if "contains(e)" is part of the current instance's state
     // it will bypass ConditionalValue and return ifTrue or ifFalse accordingly
     // note that we don't need to check for !isFact() because the inversion has already taken place
-    private static Expression isFact(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
+    private static Expression isFact(EvaluationResult evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
         if (condition instanceof MethodCall methodValue &&
                 TypeInfo.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
             return inState(evaluationContext, methodValue.parameterExpressions.get(0)) ? ifTrue : ifFalse;
@@ -269,16 +269,16 @@ public class EvaluateInlineConditional {
         return null;
     }
 
-    private static boolean inState(EvaluationContext evaluationContext, Expression expression) {
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Expression absoluteState = evaluationContext.getConditionManager().absoluteState(evaluationContext);
+    private static boolean inState(EvaluationResult context, Expression expression) {
+        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
+        Expression absoluteState = context.evaluationContext().getConditionManager().absoluteState(context);
         Filter.FilterResult<Expression> res = filter.filter(absoluteState, new Filter.ExactValue(filter.getDefaultRest(), expression));
         return !res.accepted().isEmpty();
     }
 
     // whilst isKnown is also caught at the level of MethodCall, we grab it here to avoid warnings for
     // constant evaluation
-    private static Expression isKnown(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
+    private static Expression isKnown(EvaluationResult evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
         if (condition instanceof MethodCall methodValue &&
                 TypeInfo.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {

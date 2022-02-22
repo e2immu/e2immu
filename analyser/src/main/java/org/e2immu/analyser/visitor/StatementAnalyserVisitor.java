@@ -28,7 +28,7 @@ public interface StatementAnalyserVisitor {
 
     record Data(AnalyserResult result,
                 int iteration,
-                EvaluationContext evaluationContext,
+                EvaluationResult context,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                 String statementId,
                 Expression condition,
@@ -48,7 +48,7 @@ public interface StatementAnalyserVisitor {
         }
 
         public DV getProperty(Expression value, Property property) {
-            return evaluationContext.getProperty(value, property, false, false);
+            return context.evaluationContext().getProperty(value, property, false, false);
         }
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {

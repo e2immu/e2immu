@@ -26,13 +26,13 @@ import java.util.Map;
 public interface ConstantExpression<T> extends Expression {
 
     @Override
-    default EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    default EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         return builder.setExpression(this).build();
     }
 
     @Override
-    default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         return new EvaluationResult.Builder().setExpression(this).build();
     }
 
@@ -49,7 +49,7 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    default DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return propertyOfConstant(property);
     }
 

@@ -65,13 +65,13 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = multiExpression.stream()
-                .map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+                .map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(), reValues, commonType))
+                .setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(), reValues, commonType))
                 .build();
     }
 
@@ -116,15 +116,15 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext,
+    public EvaluationResult evaluate(EvaluationResult context,
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         List<EvaluationResult> results = multiExpression.stream()
-                .map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT))
+                .map(e -> e.evaluate(context, ForwardEvaluationInfo.DEFAULT))
                 .collect(Collectors.toList());
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
-        builder.setExpression(new ArrayInitializer(identifier, evaluationContext.getAnalyserContext(), values, commonType));
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(results);
+        builder.setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(), values, commonType));
 
         return builder.build();
     }
@@ -154,7 +154,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (multiExpression.isEmpty()) {
             return switch (property) {
                 case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
@@ -167,7 +167,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
             };
         }
         if (Property.NOT_NULL_EXPRESSION == property) {
-            DV notNull = multiExpression.getProperty(evaluationContext, property, duringEvaluation);
+            DV notNull = multiExpression.getProperty(context, property, duringEvaluation);
             if (notNull.isDelayed()) return notNull;
             return MultiLevel.composeOneLevelMoreNotNull(notNull);
         }
@@ -182,7 +182,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
             return MultiLevel.NOT_IGNORE_MODS_DV;
         }
         // default is to refer to each of the components
-        return multiExpression.getProperty(evaluationContext, property, duringEvaluation);
+        return multiExpression.getProperty(context, property, duringEvaluation);
     }
 
     @Override

@@ -321,7 +321,7 @@ public class RangeDataImpl implements RangeData {
             int start = init.getValue();
             int increment = update.getValue();
             if (condition instanceof GreaterThanZero gt0) {
-                GreaterThanZero.XB xb = gt0.extract(evaluationContext);
+                GreaterThanZero.XB xb = gt0.extract(EvaluationResult.from(evaluationContext));
                 if (loopVar.equals(xb.x())) {
                     int endExcl = (int) (xb.b() + (gt0.allowEquals() ? (increment < 0 ? -1 : 1) : 0));
                     if (xb.lessThan() && start < endExcl && increment > 0 || !xb.lessThan() && start > endExcl && increment < 0) {

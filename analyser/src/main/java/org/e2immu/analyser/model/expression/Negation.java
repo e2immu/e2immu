@@ -41,10 +41,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }
 
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult reValue = expression.reEvaluate(context, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
-        return builder.setExpression(Negation.negate(evaluationContext, reValue.value())).build();
+        return builder.setExpression(Negation.negate(context, reValue.value())).build();
     }
 
     @Override
@@ -54,7 +54,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         return new Negation(identifier, operator, translated);
     }
 
-    public static Expression negate(EvaluationContext evaluationContext, @NotNull Expression v) {
+    public static Expression negate(EvaluationResult context, @NotNull Expression v) {
         Objects.requireNonNull(v);
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
@@ -67,38 +67,38 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (v instanceof Negation negation) return negation.expression;
         if (v instanceof Or or) {
             Expression[] negated = or.expressions().stream()
-                    .map(ov -> Negation.negate(evaluationContext, ov))
+                    .map(ov -> Negation.negate(context, ov))
                     .toArray(Expression[]::new);
-            return And.and(evaluationContext, negated);
+            return And.and(context, negated);
         }
         if (v instanceof And and) {
             List<Expression> negated = and.getExpressions().stream()
-                    .map(av -> Negation.negate(evaluationContext, av)).toList();
-            return Or.or(evaluationContext, negated.toArray(Expression[]::new));
+                    .map(av -> Negation.negate(context, av)).toList();
+            return Or.or(context, negated.toArray(Expression[]::new));
         }
         if (v instanceof Sum sum) {
-            return sum.negate(evaluationContext);
+            return sum.negate(context);
         }
         if (v instanceof GreaterThanZero greaterThanZero) {
-            return greaterThanZero.negate(evaluationContext);
+            return greaterThanZero.negate(context);
         }
 
         if (v instanceof Equals equals) {
             if (equals.lhs instanceof InlineConditional inlineConditional) {
-                EvaluationContext safeEvaluationContext = evaluationContext.copyToPreventAbsoluteStateComputation();
+                EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.rhs, inlineConditional);
                 if (result != null) return result;
             }
             if (equals.rhs instanceof InlineConditional inlineConditional) {
-                EvaluationContext safeEvaluationContext = evaluationContext.copyToPreventAbsoluteStateComputation();
+                EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.lhs, inlineConditional);
                 if (result != null) return result;
             }
         }
 
         MethodInfo operator = v.isNumeric() ?
-                evaluationContext.getPrimitives().unaryMinusOperatorInt() :
-                evaluationContext.getPrimitives().logicalNotOperatorBool();
+                context.getPrimitives().unaryMinusOperatorInt() :
+                context.getPrimitives().logicalNotOperatorBool();
         return new Negation(Identifier.joined("neg", List.of(v.getIdentifier())), operator, v);
     }
 
@@ -144,8 +144,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return evaluationContext.getProperty(expression, property, duringEvaluation, false);
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }
 
     @Override

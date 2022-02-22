@@ -116,10 +116,10 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Expression genericArrayAccess(Identifier identifier,
-                                                EvaluationContext evaluationContext,
+                                                EvaluationResult context,
                                                 Expression array,
                                                 Variable variable) {
-        DV notNull = evaluationContext.getProperty(array, Property.NOT_NULL_EXPRESSION, true, false);
+        DV notNull = context.evaluationContext().getProperty(array, Property.NOT_NULL_EXPRESSION, true, false);
         ParameterizedType baseType = array.returnType().copyWithOneFewerArrays();
         DV notNullOfElement;
         if (baseType.isPrimitiveExcludingVoid()) {
@@ -130,7 +130,7 @@ public final class Instance extends BaseExpression implements Expression {
 
         // we need to go the base type of the array
 
-        Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement);
+        Properties properties = context.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement);
         CausesOfDelay delays = properties.delays();
         if (delays.isDelayed()) {
             Stream<Variable> variableStream = Stream.concat(Stream.of(variable), array.variables(true).stream());
@@ -221,7 +221,7 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return LinkedVariables.EMPTY;
     }
 
@@ -235,7 +235,7 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return switch (property) {
             case IGNORE_MODIFICATIONS, IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(property);
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
@@ -265,7 +265,7 @@ public final class Instance extends BaseExpression implements Expression {
         Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
         outputBuilder.add(text);
 
-        if(qualification == Qualification.FULLY_QUALIFIED_NAME) {
+        if (qualification == Qualification.FULLY_QUALIFIED_NAME) {
             outputBuilder.add(Space.ONE).add(new Text(identifier.compact()));
         } else {
             // not consistent, but hack after changing 10s of tests, don't want to change back again
@@ -304,13 +304,13 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override

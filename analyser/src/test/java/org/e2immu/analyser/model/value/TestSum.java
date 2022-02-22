@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestSum extends CommonAbstractValue {
 
     private static Expression sum(Expression e1, Expression e2) {
-        return Sum.sum(minimalEvaluationContext, e1, e2);
+        return Sum.sum(context, e1, e2);
     }
 
     private static Expression product(Expression e1, Expression e2) {
-        return Product.product(minimalEvaluationContext, e1, e2);
+        return Product.product(context, e1, e2);
     }
 
     @Test

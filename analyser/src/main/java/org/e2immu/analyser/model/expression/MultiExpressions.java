@@ -52,13 +52,13 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         Expression[] reValues = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         MultiExpression reMulti = new MultiExpression(reValues);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), reMulti))
+                .setExpression(new MultiExpressions(identifier, context.getAnalyserContext(), reMulti))
                 .build();
     }
 
@@ -101,11 +101,11 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext,
+    public EvaluationResult evaluate(EvaluationResult context,
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         for (Expression expression : multiExpression.expressions()) {
-            EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+            EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
             builder.compose(result);
         }
         return builder.build();
@@ -122,9 +122,9 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         Expression last = multiExpression.lastExpression();
-        return last.getProperty(evaluationContext, property, duringEvaluation);
+        return last.getProperty(context, property, duringEvaluation);
     }
 
     @Override

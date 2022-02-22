@@ -85,12 +85,12 @@ public class UnknownExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (parameterizedType.isPrimitiveExcludingVoid()) {
             return getPropertyForPrimitiveResults(property);
         }
         TypeAnalysis typeAnalysis = parameterizedType.typeInfo == null ? null
-                : evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
+                : context.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
         switch (property) {
             case IMMUTABLE:
                 return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.IMMUTABLE);
@@ -150,7 +150,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new EvaluationResult.Builder().setExpression(this).build();
     }
 

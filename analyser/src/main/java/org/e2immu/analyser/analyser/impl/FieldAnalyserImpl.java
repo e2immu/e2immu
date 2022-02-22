@@ -322,7 +322,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
-                EvaluationResult evaluationResult = toEvaluate.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
+                        ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
 
@@ -1618,7 +1619,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 throw new UnsupportedOperationException();
             }
             try {
-                return value.getProperty(this, property, true);
+                return value.getProperty(EvaluationResult.from(this), property, true);
             } catch (RuntimeException re) {
                 LOGGER.error("Caught exception while evaluating expression '{}'", value);
                 throw re;

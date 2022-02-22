@@ -33,8 +33,8 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
     @Test
     public void test1() {
         // i+j >= 1
-        Expression iPlusJGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i, j), newInt(1), true);
+        Expression iPlusJGe1 = GreaterThanZero.greater(context,
+                Sum.sum(context, i, j), newInt(1), true);
         Inequality inequality = InequalityHelper.extract((GreaterThanZero) iPlusJGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;
         assertNotNull(two);
@@ -55,10 +55,10 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
     @Test
     public void test2() {
         // 2i-3j >= 1
-        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i);
-        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3)));
-        Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i2, minusJ3), newInt(1), true);
+        Expression i2 = Product.product(context, newInt(2), i);
+        Expression minusJ3 = negate(Product.product(context, j, newInt(3)));
+        Expression i2Minus3JGe1 = GreaterThanZero.greater(context,
+                Sum.sum(context, i2, minusJ3), newInt(1), true);
         assertEquals("-1+2*i>=3*j", i2Minus3JGe1.toString());
         Inequality inequality = InequalityHelper.extract((GreaterThanZero) i2Minus3JGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;
@@ -76,13 +76,13 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
         assertTrue(two.isOpenLeftY());
 
         // i>10, j<0 should be accepted
-        Expression iGt10 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(10), false);
-        Expression jLt0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), false);
+        Expression iGt10 = GreaterThanZero.greater(context, i, newInt(10), false);
+        Expression jLt0 = GreaterThanZero.less(context, j, newInt(0), false);
         assertSame(Boolean.TRUE, two.accept(List.of(iGt10), List.of(jLt0)));
 
         // i<10, j>20 should be rejected
-        Expression iLt10 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(10), false);
-        Expression jGt20 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(20), false);
+        Expression iLt10 = GreaterThanZero.less(context, i, newInt(10), false);
+        Expression jGt20 = GreaterThanZero.greater(context, j, newInt(20), false);
         assertSame(Boolean.FALSE, two.accept(List.of(iLt10), List.of(jGt20)));
     }
 }

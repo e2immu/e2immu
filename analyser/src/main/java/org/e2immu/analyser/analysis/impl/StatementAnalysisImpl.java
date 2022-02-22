@@ -566,13 +566,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom != null) {
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
         variables.stream()
                 .map(Map.Entry::getValue)
                 .filter(VariableInfoContainer::isInitial)
                 .forEach(vic -> {
                     VariableInfo variableInfo = vic.current();
                     if (variableInfo.variable() instanceof DependentVariable dv && vic.getPreviousOrInitial().getValue().isDelayed()) {
-                        initializeLocalOrDependentVariable(vic, dv, evaluationContext);
+                        initializeLocalOrDependentVariable(vic, dv, context);
                     }
                 });
     }
@@ -1343,7 +1344,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (variableNature instanceof VariableNature.LoopVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
-                initializeLocalOrDependentVariable(vic, variable, evaluationContext);
+                initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
             }
         } else {
             throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
@@ -1378,7 +1379,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic,
                                                     Variable variable,
-                                                    EvaluationContext evaluationContext) {
+                                                    EvaluationResult evaluationContext) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
         for (Property ext : EXTERNALS) {
@@ -1402,13 +1403,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 } else {
                     arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
                 }
-                valueProperties = evaluationContext.getValueProperties(arrayValue);
+                valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
             } else {
                 Expression unevaluated = dv.expressionOrArrayVariable.getLeft().value();
                 EvaluationResult result = unevaluated.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 arrayBase = result.getExpression();
                 arrayValue = arrayBase;
-                valueProperties = evaluationContext.getValueProperties(arrayValue);
+                valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
                 CausesOfDelay vpDelay = valueProperties.delays();
                 lvArrayBase = arrayBase.linkedVariables(evaluationContext);
                 independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
@@ -1434,11 +1435,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
   If the array base type is not E2, we should return DEPENDENT.
   See DependentVariables_1,_2
    */
-    private static DV determineIndependentOfArrayBase(EvaluationContext evaluationContext, Expression value) {
+    private static DV determineIndependentOfArrayBase(EvaluationResult context, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
 
-        TypeInfo currentType = evaluationContext.getCurrentType();
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
+        TypeInfo currentType = context.getCurrentType();
+        TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(currentType);
         DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
         if (partOfHiddenContent.isDelayed()) {
             return partOfHiddenContent;
@@ -1447,8 +1448,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             return MultiLevel.INDEPENDENT_1_DV;
         }
 
-        if (evaluationContext.isMyself(arrayBaseType)) return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(arrayBaseType, false);
+        if (context.evaluationContext().isMyself(arrayBaseType)) return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
+        DV immutable = context.getAnalyserContext().defaultImmutable(arrayBaseType, false);
         if (immutable.isDelayed()) {
             return immutable;
         }
@@ -1799,7 +1800,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
-        return And.and(evaluationContext, variableStream()
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        return And.and(context, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
                         && vi.isAssigned()
                         && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
@@ -1816,10 +1818,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 })
                 .filter(e -> e != null && (e.v == DV.MIN_INT_DV || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
                 .map(e -> {
-                    Expression equals = Equals.equals(evaluationContext, new VariableExpression(e.k.variable()),
+                    Expression equals = Equals.equals(context, new VariableExpression(e.k.variable()),
                             NullConstant.NULL_CONSTANT);
                     if (e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-                        return Negation.negate(evaluationContext, equals);
+                        return Negation.negate(context, equals);
                     }
                     return equals;
                 })
@@ -1884,7 +1886,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Expression evaluatedIterable,
                                                      CausesOfDelay someValueWasDelayed,
                                                      EvaluationContext evaluationContext) {
-        LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
+        LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
         VariableInfoContainer vic = findForWriting(loopVar);
         vic.ensureEvaluation(location(EVALUATION), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 Set.of());
@@ -1986,7 +1988,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             precondition.causes()), true);
                     return preconditionExpression.causesOfDelay();
                 }
-                Expression result = localConditionManager.evaluate(evaluationContext, preconditionExpression);
+                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                Expression result = localConditionManager.evaluate(context, preconditionExpression);
                 if (result.isBoolValueFalse()) {
                     ensure(Message.newMessage(location(EVALUATION), Message.Label.INCOMPATIBLE_PRECONDITION));
                 }

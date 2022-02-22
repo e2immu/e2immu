@@ -224,8 +224,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override
@@ -234,7 +234,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         DV priority = priorityProperties.getOrDefaultNull(property);
         if (priority != null) return priority;
         return causesOfDelay;
@@ -257,7 +257,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return linkedVariables;
     }
 

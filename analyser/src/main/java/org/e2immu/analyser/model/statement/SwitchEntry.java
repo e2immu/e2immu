@@ -105,10 +105,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public static DV statementExecution(List<Expression> labels,
                                         Expression value,
-                                        EvaluationContext evaluationContext) {
+                                        EvaluationResult context) {
         if (labels.isEmpty()) return FlowData.DEFAULT_EXECUTION;
         for (Expression label : labels) {
-            EvaluationResult result = label.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            EvaluationResult result = label.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             if (result.value().equals(value)) return FlowData.ALWAYS;
         }
         if (value.isConstant()) return FlowData.NEVER;

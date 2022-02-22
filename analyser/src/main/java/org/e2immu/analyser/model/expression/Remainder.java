@@ -31,12 +31,12 @@ public class Remainder extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.remainderOperatorInt(), rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public static Expression remainder(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression remainder(EvaluationResult evaluationContext, Expression l, Expression r) {
         Identifier id = Identifier.joined("remainder", List.of(l.getIdentifier(), r.getIdentifier()));
         return remainder(id, evaluationContext, l, r).value();
     }
 
-    public static EvaluationResult remainder(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static EvaluationResult remainder(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
         if (r instanceof Numeric rn && rn.doubleValue() == 0) {

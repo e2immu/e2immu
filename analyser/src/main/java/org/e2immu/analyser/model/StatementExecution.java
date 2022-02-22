@@ -16,12 +16,13 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.FlowData;
 
 import java.util.function.BiFunction;
 
 @FunctionalInterface
-public interface StatementExecution extends BiFunction<Expression, EvaluationContext, DV> {
+public interface StatementExecution extends BiFunction<Expression, EvaluationResult, DV> {
     StatementExecution NEVER = (x, y) -> FlowData.NEVER;
     StatementExecution ALWAYS = (x, y) -> FlowData.ALWAYS;
     StatementExecution CONDITIONALLY = (x, y) -> x.isDelayed() ? x.causesOfDelay() : FlowData.CONDITIONALLY;

@@ -29,11 +29,11 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void test() {
-        Expression notA = Negation.negate(minimalEvaluationContext, a);
+        Expression notA = Negation.negate(context, a);
         assertEquals("!a", notA.toString());
-        Expression notA2 = Negation.negate(minimalEvaluationContext, a);
+        Expression notA2 = Negation.negate(context, a);
         assertEquals(notA, notA2);
-        assertEquals(a, Negation.negate(minimalEvaluationContext, notA));
+        assertEquals(a, Negation.negate(context, notA));
 
         assertEquals(a, newAndAppend(a, a));
         assertEquals(notA, newAndAppend(notA, notA));
@@ -67,7 +67,7 @@ public class TestAbstractValue extends CommonAbstractValue {
         Expression aAndAOrB = newAndAppend(a, newOrAppend(a, b));
         assertEquals(a, aAndAOrB);
 
-        Expression aAndNotAOrB = newAndAppend(a, newOrAppend(Negation.negate(minimalEvaluationContext, a), b));
+        Expression aAndNotAOrB = newAndAppend(a, newOrAppend(Negation.negate(context, a), b));
         assertEquals("a&&b", aAndNotAOrB.toString());
 
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
@@ -98,7 +98,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     }
 
     Map<Variable, Boolean> nullClauses(Expression v, Filter.FilterMode filterMode) {
-        Filter filter = new Filter(minimalEvaluationContext, filterMode);
+        Filter filter = new Filter(context, filterMode);
         return filter.filter(v, filter.individualNullOrNotNullClause()).accepted()
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue() instanceof Equals Equals && Equals.lhs == NullConstant.NULL_CONSTANT));
@@ -107,13 +107,13 @@ public class TestAbstractValue extends CommonAbstractValue {
     // note: van and vbn are nullable, va and vb are NOT (see CommonAbstractValue)
     @Test
     public void testIsNull() {
-        Expression v = Equals.equals(minimalEvaluationContext, an, NullConstant.NULL_CONSTANT);
+        Expression v = Equals.equals(context, an, NullConstant.NULL_CONSTANT);
         assertEquals("null==an", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         assertEquals(1, nullClauses.size());
         assertEquals(true, nullClauses.get(van));
 
-        Expression v2 = Equals.equals(minimalEvaluationContext, bn, NullConstant.NULL_CONSTANT);
+        Expression v2 = Equals.equals(context, bn, NullConstant.NULL_CONSTANT);
         assertEquals("null==bn", v2.toString());
         Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         assertEquals(1, nullClauses2.size());
@@ -129,7 +129,7 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Expression v = Negation.negate(minimalEvaluationContext, new Equals(Identifier.generate("test"),
+        Expression v = Negation.negate(context, new Equals(Identifier.generate("test"),
                 PRIMITIVES, NullConstant.NULL_CONSTANT, a));
         assertEquals("null!=a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
@@ -183,31 +183,31 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testCompare() {
-        Expression aGt4 = GreaterThanZero.greater(minimalEvaluationContext, a, newInt(4), true);
+        Expression aGt4 = GreaterThanZero.greater(context, a, newInt(4), true);
         assertEquals("a>=4", aGt4.toString());
 
-        Expression n4ltB = GreaterThanZero.less(minimalEvaluationContext, newInt(4), b, false);
+        Expression n4ltB = GreaterThanZero.less(context, newInt(4), b, false);
         assertEquals("b>=5", n4ltB.toString());
 
-        Expression n4lt8 = GreaterThanZero.less(minimalEvaluationContext, newInt(4), newInt(8), false);
+        Expression n4lt8 = GreaterThanZero.less(context, newInt(4), newInt(8), false);
         assertEquals(TRUE, n4lt8);
     }
 
     @Test
     public void testSumProduct() {
-        Expression aa = Sum.sum(minimalEvaluationContext, a, a);
+        Expression aa = Sum.sum(context, a, a);
         assertEquals("2*a", aa.toString());
-        Expression a0 = Sum.sum(minimalEvaluationContext, a, newInt(0));
+        Expression a0 = Sum.sum(context, a, newInt(0));
         assertEquals(a, a0);
-        Expression aTimes0 = Product.product(minimalEvaluationContext, a, newInt(0));
+        Expression aTimes0 = Product.product(context, a, newInt(0));
         assertEquals(newInt(0), aTimes0);
 
-        Expression a3a = Sum.sum(minimalEvaluationContext, a,
-                Product.product(minimalEvaluationContext, newInt(3), a));
+        Expression a3a = Sum.sum(context, a,
+                Product.product(context, newInt(3), a));
         assertEquals("4*a", a3a.toString());
-        Expression b2 = Product.product(minimalEvaluationContext, b, newInt(2));
-        Expression b4 = Product.product(minimalEvaluationContext, newInt(4), b);
-        Expression b4b2 = Sum.sum(minimalEvaluationContext, b4, b2);
+        Expression b2 = Product.product(context, b, newInt(2));
+        Expression b4 = Product.product(context, newInt(4), b);
+        Expression b4b2 = Sum.sum(context, b4, b2);
         assertEquals("6*b", b4b2.toString());
     }
 }

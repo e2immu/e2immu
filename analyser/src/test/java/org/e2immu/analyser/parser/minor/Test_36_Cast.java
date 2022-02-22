@@ -91,7 +91,7 @@ public class Test_36_Cast extends CommonTestRunner {
                 assertEquals(expected, d.currentValue().toString());
                 if (d.iteration() > 0) {
                     assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
-                            pw.castType().equals(d.evaluationContext().getPrimitives().stringParameterizedType()));
+                            pw.castType().equals(d.context().getPrimitives().stringParameterizedType()));
                 }
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {

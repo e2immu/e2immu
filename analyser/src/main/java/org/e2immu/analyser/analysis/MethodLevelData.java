@@ -94,7 +94,7 @@ public class MethodLevelData {
     }
 
     public record SharedState(AnalyserResult.Builder builder,
-                              EvaluationContext evaluationContext,
+                              EvaluationResult context,
                               StatementAnalysis statementAnalysis,
                               String logLocation,
                               MethodLevelData previous,
@@ -115,11 +115,10 @@ public class MethodLevelData {
                                   MethodLevelData previous,
                                   String previousIndex,
                                   StateData stateData) {
-        EvaluationContext evaluationContext = sharedState.evaluationContext();
         String logLocation = statementAnalysis.location(Stage.EVALUATION).toString();
         try {
             AnalyserResult.Builder builder = sharedState.builder();
-            SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,
+            SharedState localSharedState = new SharedState(builder, sharedState.context(), statementAnalysis,
                     logLocation, previous, previousIndex, stateData);
             return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
@@ -148,10 +147,10 @@ public class MethodLevelData {
         Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .map(sa -> sa.methodLevelData().combinedPrecondition)
                 .map(EventuallyFinal::get);
-        Precondition empty = Precondition.empty(sharedState.evaluationContext.getPrimitives());
+        Precondition empty = Precondition.empty(sharedState.context.getPrimitives());
         Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
                 .map(pc -> pc == null ? empty : pc)
-                .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
+                .reduce((pc1, pc2) -> pc1.combine(sharedState.context, pc2))
                 .orElse(empty);
 
         CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays);

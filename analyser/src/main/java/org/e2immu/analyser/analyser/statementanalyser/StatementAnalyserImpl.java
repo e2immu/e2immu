@@ -25,7 +25,10 @@ import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.statement.*;
@@ -234,10 +237,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     statementAnalyser = (StatementAnalyserImpl) statementAnalyser.followReplacements();
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
-                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(evaluationContext, previousStatement, switchCondition,
+                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
-                        .withCondition(evaluationContext, switchCondition));
+                        .withCondition(context, switchCondition));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo);
@@ -451,6 +455,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
                     iteration, localConditionManager, closure);
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
+                    EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 

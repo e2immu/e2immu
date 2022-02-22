@@ -70,7 +70,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 
@@ -101,10 +101,10 @@ public class ArrayAccess extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult array = expression.evaluate(evaluationContext, forwardEvaluationInfo.notNullKeepAssignment());
-        EvaluationResult indexValue = index.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult array = expression.evaluate(context, forwardEvaluationInfo.notNullKeepAssignment());
+        EvaluationResult indexValue = index.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(array, indexValue);
 
 
         Expression arrayValue = array.value();
@@ -134,7 +134,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
                     CausesOfDelay causesOfDelay = arrayExpression.causesOfDelay()
                             .merge(indexValue.value().causesOfDelay());
                     Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable,
-                            evaluationContext.getInitialStatementTime(), causesOfDelay);
+                            context.evaluationContext().getInitialStatementTime(), causesOfDelay);
 
                     builder.setExpression(dve);
                 } else {

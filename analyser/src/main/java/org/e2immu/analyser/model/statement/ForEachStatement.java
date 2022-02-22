@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.model.*;
@@ -47,7 +48,7 @@ public class ForEachStatement extends LoopStatement {
         this.positionOfExpression = positionOfExpression;
     }
 
-    private static DV computeExecution(Expression expression, EvaluationContext evaluationContext) {
+    private static DV computeExecution(Expression expression, EvaluationResult evaluationContext) {
         if (expression.isDelayed()) return expression.causesOfDelay();
 
         if (expression instanceof ArrayInitializer arrayInitializer) {

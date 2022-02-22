@@ -100,8 +100,8 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override
@@ -110,10 +110,10 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
        // return variableInfo.getProperty(property);
         //return causesOfDelay;
-        return expression.getProperty(evaluationContext, property, duringEvaluation);
+        return expression.getProperty(context, property, duringEvaluation);
     }
 
     @Override
@@ -130,7 +130,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationResult context) {
         return variableInfo.getLinkedVariables();
     }
 

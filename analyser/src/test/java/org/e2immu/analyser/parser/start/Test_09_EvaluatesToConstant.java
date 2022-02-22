@@ -101,7 +101,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method2".equals(d.methodInfo().name)) {
             if ("b".equals(d.variableName()) && "0".equals(d.statementId())) {
                 assertEquals("null==param?\"x\":param", d.currentValue().toString());
-                DV nne = d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true);
+                DV nne = d.currentValue().getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, nne);
                 assertEquals("b:0,param:1", d.variableInfo().getLinkedVariables().toString());
             }

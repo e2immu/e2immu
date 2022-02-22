@@ -40,7 +40,7 @@ public class TestConditionalValue extends CommonAbstractValue {
     }
 
     private static Expression inline(Expression c, Expression t, Expression f) {
-        return EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
+        return EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 c, t, f, true).value();
     }
 
@@ -72,20 +72,20 @@ public class TestConditionalValue extends CommonAbstractValue {
                 new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(b));
         assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
-        assertTrue(minimalEvaluationContext.getConditionManager().state().isBoolValueTrue());
+        assertTrue(context.evaluationContext().getConditionManager().state().isBoolValueTrue());
         Expression cv1 = inline(isFactA, a, b);
         assertSame(b, cv1);
 
-        EvaluationContext child = minimalEvaluationContext.child(a);
-        assertTrue(child.getConditionManager().state().isBoolValueTrue());
-        assertEquals("a", child.getConditionManager().condition().toString());
+        EvaluationResult child = context.child(a);
+        assertTrue(child.evaluationContext().getConditionManager().state().isBoolValueTrue());
+        assertEquals("a", child.evaluationContext().getConditionManager().condition().toString());
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, true).value();
         assertSame(a, cv2);
 
-        EvaluationContext child2 = minimalEvaluationContext.child(And.and(minimalEvaluationContext, a, b));
-        assertEquals("a&&b", child2.getConditionManager().condition().toString());
-        assertTrue(child.getConditionManager().state().isBoolValueTrue());
-        assertEquals("a&&b", child2.getConditionManager().absoluteState(child2).toString());
+        EvaluationResult child2 = context.child(And.and(context, a, b));
+        assertEquals("a&&b", child2.evaluationContext().getConditionManager().condition().toString());
+        assertTrue(child2.evaluationContext().getConditionManager().state().isBoolValueTrue());
+        assertEquals("a&&b", child2.evaluationContext().getConditionManager().absoluteState(child2).toString());
 
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, true).value();
         assertSame(a, cv3);
@@ -93,9 +93,9 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression cv3b = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactB, a, b, true).value();
         assertSame(a, cv3b);
 
-        EvaluationContext child3 = minimalEvaluationContext.child(
-                Or.or(minimalEvaluationContext, c, And.and(minimalEvaluationContext, a, b)));
-        assertEquals("(a||c)&&(b||c)", child3.getConditionManager().absoluteState(child3).toString());
+        EvaluationResult child3 = context.child(
+                Or.or(context, c, And.and(context, a, b)));
+        assertEquals("(a||c)&&(b||c)", child3.evaluationContext().getConditionManager().absoluteState(child3).toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, true).value();
         assertSame(b, cv4);
     }
@@ -104,9 +104,9 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test4() {
         Expression cv1 = inline(a, b, c);
         assertEquals("a?b:c", cv1.toString());
-        Expression and1 = And.and(minimalEvaluationContext, a, cv1);
+        Expression and1 = And.and(context, a, cv1);
         assertEquals("a&&b", and1.toString());
-        Expression and2 = And.and(minimalEvaluationContext, negate(a), cv1);
+        Expression and2 = And.and(context, negate(a), cv1);
         assertEquals("!a&&c", and2.toString());
     }
 
@@ -115,7 +115,7 @@ public class TestConditionalValue extends CommonAbstractValue {
     @Test
     public void test5() {
         Expression cv1 = inline(a, b, c);
-        Expression eq = Equals.equals(minimalEvaluationContext, b, cv1);
+        Expression eq = Equals.equals(context, b, cv1);
         assertNotSame(a, eq);
         assertEquals("(a?b:c)==b", eq.toString());
     }
@@ -124,22 +124,22 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test6() {
         Expression cv1 = inline(a, p, NullConstant.NULL_CONSTANT);
         assertEquals("a?p:null", cv1.toString());
-        Expression eq = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1);
+        Expression eq = Equals.equals(context, NullConstant.NULL_CONSTANT, cv1);
         assertEquals("null==(a?p:null)", eq.toString());
-        Expression eq2 = negate(Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1));
+        Expression eq2 = negate(Equals.equals(context, NullConstant.NULL_CONSTANT, cv1));
         assertEquals("a&&null!=p", eq2.toString());
     }
 
     @Test
     public void test7() {
         Expression cv1 = inline(a, inline(b, newInt(3), newInt(4)), inline(c, newInt(2), newInt(5)));
-        Expression eq2 = Equals.equals(minimalEvaluationContext, newInt(2), cv1);
+        Expression eq2 = Equals.equals(context, newInt(2), cv1);
         assertEquals("!a&&c", eq2.toString());
-        Expression eq3 = Equals.equals(minimalEvaluationContext, newInt(3), cv1);
+        Expression eq3 = Equals.equals(context, newInt(3), cv1);
         assertEquals("a&&b", eq3.toString());
-        Expression eq4 = Equals.equals(minimalEvaluationContext, newInt(4), cv1);
+        Expression eq4 = Equals.equals(context, newInt(4), cv1);
         assertEquals("a&&!b", eq4.toString());
-        Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1);
+        Expression eq5 = Equals.equals(context, newInt(5), cv1);
         assertEquals("!a&&!c", eq5.toString());
     }
 
@@ -157,9 +157,9 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void testLoops4_1() {
-        Expression ge10 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(10), true);
+        Expression ge10 = GreaterThanZero.greater(context, i, newInt(10), true);
         assertEquals("i>=10", ge10.toString());
-        Expression le9 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(9), true);
+        Expression le9 = GreaterThanZero.less(context, i, newInt(9), true);
         assertEquals("i<=9", le9.toString());
         Expression notLe9 = negate(le9);
         assertEquals(ge10, notLe9);
@@ -174,9 +174,9 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression notAAndNotB = newAndAppend(negate(a), negate(b));
         InlineConditional e2 = (InlineConditional) inline(notAAndNotB, newInt(2), e1);
         assertEquals("!a&&!b?2:a?3:b?4:5", e2.toString());
-        EvaluationResult er = e2.evaluate(minimalEvaluationContext, ForwardEvaluationInfo.DEFAULT);
+        EvaluationResult er = e2.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("!a&&!b?2:a?3:4", er.getExpression().toString());
-        assertEquals("!a&&!b?2:a?3:4", e2.optimise(minimalEvaluationContext).toString());
+        assertEquals("!a&&!b?2:a?3:4", e2.optimise(context).toString());
     }
 
     @Test

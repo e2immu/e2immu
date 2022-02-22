@@ -45,7 +45,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     @NotModified
     @NotNull
-    EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo);
+    EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
     @NotNull1
@@ -99,12 +99,12 @@ public interface Expression extends Element, Comparable<Expression> {
     // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
 
     @NotNull
-    default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    default DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("For type " + getClass() + ", property " + property);
     }
 
     @NotNull
-    default LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+    default LinkedVariables linkedVariables(EvaluationResult context) {
         return LinkedVariables.EMPTY;
     }
 
@@ -117,7 +117,7 @@ public interface Expression extends Element, Comparable<Expression> {
     TODO Lambda's
      */
     @NotNull
-    default LinkedVariables linked1VariablesScope(EvaluationContext evaluationContext) {
+    default LinkedVariables linked1VariablesScope(EvaluationResult context) {
         return LinkedVariables.EMPTY;
     }
 
@@ -138,7 +138,7 @@ public interface Expression extends Element, Comparable<Expression> {
     boolean isBoolValueFalse();
 
     @NotNull
-    default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
     }
@@ -187,7 +187,7 @@ public interface Expression extends Element, Comparable<Expression> {
     Expression stateTranslateThisTo(FieldReference fieldReference);
 
     @NotNull
-    Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes);
+    Expression createDelayedValue(EvaluationResult context, CausesOfDelay causes);
 
     @NotNull
     default CausesOfDelay causesOfDelay() {

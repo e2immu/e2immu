@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.And;
@@ -39,7 +40,7 @@ public class RewriteCondition {
      * @param absoluteState i==p & i>=0 && i<= 10
      * @return p>=0 && p <=10
      */
-    public static Expression rewriteConditionFromLoopVariableToParameter(EvaluationContext evaluationContext,
+    public static Expression rewriteConditionFromLoopVariableToParameter(EvaluationResult evaluationContext,
                                                                          Expression condition,
                                                                          Expression absoluteState) {
         IsVariableExpression veLhs;

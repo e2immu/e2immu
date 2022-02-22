@@ -61,7 +61,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
         Expression valueIsNull = new Equals(Identifier.generate("is not null equals"),
                 getPrimitives(), NullConstant.NULL_CONSTANT, value);
-        Expression combined = conditionManager.evaluate(this, valueIsNull);
+        Expression combined = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull);
         if (combined instanceof BooleanConstant boolValue) {
             return !boolValue.constant();
         }
@@ -71,17 +71,18 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public boolean notNullAccordingToConditionManager(Expression expression) {
+        EvaluationResult context = EvaluationResult.from(this);
         if (expression.returnType().isNotBooleanOrBoxedBoolean()) {
             // do not use the Condition manager to check for null in creation of isNull
             Expression isNull = Equals.equals(expression.getIdentifier(),
-                    this, expression, NullConstant.NULL_CONSTANT, false);
+                    context, expression, NullConstant.NULL_CONSTANT, false);
             if (isNull.isBoolValueFalse()) {
                 // this is not according to the condition manager, but always not null
                 return false;
             }
-            return conditionManager.evaluate(this, isNull).isBoolValueFalse();
+            return conditionManager.evaluate(context, isNull).isBoolValueFalse();
         }
-        return conditionManager.evaluate(this, expression).isBoolValueTrue();
+        return conditionManager.evaluate(context, expression).isBoolValueTrue();
     }
 
     /*
@@ -96,15 +97,16 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
                 : Stream.concat(Stream.of(variable), linkedVariables.variablesAssigned())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
+        EvaluationResult context = EvaluationResult.from(this);
+        Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(context, false);
         if (!Collections.disjoint(notNullVariablesInState, assignedVariables)) return true;
 
         Set<Variable> notNullVariablesInCondition = conditionManager
-                .findIndividualNullInCondition(this, false);
+                .findIndividualNullInCondition(context, false);
         if (!Collections.disjoint(notNullVariablesInCondition, assignedVariables)) return true;
         if (variable instanceof FieldReference) {
             Set<Variable> notNullVariablesInPrecondition = conditionManager
-                    .findIndividualNullInPrecondition(this, false);
+                    .findIndividualNullInPrecondition(context, false);
             return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables);
         }
         return false;

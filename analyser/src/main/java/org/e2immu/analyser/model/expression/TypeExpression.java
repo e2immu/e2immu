@@ -75,8 +75,8 @@ public class TypeExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         return builder.setExpression(new TypeExpression(parameterizedType, diamond)).build();
     }
 
@@ -98,11 +98,11 @@ public class TypeExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         if (property == Property.IMMUTABLE) {
             // used by EvaluationContext.extractHiddenContent
-            return evaluationContext.getAnalyserContext().defaultImmutable(parameterizedType, false);
+            return context.getAnalyserContext().defaultImmutable(parameterizedType, false);
         }
         return property.falseDv;
     }

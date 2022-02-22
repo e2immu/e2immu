@@ -34,7 +34,7 @@ public record DetectEventual(MethodInfo methodInfo,
                              AnalyserContext analyserContext) {
     private static final Logger LOGGER = LoggerFactory.getLogger(DetectEventual.class);
 
-    public MethodAnalysis.Eventual detect(EvaluationContext evaluationContext) {
+    public MethodAnalysis.Eventual detect(EvaluationResult context) {
         CausesOfDelay delaysE1 = typeAnalysis.approvedPreconditionsStatus(false);
         if (delaysE1.isDelayed()) {
             LOGGER.debug("No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
@@ -60,7 +60,7 @@ public record DetectEventual(MethodInfo methodInfo,
         boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
         if (modified.valueIsFalse() && methodInfo.returnType().isBoolean()) {
-            MethodAnalysis.Eventual eventual = testMark(evaluationContext, precondition, e2);
+            MethodAnalysis.Eventual eventual = testMark(context, precondition, e2);
             if (eventual != null) return eventual;
         }
 
@@ -69,10 +69,10 @@ public record DetectEventual(MethodInfo methodInfo,
         @Only(before="label"), @Only(after="label")
          */
         if (precondition == null || precondition.isEmpty()) {
-            return eventualFromEventuallyImmutableFields(evaluationContext, modified);
+            return eventualFromEventuallyImmutableFields(context, modified);
         }
 
-        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.expression(), false);
+        FieldsAndBefore fieldsAndBefore = analyseExpression(context, e2, precondition.expression(), false);
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
 
         // fieldsAndBefore.before == true -> @Mark or @Only(before); otherwise @OnlyAfter
@@ -95,7 +95,7 @@ public record DetectEventual(MethodInfo methodInfo,
         if (isMark.valueIsTrue()) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
-        DV isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,
+        DV isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(context,
                 fieldsAndBefore.fields, methodAnalyser);
         if (isMarkViaModifyingMethod.isDelayed()) {
             return MethodAnalysis.delayedEventual(isMarkViaModifyingMethod.causesOfDelay());
@@ -122,13 +122,13 @@ public record DetectEventual(MethodInfo methodInfo,
         eventuallyFinal.setFinal(last);
     }
      */
-    private MethodAnalysis.Eventual eventualFromEventuallyImmutableFields(EvaluationContext evaluationContext, DV modified) {
+    private MethodAnalysis.Eventual eventualFromEventuallyImmutableFields(EvaluationResult context, DV modified) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         Map<FieldInfo, MultiLevel.Effective> map = new HashMap<>();
         for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
             if(bestType == null) continue; // unbound type parameter, is never eventual
-            TypeAnalysis bestTypeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(bestType);
+            TypeAnalysis bestTypeAnalysis = context.getAnalyserContext().getTypeAnalysis(bestType);
             DV immutableType = bestTypeAnalysis.getProperty(Property.IMMUTABLE);
             if (immutableType.isDelayed()) {
                 causes = causes.merge(immutableType.causesOfDelay());
@@ -178,7 +178,7 @@ public record DetectEventual(MethodInfo methodInfo,
         return MethodAnalysis.NOT_EVENTUAL;
     }
 
-    private MethodAnalysis.Eventual testMark(EvaluationContext evaluationContext, Precondition precondition, boolean e2) {
+    private MethodAnalysis.Eventual testMark(EvaluationResult context, Precondition precondition, boolean e2) {
         /*
         @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark
         themselves.
@@ -212,7 +212,7 @@ public record DetectEventual(MethodInfo methodInfo,
         */
         Expression srv = methodAnalysis.getSingleReturnValue();
         if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
-            FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression(), true);
+            FieldsAndBefore fieldsAndBefore = analyseExpression(context, e2, im.expression(), true);
             if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);
         }
@@ -315,13 +315,13 @@ public record DetectEventual(MethodInfo methodInfo,
     private record FieldsAndBefore(Set<FieldInfo> fields, boolean before) {
     }
 
-    private FieldsAndBefore analyseExpression(EvaluationContext evaluationContext,
+    private FieldsAndBefore analyseExpression(EvaluationResult context,
                                               boolean e2,
                                               Expression expression,
                                               boolean allowLocalCopies) {
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(expression,
-                filter.individualFieldClause(evaluationContext.getAnalyserContext(), allowLocalCopies));
+                filter.individualFieldClause(context.getAnalyserContext(), allowLocalCopies));
         boolean allAfter = true;
         boolean allBefore = true;
         Set<FieldInfo> fields = new HashSet<>();
@@ -335,7 +335,7 @@ public record DetectEventual(MethodInfo methodInfo,
                         allAfter = false;
                         fields.add(field);
                     } else {
-                        Expression negated = Negation.negate(evaluationContext, approvedPreconditionBefore);
+                        Expression negated = Negation.negate(context, approvedPreconditionBefore);
                         if (negated.equals(value)) {
                             allBefore = false;
                             fields.add(field);

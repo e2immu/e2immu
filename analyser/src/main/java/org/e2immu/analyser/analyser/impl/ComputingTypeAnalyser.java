@@ -668,9 +668,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private HandlePrecondition handlePrecondition(MethodAnalyser methodAnalyser,
                                                   Precondition precondition,
                                                   int iteration) {
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        EvaluationResult context = EvaluationResult.from( new EvaluationContextImpl(iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null));
+        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
         List<FieldToCondition> fieldToConditions = new ArrayList<>();
@@ -683,7 +683,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 causesOfDelay = causesOfDelay.merge(isMark.causesOfDelay());
             } else {
                 fieldToConditions.add(new FieldToCondition(e.getKey(), e.getValue(),
-                        Negation.negate(evaluationContext, e.getValue()), isMark.valueIsTrue()));
+                        Negation.negate(context, e.getValue()), isMark.valueIsTrue()));
             }
         }
         return new HandlePrecondition(fieldToConditions, causesOfDelay);

@@ -52,12 +52,12 @@ public interface CompanionAnalysis {
     /**
      * Re-evaluate the companion method with concrete parameters and object
      *
-     * @param evaluationContext the evaluation context
+     * @param context the evaluation context
      * @return a re-evaluated Value
      */
-    default Expression reEvaluate(EvaluationContext evaluationContext, List<Expression> parameterValues) {
+    default Expression reEvaluate(EvaluationResult context, List<Expression> parameterValues) {
         Map<Expression, Expression> translationMap = new HashMap<>();
         ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return getValue().reEvaluate(evaluationContext, Map.copyOf(translationMap)).value();
+        return getValue().reEvaluate(context, Map.copyOf(translationMap)).value();
     }
 }

@@ -88,14 +88,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
         ForwardEvaluationInfo scopeForward;
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
         if (contextContainer.equals(MultiLevel.NOT_CONTAINER_DV)) {
-            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+            MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
 
             Map<Property, DV> map = Map.of(
@@ -106,13 +106,13 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {
-                This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+                This thisType = new This(context.getAnalyserContext(), context.getCurrentType());
                 builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
             }
         } else {
             scopeForward = forwardEvaluationInfo.notNullNotAssignment();
         }
-        EvaluationResult scopeResult = scope.evaluate(evaluationContext, scopeForward);
+        EvaluationResult scopeResult = scope.evaluate(context, scopeForward);
         builder.compose(scopeResult);
         builder.setExpression(this);
         return builder.build();
@@ -134,9 +134,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return switch (property) {
-            case NOT_NULL_EXPRESSION -> notNull(evaluationContext, methodInfo);
+            case NOT_NULL_EXPRESSION -> notNull(context, methodInfo);
             case CONTAINER -> MultiLevel.CONTAINER_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
@@ -147,8 +147,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     // very similar code in Lambda; also used by InlinedMethod
-    static DV notNull(EvaluationContext evaluationContext, MethodInfo methodInfo) {
-        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+    static DV notNull(EvaluationResult context, MethodInfo methodInfo) {
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         DV nne;
         if (methodAnalysis.getParameterAnalyses().isEmpty()) {
             if (methodInfo.hasReturnValue()) {
