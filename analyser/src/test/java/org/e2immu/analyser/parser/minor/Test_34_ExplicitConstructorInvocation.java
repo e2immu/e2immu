@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -158,7 +159,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
         testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setForceCircularCallForTesting(true).build());
     }
 
 }

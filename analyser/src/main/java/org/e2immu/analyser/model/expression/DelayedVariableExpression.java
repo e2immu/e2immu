@@ -98,6 +98,11 @@ public class DelayedVariableExpression extends CommonVariableExpression {
         return new DelayedVariableExpression(msg, msg, variable, statementTime, causesOfDelay);
     }
 
+    public static Expression forDelayedModificationInMethodCall(Variable variable, CausesOfDelay causesOfDelay) {
+        String msg = "<mmc:" + variable.simpleName() + ">";
+        return new DelayedVariableExpression(msg, msg, variable, variable.statementTime(), causesOfDelay);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

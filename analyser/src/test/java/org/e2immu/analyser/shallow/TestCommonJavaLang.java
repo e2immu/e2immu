@@ -258,4 +258,11 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
     }
 
+    @Test
+    public void testNumberDoubleValue() {
+        TypeInfo number = typeContext.getFullyQualified(Number.class);
+        MethodInfo method = number.findUniqueMethod("doubleValue", 0);
+        MethodAnalysis methodAnalysis = method.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+    }
 }

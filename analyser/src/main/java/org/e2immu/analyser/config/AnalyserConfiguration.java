@@ -28,6 +28,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
+                                    boolean forceCircularCallForTesting,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
                                     AnalyserProgram analyserProgram) {
 
@@ -48,6 +49,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean computeContextPropertiesOverAllMethods;
         private boolean computeFieldAnalyserAcrossAllMethods;
         private boolean forceExtraDelayForTesting;
+        private boolean forceCircularCallForTesting;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
@@ -60,6 +62,11 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         public Builder setPatternMatcherProvider(PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
             this.patternMatcherProvider = patternMatcherProvider;
+            return this;
+        }
+
+        public Builder setForceCircularCallForTesting(boolean forceCircularCallForTesting) {
+            this.forceCircularCallForTesting = forceCircularCallForTesting;
             return this;
         }
 
@@ -88,6 +95,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
+                    forceCircularCallForTesting,
                     patternMatcherProvider == null ?
                             (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
                     analyserProgram);

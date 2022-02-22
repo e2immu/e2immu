@@ -90,7 +90,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         CausesOfDelay causesOfDelay = translatedParameters.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
-        if(causesOfDelay.isDelayed()) {
+        if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(translatedMethod, translatedMethod.returnType(),
                     LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
@@ -272,7 +272,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             boolean circularCallOutsidePrimaryType = methodPrimaryType != currentPrimaryType &&
                     currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
-                    !methodInfo.shallowAnalysis();
+                    !methodInfo.shallowAnalysis()
+                    || evaluationContext.getAnalyserContext().getConfiguration().analyserConfiguration().forceCircularCallForTesting();
 
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
@@ -320,7 +321,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Property.CONTEXT_NOT_NULL, notNullForward,
                 Property.CONTEXT_MODIFIED, modified,
                 Property.CONTEXT_IMMUTABLE, immutableData.required,
-                Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(),true,
+                Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
                 forwardEvaluationInfo.assignmentTarget(), true));
 
         // null scope
@@ -353,7 +354,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
-            EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, evaluationContext, builder, modified);
+            EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, evaluationContext, builder,
+                    objectValue, modified);
             if (delayedMethod != null) return delayedMethod;
         }
 
@@ -361,7 +363,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed()) {
-            return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer));
+            CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer);
+            return delayedMethod(evaluationContext, builder, causes, objectValue, modified);
         }
 
         // companion methods
@@ -401,8 +404,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.setExpression(result);
 
         checkCommonErrors(builder, evaluationContext, objectValue);
-        if(objectValue.isDelayed()) {
-            return delayedMethod(evaluationContext, builder, objectValue.causesOfDelay());
+        if (objectValue.isDelayed()) {
+            return delayedMethod(evaluationContext, builder, objectValue.causesOfDelay(), objectValue, modified);
         }
         return builder.build();
     }
@@ -410,6 +413,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private EvaluationResult incrementStatementTime(MethodAnalysis methodAnalysis,
                                                     EvaluationContext evaluationContext,
                                                     EvaluationResult.Builder builder,
+                                                    Expression objectValue,
                                                     DV modified) {
         boolean increment;
         switch (methodAnalysis.analysisMode()) {
@@ -419,7 +423,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     increment = false;
                 } else if (lastStatement.flowData().initialTimeNotYetSet()) {
                     SimpleSet initialTime = new SimpleSet(methodAnalysis.location(Stage.INITIAL), CauseOfDelay.Cause.INITIAL_TIME);
-                    return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
+                    CausesOfDelay causes = modified.causesOfDelay().merge(initialTime);
+                    return delayedMethod(evaluationContext, builder, causes, objectValue, modified);
                 } else {
                     if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
                         increment = false;
@@ -516,12 +521,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private EvaluationResult delayedMethod(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder,
-                                           CausesOfDelay causesOfDelay) {
+                                           CausesOfDelay causesOfDelay,
+                                           Expression objectValue,
+                                           DV modified) {
         assert causesOfDelay.isDelayed();
         LinkedVariables delayedLinkedVariables = linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
                 delayedLinkedVariables, causesOfDelay));
-        // set scope delay
+        if (!modified.valueIsFalse()) {
+            // no idea yet whether this method call will change the object from some variable to Instance
+            VariableExpression ve;
+            if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
+                Expression delayedObject = DelayedVariableExpression.forDelayedModificationInMethodCall(ve.variable(), causesOfDelay);
+                builder.modifyingMethodAccess(ve.variable(), delayedObject, delayedLinkedVariables);
+            }
+        }
         return builder.build();
     }
 

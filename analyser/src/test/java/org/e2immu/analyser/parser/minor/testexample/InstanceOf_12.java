@@ -14,27 +14,25 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-// recreation of a problem with BitwiseAnd.bitwiseAnd
-
-
+// (for now failing) attempt at recreation of a problem with BitwiseAnd.bitwiseAnd
 public class InstanceOf_12 {
 
     interface Expression {
     }
 
-    interface Numeric extends Expression {
-        double doubleValue();
-    }
-
-    // we try to maintain a sum of products
-    public static Expression bitwiseAnd(Expression l, Expression r) {
-        if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
-        if (r instanceof Numeric rn && rn.doubleValue() == 0) return r;
-
-        return new BitwiseAnd(l, r);
+    record Numeric(Number n) implements Expression {
+        double doubleValue() {
+            return n.doubleValue();
+        }
     }
 
     record BitwiseAnd(Expression lhs, Expression rhs) implements Expression {
-    }
+        // we try to maintain a sum of products
+        public static Expression bitwiseAnd(Expression l, Expression r) {
+            if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
+            if (r instanceof Numeric rn && rn.doubleValue() == 0) return r;
 
+            return new BitwiseAnd(l, r);
+        }
+    }
 }

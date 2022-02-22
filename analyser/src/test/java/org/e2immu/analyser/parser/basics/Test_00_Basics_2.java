@@ -85,7 +85,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         assertEquals("0" + Stage.EVALUATION, d.variableInfo().getReadId());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertEquals("<p:collection>", d.currentValue().toString());
+                        assertEquals("<mmc:collection>", d.currentValue().toString());
                         assertTrue(d.currentValue().isDelayed());
                         assertEquals("nullable instance type Collection<String>/*@Identity*/",
                                 d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
