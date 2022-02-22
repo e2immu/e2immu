@@ -117,17 +117,15 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<v:list>"
+                        String expectValue = d.iteration() <= 1 ? "<mmc:list>"
                                 : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // i:3 gone, because substitution with "new I()"
-                        String expectLv = d.iteration() <= 1 ? "i:-1,list:0" : "list:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
 
-                        // delayed because linking is delayed!
-                        assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
-                        assertDv(d, 2, MultiLevel.CONTAINER_DV, CONTAINER);
+                        assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
@@ -136,7 +134,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci:0,i:-1,list:-1";
+                        case 0, 1 -> "ci:0,list:-1";
                         default -> "ci:0,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -147,7 +145,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci2:0,ci:-1,i:-1,list:-1";
+                        case 0, 1 -> "ci2:0,ci:-1,list:-1";
                         default -> "ci2:0,ci:3,list:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

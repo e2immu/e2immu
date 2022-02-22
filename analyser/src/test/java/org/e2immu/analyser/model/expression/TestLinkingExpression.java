@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestLinkingExpression {
 
     protected static TypeContext typeContext;
+    private static EvaluationResult context;
 
     // NO annotated APIs, but an XML file
     @BeforeAll
@@ -65,24 +66,29 @@ public class TestLinkingExpression {
         parser.preload("java.util");
         parser.run();
         typeContext = parser.getTypeContext();
+        EvaluationContext ec = new EvaluationContext() {
+            @Override
+            public Primitives getPrimitives() {
+                return typeContext.getPrimitives();
+            }
+
+            @Override
+            public AnalyserContext getAnalyserContext() {
+                return new AnalyserContext() {
+                    @Override
+                    public Primitives getPrimitives() {
+                        return typeContext.getPrimitives();
+                    }
+
+                    @Override
+                    public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+                        return AnalysisProvider.DEFAULT_PROVIDER.getParameterAnalysis(parameterInfo);
+                    }
+                };
+            }
+        };
+        context = EvaluationResult.from(ec);
     }
-
-    private static final EvaluationResult context = EvaluationResult.from(new EvaluationContext() {
-        @Override
-        public AnalyserContext getAnalyserContext() {
-            return new AnalyserContext() {
-                @Override
-                public Primitives getPrimitives() {
-                    return typeContext.getPrimitives();
-                }
-
-                @Override
-                public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-                    return AnalysisProvider.DEFAULT_PROVIDER.getParameterAnalysis(parameterInfo);
-                }
-            };
-        }
-    });
 
     @Test
     public void testNewObject1() {

@@ -162,12 +162,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:set>" : "instance type Set<String>";
+                        String expected = d.iteration() == 0 ? "<mmc:set>" : "instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:set>"
+                                ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:set>"
                                 : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -241,7 +241,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() == 0 ? "<v:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() == 0 ? "<mmc:result>" : "instance type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
@@ -259,7 +259,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
-                                ? "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
+                                ? "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>"
                                 : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo(now$3.toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLv = "result:0,return method:0";
@@ -542,8 +542,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<v:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
-                            case 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<mmc:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 0, 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:read>?<mmc:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                             default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());

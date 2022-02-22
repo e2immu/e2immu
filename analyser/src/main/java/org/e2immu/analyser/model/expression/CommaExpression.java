@@ -68,7 +68,7 @@ public class CommaExpression extends BaseExpression implements Expression {
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
             EvaluationResult cumulativeResult = builder.build();
-            EvaluationResult result = expression.evaluate(context, fwd);
+            EvaluationResult result = expression.evaluate(cumulativeResult, fwd);
             builder.composeStore(result);
             count++;
         }

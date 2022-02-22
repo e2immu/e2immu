@@ -49,7 +49,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:s2>" : "instance type HashSet<String>";
+                        String expectValue = d.iteration() == 0 ? "<mmc:theSet>" : "instance type HashSet<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLv = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:0" : "theSet:0,this.s2:0";

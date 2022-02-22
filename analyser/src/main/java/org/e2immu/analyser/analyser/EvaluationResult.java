@@ -74,7 +74,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 : "Causes of delay: " + causesOfDelay;
     }
 
-    private EvaluationResult copy(EvaluationContext evaluationContext) {
+    public EvaluationResult copy(EvaluationContext evaluationContext) {
         return new EvaluationResult(evaluationContext, statementTime, value, storedValues, causesOfDelay, messages,
                 changeData, precondition, addCircularCall);
     }
@@ -153,6 +153,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return copy(child);
     }
 
+    public EvaluationResult childState(Expression state) {
+        EvaluationContext child = evaluationContext.childState(state);
+        return copy(child);
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
@@ -215,6 +220,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     // lazy creation of lists
     public static class Builder {
         private final EvaluationContext evaluationContext;
+        private final EvaluationResult previousResult;
         private final Messages messages = new Messages();
         private CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         private Expression value;
@@ -227,14 +233,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         // for a constant EvaluationResult
         public Builder() {
             evaluationContext = null;
-        }
-
-        public Builder(EvaluationContext evaluationContext) {
-            this.evaluationContext = evaluationContext;
-            this.statementTime = evaluationContext.getInitialStatementTime();
+            previousResult = null;
         }
 
         public Builder(EvaluationResult evaluationResult) {
+            this.previousResult = Objects.requireNonNull(evaluationResult);
             this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
             this.statementTime = evaluationContext.getInitialStatementTime();
         }
@@ -422,17 +425,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        /* when evaluating a variable field, a new local copy of the variable may be created
-           when this happens, we need to link the field to this local copy
-           this linking takes place in the value changes map, so that the linked variables can be set once, correctly.
-         */
         public Expression currentExpression(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
             ChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null || currentExpression.value == null) {
-                assert evaluationContext != null;
-                return evaluationContext.currentValue(variable, forwardEvaluationInfo);
+            if (currentExpression != null && currentExpression.value != null) {
+                return currentExpression.value;
             }
-            return currentExpression.value;
+            assert previousResult != null;
+            ChangeData inPrevious = previousResult.changeData.get(variable);
+            if (inPrevious != null && inPrevious.value != null) {
+                return inPrevious.value;
+            }
+            return evaluationContext.currentValue(variable, forwardEvaluationInfo);
         }
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have

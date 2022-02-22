@@ -64,12 +64,12 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:it2>" : "instance type Iterator<T>";
+                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "values1.isEmpty()?values2.iterator():<v:it2>"
+                        String expected = d.iteration() == 0 ? "values1.isEmpty()?values2.iterator():<mmc:it2>"
                                 : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);

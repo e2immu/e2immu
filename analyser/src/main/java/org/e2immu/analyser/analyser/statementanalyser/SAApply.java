@@ -71,12 +71,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                   EvaluationResult evaluationResultIn) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
         EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
-                sharedState.evaluationContext());
+                sharedState.context());
 
         // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
         // part 1 is in the constructor of SAEvaluationContext
         // the data is stored in the state data of statement analysis
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
         statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
             EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(e.getKey());
             if (cd != null && cd.isMarkedRead()) {
@@ -364,10 +364,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     private EvaluationResult variablesReadOrModifiedInSubAnalysers(EvaluationResult evaluationResultIn,
-                                                                   EvaluationContext evaluationContext) {
+                                                                   EvaluationResult context) {
         List<Variable> readBySubAnalysers = statementAnalysis.variablesReadBySubAnalysers();
         if (!readBySubAnalysers.isEmpty() || statementAnalysis.haveVariablesModifiedBySubAnalysers()) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             builder.compose(evaluationResultIn);
             for (Variable variable : readBySubAnalysers) {
                 builder.markRead(variable);

@@ -103,7 +103,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:s>" : VALUE_OF_P;
+                        String expected = d.iteration() == 0 ? "<mmc:s>" : VALUE_OF_P;
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -137,7 +137,7 @@ public class Test_17_Container extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                final String DELAYED = "container:this.s@Method_setS_1-C;initial:this.s@Method_setS_1-C;values:this.s@Field_s";
+                final String DELAYED = "initial:this.s@Method_setS_1-C;values:this.s@Field_s";
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

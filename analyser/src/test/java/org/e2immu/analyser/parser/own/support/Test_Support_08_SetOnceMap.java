@@ -77,8 +77,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
-                        case 2 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_k;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
+                        case 0 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
+                        case 1, 2 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_k;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
                         default -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
                     };
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
@@ -106,8 +106,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<f:map>";
-                            case 1 -> "<mmc:map>";
+                            case 0, 1 -> "<mmc:map>";
                             default -> "instance type HashMap<K,V>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -144,8 +143,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expected = d.iteration() == 0 ? "k:-1,this.map:3,this:-1,v:0" : "v:0";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

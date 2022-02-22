@@ -269,9 +269,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
-        EvaluationContext child = context.evaluationContext().childState(state);
-        assert child != null;
-        EvaluationResult r = rhs.evaluate(EvaluationResult.from(child), forward);
+        EvaluationResult child = context.childState(state);
+        EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value() instanceof BooleanConstant booleanConstant) {
             builder.raiseError(rhs.getIdentifier(), Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);

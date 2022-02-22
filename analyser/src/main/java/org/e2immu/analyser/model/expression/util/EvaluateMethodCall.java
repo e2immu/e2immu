@@ -384,8 +384,8 @@ public class EvaluateMethodCall {
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
                 .forEach(pair -> translationMap.put(pair.k, pair.v));
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        EvaluationContext child = context.evaluationContext().child(state, true);
-        Expression resultingValue = companionValue.reEvaluate(EvaluationResult.from(child), translationMap).value();
+        EvaluationResult child = context.child(state, true);
+        Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (methodInfo.returnType().typeInfo.isBoolean()) {

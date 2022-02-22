@@ -713,7 +713,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("sum".equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
-                        case 0 -> "<f:expression>/*(Sum)*/";
+                        case 0 -> "<mmc:sum>";
                         case 1, 2 -> "<vp:expression:container:this.lhs@Method_numericPartOfLhs_0-C>/*(Sum)*/";
                         default -> "expression/*(Sum)*/";
                     };
@@ -727,7 +727,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals(expect, initial.getValue().toString());
                         String expectFixme = switch (d.iteration()) {
-                            case 0 -> "<f:expression>/*(Sum)*/";
+                            case 0 -> "<mmc:sum>";
                             case 1, 2 -> "<vp:expression:container:this.lhs@Method_numericPartOfLhs_0-C>/*(Sum)*/";
                             default -> "expression/*(Sum)*/";
                         };

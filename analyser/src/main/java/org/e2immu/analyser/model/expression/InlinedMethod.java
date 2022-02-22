@@ -179,7 +179,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Set<Variable> targetVariables = translation.values().stream()
                 .flatMap(e -> e.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext(), targetVariables);
-        EvaluationResult result = expression.reEvaluate(EvaluationResult.from(closure), translation);
+        EvaluationResult closureContext = context.copy(closure);
+        EvaluationResult result = expression.reEvaluate(closureContext, translation);
         if (expression instanceof InlinedMethod im) {
             Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), context.getAnalyserContext());
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();

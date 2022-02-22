@@ -647,11 +647,11 @@ public class And extends ExpressionCanBeTooComplex {
     public EvaluationResult evaluate(EvaluationResult evaluationResult, ForwardEvaluationInfo
             forwardEvaluationInfo) {
         List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
-        EvaluationContext context = evaluationResult.evaluationContext();
+        EvaluationResult context = evaluationResult;
         List<Expression> sortedExpressions = new ArrayList<>(expressions);
         Collections.sort(sortedExpressions);
         for (Expression expression : sortedExpressions) {
-            EvaluationResult result = expression.evaluate(EvaluationResult.from(context), forwardEvaluationInfo);
+            EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
             clauseResults.add(result);
             context = context.child(result.value());
         }

@@ -109,7 +109,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 }
 
             } else if (statement() instanceof LocalClassDeclaration) {
-                EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
+                EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
                 return apply.apply(sharedState, builder.build()).combinedStatus().causesOfDelay();
             } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 // empty parameters: this(); or super();
@@ -255,7 +255,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (!vi.getValue().isReturnValue() && !vi.getValue().isDelayed()) {
             // remove all return_value parts
             Expression newValue = vi.getValue().removeAllReturnValueParts();
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext()).compose(result);
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
                     new VariableExpression(returnVariable), newValue);
             EvaluationResult assRes = assignment.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
