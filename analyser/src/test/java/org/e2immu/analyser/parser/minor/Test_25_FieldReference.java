@@ -122,7 +122,6 @@ public class Test_25_FieldReference extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getProperty".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
@@ -135,7 +134,9 @@ public class Test_25_FieldReference extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String delayed = d.iteration() == 0 ? "cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C;link:this.setP@Method_copy_2-E" : "mom@Parameter_setP";
+                        String delayed = d.iteration() == 0
+                                ? "cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C;link:newSet@Method_copy_2-E;link:this.setP@Method_copy_2-E"
+                                : "mom@Parameter_setP";
                         assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }

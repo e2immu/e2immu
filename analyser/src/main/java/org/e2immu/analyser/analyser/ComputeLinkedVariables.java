@@ -86,58 +86,90 @@ public class ComputeLinkedVariables {
         Set<CauseOfDelay> delaysInClustering = new HashSet<>();
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> variables = new HashSet<>();
-
+        Set<Variable> atStage = new HashSet<>();
         statementAnalysis.variableEntryStream(stage).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
             Variable variable = vi1.variable();
             if (!ignore.test(vic, variable)) {
                 variables.add(variable);
-
-                AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
-                Predicate<Variable> computeMyself = evaluationContext::isMyself;
-                Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                        analysisProvider.defaultImmutable(v.parameterizedType(), false);
-                Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
-                        analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
-                Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
-                    TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-                    if (bestType == null) return DV.TRUE_DV;
-                    TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-                    return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-                };
-
-                DV sourceImmutable = computeImmutable.apply(variable);
-                boolean isBeingReassigned = reassigned.contains(variable);
-
-                LinkedVariables external = externalLinkedVariables.apply(variable);
-                LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
-                        : vi1.getLinkedVariables().remove(reassigned);
-                LinkedVariables combined = external.merge(inVi);
-                LinkedVariables curated = combined
-                        .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
-                        .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-                weightedGraph.addNode(variable, curated.variables(), true);
-                boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
-                // context modified for the return variable is never linked, but the variables themselves must be present
-                if (accountForDelay && curated.isDelayed()) {
-                    curated.variables().forEach((v, value) -> {
-                        if (value.isDelayed()) {
-                            delaysInClustering.add(new VariableCause(v, statementAnalysis.location(stage), CauseOfDelay.Cause.LINKING));
-                            value.causesOfDelay().causesStream().forEach(delaysInClustering::add);
-                        }
-                    });
-                }
+                atStage.add(variable);
+                LinkedVariables curated = add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned,
+                        externalLinkedVariables, evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
                 variables.addAll(curated.variables().keySet());
             }
         });
-
+        /*
+        The code above should be sufficient, except that when a variable is linked to another one that is not in the stage,
+        a delay in computeImmutableHiddenContent can go missing if the linking is computed one-sided (e.g., inMap:0,translationMap:3
+        from one side, inMap:3,translationMap:0 from the other. The level 3 forces a check on computeImmutableHiddenContent,
+        but if inMap is at E and translationMap only at C, not at E, than this side is not seen).
+         */
+        for (Variable variable : variables) {
+            if (!atStage.contains(variable)) {
+                // extra added, should we also process?
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null && !ignore.test(vic, variable)) {
+                    VariableInfo vi1 = vic.getPreviousOrInitial();
+                    add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
+                            evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
+                }
+            }
+        }
         List<List<Variable>> clusters = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV);
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
                 SimpleSet.from(delaysInClustering));
+    }
+
+    private static LinkedVariables add(StatementAnalysis statementAnalysis,
+                                       Stage stage, boolean staticallyAssigned,
+                                       BiPredicate<VariableInfoContainer,
+                                               Variable> ignore,
+                                       Set<Variable> reassigned,
+                                       Function<Variable, LinkedVariables> externalLinkedVariables,
+                                       EvaluationContext evaluationContext,
+                                       WeightedGraph<Variable, DV> weightedGraph,
+                                       Set<CauseOfDelay> delaysInClustering,
+                                       VariableInfo vi1,
+                                       Variable variable) {
+        AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
+        Predicate<Variable> computeMyself = evaluationContext::isMyself;
+        Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
+                analysisProvider.defaultImmutable(v.parameterizedType(), false);
+        Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
+                analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
+        Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
+            TypeInfo bestType = v.parameterizedType().bestTypeInfo();
+            if (bestType == null) return DV.TRUE_DV;
+            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
+            return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+        };
+
+        DV sourceImmutable = computeImmutable.apply(variable);
+        boolean isBeingReassigned = reassigned.contains(variable);
+
+        LinkedVariables external = externalLinkedVariables.apply(variable);
+        LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
+                : vi1.getLinkedVariables().remove(reassigned);
+        LinkedVariables combined = external.merge(inVi);
+        LinkedVariables curated = combined
+                .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
+                        immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
+                .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
+        weightedGraph.addNode(variable, curated.variables(), true);
+        boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
+        // context modified for the return variable is never linked, but the variables themselves must be present
+        if (accountForDelay && curated.isDelayed()) {
+            curated.variables().forEach((v, value) -> {
+                if (value.isDelayed()) {
+                    delaysInClustering.add(new VariableCause(v, statementAnalysis.location(stage), CauseOfDelay.Cause.LINKING));
+                    value.causesOfDelay().causesStream().forEach(delaysInClustering::add);
+                }
+            });
+        }
+        return curated;
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,

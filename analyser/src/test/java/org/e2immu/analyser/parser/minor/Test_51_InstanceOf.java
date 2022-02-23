@@ -426,8 +426,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "expression".equals(p.name)) {
                     if ("2.0.0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("expression:0,ne:0",
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() == 0 ? "expression:0,ne:-1" : "expression:0,ne:0";
+                        assertEquals(expected,
                                 d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -438,7 +439,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
                     if ("ne".equals(fr.scope.toString())) {
                         if ("2.0.0".equals(d.statementId())) {
-                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                             assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                         if ("2".equals(d.statementId())) {
@@ -456,7 +457,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             };
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
-                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                     if ("expression/*(Negation)*/".equals(fr.scope.toString())) {
@@ -476,9 +477,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = "expression:0,ne:0";
+                        String expectLv = d.iteration() == 0 ? "expression:-1,ne:0" : "expression:0,ne:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasMerge());
@@ -499,7 +500,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = d.iteration() <= 1 ? "<f:expression>" : "expression/*(Negation)*/.expression";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.1.0".equals(d.statementId())) {
                         assertEquals("expression", d.currentValue().toString());
@@ -519,7 +520,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
@@ -528,7 +529,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -545,7 +546,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -574,7 +575,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
                     if ("ne".equals(fr.scope.toString())) {
                         if ("2.0.0".equals(d.statementId())) {
-                            assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                 }
@@ -597,8 +598,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
