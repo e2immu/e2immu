@@ -144,7 +144,7 @@ public class InstanceOf extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         // do not pass on the forward requirements on to expression! See e.g. InstanceOf_8
-        EvaluationResult evaluationResult = expression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        EvaluationResult evaluationResult = expression.evaluate(context, forwardEvaluationInfo.copyRemoveContextNotNull());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(evaluationResult);
 
 

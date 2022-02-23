@@ -18,9 +18,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 
 public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean doNotReevaluateVariableExpressions,
@@ -66,9 +64,6 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false, true, null, true);
 
-    public static final ForwardEvaluationInfo DO_NOT_REEVALUATE_VARIABLE_EXPRESSIONS =
-            new ForwardEvaluationInfo(Map.of(), true, true, null, false);
-
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false,
             false, null, true);
@@ -99,7 +94,8 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
         map.put(Property.CONTEXT_MODIFIED,
                 properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV));
         map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional);
+        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, true,
+                assignmentTarget, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo copyAddAssignmentTarget(Variable variable) {
@@ -117,5 +113,15 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
     public ForwardEvaluationInfo copyDoNotComplainInlineConditional() {
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
                 notAssignmentTarget, assignmentTarget, false);
+    }
+
+    public ForwardEvaluationInfo copyDoNotReevaluateVariableExpressionsDoNotComplain() {
+        return new ForwardEvaluationInfo(properties, true, notAssignmentTarget, assignmentTarget, false);
+    }
+
+    public ForwardEvaluationInfo copyRemoveContextNotNull() {
+        Map<Property, DV> map = new HashMap<>(properties);
+        map.remove(Property.CONTEXT_NOT_NULL);
+        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget, complainInlineConditional);
     }
 }
