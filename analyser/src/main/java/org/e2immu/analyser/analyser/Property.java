@@ -163,7 +163,10 @@ public enum Property {
     UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
     EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS),
 
-    READ("read", CauseOfDelay.Cause.READ);
+    READ("read", CauseOfDelay.Cause.READ),
+
+    // marker in CommaExpression, used in conjunction with PropertyWrapper; cause of delay completely irrelevant
+    MARK_CLEAR_INCREMENTAL("mark clear incremental", CauseOfDelay.Cause.CONSTANT);
 
     public final String name;
     private final DV valueWhenAbsentDv;

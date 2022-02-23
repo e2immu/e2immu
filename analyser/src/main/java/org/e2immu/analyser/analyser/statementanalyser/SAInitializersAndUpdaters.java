@@ -101,7 +101,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 if (statement() instanceof LoopStatement) {
                     addInitializersSeparately = true;
                 } else {
-                    expressionsToEvaluate.add(lvc);
+                    expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(lvc));
                     addInitializersSeparately = false;
                 }
                 for (LocalVariableCreation.Declaration declaration : lvc.declarations) {
@@ -130,12 +130,12 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
                     // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
                     if (addInitializersSeparately && declaration.expression() != EmptyExpression.EMPTY_EXPRESSION) {
-                        expressionsToEvaluate.add(declaration.expression());
+                        expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(declaration.expression()));
                     }
                 }
             } else {
                 if (expression != null && expression != EmptyExpression.EMPTY_EXPRESSION) {
-                    expressionsToEvaluate.add(expression);
+                    expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(expression));
                 }
             }
         }
@@ -150,10 +150,10 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         boolean locallyCreated = variableCreatedInLoop.contains(ve.variable());
                         if (locallyCreated) {
                             // for(int i=0; i...)
-                            expressionsToEvaluate.add(assignment.value);
+                            expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(assignment.value));
                         } else {
                             // when exactly?  int i=9; for(; ...; i++) or int i; for(i=3; ...; i++)
-                            expressionsToEvaluate.add(assignment.cloneWithHackForLoop());
+                            expressionsToEvaluate.add(PropertyWrapper.wrapPreventIncrementalEvaluation(assignment.cloneWithHackForLoop()));
                         }
                     }
                 });

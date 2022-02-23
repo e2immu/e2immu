@@ -48,8 +48,16 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         this.castType = castType;
     }
 
+    public static Expression wrapPreventIncrementalEvaluation(Expression expression) {
+        return new PropertyWrapper(expression, null, Map.of(Property.MARK_CLEAR_INCREMENTAL, DV.TRUE_DV), null, null);
+    }
+
     public Expression copy(Expression other) {
         return new PropertyWrapper(other, state, properties, linkedVariables, castType);
+    }
+
+    public boolean hasProperty(Property property) {
+        return properties != null && properties.containsKey(property);
     }
 
     @Override

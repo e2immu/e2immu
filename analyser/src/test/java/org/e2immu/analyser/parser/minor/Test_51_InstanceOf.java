@@ -898,7 +898,22 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     @Test
     public void test_12() throws IOException {
         testClass("InstanceOf_12", 0, 1, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceCircularCallForTesting(true).build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = "in instanceof Number&&null!=in?\"Number: \"+in/*(Number)*/:\"\"+in";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        testClass("InstanceOf_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 }

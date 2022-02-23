@@ -31,9 +31,6 @@ public class FindInstanceOfPatterns {
     }
 
     public static List<InstanceOfPositive> find(Expression expression) {
-        if (expression instanceof PropertyWrapper pw) return find(pw.expression());
-        if (expression instanceof EnclosedExpression ee) return find(ee.inner());
-
         if (expression instanceof Negation negation) {
             return find(negation.expression).stream()
                     .map(iop -> new InstanceOfPositive(iop.instanceOf, !iop.positive)).toList();
@@ -47,13 +44,8 @@ public class FindInstanceOfPatterns {
         if (expression instanceof InstanceOf instanceOf) {
             return List.of(new InstanceOfPositive(instanceOf, true));
         }
-        if (expression instanceof And and) {
-            return and.getExpressions().stream().flatMap(e -> find(e).stream()).toList();
-        }
-        if (expression instanceof BinaryOperator binaryOperator
-                && binaryOperator.operator.isBinaryAnd()) {
-            return ListUtil.immutableConcat(find(binaryOperator.lhs), find(binaryOperator.rhs));
-        }
-        return List.of();
+        return expression.subElements().stream()
+                .filter(e -> e instanceof Expression)
+                .flatMap(e -> find((Expression) e).stream()).toList();
     }
 }

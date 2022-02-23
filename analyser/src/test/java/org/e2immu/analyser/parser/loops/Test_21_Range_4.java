@@ -125,7 +125,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$1]", "i$1<=9&&i$1>=0");
+                    assertRange(d, 1, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$1]", "i$1<=9&&i$1>=0");
 
                     String expectState = d.iteration() == 0 ? "<s:boolean>&&(!<loopIsNotEmptyCondition>||1!=<v:i>)" : "10==i";
                     assertEquals(expectState, d.state().toString());

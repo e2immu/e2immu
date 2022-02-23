@@ -137,5 +137,10 @@ public interface Range {
         public int loopCount() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public String toString() {
+            return "DELAYED RANGE";
+        }
     }
 }

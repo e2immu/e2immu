@@ -140,10 +140,14 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
+
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
+
+        res.remove(CONTEXT_IMMUTABLE);
         DV contextImm =  typeOfVariableIsMyself || variable instanceof ReturnVariable ?  MultiLevel.MUTABLE_DV: valueProps.get(IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, contextImm);
+
         DV cCont = res.remove(CONTEXT_CONTAINER);
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);
 

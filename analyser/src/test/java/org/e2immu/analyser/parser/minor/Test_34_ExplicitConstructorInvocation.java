@@ -162,4 +162,11 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setForceCircularCallForTesting(true).build());
     }
 
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("ExplicitConstructorInvocation_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

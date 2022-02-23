@@ -193,7 +193,11 @@ public abstract class VisitorTestSupport {
     }
 
     public Range assertRange(StatementAnalyserVisitor.Data d, String rangeExpected, String conditionExpected) {
-        if (d.iteration() == 0) {
+        return assertRange(d, 1, rangeExpected, conditionExpected);
+    }
+
+    public Range assertRange(StatementAnalyserVisitor.Data d, int delayedUntil, String rangeExpected, String conditionExpected) {
+        if (d.iteration() < delayedUntil) {
             CausesOfDelay causes = d.statementAnalysis().rangeData().getRange().causesOfDelay();
             assertTrue(causes.isDelayed());
             assertEquals(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT, causes.causesStream().findFirst().orElseThrow().cause());

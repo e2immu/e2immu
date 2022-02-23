@@ -15,9 +15,9 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -34,7 +34,6 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     public CommaExpression(List<Expression> expressions) {
         super(Identifier.generate("comma expression"));
-        assert expressions.size() > 1;
         this.expressions = expressions;
     }
 
@@ -61,15 +60,31 @@ public class CommaExpression extends BaseExpression implements Expression {
         return Precedence.BOTTOM;
     }
 
+    /*
+    Code is more complicated than expected because we do not always want to compute the expressions in an
+    incrementally growing EvaluationResult. The effect of i++ in for-loops should be "forgotten", see Range_3, _4.
+    We implement this by wrapping the updater of loop constructs in a PropertyWrapper with a marker property.
+     */
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResult.Builder builderForIncrementalResult = new EvaluationResult.Builder(context);
         int count = 0;
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
-            EvaluationResult cumulativeResult = builder.build();
-            EvaluationResult result = expression.evaluate(cumulativeResult, fwd);
+            EvaluationResult incrementalResult = builderForIncrementalResult.build();
+
+            boolean clearIncremental = expression instanceof PropertyWrapper pw && pw.hasProperty(Property.MARK_CLEAR_INCREMENTAL);
+            Expression e = clearIncremental ? ((PropertyWrapper) expression).expression() : expression;
+
+            EvaluationResult result = e.evaluate(incrementalResult, fwd);
             builder.composeStore(result);
+
+            if (clearIncremental) {
+                builderForIncrementalResult = new EvaluationResult.Builder(context);
+            } else {
+                builderForIncrementalResult.compose(result);
+            }
             count++;
         }
         // as we compose, the value of the last result survives, earlier ones are discarded
