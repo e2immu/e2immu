@@ -1448,7 +1448,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             return MultiLevel.INDEPENDENT_1_DV;
         }
 
-        if (context.evaluationContext().isMyself(arrayBaseType)) return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
+        if (context.evaluationContext().isMyself(arrayBaseType))
+            return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
         DV immutable = context.getAnalyserContext().defaultImmutable(arrayBaseType, false);
         if (immutable.isDelayed()) {
             return immutable;

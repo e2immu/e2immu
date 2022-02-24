@@ -68,8 +68,4 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
     public String getEarliestAssignmentIndex() {
         return ids.isEmpty() ? "-" : ids.ceiling("-");
     }
-
-    public Iterator<String> idStream() {
-        return ids.descendingIterator();
-    }
 }

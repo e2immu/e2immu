@@ -388,6 +388,12 @@ public interface EvaluationContext {
     }
 
     /*
+    method that helps with deciding if we need to write the value of the evaluated variable -- specific situation
+    for variables defined outside a loops and modified inside this loop. VariableInLoop_0 shows.
+     */
+    default boolean writeEvaluationOfVariable(Variable variable) { return false; }
+
+    /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
     e.g., as a result of another method call.

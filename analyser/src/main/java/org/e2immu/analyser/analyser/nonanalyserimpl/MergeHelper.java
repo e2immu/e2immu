@@ -472,6 +472,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);
         }
+        /*
+        !<v:boolean> ? <v:boolean> : true -> result is always true, but we cannot yet decide this, because <v:boolean> may be hiding a more complex
+        operation
+         */
+        if(safe.isDone()) {
+            if(ifTrue.isDelayed()) return valueProperties(ifTrue);
+            if(ifFalse.isDelayed()) return valueProperties(ifFalse);
+        }
         if (safe.equals(ifTrue.getValue())) {
             return valueProperties(ifTrue);
         }

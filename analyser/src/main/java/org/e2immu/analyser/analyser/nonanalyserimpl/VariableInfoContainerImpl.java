@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;

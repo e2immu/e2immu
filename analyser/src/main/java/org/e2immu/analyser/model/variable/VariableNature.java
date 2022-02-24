@@ -247,6 +247,10 @@ public interface VariableNature {
             }
             return false;
         }
+
+        public boolean isOutside(String latestAssignmentIndex) {
+            return latestAssignmentIndex.compareTo(statementIndex) < 0;
+        }
     }
 
     /*

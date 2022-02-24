@@ -786,4 +786,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         return value;
     }
+
+    @Override
+    public boolean writeEvaluationOfVariable(Variable variable) {
+        VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+        if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+            VariableInfo vi = vic.getPreviousOrInitial();
+            String id = vi.getAssignmentIds().getLatestAssignment();
+            if (id == null) return false; // there was no assignment
+            return outside.isOutside(id);
+        }
+        return false;
+    }
 }

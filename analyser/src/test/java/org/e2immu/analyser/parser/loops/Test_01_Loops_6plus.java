@@ -83,7 +83,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("i".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "0";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
@@ -358,7 +358,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         // the 0 is inaccessible, because inside loop 2, i$2 is read rather than i
                         // this you can see in the "j"-"2.0.0" value
-                        String expect = d.iteration() == 0 ? "<v:i>" : "0";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
