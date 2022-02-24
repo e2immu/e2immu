@@ -135,6 +135,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         CausesOfDelay ennStatus = applyResult.ennStatus();
 
         if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
+            // situation with parameters; this code is replicated below for the situation without params
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
@@ -217,6 +218,21 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
             return apply.apply(sharedState, builder.build()).combinedStatus().causesOfDelay();
+        } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
+            // empty parameters: this(); or super(); this code is replicated a bit higher for the situation of parameters
+            Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
+            if (assignments == null) {
+                CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eciDelay), true);
+                return eciDelay;
+            }
+            if (!assignments.isBooleanConstant()) {
+                EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
+                        structure.forwardEvaluationInfo());
+                // FIXME clean up, AnalysisStatus -> Causes
+                AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
+                return applyResult.causesOfDelay().merge(causes);
+            }
         }
         return causes;
     }

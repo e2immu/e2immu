@@ -434,6 +434,15 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if (CONTAINER_5.equals(d.methodInfo().name) && n == 1) {
+                if ("1".equals(d.statementId())) {
+                    assertFalse(d.context().evaluationContext().delayStatementBecauseOfECI());
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (CONTAINER_5.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -453,6 +462,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
