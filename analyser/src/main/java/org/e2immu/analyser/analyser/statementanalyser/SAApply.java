@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
@@ -159,6 +160,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // it should not be taken into account anymore. (See e.g. Loops_1)
                 Properties valueProperties = sharedState.evaluationContext()
                         .getValueProperties(variable.parameterizedType(), valueToWrite, true);
+
 
                 Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
 
@@ -337,9 +339,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                             Expression valueToWrite,
                                             CausesOfDelay valuePropertiesIsDelayed) {
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
-        if (!valueToWriteIsDelayed && valuePropertiesIsDelayed.isDelayed()) {
-            return valueToWrite.createDelayedValue(EvaluationResult.from(sharedState.evaluationContext()),
-                    valuePropertiesIsDelayed);
+        CausesOfDelay causes;
+        if (sharedState.evaluationContext().delayStatementBecauseOfECI() && !valuePropertiesIsDelayed.isDelayed()) {
+            causes = new SimpleSet(new SimpleCause(getLocation(), CauseOfDelay.Cause.ECI));
+        } else {
+            causes = valuePropertiesIsDelayed;
+        }
+        if (!valueToWriteIsDelayed && causes.isDelayed()) {
+            return valueToWrite.createDelayedValue(EvaluationResult.from(sharedState.evaluationContext()), causes);
         }
         return valueToWrite;
     }

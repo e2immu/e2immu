@@ -49,6 +49,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
         this.causesOfDelay = causesOfDelay;
         assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
                 : "Causes of delay: " + causesOfDelay;
+        assert causesOfDelay.isDelayed();
         this.variable = variable;
     }
 

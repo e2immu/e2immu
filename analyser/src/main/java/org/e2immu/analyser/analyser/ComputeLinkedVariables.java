@@ -119,6 +119,11 @@ public class ComputeLinkedVariables {
         List<List<Variable>> clusters = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV);
+
+        // this will cause delays across the board for CONTEXT_ and EXTERNAL_ if the flag is set.
+        if (evaluationContext.delayStatementBecauseOfECI()) {
+            delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI));
+        }
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
                 SimpleSet.from(delaysInClustering));
     }
