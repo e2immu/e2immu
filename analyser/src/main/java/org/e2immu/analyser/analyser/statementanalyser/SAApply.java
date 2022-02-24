@@ -331,7 +331,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     return new LoopResult(true, causes);
                 }
             }
-            if (vic.hasEvaluation() && vi.isDelayed() && vi.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT)) {
+            if (vic.hasEvaluation() && vi.isDelayed()) {
                 vic.copy();
             }
         }

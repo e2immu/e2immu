@@ -316,12 +316,20 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
 
                 if ("node".equals(d.variableName())) {
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() <= 2 ? "<f:root>" : "root";
+                        assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
-                    if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 2 ? "<f:root>" : "root";
+                    if ("1".equals(d.statementId())) {
+                        // IMPORTANT: the variable is not read in the loop, but we cannot know that in iteration 0
+                        // it therefore must participate in the delay scheme, SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<vl:node>";
+                            case 1, 2 -> "<f:root>";
+                            default -> "root";
+                        };
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
@@ -331,15 +339,13 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         assertEquals("<return value>", d.currentValue().toString());
-
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<vl:node>";
-                            case 1 -> "<f:root>";
+                            case 1, 2 -> "<f:root>";
                             default -> "root";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -361,9 +367,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_4", 0, 2, new DebugConfiguration.Builder()
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
