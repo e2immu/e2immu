@@ -483,7 +483,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "9==entry.getValue()?4:<vl:res>" : "9==entry.getValue()?4:3";
+                        String expected = d.iteration() == 0 ? "9==entry.getValue()?4:<vl:res>" : "9==entry.getValue()?4:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
@@ -493,8 +493,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
                         String expected = d.iteration() == 0
                                 ? "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?<vl:res>:4"
-                                : "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?3:4";
-                     //   assertEquals(expected, d.currentValue().toString());
+                                : "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?instance type int:4";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }

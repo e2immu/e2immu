@@ -2119,4 +2119,13 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         // new d
         return count <= 2;
     }
+
+    @Override
+    public boolean inLoop() {
+        if(statement instanceof LoopStatement) return true;
+        if(parent != null) {
+            return parent.inLoop();
+        }
+        return false;
+    }
 }

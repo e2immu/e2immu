@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -279,6 +281,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         // has to be executed AFTER merging
         statementAnalysis.potentiallyRaiseNullPointerWarningENN();
 
+        // whatever we do, we do not return DONE in the first iteration inside a loop, because of delayed values lingering
+        // because we need to decide whether variables defined outside the loop are assigned in it.
+        if (statementAnalysis.inLoop() && sharedState.evaluationContext().getIteration() == 0 && analysisStatus == DONE) {
+            return AnalysisStatus.of(new SimpleSet(new SimpleCause(statementAnalysis.location(Stage.MERGE), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT)));
+        }
         return analysisStatus;
     }
 

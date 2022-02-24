@@ -162,6 +162,8 @@ public interface StatementAnalysis extends Analysis,
 
     boolean latestDelay(CausesOfDelay delay);
 
+    boolean inLoop();
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 
