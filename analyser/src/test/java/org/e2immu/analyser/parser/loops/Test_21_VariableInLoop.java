@@ -42,18 +42,17 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1.0.0.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                        String expectVi1 = "false";
-                        assertEquals(expectVi1, vi1.getValue().toString());
+                        String expected = d.iteration() == 0 ? "<vl:found>" : "instance type boolean";
+                        assertEquals(expected, vi1.getValue().toString());
 
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String expected = d.iteration() == 0 ? "<v:found>" : "instance type boolean";
                         assertEquals(expected, eval.getValue().toString());
-                        String expectMerge = d.iteration() == 0 ? "<v:found>" : "instance type boolean||!found$1";
+                        String expectMerge = d.iteration() == 0 ? "<vl:found>" : "instance type boolean||!found$1";
                         assertEquals(expectMerge, d.currentValue().toString()); // result of merge, should always be "true"
                     }
                     if ("1.0.0.0.0.0.0".equals(d.statementId())) {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = d.iteration() == 0 ? "<v:found>" : "instance type boolean";
+                        String expected = d.iteration() == 0 ? "<vl:found>" : "instance type boolean";
                         assertEquals(expected, vi1.getValue().toString());
                         assertEquals("true", d.currentValue().toString());
                     }

@@ -246,18 +246,6 @@ public final class VariableExpression extends CommonVariableExpression {
             evaluated = currentValue;
         }
 
-        if (forwardEvaluationInfo.isNotAssignmentTarget() && context.evaluationContext().writeEvaluationOfVariable(variable)) {
-            Expression value;
-            if (currentValue.isDelayed()) {
-                value = currentValue; // could as well keep this
-            } else {
-                // FIXME check value is VE, pointing to myself... grab value
-                Properties properties = context.evaluationContext().getValueProperties(currentValue);
-                value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
-            }
-            builder.assignment(variable, value, LinkedVariables.EMPTY);
-        }
-
         Expression adjustedScope = adjustScope(context, scopeResult, evaluated);
 
         builder.setExpression(adjustedScope);

@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Test_01_Loops_20 extends CommonTestRunner {
 
     private static final String PATH_SPLIT = "path.split(\"/\")";
-    private static final String CAUSES_OF_DELAY = "initial:prefix@Method_loadBytes_1-C";
 
     public Test_01_Loops_20() {
         super(true);
@@ -56,7 +55,7 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 1, CAUSES_OF_DELAY, PATH_SPLIT);
+                        assertCurrentValue(d, 1, "wait_for_assignment:prefix@Method_loadBytes_1-E", PATH_SPLIT);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     assertEquals("Type java.lang.String[]", d.currentValue().returnType().toString());

@@ -74,22 +74,22 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "instance type int+j$1.0.2";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:<vl:j>" :
+                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     } else fail(d.statementId()); // no other statements
                 }
                 if ("k".equals(d.variableName())) {
                     if("1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:<vl:j>" :
+                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
                         // IMPROVE this could be more elegant c?i+(c?i+i:0)
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:0"
-                                : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:0):0";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>"
+                                : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:instance type int):instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

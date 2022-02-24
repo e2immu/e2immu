@@ -151,14 +151,14 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    assertEquals("instance type boolean", d.currentValue().toString());
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals("instance type boolean||<vl:change>", d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    assertEquals("instance type boolean||null==destination.get(e.getKey())", d.currentValue().toString());
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals("instance type boolean||<vl:change>||null==destination.get(e.getKey())", d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }

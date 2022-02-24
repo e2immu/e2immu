@@ -560,7 +560,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
             } else {
-                if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
+                if (vic.hasEvaluation() &&
+                        // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
+                        !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))) {
+                    vic.copy(); //otherwise, variable not assigned, not read
+                }
             }
         });
         if (copyFrom != null) {

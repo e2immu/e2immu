@@ -107,6 +107,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
+        Map<Variable, VariableInfoContainer> localVariablesNotVisited = statementAnalysis.rawVariableStream()
+                .filter(e -> e.getValue().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
+                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
+                        (v1, v2) -> v2, HashMap::new));
 
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries =
                 new ArrayList<>(evaluationResult.changeData().entrySet());
@@ -131,6 +135,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
+            localVariablesNotVisited.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
 
             // we're now guaranteed to find the variable
@@ -204,39 +209,43 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
                     vic.setValue(changeData.value(), removed, merged, false);
                 } else {
-                    if (variable instanceof This
-                            || !evaluationResult.causesOfDelay().isDelayed()
-                            || optBreakInitDelay.isPresent()
-                            || vi1.getValue() instanceof DelayedWrappedExpression) {
-                        // we're not assigning (and there is no change in instance because of a modifying method)
-                        // only then we copy from INIT to EVAL
-                        // if the existing value is not delayed, the value properties must not be delayed either!
-                        Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
-                                sharedState.evaluationContext(),
-                                variable, vi1.getProperties(),
-                                changeData.properties(), groupPropertyValues, true);
-                        assert vi1.getValue().isDelayed()
-                                || vi1.getValue().isNotYetAssigned()
-                                || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
-                                "While writing to variable " + variable;
-                        Expression value;
-                        if (optBreakInitDelay.isPresent() && vi1.isDelayed()) {
-                            // if we break a delay, but the value that we write is still delayed, we propagate the delay (see Basics_7_1)
-                            LOGGER.debug("Propagate break init delay in {} in {}", variable, index());
-                            value = vi1.getValue().mergeDelays(new SimpleSet(optBreakInitDelay.get()));
+                    LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, variable, vic, vi);
+                    delay = delay.merge(loopResult.delays);
+                    if (!loopResult.wroteValue) {
+                        if (variable instanceof This
+                                || !evaluationResult.causesOfDelay().isDelayed()
+                                || optBreakInitDelay.isPresent()
+                                || vi1.getValue() instanceof DelayedWrappedExpression) {
+                            // we're not assigning (and there is no change in instance because of a modifying method)
+                            // only then we copy from INIT to EVAL
+                            // if the existing value is not delayed, the value properties must not be delayed either!
+                            Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
+                                    sharedState.evaluationContext(),
+                                    variable, vi1.getProperties(),
+                                    changeData.properties(), groupPropertyValues, true);
+                            assert vi1.getValue().isDelayed()
+                                    || vi1.getValue().isNotYetAssigned()
+                                    || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
+                                    "While writing to variable " + variable;
+                            Expression value;
+                            if (optBreakInitDelay.isPresent() && vi1.isDelayed()) {
+                                // if we break a delay, but the value that we write is still delayed, we propagate the delay (see Basics_7_1)
+                                LOGGER.debug("Propagate break init delay in {} in {}", variable, index());
+                                value = vi1.getValue().mergeDelays(new SimpleSet(optBreakInitDelay.get()));
+                            } else {
+                                value = vi1.getValue();
+                            }
+                            vic.setValue(value, vi1.getLinkedVariables(), merged, false);
                         } else {
-                            value = vi1.getValue();
+                            // delayed situation; do not copy the value properties UNLESS there is a break delay
+                            Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
+                                    sharedState.evaluationContext(),
+                                    variable, vi1.getProperties(),
+                                    changeData.properties(), groupPropertyValues, false);
+                            merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
+                            // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
+                            vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
                         }
-                        vic.setValue(value, vi1.getLinkedVariables(), merged, false);
-                    } else {
-                        // delayed situation; do not copy the value properties UNLESS there is a break delay
-                        Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
-                                sharedState.evaluationContext(),
-                                variable, vi1.getProperties(),
-                                changeData.properties(), groupPropertyValues, false);
-                        merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
-                        // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
-                        vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
                     }
                 }
             }
@@ -249,6 +258,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(changeData.delays());
             }
+        }
+
+        for (Map.Entry<Variable, VariableInfoContainer> e : localVariablesNotVisited.entrySet()) {
+            LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
+                    e.getValue(), e.getValue().best(EVALUATION));
+            delay = delay.merge(loopResult.delays);
         }
 
         /*
@@ -276,6 +291,51 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
 
         return applyStatusAndEnnStatus;
+    }
+
+    private record LoopResult(boolean wroteValue, CausesOfDelay delays) {
+    }
+
+    private LoopResult setValueForVariablesInLoopDefinedOutsideAssignedInside(StatementAnalyserSharedState sharedState,
+                                                                              Variable variable,
+                                                                              VariableInfoContainer vic,
+                                                                              VariableInfo vi) {
+        if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside
+                && outside.statementIndex().equals(index())) {
+            // we're at the start of the loop for this variable
+            if (sharedState.evaluationContext().getIteration() == 0) {
+                // we cannot yet know whether the variable will be assigned in this loop, or not
+                // write a delayed value
+                CausesOfDelay causes = new SimpleSet(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+                Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+                Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
+                vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
+                vic.setValue(delayedValue, LinkedVariables.delayedEmpty(causes), delayedVPs, false);
+                return new LoopResult(true, causes);
+            }
+            // is the variable assigned inside the loop, but not in -E ?
+            if (vic.hasMerge()) {
+                VariableInfo merge = vic.current();
+                String latestAssignment = merge.getAssignmentIds().getLatestAssignment();
+                if (latestAssignment != null && latestAssignment.startsWith(index())) {
+                    Properties properties = sharedState.evaluationContext().getAnalyserContext().defaultValueProperties(variable.parameterizedType());
+                    CausesOfDelay causes = properties.delays();
+                    Expression value;
+                    if (causes.isDelayed()) {
+                        value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+                    } else {
+                        Identifier identifier = statement().getIdentifier();
+                        value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
+                    }
+                    vic.setValue(value, LinkedVariables.EMPTY, properties, false);
+                    return new LoopResult(true, causes);
+                }
+            }
+            if (vic.hasEvaluation() && vi.isDelayed() && vi.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT)) {
+                vic.copy();
+            }
+        }
+        return new LoopResult(false, CausesOfDelay.EMPTY);
     }
 
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,

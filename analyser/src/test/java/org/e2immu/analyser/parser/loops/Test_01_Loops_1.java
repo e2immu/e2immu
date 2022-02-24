@@ -82,7 +82,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
                             assertEquals("2", v.statementIndex());
                         } else fail();
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2.0.2".equals(d.statementId())) {
                         // statement says: res="abc", but the value takes the state into account

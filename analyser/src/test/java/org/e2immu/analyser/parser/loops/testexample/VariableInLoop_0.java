@@ -19,6 +19,10 @@ import java.util.Set;
 /*
 Problem to be solved: "found" in merge in 1.0.0.0.0 has the E as existing vi,
 but its value is still the one from outside.
+
+variableValue in SAEvaluationContext works fine when evaluating "found", but
+because it does not change the actual value used in the merge, there still are issues.
+in evaluation of VariableExpression we try to actually change this value.
  */
 public class VariableInLoop_0 {
 
