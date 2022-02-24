@@ -30,7 +30,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,8 +43,6 @@ import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions, OneVariable {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
-
     public final boolean objectIsImplicit; // irrelevant after evaluation
     public final Expression object;
     public final List<Expression> parameterExpressions;
@@ -261,45 +258,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        boolean alwaysModifying;
         boolean partOfCallCycle;
-
         boolean recursiveCall;
 
         MethodAnalyser currentMethod = context.getCurrentMethod();
         if (currentMethod != null) {
-            TypeInfo currentPrimaryType = context.getCurrentType().primaryType();
-            TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
-
-            boolean circularCallOutsidePrimaryType = methodPrimaryType != currentPrimaryType &&
-                    currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
-                    !methodInfo.shallowAnalysis()
-                    || context.getAnalyserContext().getConfiguration().analyserConfiguration().forceCircularCallForTesting();
-
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-
-            if (circularCallOutsidePrimaryType) {
-                builder.addCircularCall();
-            }
-            alwaysModifying = circularCallOutsidePrimaryType;
-            recursiveCall = currentMethod.getMethodInfo() == this.methodInfo; // recursive call
+            recursiveCall = currentMethod.getMethodInfo() == this.methodInfo;
         } else {
-            alwaysModifying = false;
             partOfCallCycle = false;
             recursiveCall = false;
         }
 
-        MethodAnalysis methodAnalysis;
-        try {
-            methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
-        } catch (UnsupportedOperationException e) {
-            LOGGER.warn("Error obtaining method analysis for {}", methodInfo.fullyQualifiedName());
-            throw e;
-        }
         // is the method modifying, do we need to wait?
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        DV modified = alwaysModifying ? DV.TRUE_DV : recursiveCall || partOfCallCycle ? DV.FALSE_DV : modifiedMethod;
+        DV modified = recursiveCall || partOfCallCycle ? DV.FALSE_DV : modifiedMethod;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));

@@ -65,8 +65,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                CausesOfDelay causesOfDelay,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
-                               Precondition precondition,
-                               boolean addCircularCall) {
+                               Precondition precondition) {
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
@@ -76,13 +75,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public EvaluationResult copy(EvaluationContext evaluationContext) {
         return new EvaluationResult(evaluationContext, statementTime, value, storedValues, causesOfDelay, messages,
-                changeData, precondition, addCircularCall);
+                changeData, precondition);
     }
 
     public static EvaluationResult from(EvaluationContext evaluationContext) {
         return new EvaluationResult(evaluationContext, VariableInfoContainer.NOT_RELEVANT, null, List.of(),
-                CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()),
-                false);
+                CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()));
     }
 
     public AnalyserContext getAnalyserContext() {
@@ -232,7 +230,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
-        private boolean addCircularCallOrUndeclaredFunctionalInterface;
 
         // for a constant EvaluationResult
         public Builder() {
@@ -337,11 +334,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
-                    causesOfDelay,
-                    messages,
-                    valueChanges,
-                    precondition,
-                    addCircularCallOrUndeclaredFunctionalInterface);
+                    causesOfDelay, messages, valueChanges, precondition);
         }
 
         /**
@@ -747,10 +740,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             messages.add(Message.newMessage(parameterInfo.newLocation(),
                     Message.Label.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
                     parameterInfo.fullyQualifiedName()));
-        }
-
-        public void addCircularCall() {
-            addCircularCallOrUndeclaredFunctionalInterface = true;
         }
 
         public int getStatementTime() {

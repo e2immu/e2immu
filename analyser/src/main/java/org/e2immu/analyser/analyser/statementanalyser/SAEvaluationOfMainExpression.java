@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -134,6 +136,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
+            if (assignments == null) {
+                // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
+                CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eciDelay), true);
+                return eciDelay;
+            }
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
                 result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
@@ -206,20 +214,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
-
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
             return apply.apply(sharedState, builder.build()).combinedStatus().causesOfDelay();
-        } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
-            // empty parameters: this(); or super();
-            Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
-            if (!assignments.isBooleanConstant()) {
-                EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
-                        structure.forwardEvaluationInfo());
-                // FIXME clean up, AnalysisStatus -> Causes
-                AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
-                return applyResult.causesOfDelay().merge(causes);
-            }
         }
         return causes;
     }
@@ -314,6 +311,18 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
         assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
+        if (!methodAnalysis.hasBeenAnalysedUpToIteration0()) {
+            /* if the method has not gone through 1st iteration of analysis, we need to wait.
+             this should never be a circular wait because we're talking a strict constructor hierarchy
+             the delay has to have an effect on CM in the next iterations, because introducing the assignments here
+             will cause delays (see LoopStatement constructor, where "expression" appears in statement 1, iteration 1)
+             because of the 'super' call to StatementWithExpression which comes after LoopStatement.
+             Without method analysis we have no idea which variables will be affected
+             */
+            LOGGER.debug("Cannot continue with ECI because first iteration of this/super {} has not been analysed yet",
+                    eci.methodInfo.fullyQualifiedName);
+            return null;
+        }
 
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
         EvaluationResult.Builder builder = new EvaluationResult.Builder();

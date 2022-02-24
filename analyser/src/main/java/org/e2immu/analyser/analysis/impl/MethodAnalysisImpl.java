@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -77,6 +78,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
         this.analysisMode = analysisMode;
+    }
+
+    @Override
+    public boolean hasBeenAnalysedUpToIteration0() {
+        return true;
     }
 
     @Override
@@ -150,6 +156,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
+    public void markFirstIteration() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Precondition getPrecondition() {
         return precondition;
     }
@@ -165,6 +176,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
+        private final FlipSwitch firstIteration = new FlipSwitch();
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
@@ -414,6 +426,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void setFirstStatement(StatementAnalysis firstStatement) {
             this.firstStatement.set(firstStatement);
+        }
+
+        @Override
+        public void markFirstIteration() {
+            firstIteration.set();
+        }
+
+        @Override
+        public boolean hasBeenAnalysedUpToIteration0() {
+            return firstIteration.isSet();
         }
 
         public void addCompanion(CompanionMethodName companionMethodName, MethodInfo companion) {

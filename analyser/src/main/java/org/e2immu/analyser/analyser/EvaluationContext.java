@@ -465,10 +465,6 @@ public interface EvaluationContext {
         return expression.state();
     }
 
-    default VariableInfo findOrThrow(Variable variable) {
-        throw new UnsupportedOperationException();
-    }
-
     default Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
         return variableInfo.getValue();
     }
@@ -476,4 +472,6 @@ public interface EvaluationContext {
     static Map<Property, DV> delayedValueProperties(CausesOfDelay causes) {
         return VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
     }
+
+    default boolean delayStatementBecauseOfECI() { return false; }
 }

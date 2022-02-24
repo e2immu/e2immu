@@ -88,11 +88,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // ***
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
-
-        if (evaluationResult.addCircularCall()) {
-            statementAnalysis.methodLevelData().addCircularCall();
-        }
-
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
         // the first part is per variable

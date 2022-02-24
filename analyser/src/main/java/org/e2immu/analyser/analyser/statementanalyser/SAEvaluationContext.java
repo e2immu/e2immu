@@ -57,6 +57,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final AnalyserContext analyserContext;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
     private final boolean preventAbsoluteStateComputation;
+    private final boolean delayStatementBecauseOfECI;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -65,9 +66,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         SetOnce<List<PrimaryTypeAnalyser>> localAnalysers,
                         int iteration,
                         ConditionManager conditionManager,
-                        EvaluationContext closure) {
+                        EvaluationContext closure,
+                        // NOTE: ECI = explicit constructor invocation
+                        boolean delayStatementBecauseOfECI) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager, closure, false, true, false);
+                iteration, conditionManager, closure, false, true, false, delayStatementBecauseOfECI);
     }
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
@@ -83,7 +86,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         EvaluationContext closure,
                         boolean disableEvaluationOfMethodCallsUsingCompanionMethods,
                         boolean base,
-                        boolean preventAbsoluteStateComputation) {
+                        boolean preventAbsoluteStateComputation,
+                        boolean delayStatementBecauseOfECI) {
         super(iteration, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
@@ -92,6 +96,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.statementAnalysis = statementAnalysis;
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
+        this.delayStatementBecauseOfECI = delayStatementBecauseOfECI;
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
@@ -119,6 +124,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
+    public boolean delayStatementBecauseOfECI() {
+        return delayStatementBecauseOfECI;
+    }
+
+    @Override
     public boolean preventAbsoluteStateComputation() {
         return preventAbsoluteStateComputation;
     }
@@ -127,7 +137,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public EvaluationContext copyToPreventAbsoluteStateComputation() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext,
                 localAnalysers, iteration, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
-                false, true);
+                false, true, delayStatementBecauseOfECI);
     }
 
     private MethodInfo methodInfo() {
@@ -192,7 +202,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 iteration,
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
                 closure,
-                disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation);
+                disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
+                delayStatementBecauseOfECI);
     }
 
     @Override
@@ -201,14 +212,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
-                preventAbsoluteStateComputation);
+                preventAbsoluteStateComputation,
+                delayStatementBecauseOfECI);
     }
 
     public EvaluationContext childState(Expression state) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager.addState(state), closure,
-                false, false, preventAbsoluteStateComputation);
+                false, false, preventAbsoluteStateComputation,
+                delayStatementBecauseOfECI);
     }
 
         /*
@@ -335,7 +348,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                     iteration, conditionManager.withoutState(getPrimitives()), closure, false, false,
-                    preventAbsoluteStateComputation);
+                    preventAbsoluteStateComputation, delayStatementBecauseOfECI);
             EvaluationResult context = EvaluationResult.from(customEc);
             return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }
@@ -715,11 +728,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return vi.getValue().state();
         }
         return expression.state();
-    }
-
-    @Override
-    public VariableInfo findOrThrow(Variable variable) {
-        return statementAnalysis.findOrThrow(variable);
     }
 
     private boolean situationForVariableFieldReference(FieldReference fieldReference) {

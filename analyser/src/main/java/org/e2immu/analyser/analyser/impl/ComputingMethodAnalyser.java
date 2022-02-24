@@ -105,6 +105,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>(analyserProgram);
+        builder.add("mark first iteration", AnalyserProgram.Step.ITERATION_0, this::markFirstIteration);
         assert firstStatementAnalyser != null;
 
         // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
@@ -150,6 +151,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_INDEPENDENT, this::computeIndependent);
 
         analyserComponents = builder.build();
+    }
+
+    private AnalysisStatus markFirstIteration(SharedState sharedState) {
+        methodAnalysis.markFirstIteration();
+        return DONE;
     }
 
     @Override
@@ -800,18 +806,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } // else: already true, so no need to look at this
 
         if (contextModified.valueIsFalse()) {
-            // if there are no modifying method calls, we still may have a modifying method
-            // this will be due to calling undeclared SAMs, or calling non-modifying methods in a circular type situation
-            // (A.nonModifying() calls B.modifying() on a parameter (NOT a field, so nonModifying is just that) which itself calls A.modifying()
-            // NOTE that in this situation we cannot have a container, as we require a modifying! (TODO check this statement is correct)
-            boolean circular = methodLevelData.getCallsPotentiallyCircularMethod();
-            if (circular) {
-                DV haveModifying = findOtherModifyingElements();
-                if (haveModifying.isDelayed()) return haveModifying.causesOfDelay();
-                contextModified = haveModifying;
-            }
-        }
-        if (contextModified.valueIsFalse()) {
             DV maxModified = methodLevelData.copyModificationStatusFrom.stream()
                     .map(mi -> mi.getKey().methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
                     .reduce(DV.MIN_INT_DV, DV::max);
@@ -838,33 +832,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return fieldInMyTypeHierarchy(fieldInfo, parentClass.typeInfo);
         }
         return typeInfo.primaryType() == fieldInfo.owner.primaryType();
-    }
-
-    private DV findOtherModifyingElements() {
-        boolean nonPrivateFields = myFieldAnalysers.values().stream()
-                .filter(fa -> fa.getFieldInfo().type.isFunctionalInterface() && fa.getFieldAnalysis().isDeclaredFunctionalInterface())
-                .anyMatch(fa -> !fa.getFieldInfo().isPrivate());
-        if (nonPrivateFields) {
-            return DV.TRUE_DV;
-        }
-        // We also check independence (maybe the user calls a method which returns one of the fields,
-        // and calls a modification directly)
-
-        return methodInfo.typeInfo.typeInspection.get()
-                .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .map(this::modifiedOrNotTransparentAndDependent)
-                .reduce(DV.FALSE_DV, DV::max);
-    }
-
-    private DV modifiedOrNotTransparentAndDependent(MethodInfo methodInfo) {
-        MethodAnalysis ma = analyserContext.getMethodAnalysis(methodInfo);
-        DV mm = ma.getProperty(Property.MODIFIED_METHOD);
-        if (!mm.valueIsFalse()) return mm;
-        DV transparent = analyserContext.isTransparentOrAtLeastEventuallyE2Immutable(methodInfo.returnType(), methodInfo.typeInfo);
-        if (transparent.isDelayed()) return transparent;
-        DV independent = ma.getProperty(INDEPENDENT);
-        if (independent.isDelayed()) return independent;
-        return DV.fromBoolDv(transparent.valueIsFalse() && independent.equals(MultiLevel.DEPENDENT_DV));
     }
 
     private AnalysisStatus computeIndependent(SharedState sharedState) {

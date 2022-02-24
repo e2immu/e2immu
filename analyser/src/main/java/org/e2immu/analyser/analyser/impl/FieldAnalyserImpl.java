@@ -855,9 +855,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private DV exposureViaMethods() {
         // check exposed via return values of methods
-        // FIXME ignoreMyConstructors is a delay breaking measure, needs re-implementing
         CausesOfDelay delayLinkedVariables = filterForExposure(myMethodsAndConstructors.stream())
-                .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
+                .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayLinkedVariables.isDelayed()) {
             LOGGER.debug("Exposure computation on {} delayed by links: {}", fqn, delayLinkedVariables);

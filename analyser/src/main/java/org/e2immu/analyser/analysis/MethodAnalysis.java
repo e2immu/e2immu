@@ -171,4 +171,8 @@ public interface MethodAnalysis extends Analysis {
         return getFieldAsVariable(fieldInfo).stream().filter(VariableInfo::isAssigned)
                 .toList();
     }
+
+    void markFirstIteration();
+
+    boolean hasBeenAnalysedUpToIteration0();
 }

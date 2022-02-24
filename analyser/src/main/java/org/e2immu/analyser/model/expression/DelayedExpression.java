@@ -177,10 +177,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         // result is an int, so no linked variables
     }
 
-    public static Expression forConstructorCall(ParameterizedType parameterizedType,
-                                                LinkedVariables delayedLinkedVariables, CausesOfDelay causesOfDelay) {
-        String msg = brackets("cc:" + parameterizedType.typeInfo.simpleName);
-        return new DelayedExpression(msg, parameterizedType, delayedLinkedVariables, causesOfDelay);
+    // explicit constructor invocation is delayed
+    public static Expression forECI(CausesOfDelay eciDelay) {
+        return new DelayedExpression("<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, LinkedVariables.EMPTY, eciDelay);
     }
 
     /*

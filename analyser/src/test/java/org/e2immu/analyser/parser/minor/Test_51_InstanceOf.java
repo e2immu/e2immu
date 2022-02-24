@@ -887,20 +887,18 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         // IMPROVE could have been 1 rather than 3 potential null pointers: expansion of non-modifying method replicates them
         testClass("InstanceOf_11", 0, 3, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
 
     @Test
     public void test_12() throws IOException {
-        testClass("InstanceOf_12", 0, 1, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().setForceCircularCallForTesting(true).build());
+        testClass("InstanceOf_12", 0, 3, new DebugConfiguration.Builder().build());
     }
 
     @Test
@@ -921,6 +919,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     @Test
     public void test_14() throws IOException {
         testClass("InstanceOf_14", 0, 0, new DebugConfiguration.Builder()
-                        .build());
+                .build());
     }
 }

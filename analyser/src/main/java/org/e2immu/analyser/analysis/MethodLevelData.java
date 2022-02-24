@@ -18,17 +18,14 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -42,26 +39,8 @@ import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEqu
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
-    public static final String ENSURE_THIS_PROPERTIES = "ensureThisProperties";
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
-
-    /* part of modification status for dealing with circular methods
-       is computed during each evaluation, never delayed
-     */
-    private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
-
-    public boolean getCallsPotentiallyCircularMethod() {
-        Boolean b = callsPotentiallyCircularMethod.getOrDefaultNull();
-        if (b == null) throw new UnsupportedOperationException("Should have been computed already");
-        return b;
-    }
-
-    public void addCircularCall() {
-        if (!callsPotentiallyCircularMethod.isSet()) {
-            callsPotentiallyCircularMethod.set(true);
-        }
-    }
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -78,19 +57,8 @@ public class MethodLevelData {
         return cp.expression().causesOfDelay();
     }
 
-
-    public CausesOfDelay linksHaveNotYetBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
+    public CausesOfDelay linksHaveNotYetBeenEstablished() {
         return linksHaveBeenEstablished.get();
-        /*
-        if (linksHaveBeenEstablished.isSet()) return ;
-        Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
-        if (causes != null && !causes.isEmpty() && causes.keySet().stream().allMatch(canBeIgnored)) {
-            log(LINKED_VARIABLES, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
-            return false;
-        }
-        return true;
-
-         */
     }
 
     public record SharedState(AnalyserResult.Builder builder,
@@ -104,7 +72,6 @@ public class MethodLevelData {
 
     public final AnalyserComponents<String, SharedState> analyserComponents =
          new AnalyserComponents.Builder<String, SharedState>(AnalyserProgram.PROGRAM_ALL)
-                .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
                 .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                 .add(COMBINE_PRECONDITION, this::combinePrecondition)
                 .build();
@@ -179,7 +146,6 @@ public class MethodLevelData {
                 .filter(vi -> !(vi.variable() instanceof This))
                 // local variables that have been created, but not yet assigned/read; reject ConditionalInitialization
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
-                // FIXME break immutable removed temporarily
                 .map(vi -> vi.getLinkedVariables().causesOfDelay().merge(
                         vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay()))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -188,18 +154,6 @@ public class MethodLevelData {
             return delayed;
         }
         linksHaveBeenEstablished.setFinal(delayed);
-        return DONE;
-    }
-
-    /**
-     * Finish odds and ends
-     *
-     * @return if any change happened to methodAnalysis
-     */
-    private AnalysisStatus ensureThisProperties() {
-        if (!callsPotentiallyCircularMethod.isSet()) {
-            callsPotentiallyCircularMethod.set(false);
-        }
         return DONE;
     }
 }

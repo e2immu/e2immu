@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -159,7 +160,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
         testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
-                .build(), new AnalyserConfiguration.Builder().setForceCircularCallForTesting(true).build());
+                .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
 
@@ -169,4 +170,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("LoopStatement".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 0, d.context().evaluationContext().delayStatementBecauseOfECI());
+                }
+            }
+        };
+        testClass("ExplicitConstructorInvocation_9", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+    }
 }

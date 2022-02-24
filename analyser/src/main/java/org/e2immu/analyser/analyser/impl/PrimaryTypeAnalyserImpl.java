@@ -165,6 +165,13 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             else if (analyser instanceof FieldAnalyser fa) fieldAnalysersInOrder.add(fa);
             else throw new UnsupportedOperationException();
         });
+
+        boolean forceAlphabeticAnalysis = configuration.analyserConfiguration().forceAlphabeticAnalysisInPrimaryType();
+        if (forceAlphabeticAnalysis) {
+            methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
+            typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
+            fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
+        }
         analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
         assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
 

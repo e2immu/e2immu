@@ -221,6 +221,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 return builder.build();
             }
 
+            boolean delaySubsequentStatementBecauseOfECI = false;
             StatementAnalyser previousStatement = previousAndFirst.previous;
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
@@ -228,7 +229,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
-                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure);
+                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure, delaySubsequentStatementBecauseOfECI);
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
@@ -244,7 +245,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .withCondition(context, switchCondition));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
-                        wasReplacement, previousStatementAnalysis, statementInfo);
+                        wasReplacement, previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
+                delaySubsequentStatementBecauseOfECI |= result.analysisStatus().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.ECI);
+
                 builder.add(result);
                 previousStatement = statementAnalyser;
 
@@ -389,6 +392,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * @param iteration      the iteration
      * @param wasReplacement boolean, to ensure that the effect of a replacement warrants continued analysis
      * @param previous       null if there was no previous statement in this block
+     * @param delaySubsequentStatementBecauseOfECI explicit constructor invocation cannot be carried out, we'll have to wait
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
@@ -396,7 +400,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                                   EvaluationContext closure,
                                                   boolean wasReplacement,
                                                   StatementAnalysis previous,
-                                                  ForwardAnalysisInfo forwardAnalysisInfo) {
+                                                  ForwardAnalysisInfo forwardAnalysisInfo,
+                                                  boolean delaySubsequentStatementBecauseOfECI) {
         try {
             if (analyserComponents == null) {
                 AnalysisStatus.AnalysisResultSupplier<StatementAnalyserSharedState> typesInStatement = sharedState -> {
@@ -408,6 +413,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 };
 
                 // no program restrictions at the moment
+                // be careful with limiting causes of delay, at least Cause.ECI has to pass!
                 AnalyserProgram analyserProgram = AnalyserProgram.PROGRAM_ALL;
                 analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
@@ -453,7 +459,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
-                    iteration, localConditionManager, closure);
+                    iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI);
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
                     EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
@@ -655,7 +661,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     public EvaluationContext newEvaluationContextForOutside() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
                 analyserContext, localAnalysers, 0,
-                ConditionManager.initialConditionManager(statementAnalysis.primitives()), null);
+                ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
+                false);
     }
 
     @Override

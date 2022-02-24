@@ -28,7 +28,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
-                                    boolean forceCircularCallForTesting,
+                                    boolean forceAlphabeticAnalysisInPrimaryType,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
                                     AnalyserProgram analyserProgram) {
 
@@ -49,7 +49,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean computeContextPropertiesOverAllMethods;
         private boolean computeFieldAnalyserAcrossAllMethods;
         private boolean forceExtraDelayForTesting;
-        private boolean forceCircularCallForTesting;
+        private boolean forceAlphabeticAnalysisInPrimaryType;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
@@ -65,8 +65,8 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
-        public Builder setForceCircularCallForTesting(boolean forceCircularCallForTesting) {
-            this.forceCircularCallForTesting = forceCircularCallForTesting;
+        public Builder setForceAlphabeticAnalysisInPrimaryType(boolean forceAlphabeticAnalysisInPrimaryType) {
+            this.forceAlphabeticAnalysisInPrimaryType = forceAlphabeticAnalysisInPrimaryType;
             return this;
         }
 
@@ -95,7 +95,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
-                    forceCircularCallForTesting,
+                    forceAlphabeticAnalysisInPrimaryType,
                     patternMatcherProvider == null ?
                             (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
                     analyserProgram);
