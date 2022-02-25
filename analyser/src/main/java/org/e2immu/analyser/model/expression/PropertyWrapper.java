@@ -180,7 +180,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public int internalCompareTo(Expression v) {
-        throw new UnsupportedOperationException();
+        return compareTo(v);
     }
 
     @Override

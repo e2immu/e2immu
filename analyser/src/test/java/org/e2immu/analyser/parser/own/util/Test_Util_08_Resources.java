@@ -18,9 +18,7 @@ package org.e2immu.analyser.parser.own.util;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -36,7 +34,8 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             if ("fqnToPath".equals(d.methodInfo().name)) {
                 if ("parts[i]".equals(d.variableName())) {
                     if ("1.0.4".equals(d.statementId())) {
-                        assertEquals("extension", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<s:String>" : "extension";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }

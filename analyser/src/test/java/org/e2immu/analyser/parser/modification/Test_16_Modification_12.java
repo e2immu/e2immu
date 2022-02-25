@@ -97,8 +97,8 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else fail();
                 } else fail();
-                assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
-                assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
+                assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().preconditionIsFinal());
+                if (d.iteration() > 0) assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
             }
         };
 
@@ -121,7 +121,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
             if ("clearAndLog".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
 

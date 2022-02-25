@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
@@ -57,7 +57,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertNull(d.statementAnalysis().stateData().getPrecondition());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isDelayed());
                     } else {
                         String expect = d.iteration() == 1 ? "!<m:containsKey>" : "!map.containsKey(k)";
                         assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
@@ -76,13 +76,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_v;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
-                        case 1, 2 -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=assign_to_field@Parameter_k;cm:this@Method_accept_0-E;link:e@Method_accept_0-E";
-                        default -> "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
-                    };
-                    assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
-                            .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                    if (d.iteration() > 2) {
+                        String expected = "map=false:0,org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
+                        assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
+                                .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                    }
                 }
             }
         };

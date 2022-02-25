@@ -96,11 +96,11 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setPositive1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    if (d.iteration() <= 2) {
-                        assertTrue(d.localConditionManager().isDelayed());
-                        assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
-                        assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isVariable());
-                    } else {
+                    assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertEquals(d.iteration() == 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isVariable());
+
+                    if (d.iteration() > 0) {
                         assertEquals("i$0<=-1", d.condition().toString());
                         assertEquals("i>=0", d.statementAnalysis().stateData()
                                 .getPrecondition().expression().toString());
@@ -117,16 +117,15 @@ public class Test_04_Precondition extends CommonTestRunner {
                     }
                 }
                 if ("0".equals(d.statementId())) {
-                    if (d.iteration() <= 2) {
-                        assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isVariable());
-                    } else {
+                    assertEquals(d.iteration() == 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isVariable());
+                    if (d.iteration() > 0) {
                         assertEquals("i>=0", d.statementAnalysis().methodLevelData()
                                 .combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 2, d.localConditionManager().isDelayed());
-                    if (d.iteration() > 2) {
+                    assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                    if (d.iteration() > 0) {
                         assertEquals("i>=0", d.localConditionManager().precondition().expression().toString());
                     }
                 }
@@ -156,18 +155,15 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     // TODO I'd expect "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<f:i>>=0&&j2<=-1";
-                        default -> "i$0>=0&&j2<=-1";
-                    };
+                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<=-1" : "i$0>=0&&j2<=-1";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
         };
 
         testClass("Precondition_1", 0, 0, new DebugConfiguration.Builder()
-                //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -193,7 +189,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     @Test
     public void test1_34() throws IOException {
         testClass("Precondition_1_34", 0, 0, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 
@@ -394,11 +390,11 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
 
         testClass("Precondition_3", 1, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -412,8 +408,8 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0 -> "null==<f:integer>&&ii>=0";
-            case 1 -> "null==<f*:integer>&&ii>=0";
+            case 0 -> "<precondition>&&null==<f:integer>&&ii>=0";
+            case 1 -> "<precondition>&&null==<f*:integer>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }

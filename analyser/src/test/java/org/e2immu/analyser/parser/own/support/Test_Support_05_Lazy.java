@@ -78,9 +78,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
-                        case 0 -> "<f:t>";
-                        case 1 -> "<f*:t>";
-                        case 2 -> "<s:T>";
+                        case 0, 1, 2 -> "<s:T>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
@@ -151,7 +149,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = d.iteration() == 0
-                    ? "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t"
+                    ? "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;no precondition info@Method_get_0-E;values:this.t@Field_t"
                     : "null,nullable instance type T/*@NotNull*/";
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             assertEquals(d.iteration() > 0, d.fieldAnalysis().valuesDelayed().isDone());

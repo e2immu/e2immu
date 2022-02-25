@@ -62,8 +62,8 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_1".equals(d.methodInfo().name)) {
                 Precondition precondition = d.methodAnalysis().getPrecondition();
                 String expected = switch (d.iteration()) {
-                    case 0 -> "!<f:created>";
-                    case 1 -> "!<f*:created>";
+                    case 0 -> "!<f:created>&&<precondition>";
+                    case 1 -> "!<f*:created>&&<precondition>";
                     default -> "!Singleton_1.created";
                 };
                 assertEquals(expected, precondition.expression().toString());
@@ -180,12 +180,12 @@ public class Test_46_Singleton extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("Singleton_7".equals(d.methodInfo().name)) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "!<f:created>";
-                    case 1 -> "!<f*:created>";
-                    default -> "!Singleton_7.created";
-                };
                 if ("0.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "!<f:created>";
+                        case 1 -> "!<f*:created>";
+                        default -> "!Singleton_7.created";
+                    };
                     assertEquals(expected,
                             d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     String expected1 = switch (d.iteration()) {
@@ -198,6 +198,11 @@ public class Test_46_Singleton extends CommonTestRunner {
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "!<f:created>&&<precondition>";
+                        case 1 -> "!<f*:created>&&<precondition>";
+                        default -> "!Singleton_7.created";
+                    };
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                 }

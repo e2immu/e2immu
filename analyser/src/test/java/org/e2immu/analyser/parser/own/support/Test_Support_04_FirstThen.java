@@ -60,8 +60,8 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             if ("1".equals(d.statementId())) {
                 String expectPre = switch (d.iteration()) {
                     case 0 -> "null!=<f:then>";
-                    case 1 -> "null!=<vp:then:initial:this.first@Method_set_1.0.0-C;values:this.then@Field_then>";
-                    case 2 -> "null!=<vp:then:break_init_delay:this.first@Method_set_1.0.0-C;values:this.then@Field_then>";
+                    case 1 -> "null!=<vp:then:initial:this.first@Method_set_1.0.0-C;no precondition info@Method_set_1.0.0-E;values:this.then@Field_then>";
+                    case 2 -> "null!=<vp:then:break_init_delay:this.first@Method_set_1.0.0-C;no precondition info@Method_set_1.0.0-E;values:this.then@Field_then>";
                     default -> "null!=then";
                 };
                 assertEquals(expectPre, d.statementAnalysis().stateData().getPrecondition().expression().toString());
@@ -90,8 +90,8 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
 
         if ("set".equals(name)) {
             String expect = switch (d.iteration()) {
-                case 0 -> "Precondition[expression=null!=<f:first>, causes=[escape]]";
-                case 1 -> "Precondition[expression=null!=<f*:first>, causes=[escape]]";
+                case 0 -> "Precondition[expression=<precondition>&&null!=<f:first>, causes=[escape]]";
+                case 1 -> "Precondition[expression=<precondition>&&null!=<f*:first>, causes=[escape]]";
                 default -> "Precondition[expression=null!=first, causes=[escape]]";
             };
             assertEquals(expect, d.methodAnalysis().getPrecondition().toString());

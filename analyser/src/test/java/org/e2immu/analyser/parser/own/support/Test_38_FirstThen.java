@@ -75,6 +75,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 .build());
     }
 
+    // FIXME infinite delay loop due to changes in methodAnalysis.precondition
     @Test
     public void test_1() throws IOException {
         testClass("FirstThen_1", 0, 0, new DebugConfiguration.Builder()

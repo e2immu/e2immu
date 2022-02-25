@@ -173,7 +173,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1
-                                ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
+                                ? "<m:isEmpty>?<s:OutputBuilderSimplified_3>:<m:isEmpty>?b:<return value>"
                                 : "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }

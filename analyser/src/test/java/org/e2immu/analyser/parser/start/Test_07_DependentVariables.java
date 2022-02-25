@@ -163,13 +163,6 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     };
                     assertEquals(expectValue, d.currentValue().minimalOutput());
 
-                    String expectLv = switch (d.iteration()) {
-                        case 0 -> "return getX:0,xs[index]:-1";
-                        case 1 -> "return getX:0,this.xs:-1,xs[index]:-1";
-                        default -> "return getX:0,this.xs:5,xs[index]:1";
-                    };
-                   // assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
                     assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
@@ -376,9 +369,9 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         };
         // goal is to show no errors
         testClass("DependentVariables_3", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

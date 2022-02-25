@@ -64,13 +64,13 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() <= 1) {
-                        assertNull(d.statementAnalysis().stateData().getPrecondition());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isDelayed());
                     } else {
                         assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                     }
                     String expect = switch (d.iteration()) {
-                        case 0 -> "null==<f:t>";
-                        case 1 -> "null==<f*:t>";
+                        case 0 -> "<precondition>&&null==<f:t>";
+                        case 1 -> "<precondition>&&null==<f*:t>";
                         default -> "null==t";
                     };
                     assertEquals(expect, d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
@@ -135,16 +135,16 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getT".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
-                    case 0 -> "null!=<f:t>";
-                    case 1 -> "null!=<vp:t:initial:this.t@Method_setT_1-C;state:this.t@Method_setT_2-E;values:this.t@Field_t>";
+                    case 0 -> "<precondition>&&null!=<f:t>";
+                    case 1 -> "<precondition>&&null!=<vp:t:initial:this.t@Method_setT_1-C;no precondition info@Method_setT_1-E;state:this.t@Method_setT_2-E;values:this.t@Field_t>";
                     default -> "null!=t";
                 };
                 assertEquals(expect, d.methodAnalysis().getPrecondition().expression().toString());
             }
             if ("setT".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
-                    case 0 -> "null==<f:t>";
-                    case 1 -> "null==<f*:t>";
+                    case 0 -> "<precondition>&&null==<f:t>";
+                    case 1 -> "<precondition>&&null==<f*:t>";
                     default -> "null==t";
                 };
                 assertEquals(expect, d.methodAnalysis().getPrecondition().expression().toString());
