@@ -29,9 +29,10 @@ public abstract class ExpressionWithMethodReferenceResolution extends BaseExpres
     public final ParameterizedType concreteReturnType;
 
     protected ExpressionWithMethodReferenceResolution(Identifier identifier,
+                                                      int complexity,
                                                       @NotNull MethodInfo methodInfo,
                                                       @NotNull ParameterizedType concreteReturnType) {
-        super(identifier);
+        super(identifier, complexity);
         this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
         this.methodInfo = Objects.requireNonNull(methodInfo);
     }

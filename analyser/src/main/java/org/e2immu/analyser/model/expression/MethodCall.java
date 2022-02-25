@@ -60,7 +60,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       MethodInfo methodInfo,
                       ParameterizedType returnType,
                       List<Expression> parameterExpressions) {
-        super(identifier, methodInfo, returnType);
+        super(identifier,
+                object.getComplexity() + 1 + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
+                methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         assert parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";

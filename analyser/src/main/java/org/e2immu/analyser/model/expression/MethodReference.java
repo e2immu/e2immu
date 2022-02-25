@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
@@ -27,7 +30,6 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -36,7 +38,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     public MethodReference(Identifier identifier,
                            Expression scope, MethodInfo methodInfo, ParameterizedType concreteType) {
-        super(identifier, methodInfo, concreteType);
+        super(identifier, scope.getComplexity() + 1, methodInfo, concreteType);
         this.scope = scope;
     }
 
@@ -103,7 +105,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     Property.CONTEXT_MODIFIED, modified,
                     Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
-            scopeForward = new ForwardEvaluationInfo(map, false,true, forwardEvaluationInfo.assignmentTarget(), true);
+            scopeForward = new ForwardEvaluationInfo(map, false, true, forwardEvaluationInfo.assignmentTarget(), true);
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {

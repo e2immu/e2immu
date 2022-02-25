@@ -115,7 +115,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                            List<Expression> parameterExpressions,
                            TypeInfo anonymousClass,
                            ArrayInitializer arrayInitializer) {
-        super(identifier);
+        super(identifier, 1 + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum());
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         assert parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a constructor call with delayed arguments";
