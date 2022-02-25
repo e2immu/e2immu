@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.variablescope;
+package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -227,5 +228,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
         testClass("VariableScope_4", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        testClass("VariableScope_5", 0, 0, new DebugConfiguration.Builder()
+                .build(),
+                new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("VariableScope_6", 0, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }

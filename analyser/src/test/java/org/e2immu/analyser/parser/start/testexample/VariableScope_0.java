@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.variablescope.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 
 public class VariableScope_0 {

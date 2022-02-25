@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.variablescope.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 
 import org.e2immu.annotation.NotNull;
@@ -22,13 +22,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
-public class VariableScope_2 {
+public class VariableScope_4 {
     // only difference between VS_4 and VS_2 is the redundant = null on ioe (statement 0)
-    // similar test in TryStatement_6
 
     @Nullable
     static IOException writeLine(@NotNull List<String> list, @NotNull Writer writer) {
-        IOException ioe;
+        IOException ioe = null;
         try {
             for (String outputElement : list) {
                 writer.write(outputElement);
