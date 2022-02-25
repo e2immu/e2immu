@@ -33,7 +33,7 @@ public interface ConstantExpression<T> extends Expression {
 
     @Override
     default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        return new EvaluationResult.Builder().setExpression(this).build();
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     T getValue();

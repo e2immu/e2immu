@@ -146,7 +146,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
-            return new EvaluationResult.Builder().setExpression(this).build();
+            return new EvaluationResult.Builder(context).setExpression(this).build();
         }
         throw new UnsupportedOperationException();
     }
@@ -183,7 +183,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         EvaluationResult result = expression.reEvaluate(closureContext, translation);
         if (expression instanceof InlinedMethod im) {
             Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), context.getAnalyserContext());
-            return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
+            return new EvaluationResult.Builder(context).compose(result).setExpression(newIm).build();
         }
         return result;
     }

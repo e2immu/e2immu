@@ -151,7 +151,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder().setExpression(this).build();
+        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override

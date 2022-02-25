@@ -23,74 +23,91 @@ import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class EvaluatePreconditionFromMethod {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluatePreconditionFromMethod.class);
 
     public static void evaluate(EvaluationResult context,
                                 EvaluationResult.Builder builder,
                                 MethodInfo methodInfo,
                                 Expression scopeObject,
                                 List<Expression> parameterValues) {
-
+        assert methodInfo != null;
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         Precondition precondition = methodAnalysis.getPrecondition();
+        assert precondition != null;
+        if (precondition.expression().isBoolValueTrue()) {
+            return;
+        }
+
+        boolean partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        boolean callingMyself = context.getCurrentMethod() != null && methodInfo == context.getCurrentMethod().getMethodInfo();
+
+        if (partOfCallCycle || callingMyself) {
+            LOGGER.debug("Ignoring potential preconditions of method call {}, partOfCallCycle? {} calling myself? {}",
+                    methodInfo.fullyQualifiedName, parameterValues, callingMyself);
+            return;
+        }
+        if (precondition.expression().isBoolValueFalse()) {
+            builder.addPrecondition(precondition);
+            return;
+        }
         if (precondition.expression().isDelayed()) {
-            boolean partOfCallCycle = methodInfo != null && methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            boolean callingMyself = context.getCurrentMethod() != null &&
-                    methodInfo == context.getCurrentMethod().getMethodInfo();
-            if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
-        } else if (!precondition.expression().isBooleanConstant()) {
-            if (scopeObject.isDelayed()) {
-                builder.addDelayOnPrecondition(precondition.expression().causesOfDelay().merge(scopeObject.causesOfDelay()));
-                return;
-            }
-            // there is a precondition, and we have a list of values... let's see what we can learn
-            // the precondition is using parameter info's as variables so we'll have to substitute
-            Map<Expression, Expression> translationMap = translationMap(context.getAnalyserContext(),
-                    methodInfo, parameterValues, scopeObject);
-            Expression reEvaluated;
-            if (!translationMap.isEmpty()) {
-                EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap);
-                reEvaluated = eRreEvaluated.value();
-                builder.composeIgnoreExpression(eRreEvaluated);
-            } else {
-                reEvaluated = precondition.expression();
-            }
-            // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
-            // the result of the re-evaluation may cause delays
+            builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
+            return;
+        }
+        if (scopeObject.isDelayed()) {
+            builder.addDelayOnPrecondition(precondition.expression().causesOfDelay().merge(scopeObject.causesOfDelay()));
+            return;
+        }
+        // there is a precondition, and we have a list of values... let's see what we can learn
+        // the precondition is using parameter info's as variables so we'll have to substitute
+        Map<Expression, Expression> translationMap = translationMap(context.getAnalyserContext(),
+                methodInfo, parameterValues, scopeObject);
+        Expression reEvaluated;
+        if (!translationMap.isEmpty()) {
+            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap);
+            reEvaluated = eRreEvaluated.value();
+            builder.composeIgnoreExpression(eRreEvaluated);
+        } else {
+            reEvaluated = precondition.expression();
+        }
+        // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
+        // the result of the re-evaluation may cause delays
 
-            // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
-            Expression inCondition = context.evaluationContext().getConditionManager().evaluate(context, reEvaluated, true);
-            if (inCondition.isDelayed()) {
-                builder.addPrecondition(Precondition.forDelayed(inCondition));
-            } else if (!inCondition.isBoolValueTrue()) {
+        // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
+        Expression inCondition = context.evaluationContext().getConditionManager().evaluate(context, reEvaluated, true);
+        if (inCondition.isDelayed()) {
+            builder.addPrecondition(Precondition.forDelayed(inCondition));
+        } else if (!inCondition.isBoolValueTrue()) {
 
-                // See TestSupport SetOnce, @Mark computation in copy()
-                // See Precondition_0, where there is no condition, so it doesn't matter; Precondition_6, where it does
+            // See TestSupport SetOnce, @Mark computation in copy()
+            // See Precondition_0, where there is no condition, so it doesn't matter; Precondition_6, where it does
 
-                // from the result we either may infer another condition, or values to be set...
+            // from the result we either may infer another condition, or values to be set...
 
-                // NOT_NULL on parameters -> not in PC but as annotations on the parameter
-                Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
-                Filter.FilterResult<ParameterInfo> filterResult = filter.filter(inCondition,
-                        filter.individualNullOrNotNullClauseOnParameter());
-                Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
-                for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
-                    if (!nullClauseEntry.getValue().equalsNull()) {
-                        builder.setProperty(nullClauseEntry.getKey(), Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                    }
+            // NOT_NULL on parameters -> not in PC but as annotations on the parameter
+            Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
+            Filter.FilterResult<ParameterInfo> filterResult = filter.filter(inCondition,
+                    filter.individualNullOrNotNullClauseOnParameter());
+            Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
+            for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
+                if (!nullClauseEntry.getValue().equalsNull()) {
+                    builder.setProperty(nullClauseEntry.getKey(), Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 }
+            }
 
-                // all the rest: preconditions
-                Expression translated = context.evaluationContext().acceptAndTranslatePrecondition(filterResult.rest());
-                if (translated != null && !translated.isBoolValueTrue()) {
-                    builder.addPrecondition(new Precondition(translated,
-                            List.of(new Precondition.MethodCallCause(methodInfo, scopeObject))));
-                }
+            // all the rest: preconditions
+            Expression translated = context.evaluationContext().acceptAndTranslatePrecondition(filterResult.rest());
+            if (translated != null && !translated.isBoolValueTrue()) {
+                builder.addPrecondition(new Precondition(translated,
+                        List.of(new Precondition.MethodCallCause(methodInfo, scopeObject))));
             }
         }
     }

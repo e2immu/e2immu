@@ -68,6 +68,7 @@ public interface CauseOfDelay {
         MODIFIED_VARIABLE("mod_var", "modified variable"),
         MODIFIED_CYCLE("mod_cycle", "modification of cyclic method calls"),
         NEXT_C_IMM("next_c_imm", ""),
+        NO_PRECONDITION_INFO("no precondition info", "no precondition information (yet)"),
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),
         PARTIAL_IMM("partial_imm", "partial immutable: immutable without taking parent/enclosing into account"),

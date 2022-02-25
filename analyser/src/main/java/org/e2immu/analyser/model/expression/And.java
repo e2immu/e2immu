@@ -656,7 +656,7 @@ public class And extends ExpressionCanBeTooComplex {
             context = context.child(result.value());
         }
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(clauseResults)
                 .setExpression(And.and(evaluationResult, clauses))
                 .build();
@@ -688,7 +688,7 @@ public class And extends ExpressionCanBeTooComplex {
         List<EvaluationResult> reClauseERs = expressions.stream()
                 .map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(reClauseERs)
                 .setExpression(And.and(context, reClauses))
                 .build();

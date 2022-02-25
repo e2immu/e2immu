@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -22,6 +24,8 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +35,13 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 public class StateData {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StateData.class);
 
-    public StateData(boolean isLoop, Primitives primitives) {
+    public StateData(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
         conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
+        precondition.setVariable(Precondition.noInformationYet(location, primitives));
     }
 
     private final SetOnceMap<Variable, Expression> equalityAccordingToState = new SetOnceMap<>();
@@ -66,14 +72,27 @@ public class StateData {
 
     private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
 
-    public boolean preconditionIsEmpty() {
-        return precondition.isVariable() && precondition.get() == null;
+    public boolean preconditionNoInformationYet(MethodInfo currentMethod) {
+        return precondition.isVariable() && precondition.get().isNoInformationYet(currentMethod);
     }
 
-    public void setPrecondition(Precondition expression, boolean isDelayed) {
-        if (isDelayed) {
-            precondition.setVariable(expression);
-        } else setFinalAllowEquals(precondition, expression);
+    /*
+    conventions: Precondition.DELAYED_NO_INFORMATION (exactly this object) means no information yet, variable.
+    Expression true means: no information, but final
+    Expression false: impossible (not allowed to call the method?)
+    delayed expression: there will be info, but it is delayed
+    any other: real PC
+     */
+    public void setPrecondition(Precondition pc) {
+        assert pc != null;
+        if (pc.expression().isDelayed()) {
+            try {
+                precondition.setVariable(pc);
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Try to set delayed {}, already have {}", pc, precondition.get());
+                throw ise;
+            }
+        } else setFinalAllowEquals(precondition, pc);
     }
 
     public void setPreconditionAllowEquals(Precondition expression) {

@@ -189,7 +189,7 @@ public final class VariableExpression extends CommonVariableExpression {
                 return ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             }
             DelayedVariableExpression dve;
-            EvaluationResult.Builder builder = new EvaluationResult.Builder();
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             if ((dve = inMap.asInstanceOf(DelayedVariableExpression.class)) != null) {
                 // causes problems with local copies (Loops_19)
                 //   return dve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);

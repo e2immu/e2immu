@@ -208,7 +208,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
         } else {
             result = this;
         }
-        return new EvaluationResult.Builder().setExpression(result).build();
+        return new EvaluationResult.Builder(context).setExpression(result).build();
     }
 
     @Override

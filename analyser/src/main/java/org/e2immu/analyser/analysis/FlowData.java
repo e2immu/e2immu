@@ -195,7 +195,12 @@ public class FlowData {
     public void setGuaranteedToBeReachedInMethod(DV executionInMethod) {
         if (executionInMethod.isDone()) {
             if (!guaranteedToBeReachedInMethod.isSet() || !guaranteedToBeReachedInMethod.get().equals(executionInMethod)) {
-                guaranteedToBeReachedInMethod.set(executionInMethod);
+                try {
+                    guaranteedToBeReachedInMethod.set(executionInMethod);
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Try to set final {}, already have final value {}", executionInMethod, guaranteedToBeReachedInMethod.get());
+                    throw ise;
+                }
             }
         } else {
             try {

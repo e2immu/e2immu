@@ -190,6 +190,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // ************** PRECONDITION
 
+        // conventions detailed in org.e2immu.analyser.analyser.StateData.setPrecondition
         public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
@@ -251,8 +252,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay preconditionStatus() {
-            CausesOfDelay causes = precondition.get().expression().causesOfDelay();
-            assert causes.isDone() || precondition.isVariable();
+            Precondition pc = precondition.get();
+            assert pc != null;
+            CausesOfDelay causes = pc.expression().causesOfDelay();
+            assert causes.isDone() || this.precondition.isVariable();
             return causes;
         }
 
@@ -269,7 +272,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
             this.analysisProvider = analysisProvider;
-            precondition.setVariable(Precondition.empty(primitives));
+            precondition.setVariable(Precondition.noInformationYet(methodInfo.newLocation(), primitives));
             Expression delayedPreconditionForEventual = DelayedExpression.forPrecondition(primitives, initialDelay(methodInfo));
             preconditionForEventual.setVariable(Precondition.forDelayed(delayedPreconditionForEventual));
             eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));

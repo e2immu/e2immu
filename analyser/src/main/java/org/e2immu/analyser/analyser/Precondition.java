@@ -14,9 +14,15 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.ContractMark;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -34,11 +40,6 @@ import java.util.Objects;
  * An empty precondition is represented by the boolean constant TRUE.
  */
 public record Precondition(Expression expression, List<PreconditionCause> causes) {
-
-    public static Precondition forDelayed(CausesOfDelay causesOfDelay, Primitives primitives) {
-        Expression de = DelayedExpression.forPrecondition(primitives, causesOfDelay);
-        return new Precondition(de, List.of());
-    }
 
     public boolean isDelayed() {
         return expression.isDelayed();
@@ -125,5 +126,19 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     public static Precondition forDelayed(Expression expression) {
         assert expression.isDelayed();
         return new Precondition(expression, List.of());
+    }
+
+    public static Precondition forDelayed(CausesOfDelay causesOfDelay, Primitives primitives) {
+        Expression de = DelayedExpression.forPrecondition(primitives, causesOfDelay);
+        return new Precondition(de, List.of());
+    }
+
+    public static Precondition noInformationYet(Location location, Primitives primitives) {
+        return forDelayed(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.NO_PRECONDITION_INFO)), primitives);
+    }
+
+    public boolean isNoInformationYet(MethodInfo currentMethod) {
+        return expression instanceof DelayedExpression de
+                && de.causesOfDelay().causesStream().anyMatch(c -> c.location().getInfo() == currentMethod && c.cause() == CauseOfDelay.Cause.NO_PRECONDITION_INFO);
     }
 }

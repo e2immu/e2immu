@@ -94,7 +94,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         EvaluationResult reCondition = condition.reEvaluate(context, translation);
         EvaluationResult reTrue = ifTrue.reEvaluate(context, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(context, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reCondition, reTrue, reFalse);
         EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
                 context, reCondition.value(), reTrue.value(), reFalse.value(), false);
         return builder.setExpression(res.value()).build();

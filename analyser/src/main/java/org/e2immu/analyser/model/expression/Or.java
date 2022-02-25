@@ -224,7 +224,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         EvaluationResult[] clauseResults = expressions.stream()
                 .map(v -> v.evaluate(context, forwardEvaluationInfo)).toArray(EvaluationResult[]::new);
         Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(clauseResults)
                 .setExpression(new Or(primitives).append(context, clauses))
                 .build();
@@ -257,7 +257,7 @@ public final class Or extends ExpressionCanBeTooComplex {
                 .map(v -> v.reEvaluate(context, translation))
                 .collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(reClauseERs)
                 .setExpression(new Or(primitives).append(context, reClauses))
                 .build();

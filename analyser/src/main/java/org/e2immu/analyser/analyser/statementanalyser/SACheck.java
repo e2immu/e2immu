@@ -75,16 +75,16 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 if (translated != null) {
                     LOGGER.debug("Escape with precondition {}", translated);
                     Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                    statementAnalysis.stateData().setPrecondition(pc, preconditionIsDelayed.isDelayed());
+                    statementAnalysis.stateData().setPrecondition(pc);
                     return AnalysisStatus.of(preconditionIsDelayed);
                 }
             }
 
             if (delays.isDelayed()) return delays;
         }
-        if (statementAnalysis.stateData().preconditionIsEmpty()) {
+        if (statementAnalysis.stateData().preconditionNoInformationYet(methodInfo())) {
             // it could have been set from the assert statement (subBlocks) or apply via a method call
-            statementAnalysis.stateData().setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives()));
+            statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
         } else if (!statementAnalysis.stateData().preconditionIsFinal()) {
             return statementAnalysis.stateData().getPrecondition().expression().causesOfDelay();
         }

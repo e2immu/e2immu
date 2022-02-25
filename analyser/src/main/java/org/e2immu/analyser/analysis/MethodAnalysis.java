@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -85,8 +86,10 @@ public interface MethodAnalysis extends Analysis {
     // ************** PRECONDITION
 
     /**
-     * @return delayed when not yet computed, EMPTY when no precondition
+     * @return delayed See org.e2immu.analyser.analyser.StateData#setPrecondition(org.e2immu.analyser.analyser.Precondition, boolean)
+     * for a description of the conventions.
      */
+    @NotNull
     Precondition getPrecondition();
 
     default MethodLevelData methodLevelData() {

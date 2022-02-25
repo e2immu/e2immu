@@ -579,8 +579,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         Precondition precondition = evaluationResult.precondition();
-        delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
-                sharedState.localConditionManager()));
+        CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
+                sharedState.localConditionManager());
+        delay = delay.merge(applyPrecondition);
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont).merge(extIgnMod).merge(anyExtIgnMod);
 

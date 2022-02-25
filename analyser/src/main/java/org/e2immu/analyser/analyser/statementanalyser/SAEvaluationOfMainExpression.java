@@ -146,10 +146,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
-                result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
-                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result);
+                EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
+                // we must take the precondition from the previous result, otherwise it gets overwritten with PC.empty()
+                EvaluationResult resultWithPC = new EvaluationResult.Builder(sharedState.context()).composeCopyStoredValues(reResult)
+                        .addPrecondition(statementAnalysis.stateData().getPrecondition()).build();
+                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, resultWithPC);
                 statusPost = assignmentResult.status().merge(causes);
                 ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
+                result = resultWithPC;
             }
         }
         if (ennStatus.isDelayed()) {
@@ -343,7 +347,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
 
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
         Map<Expression, Expression> translation = new HashMap<>();
         if (result != null && n > 0) {
             int i = 0;

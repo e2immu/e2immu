@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.annotation.Fluent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Precondition precondition) {
 
     public EvaluationResult {
+        assert evaluationContext != null;
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
         assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
                 : "Causes of delay: " + causesOfDelay;
@@ -97,6 +99,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public MethodAnalyser getCurrentMethod() {
         return evaluationContext.getCurrentMethod();
+    }
+
+    // for debugger
+    public String safeMethodName() {
+        return evaluationContext().safeMethodName();
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
@@ -231,12 +238,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
 
-        // for a constant EvaluationResult
-        public Builder() {
-            evaluationContext = null;
-            previousResult = null;
-        }
-
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
             this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
@@ -269,6 +270,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (storedExpressions == null) storedExpressions = new LinkedList<>();
             storedExpressions.add(evaluationResult.getExpression());
             append(false, evaluationResult);
+        }
+
+        public Builder composeCopyStoredValues(EvaluationResult evaluationResult) {
+            append(false, evaluationResult);
+            if (evaluationResult.storedValues != null && !evaluationResult.storedValues.isEmpty()) {
+                if (storedExpressions == null) {
+                    storedExpressions = new ArrayList<>(evaluationResult.storedValues);
+                } else {
+                    storedExpressions.addAll(evaluationResult.storedValues);
+                }
+            }
+            return this;
         }
 
         private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
@@ -715,13 +728,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(from, newEcd);
         }
 
-        public void addPrecondition(Precondition newPrecondition) {
+        @Fluent
+        public Builder addPrecondition(Precondition newPrecondition) {
             if (precondition == null) {
                 precondition = newPrecondition;
             } else {
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 precondition = precondition.combine(context, newPrecondition);
             }
+            return this;
         }
 
         public void modifyingMethodAccess(Variable variable, Expression newInstance, LinkedVariables linkedVariables) {
@@ -761,5 +776,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             return evaluationContext.isNotNull0(expression, false);
         }
+
+
     }
 }

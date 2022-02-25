@@ -149,7 +149,7 @@ public interface Expression extends Element, Comparable<Expression> {
     @NotNull
     default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
-        return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
+        return new EvaluationResult.Builder(context).setExpression(inMap == null ? this : inMap).build();
     }
 
     /**

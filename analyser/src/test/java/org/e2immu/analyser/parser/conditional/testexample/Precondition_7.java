@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Never_0 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Never_0.class);
+public class Precondition_7 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Precondition_7.class);
 
     public static final char PLUS_EXTENDS = '+';
     public static final char MINUS_SUPER = '-';

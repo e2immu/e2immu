@@ -93,8 +93,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
-        stateData = new StateData(statement instanceof LoopStatement, primitives);
         Location location = new LocationImpl(methodAnalysis.getMethodInfo(), index + INITIAL, statement.getIdentifier());
+        stateData = new StateData(location, statement instanceof LoopStatement, primitives);
         flowData = new FlowData(location);
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
@@ -1977,33 +1977,35 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public CausesOfDelay applyPrecondition(Precondition precondition,
                                            EvaluationContext evaluationContext,
                                            ConditionManager localConditionManager) {
+        Location location = location(EVALUATION);
         if (precondition != null) {
             Expression preconditionExpression = precondition.expression();
             if (preconditionExpression.isBoolValueFalse()) {
-                ensure(Message.newMessage(location(EVALUATION), Message.Label.INCOMPATIBLE_PRECONDITION));
-                stateData().setPreconditionAllowEquals(Precondition.empty(primitives()));
+                ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
+                stateData.setPreconditionAllowEquals(Precondition.empty(primitives()));
             } else {
-                Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression());
-                if (translated != null) {
-                    Precondition pc = new Precondition(translated, precondition.causes());
-                    stateData().setPrecondition(pc, preconditionExpression.isDelayed());
-                }
                 if (preconditionExpression.isDelayed()) {
                     LOGGER.debug("Apply of {}, {} is delayed because of precondition",
                             index(), methodAnalysis.getMethodInfo().fullyQualifiedName);
-                    stateData.setPrecondition(new Precondition(preconditionExpression,
-                            precondition.causes()), true);
+                    stateData.setPrecondition(new Precondition(preconditionExpression, precondition.causes()));
                     return preconditionExpression.causesOfDelay();
+                }
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression());
+                if (translated != null) {
+                    Precondition pc = new Precondition(translated, precondition.causes());
+                    stateData.setPrecondition(pc);
+                } else {
+                    stateData.setPrecondition(Precondition.empty(primitives()));
                 }
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 Expression result = localConditionManager.evaluate(context, preconditionExpression);
                 if (result.isBoolValueFalse()) {
-                    ensure(Message.newMessage(location(EVALUATION), Message.Label.INCOMPATIBLE_PRECONDITION));
+                    ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
                 }
             }
         } else if (!stateData().preconditionIsFinal()) {
             // undo a potential previous delay, so that no precondition is seen to be present
-            stateData().setPrecondition(null, true);
+            stateData.setPrecondition(Precondition.noInformationYet(location, primitives));
         }
         return CausesOfDelay.EMPTY;
     }

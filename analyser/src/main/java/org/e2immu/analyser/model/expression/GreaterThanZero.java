@@ -282,7 +282,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         } else {
             expression = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
         }
-        return new EvaluationResult.Builder().compose(er).setExpression(expression).build();
+        return new EvaluationResult.Builder(context).compose(er).setExpression(expression).build();
     }
 
     @Override

@@ -56,7 +56,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
         List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         Expression[] reValues = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         MultiExpression reMulti = new MultiExpression(reValues);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(reClauseERs)
                 .setExpression(new MultiExpressions(identifier, context.getAnalyserContext(), reMulti))
                 .build();

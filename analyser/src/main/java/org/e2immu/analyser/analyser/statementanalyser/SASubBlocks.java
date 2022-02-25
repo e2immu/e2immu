@@ -75,11 +75,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         sharedState.evaluationContext().acceptAndTranslatePrecondition(assertion),
                         new BooleanConstant(statementAnalysis.primitives(), true));
                 Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                statementAnalysis.stateData().setPrecondition(pc, expressionIsDelayed);
+                statementAnalysis.stateData().setPrecondition(pc);
             } else {
                 // the null/not null of parameters has been handled during the main evaluation
-                statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()),
-                        expressionIsDelayed);
+                statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
             }
 
             if (expressionIsDelayed) {

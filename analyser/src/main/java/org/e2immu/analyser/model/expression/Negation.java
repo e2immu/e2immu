@@ -43,7 +43,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(context, translation);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reValue);
         return builder.setExpression(Negation.negate(context, reValue.value())).build();
     }
 

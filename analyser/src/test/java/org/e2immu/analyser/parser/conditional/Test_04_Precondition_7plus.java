@@ -22,15 +22,25 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_Never extends CommonTestRunner {
+public class Test_04_Precondition_7plus extends CommonTestRunner {
 
-    public Test_Never() {
+    public Test_04_Precondition_7plus() {
         super(true);
     }
 
     @Test
-    public void test_0() throws IOException {
-        testClass("Never_0", 0, 0,
+    public void test_7() throws IOException {
+        testClass("Precondition_7", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("Precondition_8", 0, 1,
                 new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder()

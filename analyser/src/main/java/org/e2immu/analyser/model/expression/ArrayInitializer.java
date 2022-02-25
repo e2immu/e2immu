@@ -69,7 +69,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         List<EvaluationResult> reClauseERs = multiExpression.stream()
                 .map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(context)
                 .compose(reClauseERs)
                 .setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(), reValues, commonType))
                 .build();
