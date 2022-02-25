@@ -327,7 +327,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
         assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
-        if (!methodAnalysis.hasBeenAnalysedUpToIteration0()) {
+        if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
+            assert sharedState.evaluationContext().getIteration() == 0 : "In iteration " + sharedState.evaluationContext().getIteration();
             /* if the method has not gone through 1st iteration of analysis, we need to wait.
              this should never be a circular wait because we're talking a strict constructor hierarchy
              the delay has to have an effect on CM in the next iterations, because introducing the assignments here

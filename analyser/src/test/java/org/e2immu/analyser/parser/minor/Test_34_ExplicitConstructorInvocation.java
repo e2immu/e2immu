@@ -29,8 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
@@ -184,5 +183,21 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+    }
+
+    @Test
+    public void test_9_2() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("LoopStatement".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertFalse(d.context().evaluationContext().delayStatementBecauseOfECI());
+                }
+            }
+        };
+        // unused parameter "structure"
+        testClass("ExplicitConstructorInvocation_9", 0, 1, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 }

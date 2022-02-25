@@ -122,7 +122,7 @@ public class ComputeLinkedVariables {
 
         // this will cause delays across the board for CONTEXT_ and EXTERNAL_ if the flag is set.
         if (evaluationContext.delayStatementBecauseOfECI()) {
-            delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI));
+            delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
                 SimpleSet.from(delaysInClustering));

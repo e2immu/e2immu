@@ -341,7 +341,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         CausesOfDelay causes;
         if (sharedState.evaluationContext().delayStatementBecauseOfECI() && !valuePropertiesIsDelayed.isDelayed()) {
-            causes = new SimpleSet(new SimpleCause(getLocation(), CauseOfDelay.Cause.ECI));
+            causes = new SimpleSet(new SimpleCause(getLocation(), CauseOfDelay.Cause.ECI_HELPER));
         } else {
             causes = valuePropertiesIsDelayed;
         }

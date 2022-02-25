@@ -39,6 +39,7 @@ public interface CauseOfDelay {
         CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         CONTEXT_NOT_NULL("cnn", ""),
         ECI("eci", "Explicit constructor invocation"),
+        ECI_HELPER("eci_helper", "Explicit constructor invocation, helper"),
         EXT_IMM("ext_imm", "Variable's EXTERNAL_IMMUTABLE value not yet determined"),
         EXT_CONTAINER("ext_container", "Variable's EXTERNAL_CONTAINER not yet determined"),
         EXT_IGNORE_MODS("ext_ign_mod", "Variable's EXTERNAL_IGNORE_MODIFICATIONS not yet determined"),
