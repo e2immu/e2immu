@@ -675,10 +675,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // update @Independent
         TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
         if (bestType != null) {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
             DV currentIndependent = vi.getProperty(Property.INDEPENDENT);
             if (currentIndependent.isDelayed()) {
-                DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+                DV independent = typeAnalysis == null ? DEPENDENT_DV : typeAnalysis.getProperty(Property.INDEPENDENT);
                 vic.setProperty(Property.INDEPENDENT, independent, INITIAL);
             }
         }
@@ -2124,8 +2124,8 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
 
     @Override
     public boolean inLoop() {
-        if(statement instanceof LoopStatement) return true;
-        if(parent != null) {
+        if (statement instanceof LoopStatement) return true;
+        if (parent != null) {
             return parent.inLoop();
         }
         return false;
