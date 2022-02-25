@@ -231,7 +231,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertEquals(expect102, d.currentValue().toString());
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                 }
             }

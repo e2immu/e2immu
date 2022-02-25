@@ -62,7 +62,9 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "null==<p:a>?\"b\":<p:a>" : "null==a?\"b\":a";
+                        String expected = d.iteration() == 0
+                                ? "null==(null==a?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==a?nullable instance type String/*@Identity*/:<p:a>"
+                                : "null==a?\"b\":a";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

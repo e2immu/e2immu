@@ -1042,7 +1042,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (variable instanceof ReturnVariable) {
                 localAtLeastOneBlock = atLeastOneBlockExecuted && lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapes() ? 1 : 0).sum();
             } else {
-                localAtLeastOneBlock = atLeastOneBlockExecuted;// && lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapesOrReturns() ? 1 : 0).sum();
+                // in a Try statement, the blocks are successive rather than exclusive
+                localAtLeastOneBlock = atLeastOneBlockExecuted && (statement instanceof TryStatement ||
+                        lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapesOrReturns() ? 1 : 0).sum());
             }
             if (toMerge.size() > 0) {
                 try {

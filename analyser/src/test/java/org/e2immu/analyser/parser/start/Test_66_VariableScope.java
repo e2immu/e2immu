@@ -14,15 +14,18 @@
 
 package org.e2immu.analyser.parser.start;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -31,7 +34,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_66_VariableScope extends CommonTestRunner {
 
@@ -81,7 +85,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else fail(d.statementId()); // no other statements
                 }
                 if ("k".equals(d.variableName())) {
-                    if("1.0.3".equals(d.statementId())) {
+                    if ("1.0.3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:<vl:j>" :
                                 "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:instance type int";
                         assertEquals(expect, d.currentValue().toString());
@@ -218,7 +222,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("e", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
-                    if("2".equals(d.statementId())) {
+                    if ("2".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
                     }
                 }
@@ -233,14 +237,46 @@ public class Test_66_VariableScope extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         testClass("VariableScope_5", 0, 0, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
+    // interestingly, the problem is independent of the FINAL value (which is FALSE when computing across all methods,
+    // and TRUE when not).
     @Test
     public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if (d.variable() instanceof FieldReference fr && "allowStar".equals(fr.fieldInfo.name)) {
+                    if ("1.0.2.1.0".equals(d.statementId())) {
+                        assertEquals("false", d.currentValue().toString());
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        String expected = switch(d.iteration()) {
+                            case 0 -> "<m:addTypeReturnImport>&&<f:allowStar>";
+                            case 1 -> "instance type boolean&&<m:addTypeReturnImport>";
+                            default -> "instance type boolean&&<m:addTypeReturnImport>"; // FIXME
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("doImport".equals(d.variableName())) {
+                    assertEquals("<m:addTypeReturnImport>", d.currentValue().toString());
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("allowStar".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
+            }
+        };
         testClass("VariableScope_6", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
     }
 }
