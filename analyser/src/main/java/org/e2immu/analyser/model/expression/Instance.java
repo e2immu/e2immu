@@ -55,11 +55,6 @@ public final class Instance extends BaseExpression implements Expression {
                         Property.IDENTITY, Property.IDENTITY.falseDv)));
     }
 
-    public Expression copyWithImmutable(DV immutable) {
-        Properties p = valueProperties.writableCopy().overwrite(Property.IMMUTABLE, immutable);
-        return new Instance(identifier, parameterizedType, p);
-    }
-
     public static Expression forMethodResult(Identifier identifier,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {

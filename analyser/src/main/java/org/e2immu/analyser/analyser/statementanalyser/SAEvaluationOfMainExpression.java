@@ -107,7 +107,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
             result = createAndEvaluateReturnStatement(sharedState, toEvaluate);
         } else {
-            LOGGER.info("Eval main {} in {}", index(), methodInfo().fullyQualifiedName);
+            LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
             result = toEvaluate.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
         }
         if (statementAnalysis.statement() instanceof LoopStatement) {

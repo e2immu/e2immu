@@ -1523,7 +1523,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             wroteExtIgnMod = false;
         } else {
             // the value and its properties are taken from the field analyser
-            Properties valueProps = evaluationContext.getValueProperties(value);
+            Properties valueProps = evaluationContext.getValueProperties(fieldReference.parameterizedType, value);
             combined = properties.combine(valueProps);
             if (evaluationContext.inConstruction()) {
                 properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());

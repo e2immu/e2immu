@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -23,7 +22,9 @@ import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class Equals extends BinaryOperator {
@@ -37,10 +38,10 @@ public class Equals extends BinaryOperator {
     @Override
     public Expression translate(TranslationMap translationMap) {
         Expression e = translationMap.translateExpression(this);
-        if(e != this) return e;
+        if (e != this) return e;
         Expression tl = lhs.translate(translationMap);
         Expression tr = rhs.translate(translationMap);
-        if(tl == lhs && tr == rhs) return this;
+        if (tl == lhs && tr == rhs) return this;
         return new Equals(identifier, primitives, tl, tr);
     }
 
@@ -53,7 +54,7 @@ public class Equals extends BinaryOperator {
     }
 
     public static Expression equals(EvaluationResult context, Expression l, Expression r) {
-        return equals(Identifier.generate("equals"), context, l, r, true);
+        return equals(new Identifier.ListOfIdentifiers("equals", List.of(l.getIdentifier(), r.getIdentifier())), context, l, r, true);
     }
 
     public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r) {

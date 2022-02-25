@@ -38,8 +38,9 @@ public record AnalyserProgram(Step step, Set<Step> accepted) {
 
         ITERATION_1(ITERATION_1PLUS),
 
-        ALL(ITERATION_1PLUS);
+        ITERATION_2(ITERATION_1),
 
+        ALL(ITERATION_2);
 
         Step() {
             this.dependsOn = Set.of();

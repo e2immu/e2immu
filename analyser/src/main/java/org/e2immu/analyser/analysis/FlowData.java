@@ -198,7 +198,12 @@ public class FlowData {
                 guaranteedToBeReachedInMethod.set(executionInMethod);
             }
         } else {
-            guaranteedToBeReachedInMethod.setFirst(executionInMethod.causesOfDelay());
+            try {
+                guaranteedToBeReachedInMethod.setFirst(executionInMethod.causesOfDelay());
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Try to set delay {}, already have final value {}", executionInMethod.causesOfDelay(), guaranteedToBeReachedInMethod.get());
+                throw ise;
+            }
         }
     }
 

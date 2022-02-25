@@ -63,7 +63,7 @@ public class TestAnalyseCode {
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
-                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_1))
+                .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_2))
                 .build();
 
         DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()

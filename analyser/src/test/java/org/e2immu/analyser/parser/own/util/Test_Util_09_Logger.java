@@ -21,7 +21,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.own.testexample.Logger;
+import org.e2immu.analyser.parser.own.util.testexample.Logger;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 

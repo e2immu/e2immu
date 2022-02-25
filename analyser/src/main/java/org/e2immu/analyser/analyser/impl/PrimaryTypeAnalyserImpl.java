@@ -255,8 +255,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
                 return;
             }
-            if (iteration > 1 && !configuration.analyserConfiguration().analyserProgram().accepts(ALL)) {
+            if (iteration > 1 && !configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_2)) {
                 LOGGER.debug("\n******\nStopping after iteration 1 according to program\n******");
+                return;
+            }
+            if (iteration > 2 && !configuration.analyserConfiguration().analyserProgram().accepts(ALL)) {
+                LOGGER.debug("\n******\nStopping after iteration 2 according to program\n******");
                 return;
             }
             analysisStatus = analyserResult.analysisStatus();
