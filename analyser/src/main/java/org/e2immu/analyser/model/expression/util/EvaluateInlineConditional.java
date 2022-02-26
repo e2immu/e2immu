@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -122,8 +121,7 @@ public class EvaluateInlineConditional {
             Expression ifTrueCondition = removeCommonClauses(evaluationContext, condition, and);
             if (ifTrueCondition != ifTrueInline.condition) {
                 return conditionalValueConditionResolved(evaluationContext,
-                        condition, new InlineConditional(Identifier.generate("inline remove common clause"),
-                                evaluationContext.getAnalyserContext(), ifTrueCondition,
+                        condition, new InlineConditional(evaluationContext.getAnalyserContext(), ifTrueCondition,
                                 ifTrueInline.ifTrue, ifTrueInline.ifFalse), ifFalse, complain);
             }
         }
@@ -283,8 +281,7 @@ public class EvaluateInlineConditional {
                 TypeInfo.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
             VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
-            Expression knownValue = new MethodCall(Identifier.generate("isKnown"),
-                    object, methodValue.methodInfo, methodValue.parameterExpressions);
+            Expression knownValue = new MethodCall(object, methodValue.methodInfo, methodValue.parameterExpressions);
             return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
         }
         return null;

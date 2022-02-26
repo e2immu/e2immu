@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -52,7 +51,8 @@ public class Sum extends BinaryOperator {
 
     // we try to maintain a sum of products
     public static Expression sum(EvaluationResult evaluationContext, Expression l, Expression r) {
-        return sum(Identifier.generate("sum"), evaluationContext, l, r, true);
+        return sum(Identifier.joined("sum", List.of(l.getIdentifier(), r.getIdentifier())),
+                evaluationContext, l, r, true);
     }
 
     public static Expression sum(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

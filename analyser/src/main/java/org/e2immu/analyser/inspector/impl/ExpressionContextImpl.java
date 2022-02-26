@@ -421,8 +421,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             LocalVariable localVariable = new LocalVariable.Builder()
                     .setOwningType(owningType())
                     .setName(name).setParameterizedType(typeOfVariable).build();
-            LocalVariableCreation lvc = new LocalVariableCreation(typeContext.getPrimitives(), localVariable);
-            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(Identifier.from(catchClause), lvc, unionOfTypes);
+            Identifier clauseId = Identifier.from(catchClause);
+            LocalVariableCreation lvc = new LocalVariableCreation(clauseId, typeContext.getPrimitives(), localVariable);
+            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(clauseId, lvc, unionOfTypes);
             ExpressionContextImpl catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());

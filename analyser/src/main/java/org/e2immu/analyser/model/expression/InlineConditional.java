@@ -51,6 +51,14 @@ public class InlineConditional extends BaseExpression implements Expression {
     // cached
     private final CausesOfDelay causesOfDelay;
 
+    public InlineConditional(InspectionProvider inspectionProvider,
+                             Expression condition,
+                             Expression ifTrue,
+                             Expression ifFalse) {
+        this(Identifier.joined("inline", List.of(condition.getIdentifier(), ifTrue.getIdentifier(), ifFalse.getIdentifier())),
+                inspectionProvider, condition, ifTrue, ifFalse);
+    }
+
     public InlineConditional(Identifier identifier,
                              InspectionProvider inspectionProvider,
                              Expression condition,

@@ -156,7 +156,7 @@ public class TestTypeInfoStream {
                                 )
                                 .addStatement(
                                         new ForEachStatement(newId(), null,
-                                                new LocalVariableCreation(primitives,
+                                                new LocalVariableCreation(Identifier.generate("lvc"), primitives,
                                                         new LocalVariable.Builder()
                                                                 .setOwningType(testTypeInfo)
                                                                 .setName("entry")

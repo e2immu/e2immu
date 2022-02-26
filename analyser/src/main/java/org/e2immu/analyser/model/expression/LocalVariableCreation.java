@@ -46,8 +46,8 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         }
     }
 
-    public LocalVariableCreation(Primitives primitives, LocalVariable localVariable) {
-        this(primitives, List.of(new Declaration(Identifier.generate("lvc"), localVariable,
+    public LocalVariableCreation(Identifier identifier, Primitives primitives, LocalVariable localVariable) {
+        this(primitives, List.of(new Declaration(identifier, localVariable,
                 EmptyExpression.EMPTY_EXPRESSION)), false);
     }
 

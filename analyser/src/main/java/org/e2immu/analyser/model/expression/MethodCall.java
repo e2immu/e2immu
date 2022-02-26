@@ -47,6 +47,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression object;
     public final List<Expression> parameterExpressions;
 
+    public MethodCall(Expression object,
+                      MethodInfo methodInfo,
+                      List<Expression> parameterExpressions) {
+        this(Identifier.joined("methodCall", Stream.concat(Stream.of(object.getIdentifier()), parameterExpressions.stream().map(Expression::getIdentifier)).toList()),
+                false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
+    }
+
     public MethodCall(Identifier identifier,
                       Expression object,
                       MethodInfo methodInfo,

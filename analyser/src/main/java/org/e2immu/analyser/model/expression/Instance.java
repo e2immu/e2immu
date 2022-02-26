@@ -257,6 +257,7 @@ public final class Instance extends BaseExpression implements Expression {
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
 
+        // To help debug problems of overwriting values, replace "instance" (or add) the identifier.compact() string
         Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
         outputBuilder.add(text);
 

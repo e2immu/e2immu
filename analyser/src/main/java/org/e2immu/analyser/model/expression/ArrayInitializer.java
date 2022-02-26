@@ -47,6 +47,13 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         this.inspectionProvider = inspectionProvider;
     }
 
+    public ArrayInitializer(InspectionProvider inspectionProvider,
+                            List<Expression> values,
+                            ParameterizedType formalCommonType) {
+        this(Identifier.joined("array init", values.stream().map(Expression::getIdentifier).toList()),
+                inspectionProvider, values, formalCommonType);
+    }
+
     public ArrayInitializer(Identifier identifier,
                             InspectionProvider inspectionProvider,
                             List<Expression> values,

@@ -37,29 +37,29 @@ public final class Or extends ExpressionCanBeTooComplex {
     private final List<Expression> expressions;
     public static final int COMPLEXITY = 4;
 
+    public Or(Primitives primitives, List<Expression> expressions) {
+        this(Identifier.joined("or", expressions.stream().map(Expression::getIdentifier).toList()), primitives, expressions);
+    }
+
     public Or(Identifier identifier, Primitives primitives, List<Expression> expressions) {
         super(identifier, COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum());
-        Objects.requireNonNull(primitives);
-        Objects.requireNonNull(expressions);
-        this.primitives = primitives;
-        this.expressions = expressions;
+        this.primitives = Objects.requireNonNull(primitives);
+        this.expressions = Objects.requireNonNull(expressions);
     }
-
     // testing only
-    public Or(Primitives primitives) {
-        this(Identifier.generate("or"), primitives, List.of());
-    }
 
     private Or(Identifier identifier, Primitives primitives) {
-        this(Identifier.generate("or"), primitives, List.of());
+        this(identifier, primitives, List.of());
     }
 
     public static Expression or(EvaluationResult context, Expression... values) {
-        return new Or(context.getPrimitives()).append(context, values);
+        Identifier id = Identifier.joined("or", Arrays.stream(values).map(Expression::getIdentifier).toList());
+        return new Or(id, context.getPrimitives()).append(context, values);
     }
 
     public static Expression or(EvaluationResult context, List<Expression> values) {
-        return new Or(context.getPrimitives()).append(context, values);
+        Identifier id = Identifier.joined("or", values.stream().map(Expression::getIdentifier).toList());
+        return new Or(id, context.getPrimitives()).append(context, values);
     }
 
     private Expression append(EvaluationResult context, Expression... values) {
@@ -224,10 +224,9 @@ public final class Or extends ExpressionCanBeTooComplex {
         EvaluationResult[] clauseResults = expressions.stream()
                 .map(v -> v.evaluate(context, forwardEvaluationInfo)).toArray(EvaluationResult[]::new);
         Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder(context)
-                .compose(clauseResults)
-                .setExpression(new Or(primitives).append(context, clauses))
-                .build();
+        Identifier id = Identifier.joined("or", Arrays.stream(clauses).map(Expression::getIdentifier).toList());
+        Expression or = new Or(id, primitives).append(context, clauses);
+        return new EvaluationResult.Builder(context).compose(clauseResults).setExpression(or).build();
     }
 
     @Override
@@ -249,7 +248,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream()).collect(Collectors.toList());
     }
 
-    // no implementation of any of the filters
+    // no implementation of the filters
 
     @Override
     public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
@@ -257,10 +256,9 @@ public final class Or extends ExpressionCanBeTooComplex {
                 .map(v -> v.reEvaluate(context, translation))
                 .collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder(context)
-                .compose(reClauseERs)
-                .setExpression(new Or(primitives).append(context, reClauses))
-                .build();
+        Identifier id = Identifier.joined("and", Arrays.stream(reClauses).map(Expression::getIdentifier).toList());
+        Expression or = new Or(id, primitives).append(context, reClauses);
+        return new EvaluationResult.Builder(context).compose(reClauseERs).setExpression(or).build();
     }
 
     @Override

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
@@ -81,16 +80,17 @@ public abstract class SwitchEntry extends StatementWithStructure {
         Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(Identifier.generate("switch entry condition"), primitives, or, primitives.orOperatorBool(),
-                    equality(primitives, labels.get(i), switchVariableAsExpression, operator),
-                    Precedence.LOGICAL_OR);
+            Expression equality = equality(primitives, labels.get(i), switchVariableAsExpression, operator);
+            Identifier id = Identifier.joined("switch condition", List.of(or.getIdentifier(), equality.getIdentifier()));
+            or = new BinaryOperator(id, primitives, or, primitives.orOperatorBool(), equality, Precedence.LOGICAL_OR);
         }
         return or;
     }
 
     private static Expression equality(Primitives primitives, Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
-        return new BinaryOperator(Identifier.generate("switch entry condition equality"),
-                primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
+        Identifier id = Identifier.joined("switch entry condition equality",
+                List.of(switchVariableAsExpression.getIdentifier(), operator.getIdentifier()));
+        return new BinaryOperator(id, primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {

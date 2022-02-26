@@ -133,7 +133,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     public static Expression greater(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return greater(Identifier.generate("gt0 greater"), evaluationContext, l, r, allowEquals);
+        return greater(Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier())), evaluationContext, l, r, allowEquals);
     }
 
     public static Expression greater(Identifier identifier,
@@ -171,7 +171,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     // mainly for testing
     public static Expression less(EvaluationResult evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return less(Identifier.generate("gt0 less"), evaluationContext, l, r, allowEquals);
+        return less(Identifier.joined("gt0", List.of(l.getIdentifier(), r.getIdentifier())), evaluationContext, l, r, allowEquals);
     }
 
     public static Expression less(Identifier identifier,

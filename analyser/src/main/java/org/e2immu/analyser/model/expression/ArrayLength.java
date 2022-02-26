@@ -33,7 +33,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     private final Expression scope;
 
     public ArrayLength(Primitives primitives, @NotNull Expression scope) {
-        super(Identifier.generate("array length"));
+        super(Identifier.joined("array length", List.of(scope.getIdentifier())));
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;
     }
