@@ -660,7 +660,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
             return translated;
         }
-        return null;
+        return precondition.isDelayed() ? precondition : null;
     }
 
     @Override

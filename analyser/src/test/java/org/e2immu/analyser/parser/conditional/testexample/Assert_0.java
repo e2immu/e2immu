@@ -14,6 +14,11 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
+import java.util.Set;
+
+/*
+Grabs a problem in statement 2 of combine(), assert isDelayed();
+ */
 public class Assert_0 {
 
     interface AnalysisStatus {
@@ -31,6 +36,8 @@ public class Assert_0 {
 
         CausesOfDelay addProgress(boolean progress);
     }
+
+    interface CauseOfDelay{}
 
     record NotDelayed() implements AnalysisStatus {
         @Override
@@ -55,7 +62,12 @@ public class Assert_0 {
     }
 
     static class SimpleSet implements CausesOfDelay {
-        static SimpleSet EMPTY = new SimpleSet();
+        private static final SimpleSet EMPTY = new SimpleSet(Set.of());
+        private final Set<CauseOfDelay> causes;
+
+        public SimpleSet(Set<CauseOfDelay> causes) {
+            this.causes = causes;
+        }
 
         public AnalysisStatus combine(AnalysisStatus other, boolean limit) {
             if (other instanceof NotDelayed) return this;
@@ -76,17 +88,17 @@ public class Assert_0 {
 
         @Override
         public boolean isDelayed() {
-            return true;
+            return !causes.isEmpty();
         }
 
         @Override
         public CausesOfDelay causesOfDelay() {
-            return null;
+            return this;
         }
 
         @Override
         public int numberOfDelays() {
-            return 0;
+            return causes.size();
         }
 
         @Override

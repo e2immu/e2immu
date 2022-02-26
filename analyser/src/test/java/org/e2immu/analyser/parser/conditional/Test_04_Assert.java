@@ -17,9 +17,13 @@ package org.e2immu.analyser.parser.conditional;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_04_Assert extends CommonTestRunner {
     public Test_04_Assert() {
@@ -28,7 +32,42 @@ public class Test_04_Assert extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("Assert_0", 2, 2, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = "other.isDelayed()";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1 -> "<m:isDelayed>";
+                        case 2 -> "!<m:isEmpty>";
+                        default -> "!causes.isEmpty()";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    // not delayed, even in iteration 0: call to interface method
+                    String expected = "Precondition[expression=other.isDelayed(), causes=[escape]]";
+                    assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
+                        case 2 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
+                        default -> "Precondition[expression=!causes.isEmpty(), causes=[escape]]";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
+                }
+            }
+        };
+        testClass("Assert_0", 0, 4, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
