@@ -60,7 +60,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     };
                     assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     assertEquals(expect, d.statementAnalysis().methodLevelData()
-                            .combinedPrecondition.get().expression().toString());
+                            .combinedPreconditionGet().expression().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() <= 1) {
@@ -73,7 +73,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         case 1 -> "<precondition>&&null==<f*:t>";
                         default -> "null==t";
                     };
-                    assertEquals(expect, d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                    assertEquals(expect, d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
             }
             if ("set2".equals(d.methodInfo().name)) {
@@ -235,7 +235,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     String expected = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                             : "Precondition[expression=null==t, causes=[methodCall:setT]]";
                     assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
-                    assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPrecondition.get().toString());
+                    assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                 }
                 // 1: setT(t), again
                 if ("1".equals(d.statementId())) {
@@ -374,7 +374,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     } else {
                         assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("!data.isEmpty()&&set.isEmpty()",
-                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     }
                 }
             }
@@ -464,7 +464,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     } else {
                         assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("data.size()>=1&&set.size()<=0",
-                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     }
                 }
             }
@@ -514,7 +514,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     } else {
                         assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("0!=data.size()&&0==set.size()",
-                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     }
                 }
             }

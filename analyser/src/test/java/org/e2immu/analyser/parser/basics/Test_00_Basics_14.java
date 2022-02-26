@@ -64,7 +64,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, CONTEXT_IMMUTABLE);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {

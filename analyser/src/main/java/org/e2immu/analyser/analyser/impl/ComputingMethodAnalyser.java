@@ -252,11 +252,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         assert methodAnalysis.precondition.isVariable();
 
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if (methodLevelData.combinedPrecondition.isVariable()) {
-            methodAnalysis.precondition.setVariable(methodLevelData.combinedPrecondition.get());
-            return methodLevelData.combinedPrecondition.get().expression().causesOfDelay();
+        Precondition pc = methodLevelData.combinedPreconditionGet();
+        if (!methodLevelData.combinedPreconditionIsFinal()) {
+            methodAnalysis.precondition.setVariable(pc);
+            return pc.expression().causesOfDelay();
         }
-        methodAnalysis.precondition.setFinal(methodLevelData.combinedPrecondition.get());
+        methodAnalysis.precondition.setFinal(pc);
         return DONE;
     }
 

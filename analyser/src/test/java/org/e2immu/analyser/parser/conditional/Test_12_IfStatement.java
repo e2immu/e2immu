@@ -189,14 +189,14 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData()
                             .getPrecondition().expression().toString());
                     assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData()
-                            .combinedPrecondition.get().expression().toString());
+                            .combinedPreconditionGet().expression().toString());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("!\"3\".equals(label1)",
-                            d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }

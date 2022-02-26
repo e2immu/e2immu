@@ -21,15 +21,15 @@ import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /*
 a series of tests to detect an infinite delayed loop 20210311
@@ -75,10 +75,55 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 .build());
     }
 
-    // FIXME infinite delay loop due to changes in methodAnalysis.precondition
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("<f:first>", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=<precondition>, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
+                    assertEquals("no precondition info@Method_set_0-E", d.statementAnalysis().stateData().getPrecondition().expression().causesOfDelay().toString());
+
+                    assertEquals("", d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().toString());
+                    assertEquals(d.iteration() >= 20, d.statementAnalysis().stateData().preconditionIsFinal());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=<precondition>, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+            }
+            if ("FirstThen_1".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("first".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertEquals("", d.fieldAnalysis().valuesDelayed().toString());
+                assertEquals("first/*@NotNull*/,s", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
         testClass("FirstThen_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

@@ -105,7 +105,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             }
             if ("0".equals(d.statementId())) {
                 assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                        d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
             }
         }
     };

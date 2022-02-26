@@ -31,11 +31,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
         testClass("Precondition_7", 0, 0,
-                new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder()
-                        .setForceAlphabeticAnalysisInPrimaryType(true)
-                        .build());
+                new DebugConfiguration.Builder().build());
     }
 
     @Test

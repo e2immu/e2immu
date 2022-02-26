@@ -70,7 +70,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals(FlowData.ALWAYS, inMethod);
                     Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
                     assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
-                    assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!a&&!b", d.condition().toString());
@@ -83,7 +83,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("(a||b)&&(!a||!b)", d.state().toString());
                     assertEquals(FlowData.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.CONDITIONALLY, inMethod);
-                    assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("a&&!b", d.statementAnalysis().stateData().valueOfExpression.get().toString());
@@ -98,14 +98,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                     assertEquals(FlowData.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.CONDITIONALLY, inMethod);
-                    assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                 }
                 // unreachable statement
                 if ("4".equals(d.statementId())) {
                     assertEquals(FlowData.NEVER, inBlock);
                     assertEquals(FlowData.NEVER, inMethod);
                     assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
-                    assertFalse(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                    assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("5".equals(d.statementId())) {
                     assertEquals(FlowData.NEVER, inBlock);
@@ -113,7 +113,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     VariableInfo ret = d.getReturnAsVariable();
                     assertNull(ret); // unreachable statement, no data have even been copied!
-                    assertFalse(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                    assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
 
             }
@@ -201,7 +201,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals("true", d.state().toString());
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.statementAnalysis().stateData().getPrecondition().toString());
-                        assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
+                        assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                     }
                 }
             }
@@ -239,7 +239,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.state().toString()); //->precondition, in this case, parameter not null
                         // goes into not-null on parameters
-                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPrecondition.get().toString());
+                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("null==a", d.condition().toString());
@@ -251,7 +251,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.state().toString()); // in both parameters by now
                         //      assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
-                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPrecondition.get().toString());
+                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("null==b", d.condition().toString());

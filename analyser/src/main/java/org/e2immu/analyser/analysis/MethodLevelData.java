@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.support.EventuallyFinal;
@@ -45,7 +46,7 @@ public class MethodLevelData {
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
-    public final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
+    private final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
@@ -59,6 +60,14 @@ public class MethodLevelData {
 
     public CausesOfDelay linksHaveNotYetBeenEstablished() {
         return linksHaveBeenEstablished.get();
+    }
+
+    public boolean combinedPreconditionIsFinal() {
+        return combinedPrecondition.isFinal();
+    }
+
+    public Precondition combinedPreconditionGet() {
+        return combinedPrecondition.get();
     }
 
     public record SharedState(AnalyserResult.Builder builder,

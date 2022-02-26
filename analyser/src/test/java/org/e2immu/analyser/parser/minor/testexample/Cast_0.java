@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
 /*
@@ -22,7 +22,7 @@ Example of a cast which messes with the immutability rules: because
 of the cast, T is not transparent; it is not explicitly @E2Immutable itself,
 and it is exposed via the getter -> cannot be @E2Immutable.
  */
-@E1Container
+@E2Container
 public class Cast_0<T> {
 
     private final T t;

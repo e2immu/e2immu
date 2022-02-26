@@ -36,8 +36,8 @@ class ConditionManagerHelper {
                                                       Expression condition) {
         Primitives primitives = previous.primitives();
         Precondition combinedPrecondition;
-        if (previous.methodLevelData().combinedPrecondition.isFinal()) {
-            combinedPrecondition = previous.methodLevelData().combinedPrecondition.get();
+        if (previous.methodLevelData().combinedPreconditionIsFinal()) {
+            combinedPrecondition = previous.methodLevelData().combinedPreconditionGet();
             assert combinedPrecondition.expression().isDone();
         } else {
             CausesOfDelay causes = Objects.requireNonNullElseGet(

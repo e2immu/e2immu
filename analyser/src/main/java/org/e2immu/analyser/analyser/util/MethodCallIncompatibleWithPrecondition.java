@@ -46,8 +46,8 @@ public class MethodCallIncompatibleWithPrecondition {
                             Set<FieldInfo> fields,
                             MethodAnalyser methodAnalyser) {
         StatementAnalysis statementAnalysis = methodAnalyser.getMethodAnalysis().getLastStatement();
-        assert statementAnalysis.methodLevelData().combinedPrecondition.isFinal();
-        Expression precondition = statementAnalysis.methodLevelData().combinedPrecondition.get().expression();
+        assert statementAnalysis.methodLevelData().combinedPreconditionIsFinal();
+        Expression precondition = statementAnalysis.methodLevelData().combinedPreconditionGet().expression();
         Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(context, precondition);
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this

@@ -311,7 +311,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
                     assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().preconditionIsFinal());
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                            d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(d.iteration() <= 2, d.localConditionManager().isDelayed());

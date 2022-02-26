@@ -779,8 +779,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public boolean noIncompatiblePrecondition() {
-        return !(methodLevelData.combinedPrecondition.isFinal()
-                && methodLevelData.combinedPrecondition.get().expression().isBoolValueFalse());
+        return !(methodLevelData.combinedPreconditionIsFinal()
+                && methodLevelData.combinedPreconditionGet().expression().isBoolValueFalse());
     }
 
     public boolean haveLocalMessages() {
@@ -1588,11 +1588,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false);
         DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
-                .replaceDelayBy(MUTABLE_DV);
+                .replaceDelayBy(MUTABLE_DV.maxIgnoreDelay(formallyImmutable));
 
         DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(type);
         DV independent = INDEPENDENT.max(parameterAnalysis.getProperty(INDEPENDENT), formallyIndependent)
-                .replaceDelayBy(MultiLevel.DEPENDENT_DV);
+                .replaceDelayBy(MultiLevel.DEPENDENT_DV.maxIgnoreDelay(formallyIndependent));
 
         /*
         See ComputingTypeAnalyser.correctIndependentFunctionalInterface(), Lazy. A functional interface comes in as the
