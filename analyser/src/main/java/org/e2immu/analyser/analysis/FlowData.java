@@ -374,17 +374,7 @@ public class FlowData {
                 return delays;
             }
             Map<InterruptsFlow, DV> subInterrupts = flowData.interruptsFlow.get();
-            if (subInterrupts.isEmpty()) {
-                // in this sub-block, there are no interrupts...
-                if (flowData.blockExecution.isFirst()) {
-                    CausesOfDelay delays = flowData.blockExecution.getFirst().causesOfDelay();
-                    interruptsFlow.setFirst(delays);
-                    LOGGER.debug("Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
-                            subAnalyser.index());
-                    return delays;
-                }
-                builder.put(NO, flowData.blockExecution.get());
-            } else for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
+            for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
                 InterruptsFlow i = entry.getKey();
                 DV e = entry.getValue();
                 if (e.isDelayed()) {

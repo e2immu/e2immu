@@ -265,7 +265,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
-                                ? "<s:Map<String,String>>"
+                                ? "<vl:result>"
                                 : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo(now$3.toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLv = "result:0,return method:0";

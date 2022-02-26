@@ -81,7 +81,11 @@ public class Test_38_FirstThen extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "first".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("<f:first>", d.currentValue().toString());
+                        String expected = d.iteration() <= 1 ? "<f:first>" : "nullable instance type S";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("s", d.currentValue().toString());
                     }
                 }
             }
@@ -93,17 +97,17 @@ public class Test_38_FirstThen extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                 }
                 if ("0".equals(d.statementId())) {
-                    assertEquals("Precondition[expression=<precondition>, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
-                    assertEquals("no precondition info@Method_set_0-E", d.statementAnalysis().stateData().getPrecondition().expression().causesOfDelay().toString());
+                    assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
 
                     assertEquals("", d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().toString());
-                    assertEquals(d.iteration() >= 20, d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                assertEquals("Precondition[expression=<precondition>, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+                assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
             }
             if ("FirstThen_1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
@@ -116,7 +120,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().valuesDelayed().toString());
                 assertEquals("first/*@NotNull*/,s", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         testClass("FirstThen_1", 0, 0, new DebugConfiguration.Builder()

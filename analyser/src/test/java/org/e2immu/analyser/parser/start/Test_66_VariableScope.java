@@ -151,7 +151,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("no interrupt=CONDITIONALLY:1,return=CONDITIONALLY:1",
+                    assertEquals("return=CONDITIONALLY:1",
                             d.statementAnalysis().flowData().getInterruptsFlow().entrySet().stream()
                                     .map(Object::toString).sorted().collect(Collectors.joining(",")));
                 }
