@@ -194,9 +194,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                 }
             } else {
-                if (changeData.value() != null) {
+                if (changeData.value() != null && (changeData.value().isDone() || !(vi1.getValue() instanceof DelayedWrappedExpression))) {
                     // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
                     //assert changeData.value().isDone();
+                    // we cannot let DWEs be changed into other delays... they must be passed on (e.g. StaticSideEffects_1)
 
                     Map<Property, DV> merged = SAHelper.mergePreviousAndChange(sharedState.evaluationContext(),
                             variable, vi1.getProperties(),

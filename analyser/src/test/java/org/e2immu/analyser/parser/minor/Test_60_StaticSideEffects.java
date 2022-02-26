@@ -91,7 +91,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectedValue =switch(d.iteration()) {
                             case 0 -> "null==<f:counter>?new AtomicInteger():<f:counter>";
-                            case 1 -> "<wrapped:counter>";
+                            case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
                             default -> "null==StaticSideEffects_1.counter?new AtomicInteger():nullable instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
@@ -99,6 +99,13 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
+                        String expectedValue =switch(d.iteration()) {
+                            case 0 -> "<mmc:counter>";
+                            case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
+                            default -> "instance type AtomicInteger";
+                        };
+                        assertEquals(expectedValue, d.currentValue().toString());
+
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
@@ -108,7 +115,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("counter".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 if (d.iteration() > 0) {
                     String expected = "new AtomicInteger(),null";
                     assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
@@ -117,11 +124,11 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
