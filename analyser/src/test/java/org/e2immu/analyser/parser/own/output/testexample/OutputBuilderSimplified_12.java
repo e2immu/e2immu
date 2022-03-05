@@ -24,7 +24,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @E1Container
-public class OutputBuilderSimplified_7 {
+public class OutputBuilderSimplified_12 {
     interface OutputElement {
         default String debug() {
             return "";
@@ -39,29 +39,29 @@ public class OutputBuilderSimplified_7 {
     @Modified
     final List<OutputElement> list = new LinkedList<>();
 
-    public OutputBuilderSimplified_7 add(OutputElement... outputElements) {
+    public OutputBuilderSimplified_12 add(OutputElement... outputElements) {
         Collections.addAll(list, outputElements);
         return this;
     }
 
-    public OutputBuilderSimplified_7 add(OutputBuilderSimplified_7... outputBuilders) {
+    public OutputBuilderSimplified_12 add(OutputBuilderSimplified_12... outputBuilders) {
         Arrays.stream(outputBuilders).flatMap(ob -> ob.list.stream()).forEach(list::add);
         return this;
     }
 
-    public static Collector<OutputBuilderSimplified_7, OutputBuilderSimplified_7, OutputBuilderSimplified_7> joining(OutputElement separator,
+    public static Collector<OutputBuilderSimplified_12, OutputBuilderSimplified_12, OutputBuilderSimplified_12> joining(OutputElement separator,
                                                                                                                         OutputElement start,
                                                                                                                         OutputElement end) {
         return new Collector<>() {
             private final AtomicInteger countMid = new AtomicInteger();
 
             @Override
-            public Supplier<OutputBuilderSimplified_7> supplier() {
-                return OutputBuilderSimplified_7::new;
+            public Supplier<OutputBuilderSimplified_12> supplier() {
+                return OutputBuilderSimplified_12::new;
             }
 
             @Override
-            public BiConsumer<OutputBuilderSimplified_7, OutputBuilderSimplified_7> accumulator() {
+            public BiConsumer<OutputBuilderSimplified_12, OutputBuilderSimplified_12> accumulator() {
                 return (a, b) -> {
                     if (!b.list.isEmpty()) {
                         boolean notStart =  !a.list.stream().allMatch(outputElement -> outputElement instanceof Space);
@@ -76,25 +76,25 @@ public class OutputBuilderSimplified_7 {
             }
 
             @Override
-            public BinaryOperator<OutputBuilderSimplified_7> combiner() {
-                return (a, b) -> {
-                    if (a.list.isEmpty()) return b;
-                    if (b.list.isEmpty()) return a;
-                    if (separator != Space.NONE) a.add(separator);
+            public BinaryOperator<OutputBuilderSimplified_12> combiner() {
+                return (aa, bb) -> {
+                    if (aa.list.isEmpty()) return bb;
+                    if (bb.list.isEmpty()) return aa;
+                    if (separator != Space.NONE) aa.add(separator);
                     countMid.incrementAndGet();
-                    return a.add(Space.NONE).add(b);
+                    return aa.add(Space.NONE).add(bb);
                 };
             }
 
             @Override
-            public Function<OutputBuilderSimplified_7, OutputBuilderSimplified_7> finisher() {
+            public Function<OutputBuilderSimplified_12, OutputBuilderSimplified_12> finisher() {
                 return t -> {
-                    OutputBuilderSimplified_7 result = new OutputBuilderSimplified_7();
+                    OutputBuilderSimplified_12 result = new OutputBuilderSimplified_12();
                     if (start != Space.NONE) result.add(start);
                     if (countMid.get() > 0 ) {
-                        // result.add(guideGenerator.start());
+                       // result.add(guideGenerator.start());
                         result.add(t);
-                        //   result.add(guideGenerator.end());
+                     //   result.add(guideGenerator.end());
                     } else {
                         result.add(t); // without the guides
                     }

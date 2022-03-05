@@ -1002,7 +1002,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         } else {
             CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(true);
             if (approvedDelays.isDelayed()) {
-                LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
+                LOGGER.debug("Type {} is effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(ALT_IMMUTABLE, approvedDelays);
                 return approvedDelays;
