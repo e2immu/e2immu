@@ -96,7 +96,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     String expectLv = "string:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     //container:this.set@Method_add_0
-                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
 
@@ -155,7 +155,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {

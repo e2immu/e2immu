@@ -145,7 +145,7 @@ public class EvaluateParameters {
         if (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else if (scopeIsContainer.isDelayed()) {
-            map.merge(Property.CONTEXT_MODIFIED, scopeIsContainer, DV::max);
+            map.merge(Property.CONTEXT_MODIFIED, scopeIsContainer, DV::maxIgnoreDelay);
         } else {
             DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
             if (contextModified == null) {

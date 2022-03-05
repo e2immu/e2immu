@@ -69,7 +69,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
@@ -81,7 +81,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                             // to know @Container of Fluent_0, we must know the CM of instanceCopy, which will rely on this value (it is linked to it!)
                             case 1 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;container@Class_Fluent_0;mm@Method_equals>/*(Fluent_0)*/";
                             case 2 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0;initial@Field_value>/*(Fluent_0)*/";
-                            case 3, 4 -> "<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/";
+                            case 3 -> "<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/";
                             default -> "instanceCopy/*(Fluent_0)*/";
                         };
                         //
@@ -94,7 +94,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                             case 0 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:container@Class_Fluent_0;immutable@Class_Fluent_0;independent@Class_Fluent_0>/*(Fluent_0)*/:<return value>";
                             case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;container@Class_Fluent_0;mm@Method_equals>/*(Fluent_0)*/:<return value>";
                             case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0;initial@Field_value>/*(Fluent_0)*/:<return value>";
-                            case 3, 4 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/:<return value>";
+                            case 3 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/:<return value>";
                             default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:<return value>";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -104,12 +104,13 @@ public class Test_56_Fluent extends CommonTestRunner {
                             case 0 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:container@Class_Fluent_0;immutable@Class_Fluent_0;independent@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
                             case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;container@Class_Fluent_0;mm@Method_equals>/*(Fluent_0)*/:<m:build>";
                             case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0;initial@Field_value>/*(Fluent_0)*/:<m:build>";
-                            case 3, 4 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
+                            case 3 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy;container@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
+                            case 4 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:<m:build>";
                             default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(instance type Builder.value)";
                         };
                         assertEquals(expect, d.currentValue().toString());
 
-                        String expectLinks = d.iteration() <= 4 ? "instanceCopy:-1,return copyOf:0" : "instanceCopy:1,return copyOf:0";
+                        String expectLinks = d.iteration() <= 3 ? "instanceCopy:-1,return copyOf:0" : "instanceCopy:1,return copyOf:0";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
@@ -166,7 +167,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -239,7 +240,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d, 5, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 4, DV.TRUE_DV, Property.IDENTITY);
             }
             if ("value".equals(d.methodInfo().name) && "Fluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));

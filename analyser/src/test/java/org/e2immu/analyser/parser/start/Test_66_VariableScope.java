@@ -269,7 +269,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
@@ -347,10 +347,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<p:typeInfo>" : "nullable instance type TypeInfo/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("doImport".equals(d.variableName())) {
@@ -380,7 +380,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     String expect = switch (d.iteration()) {
                         case 0 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;immutable@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.2:M]";
                         case 1 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.2:M]";
-                        case 2 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm@Parameter_typeInfo;container@Record_QualificationImpl, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm@Parameter_typeInfo;container@Record_QualificationImpl, qualification=cm@Parameter_typeInfo;container@Record_QualificationImpl, typesPerPackage=cm@Parameter_typeInfo;container@Record_QualificationImpl]";
                         default -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=false:0, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=false:0, qualification=false:0, typesPerPackage=true:1]";
                     };
                     // difference in is simply those 2 fields, with delayed values.
@@ -391,7 +390,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 3, d.methodAnalysis().getLastStatement().variableStream()
+                assertEquals(d.iteration() >= 2, d.methodAnalysis().getLastStatement().variableStream()
                         .peek(vi -> LOGGER.warn("CM of {}: {}", vi.variable(), vi.getProperty(Property.CONTEXT_MODIFIED)))
                         .allMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).isDone()));
             }

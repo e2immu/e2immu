@@ -62,15 +62,15 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expect = d.iteration() == 1 ? "!<m:containsKey>" : "!map.containsKey(k)";
                         assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     }
-                    assertEquals(d.iteration() >= 3,
+                    assertEquals(d.iteration() >= 2,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("3".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 3,
+                    assertEquals(d.iteration() >= 2,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("4".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 3,
+                    assertEquals(d.iteration() >= 2,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -97,7 +97,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertLinked(d, 1, "assign_to_field@Parameter_k", "k:0");
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
@@ -120,7 +120,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expectValue = d.iteration() <= 2 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertLinked(d, 2, "assign_to_field@Parameter_k", "k:0");
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
@@ -166,8 +166,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("isSet".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
@@ -176,8 +176,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
 
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()

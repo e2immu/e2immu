@@ -541,23 +541,22 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         /* the reason we do this for all statements in the method's block is that in a subsequent iteration,
          the first statements may already be DONE, so the code doesn't reach here!
+         See VariableScope_5 as an example where only in 0 and 1-E are done before a value is reached.
          */
-       // if (parent == null) {
-            init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
-            EvaluationContext closure4Local = evaluationContext.getClosure();
-            if (closure4Local != null) {
-                closure4Local.localVariableStream().forEach(e -> {
-                    VariableInfoContainer here = variables.getOrDefaultNull(e.getKey());
-                    if (here != null) {
-                        VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
-                        VariableInfo hereInitial = here.getRecursiveInitialOrNull();
-                        if (hereInitial != null && !hereInitial.valueIsSet()) {
-                            here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(), viInClosure.valueProperties(), true);
-                        }
+        init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
+        EvaluationContext closure4Local = evaluationContext.getClosure();
+        if (closure4Local != null) {
+            closure4Local.localVariableStream().forEach(e -> {
+                VariableInfoContainer here = variables.getOrDefaultNull(e.getKey());
+                if (here != null) {
+                    VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
+                    VariableInfo hereInitial = here.getRecursiveInitialOrNull();
+                    if (hereInitial != null && !hereInitial.valueIsSet()) {
+                        here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(), viInClosure.valueProperties(), true);
                     }
-                });
-            }
-     //   }
+                }
+            });
+        }
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
@@ -657,7 +656,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .forEach(vic -> {
                     VariableInfo prevInitial = vic.getPreviousOrInitial();
                     ParameterInfo parameterInfo = (ParameterInfo) prevInitial.variable();
-                    if(vic.isRecursivelyInitial()) {
+                    if (vic.isRecursivelyInitial()) {
                         updateValuePropertiesOfParameter(analyserContext, vic, prevInitial, parameterInfo);
                         ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                         for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {

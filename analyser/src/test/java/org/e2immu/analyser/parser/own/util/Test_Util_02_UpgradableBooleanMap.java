@@ -50,7 +50,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         d.typeAnalysis().getTransparentTypes().toString());
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
 
             if ("$1".equals(d.typeInfo().simpleName)) {
@@ -73,7 +73,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<mmc:upgradableBooleanMap>" : "new UpgradableBooleanMap<>()";
+                        String expected = d.iteration() <= 2 ? "<mmc:upgradableBooleanMap>" : "instance type UpgradableBooleanMap<T>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -82,10 +82,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -108,7 +108,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("put".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
