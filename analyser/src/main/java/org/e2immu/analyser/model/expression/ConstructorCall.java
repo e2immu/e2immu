@@ -233,6 +233,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        if (property == Property.CONTAINER && context.getCurrentType().isMyself(returnType(), context.getAnalyserContext())) {
+            return MultiLevel.NOT_CONTAINER_DV; // ALWAYS, regardless of the actual value
+        }
         ParameterizedType pt;
         AnalyserContext analyserContext = context.getAnalyserContext();
         if (anonymousClass != null) {
@@ -253,7 +256,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     private DV containerValue(ParameterizedType pt, AnalyserContext analyserContext) {
         DV dv = analyserContext.defaultContainer(pt);
-        if(dv.isDelayed() && anonymousClass != null) {
+        if (dv.isDelayed() && anonymousClass != null) {
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(anonymousClass);
             return typeAnalysis.getProperty(Property.PARTIAL_CONTAINER);
         }

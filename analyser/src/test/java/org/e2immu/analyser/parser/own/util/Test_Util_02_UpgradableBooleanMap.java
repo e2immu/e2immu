@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -48,6 +49,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("Type java.util.Map.Entry<T,java.lang.Boolean>, Type param T, Type param T, Type param T, Type param T, Type param T, Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
 
             if ("$1".equals(d.typeInfo().simpleName)) {
@@ -62,6 +65,30 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("of".equals(d.methodInfo().name) && n == 2) {
+                if ("upgradableBooleanMap".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<new:UpgradableBooleanMap<T>>" : "new UpgradableBooleanMap<>()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<mmc:upgradableBooleanMap>" : "new UpgradableBooleanMap<>()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = switch (d.iteration()) {
@@ -73,10 +100,16 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                     assertEquals("return combiner:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
+
         };
 
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("of".equals(d.methodInfo().name) && n == 2) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+            }
             if ("put".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
@@ -86,7 +119,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 assertEquals("put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
-                // assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             // uses putAll as a method reference
