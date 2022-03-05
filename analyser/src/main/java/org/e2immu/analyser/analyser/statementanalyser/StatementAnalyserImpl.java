@@ -620,9 +620,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
             statementAnalysis.variableStream().forEach(vi -> {
                 // naive approach
-                if (closure.isPresent(vi.variable()) || vi.variable() instanceof FieldReference fr
-                        && fr.fieldInfo.owner != currentType
-                        && fr.fieldInfo.owner.primaryType().equals(currentType.primaryType())) {
+                if (closure.acceptForVariableAccessReport(vi.variable(), currentType)) {
                     // mark, irrespective of whether it is present there or not (given that we are not the owner)
                     // readId will be 0-E, index 0
                     if (vi.isRead()) {

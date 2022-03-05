@@ -139,6 +139,7 @@ public interface EvaluationContext {
 
     /**
      * FIXME move to evaluationResult?
+     *
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
@@ -387,6 +388,21 @@ public interface EvaluationContext {
         return this;
     }
 
+    /**
+     * @param variable   the variable in the nested type
+     * @param nestedType the nested type
+     * @return true when we want to transfer properties from the nested type to the current type
+     */
+    default boolean acceptForVariableAccessReport(Variable variable, TypeInfo nestedType) {
+        if (isPresent(variable)) return true;
+        return variable instanceof FieldReference fr
+                && fr.fieldInfo.owner != nestedType
+                && fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType())
+              //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
+              //  && !(fr.isStatic);
+                && fr.scope instanceof VariableExpression ve && acceptForVariableAccessReport(ve.variable(), nestedType);
+    }
+
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
@@ -473,5 +489,7 @@ public interface EvaluationContext {
         return VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
     }
 
-    default boolean delayStatementBecauseOfECI() { return false; }
+    default boolean delayStatementBecauseOfECI() {
+        return false;
+    }
 }

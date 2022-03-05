@@ -542,7 +542,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         /* the reason we do this for all statements in the method's block is that in a subsequent iteration,
          the first statements may already be DONE, so the code doesn't reach here!
          */
-        if (parent == null) {
+       // if (parent == null) {
             init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
             EvaluationContext closure4Local = evaluationContext.getClosure();
             if (closure4Local != null) {
@@ -550,14 +550,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfoContainer here = variables.getOrDefaultNull(e.getKey());
                     if (here != null) {
                         VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
-                        VariableInfo hereInitial = here.getPreviousOrInitial();
-                        if (!hereInitial.valueIsSet() && here.isInitial()) {
+                        VariableInfo hereInitial = here.getRecursiveInitialOrNull();
+                        if (hereInitial != null && !hereInitial.valueIsSet()) {
                             here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(), viInClosure.valueProperties(), true);
                         }
                     }
                 });
             }
-        }
+     //   }
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
@@ -657,14 +657,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .forEach(vic -> {
                     VariableInfo prevInitial = vic.getPreviousOrInitial();
                     ParameterInfo parameterInfo = (ParameterInfo) prevInitial.variable();
-                    updateValuePropertiesOfParameter(analyserContext, vic, prevInitial, parameterInfo);
-                    ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                    for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
-                        DV value = parameterAnalysis.getProperty(property);
-                        // we have given a value in the first iteration for e.g. @Container
-                        // we'll not get back to that (will happen in EVAL rather than here)
-                        // hence the 'true' to ensure that we don't cause exceptions
-                        vic.setProperty(property, value, true, INITIAL);
+                    if(vic.isRecursivelyInitial()) {
+                        updateValuePropertiesOfParameter(analyserContext, vic, prevInitial, parameterInfo);
+                        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                        for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
+                            DV value = parameterAnalysis.getProperty(property);
+                            // we have given a value in the first iteration for e.g. @Container
+                            // we'll not get back to that (will happen in EVAL rather than here)
+                            // hence the 'true' to ensure that we don't cause exceptions
+                            vic.setProperty(property, value, true, INITIAL);
+                        }
                     }
                 });
     }

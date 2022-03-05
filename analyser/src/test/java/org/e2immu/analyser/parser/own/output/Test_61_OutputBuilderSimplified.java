@@ -22,9 +22,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -238,13 +238,16 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     }
 
     // delay, but not minimized; see 9
+    // see also _12, _12_alpha, where we had to ensure that only the relevant variables are reported upwards
+    // still, this one is yet again a bit different; the order of execution remains (wrongly) important
     @Test
     public void test_7() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // modifying method, so the lambda becomes an instance
-                    String expect = d.iteration() <= 2 ? "<m:apply>" : "instance type $4";
+                    String expect = d.iteration() <= 2 ? "<m:apply>" : "instance type $5";
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
@@ -264,7 +267,16 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("$5".equals(d.typeInfo().simpleName)) {
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("$6".equals(d.typeInfo().simpleName)) {
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -273,14 +285,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 } else if ("OutputBuilderSimplified_7".equals(t0.simpleName)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("addIfNotNull".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 20, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -296,7 +308,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, 20, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("combiner".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:combiner>" : "instance type $4";
+                String expected = d.iteration() <= 2 ? "<m:combiner>" : "instance type $5";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -307,21 +319,19 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+            if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                String expected = d.iteration() <= 20 ? "<m:apply>" : "result";
+                String expected = d.iteration() <= BIG ? "<m:apply>" : "result";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 20) {
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
-                }
+
                 assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 
@@ -400,17 +410,52 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
      */
     @Test
     public void test_12() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("result".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() < 3 ? "<new:OutputBuilderSimplified_12>" : "new OutputBuilderSimplified_12()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+            if ("joining".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                } else if (d.variable() instanceof This) {
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    fail("list does not occur without in a scope known to the top-level method");
+                } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
+                    fail("Variable NONE should not have been transferred");
+                } else if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
+                    fail("Variable should not have been transferred");
+                } else if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
+                    fail("Variable should not have been transferred");
+                } else if (d.variable() instanceof ParameterInfo pi && "aa".equals(pi.name)) {
+                    fail("Variable should not have been transferred");
+                } else if (d.variable() instanceof ParameterInfo pi && "bb".equals(pi.name)) {
+                    fail("Variable should not have been transferred");
+                } else if (d.variable() instanceof ReturnVariable) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                } else fail("Variable " + d.variableName());
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
                 if ("OutputElement".equals(t0.simpleName)) {
                     assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 } else if ("OutputBuilderSimplified_12".equals(t0.simpleName)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
@@ -436,7 +481,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // finisher!
-                String expected = d.iteration() <= 3 ? "<m:apply>"
+                String expected = d.iteration() < 3 ? "<m:apply>"
                         : "Space.NONE==end?countMid.get()>=1?instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
@@ -454,19 +499,21 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_12".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals(d.iteration() >= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -475,79 +522,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
     @Test
     public void test_12_alpha() throws IOException {
-        int BIG = 20;
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name)) {
-                TypeInfo t0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo;
-                if ("OutputElement".equals(t0.simpleName)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                } else if ("OutputBuilderSimplified_12".equals(t0.simpleName)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                } else fail("Add? " + d.methodInfo().fullyQualifiedName);
-            }
-            if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
-            }
-            if ("supplier".equals(d.methodInfo().name)) {
-                assertEquals("$2", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertEquals("OutputBuilderSimplified_12::new", d.methodAnalysis().getSingleReturnValue().toString());
-            }
-            if ("accept".equals(d.methodInfo().name)) {
-                assertEquals("$3", d.methodInfo().typeInfo.simpleName);
-                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                // accumulator!
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD); // instead of 3
-            }
-            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                // combiner!
-                String expected = d.iteration() <= 1 ? "<m:apply>" // instead of 2
-                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()&&!bb.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:dependent:2}*/";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD); // instead of 3
-            }
-            if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                // finisher!
-                String expected = d.iteration() <= BIG ? "<m:apply>"
-                        : "Space.NONE==end?countMid.get()>=1?instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-
-                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER); // instead of 3
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-            }
-        };
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("countMid".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-            }
-            if ("list".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-            }
-        };
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("OutputBuilderSimplified_12".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().approvedPreconditionsStatus(false).isDone());
-                assertEquals(d.iteration() > 3, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-            if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-            if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-            if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-            }
-        };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }

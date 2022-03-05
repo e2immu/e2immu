@@ -83,8 +83,6 @@ public interface VariableInfoContainer {
     @NotNull
     VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Stage level);
 
-    void ensureValuePropertiesInInitial(DV defaultNotNull);
-
     void setDelayedValue(CausesOfDelay causesOfDelay, Stage evaluation);
 
     /*
@@ -120,6 +118,11 @@ public interface VariableInfoContainer {
      * @return if the variable was created in this statement
      */
     boolean isInitial();
+
+    boolean isRecursivelyInitial();
+
+    @NotNull
+    VariableInfo getRecursiveInitialOrNull();
 
     // writing operations
     @Modified

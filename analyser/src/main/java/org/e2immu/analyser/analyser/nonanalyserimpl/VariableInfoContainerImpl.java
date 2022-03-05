@@ -32,8 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -175,6 +173,27 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public boolean isRecursivelyInitial() {
+        if (previousOrInitial.isRight()) return true;
+        VariableInfoContainer previous = previousOrInitial.getLeft();
+        // levelForPrevious == E or M
+        if (!previous.hasEvaluation() && (levelForPrevious == Stage.EVALUATION || !previous.hasMerge())) {
+            return previous.isRecursivelyInitial();
+        }
+        return false;
+    }
+
+    public VariableInfo getRecursiveInitialOrNull() {
+        if (previousOrInitial.isRight()) return previousOrInitial.getRight();
+        VariableInfoContainer previous = previousOrInitial.getLeft();
+        // levelForPrevious == E or M
+        if (!previous.hasEvaluation() && (levelForPrevious == Stage.EVALUATION || !previous.hasMerge())) {
+            return previous.getRecursiveInitialOrNull();
+        }
+        return null;
+    }
+
+    @Override
     public VariableInfo current() {
         if (merge != null && merge.isSet()) return merge.get();
         return currentExcludingMerge();
@@ -182,7 +201,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl getToWrite(Stage level) {
         return switch (level) {
-            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();
+            case INITIAL -> (VariableInfoImpl) getRecursiveInitialOrNull();
             case EVALUATION -> evaluation.get();
             case MERGE -> merge.get();
         };
@@ -213,7 +232,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                          boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
-        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
+        VariableInfoImpl variableInfo = getToWrite(initialOrEvaluation ? Stage.INITIAL : Stage.EVALUATION);
         try {
             variableInfo.setValue(value);
         } catch (IllegalStateException ise) {
@@ -254,7 +273,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             boolean doNotFailWhenTryingToWriteALowerValue,
                             Stage level) {
         // we do not write in some other VIC's merge or evaluation:
-        if (level == Stage.INITIAL && !isInitial()) return;
+        if (level == Stage.INITIAL && !isRecursivelyInitial()) return;
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);
@@ -304,21 +323,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl vii = getToWrite(level);
         Expression merged = vii.getValue().mergeDelays(causesOfDelay);
         vii.setValue(merged);
-    }
-
-    @Override
-    public void ensureValuePropertiesInInitial(DV defaultNotNull) {
-        assert !hasMerge();
-        assert !hasEvaluation();
-        assert isInitial();
-        VariableInfoImpl initial = getToWrite(Stage.INITIAL);
-        // even NOT_YET_ASSIGNED needs value properties (See TryStatement_2)
-        initial.ensureProperty(NOT_NULL_EXPRESSION, defaultNotNull);
-        initial.ensureProperty(IDENTITY, IDENTITY.falseDv);
-        initial.ensureProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
-        initial.ensureProperty(CONTAINER, CONTAINER.falseDv);
-        initial.ensureProperty(IMMUTABLE, MUTABLE_DV);
-        initial.ensureProperty(INDEPENDENT, INDEPENDENT.falseDv);
     }
 
     @Override

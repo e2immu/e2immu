@@ -16,10 +16,12 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -27,6 +29,8 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -34,6 +38,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_66_VariableScope extends CommonTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Test_66_VariableScope.class);
 
     // we want Random.nextInt() to be modifying
     public Test_66_VariableScope() {
@@ -230,8 +235,29 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    problem in iteration 3, statement 1.0.0 of $1.accept, sensitive to which variables are transferred upwards.
+     */
     @Test
     public void test_5() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if ("1".equals(d.statementId())) {
+                    assertEquals("!myPackage.equals(typeInfo.packageName())&&null!=typeInfo.packageName()",
+                            d.evaluationResult().value().toString());
+                    assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    if (d.iteration() >= 3) {
+                        assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                    }
+                    String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
+                            : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("qualification".equals(d.variableName())) {
@@ -243,7 +269,22 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
+                    if ("<out of scope:perPackage:1>".equals(fr.scope.toString())) {
+                        if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                            String expected = d.iteration() <= 2 ? "<f:types>" : "instance type LinkedList<TypeInfo>";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            mustSeeIteration(d, 5);
+                        }
+                    } else if ("instance type PerPackage".equals(fr.scope.toString())) {
+                        assertTrue(d.iteration() >= 3);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    } else {
+                        fail("Scope " + fr.scope);
                     }
                 }
             }
@@ -251,24 +292,126 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("qualification".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        String expected = "<new:QualificationImpl>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                        assertTrue(d.iteration() <= 2);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        VariableInfo previous = d.variableInfoContainer().getPreviousOrInitial();
+                        String expectedPrev = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        assertEquals(expectedPrev, previous.getValue().toString());
+
+                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if ("packageName".equals(d.variableName())) {
+                    if ("0".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
+                        assertEquals("typeInfo.packageName()", d.currentValue().toString());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<v:packageName>" : "typeInfo.packageName()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "myPackage".equals(pi.name)) {
+                    if ("0".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
+                        assertEquals("nullable instance type String", d.currentValue().toString());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<p:myPackage>" : "nullable instance type String";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "typeInfo".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("nullable instance type TypeInfo/*@Identity*/", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<p:typeInfo>" : "nullable instance type TypeInfo/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("doImport".equals(d.variableName())) {
+                    assertNotEquals("1", d.statementId());
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>" : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("perPackage".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<m:computeIfAbsent>" : "instance type PerPackage";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;immutable@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.2:M]";
+                        case 1 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.2:M]";
+                        case 2 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm@Parameter_typeInfo;container@Record_QualificationImpl, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm@Parameter_typeInfo;container@Record_QualificationImpl, qualification=cm@Parameter_typeInfo;container@Record_QualificationImpl, typesPerPackage=cm@Parameter_typeInfo;container@Record_QualificationImpl]";
+                        default -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=false:0, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=false:0, qualification=false:0, typesPerPackage=true:1]";
+                    };
+                    // difference in is simply those 2 fields, with delayed values.
+                    assertEquals(expect, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Object::toString).sorted().toList().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertEquals(d.iteration() >= 3, d.methodAnalysis().getLastStatement().variableStream()
+                        .peek(vi -> LOGGER.warn("CM of {}: {}", vi.variable(), vi.getProperty(Property.CONTEXT_MODIFIED)))
+                        .allMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).isDone()));
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("QualificationImpl".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("Qualification".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
