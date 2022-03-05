@@ -221,7 +221,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     value, variableInfo.getValue());
             throw ise;
         }
-        boolean valueIsDone = value.isDone();
+        boolean valueIsDone = value.isDone() && !value.isNotYetAssigned();
         propertiesToSet.forEach((vp, v) -> {
             if (v.isDelayed() && valueIsDone && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
                 throw new IllegalStateException("Not allowed to even try to set delay on a value property");

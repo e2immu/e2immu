@@ -544,6 +544,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
          */
         if (parent == null) {
             init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
+            EvaluationContext closure4Local = evaluationContext.getClosure();
+            if (closure4Local != null) {
+                closure4Local.localVariableStream().forEach(e -> {
+                    VariableInfoContainer here = variables.getOrDefaultNull(e.getKey());
+                    if (here != null) {
+                        VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
+                        VariableInfo hereInitial = here.getPreviousOrInitial();
+                        if (!hereInitial.valueIsSet() && here.isInitial()) {
+                            here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(), viInClosure.valueProperties(), true);
+                        }
+                    }
+                });
+            }
         }
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
@@ -1017,7 +1030,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Variable variable = current.variable();
             Variable renamed = prepareMerge.renames.getOrDefault(variable, variable);
 
-            // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             VariableInfoContainer destination;
             if (!variables.isSet(renamed.fullyQualifiedName())) {
                 VariableNature variableNature;
@@ -1027,8 +1039,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     variableNature = vic.variableNature();
                 }
                 destination = createVariable(evaluationContext, renamed, statementTime, variableNature, true);
-            } else {
+            } else if (variable == renamed) {
                 destination = vic;
+            } else {
+                destination = variables.get(renamed.fullyQualifiedName());
             }
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
@@ -2089,7 +2103,8 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
             DV modified = e.getValue().getOrDefaultNull(CONTEXT_MODIFIED);
             if (modified != null) {
                 DV current = variablesModifiedBySubAnalysers.get(variable);
-                assert current == null || current.isDelayed() || current.equals(modified);
+                assert current == null || current.isDelayed() || current.equals(modified) :
+                        "For variable " + variable + ", current CM is " + current + ", new CM is " + modified;
                 variablesModifiedBySubAnalysers.put(variable, modified);
             }
         }

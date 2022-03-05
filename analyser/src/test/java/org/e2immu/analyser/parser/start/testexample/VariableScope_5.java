@@ -33,7 +33,7 @@ public class VariableScope_5 {
         boolean addTypeReturnImport(TypeInfo typeInfo);
     }
 
-    record QualificationImpl( ) implements Qualification {
+    record QualificationImpl() implements Qualification {
         public boolean addTypeReturnImport(TypeInfo typeInfo) {
             return typeInfo.packageName().startsWith("org");
         }
@@ -44,10 +44,11 @@ public class VariableScope_5 {
         boolean allowStar;
     }
 
-    // FIXME this test does not capture the intended overwrite problem. However, change Qualification into a local variable and you get an infinite delay!
+    // this test does not capture the intended overwrite problem. However, change Qualification into a local variable
+    // (instead of a parameter), and you get an infinite delay!
     public static String method(List<TypeInfo> typesReferenced, String myPackage) {//, Qualification qualification) {
-       Map<String, PerPackage> typesPerPackage = new HashMap<>();
-       Qualification qualification = new QualificationImpl();
+        Map<String, PerPackage> typesPerPackage = new HashMap<>();
+        Qualification qualification = new QualificationImpl();
         typesReferenced.forEach(typeInfo -> {
             String packageName = typeInfo.packageName();
             if (packageName != null && !myPackage.equals(packageName)) {

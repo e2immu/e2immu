@@ -452,7 +452,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("<out of scope:ne:2>".equals(fr.scope.toString())) {
                         if ("2".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0, 1 -> "expression instanceof Negation&&null!=expression?<f:expression>:<f:expression>";
+                                case 0 -> "expression instanceof Negation&&null!=expression?<f:expression>:<f:expression>";
+                                case 1 -> "expression instanceof Negation&&null!=expression?<f:expression>:nullable instance type Expression";
                                 default -> "nullable instance type Expression";
                             };
                             assertEquals(expected, d.currentValue().toString());

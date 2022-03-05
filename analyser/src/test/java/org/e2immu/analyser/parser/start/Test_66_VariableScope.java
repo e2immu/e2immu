@@ -25,17 +25,13 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_66_VariableScope extends CommonTestRunner {
 
@@ -236,7 +232,43 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
-        testClass("VariableScope_5", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("qualification".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                if ("qualification".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("QualificationImpl".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Qualification".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
@@ -250,19 +282,36 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if (d.variable() instanceof FieldReference fr && "allowStar".equals(fr.fieldInfo.name)) {
                     if ("1.0.2.1.0".equals(d.statementId())) {
+                        assertEquals("perPackage", fr.scope.toString());
                         assertEquals("false", d.currentValue().toString());
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        String expected = switch(d.iteration()) {
+                        assertEquals("perPackage", fr.scope.toString());
+                        String expected = switch (d.iteration()) {
                             case 0 -> "<m:addTypeReturnImport>&&<f:allowStar>";
                             case 1 -> "instance type boolean&&<m:addTypeReturnImport>";
-                            default -> "instance type boolean&&<m:addTypeReturnImport>"; // FIXME
+                            default -> "instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
+                    if ("1".equals(d.statementId())) {
+                        if ("<out of scope:perPackage:1>".equals(fr.scope.toString())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "!<m:equals>&&null!=<m:packageName>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
+                                case 1 -> "!<m:equals>&&null!=<f:packageName>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
+                                default -> "instance type boolean";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        } else if ("instance type PerPackage".equals(fr.scope.toString())) {
+                            assertTrue(d.iteration() >= 2);
+                            String expected = "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
+                            assertEquals(expected, d.currentValue().toString());
+                        } else fail("No other scope possible: " + fr.scope);
+                    }
                 }
                 if ("doImport".equals(d.variableName())) {
-                    assertEquals("<m:addTypeReturnImport>", d.currentValue().toString());
+                    String expected = d.iteration() <= 1 ? "<m:addTypeReturnImport>" : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
@@ -271,7 +320,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);
             }
         };
-        testClass("VariableScope_6", 0, 0, new DebugConfiguration.Builder()
+        testClass("VariableScope_6", 1, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),

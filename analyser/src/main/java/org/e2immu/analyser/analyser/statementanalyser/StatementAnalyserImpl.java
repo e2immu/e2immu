@@ -389,9 +389,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     }
 
     /**
-     * @param iteration      the iteration
-     * @param wasReplacement boolean, to ensure that the effect of a replacement warrants continued analysis
-     * @param previous       null if there was no previous statement in this block
+     * @param iteration                            the iteration
+     * @param wasReplacement                       boolean, to ensure that the effect of a replacement warrants continued analysis
+     * @param previous                             null if there was no previous statement in this block
      * @param delaySubsequentStatementBecauseOfECI explicit constructor invocation cannot be carried out, we'll have to wait
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
@@ -609,16 +609,15 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     */
     private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
         StatementAnalysis last = myMethodAnalyser.getMethodAnalysis().getLastStatement();
-        if (last != statementAnalysis.lastStatement()) {
+        if (last != statementAnalysis) {
             // no point in running this unless we are the last statement in the method
             return DONE;
         }
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
-        TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
-
-        VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
         if (closure != null) {
+            VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
             AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
+            TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
             statementAnalysis.variableStream().forEach(vi -> {
                 // naive approach
                 if (closure.isPresent(vi.variable()) || vi.variable() instanceof FieldReference fr
@@ -630,9 +629,17 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         builder.addVariableRead(vi.variable());
                     }
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-                    builder.addVariableModified(vi.variable(), modified); // also when delayed!!!
-                    if (modified.isDelayed()) {
-                        causes.set(causes.get().merge(modified.causesOfDelay()));
+
+                    /*
+                     the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
+                     Only when the links have been established, can we be sure that modified will progress in a stable fashion.
+                     */
+                    CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+                    DV combined = modified.isDelayed() || linksEstablished.isDone() ? modified :
+                            modified.causesOfDelay().merge(linksEstablished);
+                    builder.addVariableModified(vi.variable(), combined); // also when delayed!!!
+                    if (combined.isDelayed()) {
+                        causes.set(causes.get().merge(combined.causesOfDelay()));
                     }
                 }
             });

@@ -114,7 +114,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=false:0,this=assign_to_field@Parameter_t;cm:this@Method_accept_0-E;link:e@Method_accept_0-E"
+                            ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=assign_to_field@Parameter_t;cm:e@Method_accept_0-E;link:e@Method_accept_0-E,this=assign_to_field@Parameter_t;cm:this@Method_accept_0-E;link:e@Method_accept_0-E"
                             : "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=false:0,this=true:1";
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Objects::toString)
                             .sorted().collect(Collectors.joining(",")));

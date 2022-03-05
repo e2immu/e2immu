@@ -35,7 +35,6 @@ public class VariableScope_6 {
         }
     }
 
-    // FIXME the "= true" assignment marks the difference between _5 and _6. With the assignment, we get a crash, without, a delay loop
     private static class PerPackage {
         final List<TypeInfo> types = new LinkedList<>();
         boolean allowStar = true;

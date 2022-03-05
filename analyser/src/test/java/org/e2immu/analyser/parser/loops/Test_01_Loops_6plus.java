@@ -588,7 +588,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>&&!<m:contains>?0==<f:read>?<f:read>:<f:read>:<f:read>";
-                            case 1 -> "<loopIsNotEmptyCondition>?<m:contains>?<f:read>:0==<f:read>?<f:read>:<f:read>:instance type int";
+                            case 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>?0==<f:read>?<f:read>:<f:read>:instance type int";
                             default -> "instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());
