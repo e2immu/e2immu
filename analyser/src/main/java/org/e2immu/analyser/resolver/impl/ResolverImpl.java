@@ -708,8 +708,10 @@ public class ResolverImpl implements Resolver {
                     if (element instanceof MethodCall methodCall) {
                         MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
                         boolean callOnThis = !callInspection.isStatic() &&
-                                methodCall.object == null || ((methodCall.object instanceof This) &&
-                                ((This) methodCall.object).typeInfo == methodInfo.typeInfo);
+                                (methodCall.object == null ||
+                                        methodCall.object instanceof VariableExpression ve
+                                                && ve.variable() instanceof This thisVar
+                                                && thisVar.typeInfo == methodInfo.typeInfo);
                         if (callOnThis) atLeastOneCallOnThis.set(true);
                     }
                 });

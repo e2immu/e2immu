@@ -174,9 +174,10 @@ public class ShallowMethodResolver {
         }
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
         if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;
+        if (inSuperType.typeParameter.equals(inSubType.typeParameter)) return false;
         // they CAN have different indices, example in BiFunction TestTestExamplesWithAnnotatedAPIs, AnnotationsOnLambdas
-        ParameterizedType translated =
-                translationMap.get(inSuperType.typeParameter);
+
+        ParameterizedType translated = translationMap.get(inSuperType.typeParameter);
         if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
         if (inSubType.isUnboundTypeParameter(inspectionProvider) &&
                 inSuperType.isUnboundTypeParameter(inspectionProvider)) return false;
@@ -187,6 +188,7 @@ public class ShallowMethodResolver {
         for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
             boolean different = differentType(inspectionProvider, typeBound, inSuperTypeBounds.get(i), translationMap);
             if (different) return true;
+            i++;
         }
         return false;
     }

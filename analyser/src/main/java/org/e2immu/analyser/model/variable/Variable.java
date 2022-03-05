@@ -32,7 +32,12 @@ import java.util.stream.Collectors;
  */
 
 // at some point: @E2Container
-public interface Variable extends OneVariable {
+public interface Variable extends OneVariable, Comparable<Variable> {
+
+    @Override
+    default int compareTo(Variable o) {
+        return fullyQualifiedName().compareTo(o.fullyQualifiedName());
+    }
 
     @Override
     default Variable variable() {

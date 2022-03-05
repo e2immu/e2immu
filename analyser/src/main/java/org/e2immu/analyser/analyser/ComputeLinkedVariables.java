@@ -129,9 +129,9 @@ public class ComputeLinkedVariables {
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
-                                       Stage stage, boolean staticallyAssigned,
-                                       BiPredicate<VariableInfoContainer,
-                                               Variable> ignore,
+                                       Stage stage,
+                                       boolean staticallyAssigned,
+                                       BiPredicate<VariableInfoContainer, Variable> ignore,
                                        Set<Variable> reassigned,
                                        Function<Variable, LinkedVariables> externalLinkedVariables,
                                        EvaluationContext evaluationContext,

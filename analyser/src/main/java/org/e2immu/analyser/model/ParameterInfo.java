@@ -39,7 +39,7 @@ import java.util.Set;
  */
 @Container
 //@ContextClass(after="this.analyse()")
-public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Comparable<ParameterInfo> {
+public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final Identifier identifier;
     public final ParameterizedType parameterizedType;
     public final String name;
@@ -241,11 +241,14 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     @Override
-    public int compareTo(ParameterInfo o) {
-        if (owner == o.owner) {
-            return index - o.index;
+    public int compareTo(Variable v) {
+        if (v instanceof ParameterInfo o) {
+            if (owner == o.owner) {
+                return index - o.index;
+            }
+            return owner.fullyQualifiedName.compareTo(o.owner.fullyQualifiedName);
         }
-        throw new UnsupportedOperationException();
+        return fullyQualifiedName().compareTo(v.fullyQualifiedName());
     }
 
     @Override

@@ -274,7 +274,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -291,7 +291,7 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // NO s3!
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:-1,this.s:0" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

@@ -17,9 +17,9 @@ package org.e2immu.analyser.util;
 import org.e2immu.annotation.*;
 import org.e2immu.support.Freezable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -28,7 +28,7 @@ import java.util.function.BiConsumer;
  * @param <T>
  */
 @E2Container(after = "frozen")
-public class WeightedGraph<T, W extends WeightedGraph.Weight> extends Freezable {
+public class WeightedGraph<T extends Comparable<? super T>, W extends WeightedGraph.Weight> extends Freezable {
     public interface WeightType<W extends Weight> {
         W neutral();
     }
@@ -53,7 +53,7 @@ public class WeightedGraph<T, W extends WeightedGraph.Weight> extends Freezable 
     }
 
     @Modified
-    private final Map<T, Node<T, W>> nodeMap = new HashMap<>();
+    private final Map<T, Node<T, W>> nodeMap = new TreeMap<>();
 
     @NotModified
     public int size() {
@@ -67,7 +67,7 @@ public class WeightedGraph<T, W extends WeightedGraph.Weight> extends Freezable 
 
     @Independent
     public Map<T, W> links(@NotNull T t, boolean followDelayed) {
-        Map<T, W> result = new HashMap<>();
+        Map<T, W> result = new TreeMap<>();
         result.put(t, neutral);
         recursivelyComputeLinks(t, result, followDelayed);
         return result;
@@ -142,11 +142,11 @@ public class WeightedGraph<T, W extends WeightedGraph.Weight> extends Freezable 
         ensureNotFrozen();
         Node<T, W> node = getOrCreate(t);
         for (Map.Entry<T, W> e : dependsOn.entrySet()) {
-            if (node.dependsOn == null) node.dependsOn = new HashMap<>();
+            if (node.dependsOn == null) node.dependsOn = new TreeMap<>();
             node.dependsOn.put(e.getKey(), e.getValue());
             if (bidirectional) {
                 Node<T, W> n = getOrCreate(e.getKey());
-                if (n.dependsOn == null) n.dependsOn = new HashMap<>();
+                if (n.dependsOn == null) n.dependsOn = new TreeMap<>();
                 n.dependsOn.put(t, e.getValue());
             }
         }

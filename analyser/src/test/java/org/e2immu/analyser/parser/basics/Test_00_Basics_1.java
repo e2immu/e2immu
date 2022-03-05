@@ -66,7 +66,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(FIELD1, d.variableName());
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
-                    assertEquals("p0:0,s1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("p0:1,s1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
@@ -162,7 +162,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals(TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
 
             assertEquals("p0", d.fieldAnalysis().getValue().debugOutput());
-            assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
+            assertEquals("p0:1", d.fieldAnalysis().getLinkedVariables().toString());
 
             assertEquals(FALSE_DV, d.fieldAnalysis().getProperty(MODIFIED_OUTSIDE_METHOD));
             assertEquals(NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
