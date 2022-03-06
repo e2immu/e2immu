@@ -49,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -100,8 +99,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private record SharedState(int iteration, EvaluationContext closure) {
     }
 
-    private final Predicate<WithInspectionAndAnalysis> ignoreMyConstructors;
-
     public FieldAnalyserImpl(FieldInfo fieldInfo,
                              TypeInfo primaryType,
                              TypeAnalysis ownerTypeAnalysis,
@@ -113,9 +110,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
 
         this.fieldInfo = fieldInfo;
-        ignoreMyConstructors = w -> w instanceof MethodInfo methodInfo
-                && methodInfo.isConstructor
-                && methodInfo.typeInfo == fieldInfo.owner;
         fqn = fieldInfo.fullyQualifiedName();
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
@@ -571,13 +565,31 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
+        Set<Variable> filter;
+        if (fieldAnalysis.allLinksHaveBeenEstablished().isDone()) {
+            filter = fieldAnalysis.linkedVariables.get().variablesAssigned().collect(Collectors.toUnmodifiableSet());
+        } else {
+            filter = Set.of();
+        }
+
         DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods || m.getMethodInfo().inConstruction())
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                .filter(vi -> {
+                    CausesOfDelay causes = vi.getProperty(CONTEXT_NOT_NULL).causesOfDelay();
+                    // are the delays on CNN directly linked to the variables that we are linked to?
+                    // see Project_0bis
+                    return causes.causesStream().noneMatch(c -> {
+                        if (c.cause() != CauseOfDelay.Cause.EXTERNAL_NOT_NULL) return false;
+                        if (c instanceof VariableCause vc) return filter.contains(vc.variable());
+                        if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
+                        return false;
+                    });
+                })
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
         if (bestOverContext.isDelayed()) {
-            LOGGER.debug("Delay @NotNull on {}, waiting for CNN", fqn);
+            LOGGER.debug("Delay @NotNull on {}, waiting for CNN; filter {}", fqn, filter);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
             return bestOverContext.causesOfDelay();
         }

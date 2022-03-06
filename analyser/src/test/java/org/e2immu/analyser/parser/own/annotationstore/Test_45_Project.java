@@ -185,9 +185,29 @@ public class Test_45_Project extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    tests breaking not-null delays on field Container.read, specifically, prev.read which is delayed because it is
+    linked to the parameter that it is assigned to (previousRead).
+     */
     @Test
     public void test_0bis() throws IOException {
-        testClass("Project_0", 2, 11, new DebugConfiguration.Builder().build(),
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name) && "prev".equals(fr.scope.toString())) {
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("read".equals(d.fieldInfo().name)) {
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals("previousRead:0", d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
+        testClass("Project_0", 1, 10, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
                         .setComputeFieldAnalyserAcrossAllMethods(true)
