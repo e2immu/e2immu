@@ -234,8 +234,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return containsVariableFields;
     }
 
+    public Set<VariableExpression> getVariablesOfExpression() {
+        return variablesOfExpression;
+    }
+
     /*
-    We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
+     We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
      */
     public Map<Expression, Expression> translationMap(EvaluationResult evaluationContext,
                                                       List<Expression> parameters,

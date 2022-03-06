@@ -24,10 +24,8 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /*
@@ -91,6 +89,24 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public Precedence precedence() {
         return Precedence.TERNARY; // TODO verify this is correct
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        EvaluationResult reEvaluatedSelector = selector.reEvaluate(context, translation);
+        builder.compose(reEvaluatedSelector);
+        List<Expression> newExpressionList = new ArrayList<>(expressions.size());
+        expressions.stream().forEach(e -> {
+            EvaluationResult re = e.reEvaluate(context, translation);
+            builder.compose(re);
+            newExpressionList.add(re.getExpression());
+        });
+        // FIXME do we need to re-evaluate and possibly re-compute the switch expressions?
+        MultiExpression newExpressions = new MultiExpression(newExpressionList.toArray(Expression[]::new));
+        SwitchExpression se = new SwitchExpression(identifier, reEvaluatedSelector.getExpression(), switchEntries, returnType, newExpressions);
+        builder.setExpression(se);
+        return builder.build();
     }
 
     @Override
@@ -171,5 +187,18 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         return selector.causesOfDelay()
                 .merge(Arrays.stream(expressions.expressions())
                         .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return Stream.concat(Stream.of(selector), expressions.stream()).toList();
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            selector.visit(predicate);
+            expressions.stream().forEach(v -> v.visit(predicate));
+        }
     }
 }
