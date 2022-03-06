@@ -74,9 +74,42 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        // one method must be static (returns null)
-        // 2x overwriting previous assignment... we can live with that
-        testClass("FormatterSimplified_2", 3, 5, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "lastOneWasSpace".equals(pi.name)) {
+                    assertEquals("nullable instance type ElementarySpace/*@Identity*/", d.currentValue().toString());
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if (d.variable() instanceof ParameterInfo pi && "elementarySpace".equals(pi.name)) {
+                    assertEquals("nullable instance type ElementarySpace", d.currentValue().toString());
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("null==lastOneWasSpace?elementarySpace:lastOneWasSpace", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "elementarySpace:-1,lastOneWasSpace:-1,return combine:0"
+                            : "elementarySpace:1,lastOneWasSpace:1,return combine:0";
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ElementarySpace".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+        testClass("FormatterSimplified_2", 4, 6, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -370,12 +403,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         testClass("FormatterSimplified_9", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

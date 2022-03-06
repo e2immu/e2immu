@@ -290,7 +290,8 @@ public class ComputeLinkedVariables {
      * This method differs from writeLinkedVariables in that it does not touch variables which do not
      * yet have an EVALUATION level. It is used in SAApply.
      */
-    public void writeClusteredLinkedVariables() {
+    public CausesOfDelay writeClusteredLinkedVariables() {
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (List<Variable> cluster : clusters) {
             for (Variable variable : cluster) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
@@ -298,11 +299,12 @@ public class ComputeLinkedVariables {
 
                 Map<Variable, DV> map = weightedGraph.links(variable, true);
                 LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
-
+                causes = causes.merge(linkedVariables.causesOfDelay());
                 vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                 vic.setLinkedVariables(linkedVariables, stage);
             }
         }
+        return causes;
     }
 
     /**

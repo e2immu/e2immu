@@ -489,12 +489,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
 
-        computeLinkedVariables.writeClusteredLinkedVariables();
+        CausesOfDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
+        CausesOfDelay delay = delayIn.merge(linkDelays);
 
         // 1
         CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL));
-        CausesOfDelay delay = delayIn.merge(cnnStatus);
+        delay = delay.merge(cnnStatus);
 
         // 2
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
