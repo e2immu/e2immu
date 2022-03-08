@@ -948,12 +948,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
                                 && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
                                 && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
-                            throw new UnsupportedOperationException("Break init delay needs resolving for field "
-                                    + fieldInfo.name + " in method " + methodInfo.name);
-                        } else {
-                            proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(expression, vi, origin);
-                            viIsDelayed = causesOfDelay.isDelayed();
+                            // this is not hard condition because in Lazy it takes 2 iterations for the delay to be actually broken
+                            LOGGER.debug("Break init delay needs resolving for field {} in method {}", fieldInfo.name,
+                                    methodInfo.name);
                         }
+                        proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(expression, vi, origin);
+                        viIsDelayed = causesOfDelay.isDelayed();
+
                         values.add(proxy);
                         if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
                             // we'll warn for the combination of field initializer, and occurrence in at least one constructor
