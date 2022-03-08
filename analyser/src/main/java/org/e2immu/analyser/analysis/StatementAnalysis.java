@@ -155,7 +155,9 @@ public interface StatementAnalysis extends Analysis,
     Stream<Variable> candidateVariablesForNullPtrWarningStream();
 
     void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport);
+
     List<Variable> variablesReadBySubAnalysers();
+
     Stream<Map.Entry<Variable, DV>> variablesModifiedBySubAnalysers();
 
     boolean haveVariablesModifiedBySubAnalysers();
@@ -168,20 +170,28 @@ public interface StatementAnalysis extends Analysis,
     }
 
     DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly);
+
     DV isEscapeAlwaysExecutedInCurrentBlock();
-     Variable obtainLoopVar();
+
+    Variable obtainLoopVar();
+
     CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
-                                     Expression evaluatedIterable,
-                                     CausesOfDelay someValueWasDelayed,
-                                     EvaluationContext evaluationContext);
+                                              Expression evaluatedIterable,
+                                              CausesOfDelay someValueWasDelayed,
+                                              EvaluationContext evaluationContext);
+
     void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap);
+
     void potentiallyRaiseNullPointerWarningENN();
+
     CausesOfDelay applyPrecondition(Precondition precondition,
                                     EvaluationContext evaluationContext,
                                     ConditionManager localConditionManager);
+
     void ensureVariables(EvaluationContext evaluationContext,
                          Variable variable,
                          EvaluationResult.ChangeData changeData,
                          int newStatementTime);
+
     void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
 }

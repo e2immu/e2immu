@@ -47,12 +47,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return statementAnalysis.statement();
     }
 
+    private record ConditionManagerAndStatus(ConditionManager conditionManager, AnalysisStatus analysisStatus) {
+    }
+
     AnalysisStatus subBlocks(StatementAnalyserSharedState sharedState) {
         List<Optional<StatementAnalyser>> startOfBlocks = statementAnalyser.navigationData().blocks.get();
-        AnalysisStatus analysisStatus = AnalysisStatus.of(sharedState.localConditionManager().causesOfDelay());
+        AnalysisStatus statusFromLocalCm = AnalysisStatus.of(sharedState.localConditionManager().causesOfDelay());
 
         if (!startOfBlocks.isEmpty()) {
-            return haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
+            AnalysisStatus analysisStatus = haveSubBlocks(sharedState, startOfBlocks).combine(statusFromLocalCm);
+            ensureEmptyPrecondition();
+            return analysisStatus;
         }
 
         // FIXME this should also be implemented on the haveSubBlocks side
@@ -61,46 +66,93 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.context(),
                 variablesAssigned);
 
+        AnalysisStatus statusFromStatement;
+        ConditionManager cmFromStatement;
         if (statement() instanceof AssertStatement) {
-            Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
-            boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
-            // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
-            // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
-
-            if (SAHelper.moveConditionToParameter(sharedState.context(), assertion) == null) {
-                // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
-                // it turns out the condition will always be false. We really need the local condition manager for next
-                // statement to be delayed until we know the precondition can be accepted.
-                Expression translated = Objects.requireNonNullElse(
-                        sharedState.evaluationContext().acceptAndTranslatePrecondition(assertion),
-                        new BooleanConstant(statementAnalysis.primitives(), true));
-                Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                statementAnalysis.stateData().setPrecondition(pc);
-            } else {
-                // the null/not null of parameters has been handled during the main evaluation
-                statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
-            }
-
-            if (expressionIsDelayed) {
-                analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
-            }
-            Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
-            cm = cm.addState(assertCondition);
+            ConditionManagerAndStatus conditionManagerAndStatus = doAssertStatement(sharedState, cm);
+            cmFromStatement = conditionManagerAndStatus.conditionManager;
+            statusFromStatement = statusFromLocalCm.combine(conditionManagerAndStatus.analysisStatus);
+        } else if (statement() instanceof ThrowStatement) {
+            AnalysisStatus statusFromThrows = doThrowStatement(sharedState, cm);
+            cmFromStatement = cm; // the change in condition manager comes from the surrounding block
+            statusFromStatement = statusFromLocalCm.combine(statusFromThrows);
         } else {
             // FIXME this should also be implemented on the haveSubBlocks side
             //Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
             //if (!fieldsWithBreakDelay.isEmpty()) {
             //    cm = cm.removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
             //}
+            cmFromStatement = cm;
+            statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPrecondition()));
         }
-        statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cm);
+        statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cmFromStatement);
 
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
+        return statusFromStatement;
+    }
 
+    private CausesOfDelay ensureEmptyPrecondition() {
+        MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
+        if (statementAnalysis.stateData().preconditionNoInformationYet(methodInfo)) {
+            // it could have been set from the assert statement (subBlocks) or apply via a method call
+            statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
+            return CausesOfDelay.EMPTY;
+        }
+        return statementAnalysis.stateData().getPrecondition().causesOfDelay();
+    }
 
-        return analysisStatus;
+    private AnalysisStatus doThrowStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
+        DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
+
+        CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
+                .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
+        Expression precondition = cm.precondition(EvaluationResult.from(sharedState.evaluationContext()));
+        Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
+        if (translated != null) {
+            LOGGER.debug("Escape with precondition {}", translated);
+            Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+            statementAnalysis.stateData().setPrecondition(pc);
+            CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
+            return AnalysisStatus.of(preconditionIsDelayed);
+        }
+        if (escapeAlwaysExecuted.isDelayed()) {
+            return AnalysisStatus.of(delays.causesOfDelay());
+        }
+        // else: not stored in pc, so ensure it is unconditionally empty
+        statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
+        return DONE;
+    }
+
+    private ConditionManagerAndStatus doAssertStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
+        Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
+        boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
+        // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
+        // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
+
+        if (SAHelper.moveConditionToParameter(sharedState.context(), assertion) == null) {
+            // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
+            // it turns out the condition will always be false. We really need the local condition manager for next
+            // statement to be delayed until we know the precondition can be accepted.
+            Expression translated = Objects.requireNonNullElse(
+                    sharedState.evaluationContext().acceptAndTranslatePrecondition(assertion),
+                    new BooleanConstant(statementAnalysis.primitives(), true));
+            Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+            statementAnalysis.stateData().setPrecondition(pc);
+        } else {
+            // the null/not null of parameters has been handled during the main evaluation
+            statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
+        }
+
+        AnalysisStatus analysisStatus;
+        if (expressionIsDelayed) {
+            analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
+        } else {
+            analysisStatus = DONE;
+        }
+        Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
+        return new ConditionManagerAndStatus(cm.addState(assertCondition), analysisStatus);
     }
 
 

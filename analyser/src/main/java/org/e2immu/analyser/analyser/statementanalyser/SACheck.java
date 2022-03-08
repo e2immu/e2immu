@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.AssertStatement;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -50,45 +51,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
 
     private MethodInfo methodInfo() {
         return statementAnalysis.methodAnalysis().getMethodInfo();
-    }
-
-    /*
-    Not-null escapes should not contribute to preconditions.
-    All the rest should.
-
-    This method is not presented with the == null, != null expressions, they are marked in
-    SASubBlocks.addToContextNotNullAfterStatement, CONTEXT_NOT_NULL is set by StatementAnalysisImpl
-     */
-    AnalysisStatus checkNotNullEscapesAndPreconditions(StatementAnalyserSharedState sharedState) {
-        if (statementAnalysis.statement() instanceof AssertStatement) return DONE; // is dealt with in subBlocks
-        DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
-        CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
-                .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
-        if (!escapeAlwaysExecuted.valueIsFalse()) {
-            if (escapeAlwaysExecuted.valueIsTrue()) {
-                EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
-                Expression precondition = statementAnalysis.stateData().getConditionManagerForNextStatement()
-                        .precondition(context);
-                CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
-                // is this an expression in terms of fields and parameters?
-                Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
-                if (translated != null) {
-                    LOGGER.debug("Escape with precondition {}", translated);
-                    Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                    statementAnalysis.stateData().setPrecondition(pc);
-                    return AnalysisStatus.of(preconditionIsDelayed);
-                }
-            }
-
-            if (delays.isDelayed()) return delays;
-        }
-        if (statementAnalysis.stateData().preconditionNoInformationYet(methodInfo())) {
-            // it could have been set from the assert statement (subBlocks) or apply via a method call
-            statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
-        } else if (!statementAnalysis.stateData().preconditionIsFinal()) {
-            return statementAnalysis.stateData().getPrecondition().expression().causesOfDelay();
-        }
-        return DONE;
     }
 
     /**

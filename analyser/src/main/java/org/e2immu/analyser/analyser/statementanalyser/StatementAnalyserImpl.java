@@ -32,7 +32,6 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
@@ -65,7 +64,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     public static final String SET_BLOCK_EXECUTION = "setBlockExecution";
     public static final String ANALYSE_INTERRUPTS_FLOW = "analyseInterruptsFlow";
     public static final String FREEZE_ASSIGNMENT_IN_BLOCK = "freezeAssignmentInBlock";
-    public static final String CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS = "checkNotNullEscapesAndPreconditions";
     public static final String CHECK_UNUSED_RETURN_VALUE = "checkUnusedReturnValue";
     public static final String CHECK_USELESS_ASSIGNMENTS = "checkUselessAssignments";
     public static final String CHECK_UNUSED_LOCAL_VARIABLES = "checkUnusedLocalVariables";
@@ -426,7 +424,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .add(ANALYSE_INTERRUPTS_FLOW, sharedState -> statementAnalysis.flowData()
                                 .analyseInterruptsFlow(this, previous))
                         .add(FREEZE_ASSIGNMENT_IN_BLOCK, this::freezeAssignmentInBlock)
-                        .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, saCheck::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState ->
                                 statementAnalysis.methodLevelData().analyse(sharedState, statementAnalysis,
                                         previous == null ? null : previous.methodLevelData(),
