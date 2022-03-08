@@ -349,6 +349,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         int index = j;
                         map.entrySet().stream()
                                 .filter(e -> e.getKey() instanceof TypeParameter t && t.getIndex() == index)
+                                // we do not add to the map when the result is one type parameter to the next (MethodCall_19)
+                                .filter(e -> e.getValue().bestTypeInfo(typeContext) != null)
                                 .map(Map.Entry::getValue)
                                 .findFirst()
                                 .ifPresent(inMap -> result.put(tp.typeParameter, inMap));

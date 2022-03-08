@@ -200,4 +200,9 @@ public class TestMethodCall extends CommonTest {
         MethodCall mc1 = (MethodCall) (al1.declarations.get(0).expression());
         assertEquals(expected, mc1.concreteReturnType.toString());
     }
+
+    @Test
+    public void test_19() throws IOException {
+        inspectAndResolve(MethodCall_19.class);
+    }
 }
