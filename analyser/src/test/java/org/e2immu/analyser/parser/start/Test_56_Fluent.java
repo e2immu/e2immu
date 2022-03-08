@@ -258,7 +258,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("from".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                 }
                 if ("1".equals(d.statementId())) {
@@ -266,9 +266,9 @@ public class Test_56_Fluent extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
 
                     // STEP 5: check preconditionIsDelayed in previous statement, that's OK
-                    assertTrue(d.conditionManagerForNextStatement().precondition().expression().isDone());
+                    assertEquals(d.iteration() > 0, d.conditionManagerForNextStatement().precondition().expression().isDone());
                     // STEP 5bis: combined precondition never becomes final
-                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'

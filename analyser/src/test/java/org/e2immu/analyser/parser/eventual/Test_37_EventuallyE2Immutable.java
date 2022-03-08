@@ -101,9 +101,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -170,11 +170,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_1", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -425,11 +425,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_6", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -482,9 +482,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_7", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -533,9 +533,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_8", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -564,7 +564,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_9", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

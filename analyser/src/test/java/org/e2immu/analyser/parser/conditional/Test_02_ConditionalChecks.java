@@ -207,8 +207,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             }
         };
         testClass("ConditionalChecks_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
@@ -286,9 +286,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         testClass("ConditionalChecks_2", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

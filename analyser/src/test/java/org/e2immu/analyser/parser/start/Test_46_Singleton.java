@@ -62,8 +62,8 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_1".equals(d.methodInfo().name)) {
                 Precondition precondition = d.methodAnalysis().getPrecondition();
                 String expected = switch (d.iteration()) {
-                    case 0 -> "!<f:created>&&<precondition>";
-                    case 1 -> "!<f*:created>&&<precondition>";
+                    case 0 -> "!<f:created>";
+                    case 1 -> "!<f*:created>";
                     default -> "!Singleton_1.created";
                 };
                 assertEquals(expected, precondition.expression().toString());
@@ -199,8 +199,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "!<f:created>&&<precondition>";
-                        case 1 -> "!<f*:created>&&<precondition>";
+                        case 0 -> "!<f:created>";
+                        case 1 -> "!<f*:created>";
                         default -> "!Singleton_7.created";
                     };
                     assertEquals(expected,

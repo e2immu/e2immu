@@ -323,7 +323,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // precondition
-        EvaluatePreconditionFromMethod.evaluate(context, builder, methodInfo, objectValue, parameterValues);
+        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, methodInfo, objectValue,
+                parameterValues);
+        builder.addPrecondition(precondition);
 
         LinkedVariables linkedVariables = objectValue.linkedVariables(context);
         if (object instanceof IsVariableExpression ive) {

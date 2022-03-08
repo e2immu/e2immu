@@ -333,7 +333,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof FieldReference fr && "outerField".equals(fr.fieldInfo.name)) {
-                    assertEquals("outerField", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<s:String>" : "outerField";
+                    assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }

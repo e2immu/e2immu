@@ -14,13 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -33,7 +30,9 @@ condition = the condition in the parent statement that leads to this block. Defa
 state = the cumulative state in the current block, before execution of the statement (level 1-2, not 3).
 The state is carried over to the next statement unless there is some interrupt in the flow (break, return, throw...)
 
-precondition = the cumulative precondition of the method, as in the previous statement's stateData.precondition
+precondition = the cumulative precondition of the method.
+In SAI.analyseSingleStatement, the cumulative precondition from MethodLevelData is added via
+ConditionManagerHelper.makeLocalConditionManager.
 
 In a recursion of inline conditionals, the state remains true, and the condition equals the condition of each inline.
 Default value: true
@@ -50,7 +49,8 @@ public record ConditionManager(Expression condition,
     public static final int LIMIT_ON_COMPLEXITY = 200;
 
     private ConditionManager() {
-        this(UnknownExpression.forSpecial(), UnknownExpression.forSpecial(), new Precondition(UnknownExpression.forSpecial(), List.of()), null);
+        this(UnknownExpression.forSpecial(), UnknownExpression.forSpecial(),
+                new Precondition(UnknownExpression.forSpecial(), List.of()), null);
     }
 
     public ConditionManager {
@@ -84,57 +84,50 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, TRUE,
-                Precondition.empty(TRUE), null);
+        return new ConditionManager(TRUE, TRUE, Precondition.empty(TRUE), null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, FALSE,
-                new Precondition(FALSE, List.of()), null);
+        return new ConditionManager(FALSE, FALSE, new Precondition(FALSE, List.of()), null);
     }
 
     /*
     adds a new layer (parent this)
+    Used in CompanionAnalyser, ComputingMethodAnalyser, FieldAnalyser
      */
-    public ConditionManager newAtStartOfNewBlock(Primitives primitives,
-                                                 Expression condition,
-                                                 Precondition precondition) {
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Precondition precondition) {
         return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
-    }
-
-
-    /* does not add a new layer */
-    public ConditionManager replaceState(Expression state) {
-        return new ConditionManager(condition, state, precondition, parent);
     }
 
     /*
     we guarantee a parent so that the condition counts!
+    Used in: StatementAnalyserImpl.analyseAllStatementsInBlock
      */
     public ConditionManager withCondition(EvaluationResult context, Expression switchCondition) {
-        return new ConditionManager(combine(context, condition, switchCondition),
-                state, precondition, this);
+        return new ConditionManager(combine(context, condition, switchCondition), state, precondition, this);
     }
 
     /*
     adds a new layer (parent this)
+    Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects
     */
     public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition) {
-        return new ConditionManager(condition,
-                new BooleanConstant(primitives, true),
-                precondition, this);
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
     }
 
     /*
     adds a new layer (parent this)
+    Used to: create a child CM that has more state
     */
     public ConditionManager addState(Expression state) {
         return new ConditionManager(condition, state, precondition, this);
     }
 
     /*
-    stays at the same level (parent parent)
+    stays at the same level (parent=parent)
+    Used in: ConditionManagerHelper.makeLocalConditionManager, used in StatementAnalyserImpl.analyseSingleStatement
+    This is the feedback loop from MethodLevelData.combinedPrecondition back into the condition manager
      */
     public ConditionManager withPrecondition(Precondition combinedPrecondition) {
         return new ConditionManager(condition, state, combinedPrecondition, parent);
@@ -142,13 +135,15 @@ public record ConditionManager(Expression condition,
 
     /*
     stays at the same level
+    Used in EvaluationContext.nneForValue
      */
     public ConditionManager withoutState(Primitives primitives) {
         return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, parent);
     }
 
     /*
-    stays at the same level (parent parent)
+    stays at the same level (parent=parent)
+    Used in SASubBlocks
      */
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationResult evaluationContext,
                                                                        Expression addToState) {
@@ -354,23 +349,6 @@ public record ConditionManager(Expression condition,
                 (state.isBoolValueTrue() ? "" : "state=" + state + ";") +
                 (precondition.isEmpty() ? "" : "pc=" + precondition + ";") +
                 (parent == null ? "" : parent == SPECIAL ? "**" : "parent=" + parent) + '}';
-    }
-
-    public ConditionManager removeDelaysOn(Primitives primitives, Set<FieldInfo> fieldsWithBreakDelay) {
-        Expression c = removeDelaysOn(primitives, fieldsWithBreakDelay, condition);
-        Expression s = removeDelaysOn(primitives, fieldsWithBreakDelay, state);
-        Expression pc = removeDelaysOn(primitives, fieldsWithBreakDelay, precondition.expression());
-        return new ConditionManager(c, s, pc.equals(precondition.expression()) ? precondition : new Precondition(pc, precondition.causes()), SPECIAL);
-    }
-
-    private Expression removeDelaysOn(Primitives primitives, Set<FieldInfo> fieldsWithBreakDelay, Expression expression) {
-        if (expression.isDelayed()) {
-            CausesOfDelay causes = expression.causesOfDelay();
-            if (causes.causesStream().anyMatch(cause -> cause instanceof VariableCause vc && vc.variable() instanceof FieldReference fr && fieldsWithBreakDelay.contains(fr.fieldInfo))) {
-                return new BooleanConstant(primitives, true);
-            }
-        }
-        return expression;
     }
 
     public ConditionManager removeFromState(EvaluationResult evaluationContext, Set<Variable> variablesAssigned) {

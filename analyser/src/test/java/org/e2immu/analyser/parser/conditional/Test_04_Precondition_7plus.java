@@ -15,12 +15,20 @@
 
 package org.e2immu.analyser.parser.conditional;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_04_Precondition_7plus extends CommonTestRunner {
 
@@ -43,4 +51,30 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         .setForceAlphabeticAnalysisInPrimaryType(true)
                         .build());
     }
+
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("pop".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("pop".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0
+                        ? "Precondition[expression=!<m:isEmpty>, causes=[escape]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
+                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+            }
+        };
+        testClass("Precondition_9", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
+    }
+
 }

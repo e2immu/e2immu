@@ -761,10 +761,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return statementTime;
         }
 
-        public void addDelayOnPrecondition(CausesOfDelay causes) {
-            addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives(), causes)));
-        }
-
         public boolean isNotNull(Expression expression) {
             assert evaluationContext != null;
             if (value instanceof VariableExpression variableExpression) {

@@ -133,6 +133,21 @@ public class StateData {
         return conditionManagerForNextStatement.get();
     }
 
+    // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
+    private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
+
+    public Precondition getPreconditionFromMethodCalls() {
+        return preconditionFromMethodCalls.get();
+    }
+
+    public void setPreconditionFromMethodCalls(Precondition precondition) {
+        if (precondition.isDelayed()) {
+            preconditionFromMethodCalls.setVariable(precondition);
+        } else if(preconditionFromMethodCalls.isVariable() || !precondition.equals(preconditionFromMethodCalls.get())){
+            preconditionFromMethodCalls.setFinal(precondition);
+        }
+    }
+
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
 
     public void setValueOfExpression(Expression value, boolean isDelayed) {

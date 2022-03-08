@@ -14,10 +14,14 @@
 
 package org.e2immu.analyser.parser.conditional;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +61,8 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
+                        case 0 -> "Precondition[expression=<m:isDelayed>&&<precondition>, causes=[escape]]";
+                        case 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
                         case 2 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
                         default -> "Precondition[expression=!causes.isEmpty(), causes=[escape]]";
                     };
@@ -71,4 +76,107 @@ public class Test_04_Assert extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
+
+    @Test
+    public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // no Annotated APIs...
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("containsA".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            String pc = d.statementAnalysis().stateData().getPrecondition().toString();
+            if ("test".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "Precondition[expression=<precondition>, causes=[methodCall:containsA]]"
+                            : "Precondition[expression=!strings.contains(\"a\"), causes=[methodCall:containsA]]";
+                    assertEquals(expected, pc);
+                }
+            }
+            if ("containsA".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=!set.contains(\"a\"), causes=[escape]]", pc);
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=true, causes=[]]", pc);
+                }
+            }
+        };
+        // ignoring result of method call -> 1 warning
+        testClass("Assert_1", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // no Annotated APIs...
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("containsA".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            String pc = d.statementAnalysis().stateData().getPrecondition().toString();
+            if ("test".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "Precondition[expression=<precondition>, causes=[escape, methodCall:containsA]]"
+                            : "Precondition[expression=!strings.contains(\"a\"), causes=[escape, methodCall:containsA]]";
+                    assertEquals(expected, pc);
+                }
+            }
+            if ("containsA".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=!set.contains(\"a\"), causes=[escape]]", pc);
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("Precondition[expression=true, causes=[]]", pc);
+                }
+            }
+        };
+        // ignoring result of method call -> 1 warning
+        testClass("Assert_2", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
 }

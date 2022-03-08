@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
@@ -60,7 +61,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return analysisStatus;
         }
 
-        // FIXME this should also be implemented on the haveSubBlocks side
+        // IMPROVE this should also be implemented on the haveSubBlocks side
         Set<Variable> variablesAssigned = statementAnalysis.variableStream().filter(vi -> vi.isAssignedAt(index()))
                 .map(VariableInfo::variable).collect(Collectors.toUnmodifiableSet());
         ConditionManager cm = sharedState.localConditionManager().removeFromState(sharedState.context(),
@@ -127,32 +128,41 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private ConditionManagerAndStatus doAssertStatement(StatementAnalyserSharedState sharedState, ConditionManager cm) {
         Expression assertion = statementAnalysis.stateData().valueOfExpression.get();
+        Expression pcFromMethod = statementAnalysis.stateData().getPreconditionFromMethodCalls().expression();
+        Expression combined = And.and(sharedState.context(), assertion, pcFromMethod);
+
         boolean expressionIsDelayed = statementAnalysis.stateData().valueOfExpression.isVariable();
         // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
         // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
 
-        if (SAHelper.moveConditionToParameter(sharedState.context(), assertion) == null) {
+        Precondition pc;
+        if (SAHelper.moveConditionToParameter(sharedState.context(), combined) == null) {
             // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
             // it turns out the condition will always be false. We really need the local condition manager for next
             // statement to be delayed until we know the precondition can be accepted.
             Expression translated = Objects.requireNonNullElse(
-                    sharedState.evaluationContext().acceptAndTranslatePrecondition(assertion),
+                    sharedState.evaluationContext().acceptAndTranslatePrecondition(combined),
                     new BooleanConstant(statementAnalysis.primitives(), true));
-            Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-            statementAnalysis.stateData().setPrecondition(pc);
+
+            List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(
+                    translated.isBoolValueTrue() ? Stream.of() : Stream.of(new Precondition.EscapeCause()),
+                    statementAnalysis.stateData().getPreconditionFromMethodCalls().causes().stream()).toList();
+
+            pc = new Precondition(translated, preconditionCauses);
         } else {
             // the null/not null of parameters has been handled during the main evaluation
-            statementAnalysis.stateData().setPrecondition(Precondition.empty(statementAnalysis.primitives()));
+            pc = Precondition.empty(statementAnalysis.primitives());
         }
+        statementAnalysis.stateData().setPrecondition(pc);
 
         AnalysisStatus analysisStatus;
-        if (expressionIsDelayed) {
-            analysisStatus = AnalysisStatus.of(statementAnalysis.stateData().valueOfExpressionIsDelayed());
+        if (expressionIsDelayed || pc.isDelayed()) {
+            CausesOfDelay merge = statementAnalysis.stateData().valueOfExpressionIsDelayed().merge(pc.causesOfDelay());
+            analysisStatus = AnalysisStatus.of(merge);
         } else {
             analysisStatus = DONE;
         }
-        Expression assertCondition = statementAnalysis.stateData().valueOfExpression.get();
-        return new ConditionManagerAndStatus(cm.addState(assertCondition), analysisStatus);
+        return new ConditionManagerAndStatus(cm.addState(combined), analysisStatus);
     }
 
 

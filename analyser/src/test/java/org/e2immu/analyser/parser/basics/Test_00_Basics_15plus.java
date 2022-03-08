@@ -135,7 +135,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             }
         };
         testClass("Basics_18", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

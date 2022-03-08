@@ -656,9 +656,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
             translated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), translationMap).getExpression();
         }
-        if (translated.variables(false).stream()
-                .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
-            return translated;
+        List<Variable> variables = translated.variables(false);
+        if (variables.stream().allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
+            DV modified = variables.stream()
+                    .filter(this::isPresent)
+                    .map(v -> getProperty(v, CONTEXT_MODIFIED)).reduce(DV.FALSE_DV, DV::max);
+            if (modified.valueIsFalse()) {
+                return translated;
+            }
+            if (modified.isDelayed()) {
+                return DelayedExpression.forPrecondition(getPrimitives(), modified.causesOfDelay());
+            }
         }
         return precondition.isDelayed() ? precondition : null;
     }

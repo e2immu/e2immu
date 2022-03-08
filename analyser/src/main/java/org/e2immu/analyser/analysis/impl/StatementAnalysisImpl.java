@@ -1988,10 +1988,26 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         });
     }
 
+    /*
+    Apply the precondition coming from the evaluation result, which originates mainly from EvaluatePreconditionFromMethod.
+    (there is a technical use in ExplicitConstructorInvocation code as well.)
+
+    Null value means that there was no method call in the expression.
+
+    Assert statements need special attention, because they may create additional precondition clauses
+     */
     @Override
     public CausesOfDelay applyPrecondition(Precondition precondition,
                                            EvaluationContext evaluationContext,
                                            ConditionManager localConditionManager) {
+        stateData.setPreconditionFromMethodCalls(Objects.requireNonNullElseGet(precondition,
+                () -> Precondition.empty(evaluationContext.getPrimitives())));
+        if (statement instanceof AssertStatement || statement instanceof ThrowStatement) {
+            // we'll not be writing the final precondition here, that's done in SASubBlocks
+            // because there we write the local condition manager for the next statement
+            return CausesOfDelay.EMPTY;
+        }
+
         Location location = location(EVALUATION);
         if (precondition != null) {
             Expression preconditionExpression = precondition.expression();

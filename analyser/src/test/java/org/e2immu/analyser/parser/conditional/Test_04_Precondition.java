@@ -390,11 +390,11 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
 
         testClass("Precondition_3", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

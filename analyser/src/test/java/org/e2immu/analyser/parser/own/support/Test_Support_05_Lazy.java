@@ -184,11 +184,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
