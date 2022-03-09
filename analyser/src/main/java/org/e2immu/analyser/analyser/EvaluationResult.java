@@ -284,6 +284,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
+        public Builder clearPrecondition() {
+            precondition = null;
+            return this;
+        }
+
         private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
             if (!ignoreExpression && evaluationResult.value != null) {
                 setExpression(evaluationResult.value);

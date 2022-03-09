@@ -141,10 +141,15 @@ public class StateData {
     }
 
     public void setPreconditionFromMethodCalls(Precondition precondition) {
-        if (precondition.isDelayed()) {
-            preconditionFromMethodCalls.setVariable(precondition);
-        } else if(preconditionFromMethodCalls.isVariable() || !precondition.equals(preconditionFromMethodCalls.get())){
-            preconditionFromMethodCalls.setFinal(precondition);
+        try {
+            if (precondition.isDelayed()) {
+                preconditionFromMethodCalls.setVariable(precondition);
+            } else if (preconditionFromMethodCalls.isVariable() || !precondition.equals(preconditionFromMethodCalls.get())) {
+                preconditionFromMethodCalls.setFinal(precondition);
+            }
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Value was {}, new value {}", preconditionFromMethodCalls.get(), precondition);
+            throw ise;
         }
     }
 

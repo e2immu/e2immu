@@ -69,7 +69,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     Finally, general modifications are carried out
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                  EvaluationResult evaluationResultIn) {
+                                  EvaluationResult evaluationResultIn,
+                                  boolean doNotWritePreconditionFromMethod) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
         EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
                 sharedState.context());
@@ -277,8 +278,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             delay = delay.merge(evalForEach);
         }
 
-        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties
-                (sharedState, evaluationResult, delay, analyserContext, groupPropertyValues);
+        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
+                delay, analyserContext, groupPropertyValues, doNotWritePreconditionFromMethod);
 
         // debugging...
 
@@ -462,7 +463,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       EvaluationResult evaluationResult,
                                                       CausesOfDelay delayIn,
                                                       AnalyserContext analyserContext,
-                                                      GroupPropertyValues groupPropertyValues) {
+                                                      GroupPropertyValues groupPropertyValues,
+                                                      boolean doNotWritePreconditionFromMethod) {
         // the second one is across clusters of variables
         groupPropertyValues.addToMap(statementAnalysis, analyserContext, EVALUATION);
 
@@ -579,11 +581,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
          */
         evaluationResult.messages().getMessageStream().filter(this::acceptMessage).forEach(statementAnalysis::ensure);
 
-        // not checking on DONE anymore because any delay will also have crept into the precondition itself??
-        Precondition precondition = evaluationResult.precondition();
-        CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
-                sharedState.localConditionManager());
-        delay = delay.merge(applyPrecondition);
+        if(!doNotWritePreconditionFromMethod) {
+            // not checking on DONE anymore because any delay will also have crept into the precondition itself??
+            Precondition precondition = evaluationResult.precondition();
+            CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
+                    sharedState.localConditionManager());
+            delay = delay.merge(applyPrecondition);
+        }
+
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont).merge(extIgnMod).merge(anyExtIgnMod);
 

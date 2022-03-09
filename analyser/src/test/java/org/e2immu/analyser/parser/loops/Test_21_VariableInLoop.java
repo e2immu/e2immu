@@ -73,4 +73,9 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_1() throws IOException {
+        testClass("VariableInLoop_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

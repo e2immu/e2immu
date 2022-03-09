@@ -200,4 +200,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

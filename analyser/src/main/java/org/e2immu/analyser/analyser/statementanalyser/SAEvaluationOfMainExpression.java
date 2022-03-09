@@ -128,7 +128,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
         }
-        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
+        // we'll write a little later, in the second evaluation...
+        boolean doNotWritePreconditionFromMethod = statement() instanceof ExplicitConstructorInvocation;
+        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, doNotWritePreconditionFromMethod);
 
         // post-process
 
@@ -147,12 +149,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
                 EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
-                // we must take the precondition from the previous result, otherwise it gets overwritten with PC.empty()
-                EvaluationResult resultWithPC = new EvaluationResult.Builder(sharedState.context()).composeCopyStoredValues(reResult).build();
-                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, resultWithPC);
+                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, reResult, false);
                 statusPost = assignmentResult.status().merge(causes);
                 ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
-                result = resultWithPC;
+                result = reResult;
             }
         }
         if (ennStatus.isDelayed()) {
@@ -221,7 +221,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-            return apply.apply(sharedState, builder.build()).combinedStatus().causesOfDelay();
+            return apply.apply(sharedState, builder.build(), false).combinedStatus().causesOfDelay();
         } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             // empty parameters: this(); or super(); this code is replicated a bit higher for the situation of parameters
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
@@ -234,7 +234,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
                         structure.forwardEvaluationInfo());
                 // FIXME clean up, AnalysisStatus -> Causes
-                AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
+                AnalysisStatus applyResult = apply.apply(sharedState, result, false).combinedStatus();
                 return applyResult.causesOfDelay().merge(causes);
             }
         }
