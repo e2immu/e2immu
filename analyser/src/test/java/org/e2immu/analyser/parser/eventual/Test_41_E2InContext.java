@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_41_E2InContext extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_EVENTUALLY_STRING = "instance type Eventually<String>";
-
     public Test_41_E2InContext() {
         super(true);
     }
@@ -58,7 +56,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() < 3 ? "<new:Eventually<String>>" : "instance type Eventually<String>";
+                        String expect = d.iteration() < 3 ? "<mmc:eventually>" : "instance type Eventually<String>";
                         assertEquals(expect, d.currentValue().toString());
                         // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
@@ -72,8 +70,8 @@ public class Test_41_E2InContext extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() < 4, null == d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
-                    mustSeeIteration(d, 4);
+                    assertEquals(d.iteration() <= 2, null == d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
+                    mustSeeIteration(d, 3);
                 }
             }
         };
@@ -89,10 +87,10 @@ public class Test_41_E2InContext extends CommonTestRunner {
 
         // error expected in the "error" method
         testClass("E2InContext_0", 1, 0, new DebugConfiguration.Builder()
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -140,9 +138,9 @@ public class Test_41_E2InContext extends CommonTestRunner {
         };
 
         testClass("E2InContext_1", 0, 0, new DebugConfiguration.Builder()
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -179,9 +177,9 @@ public class Test_41_E2InContext extends CommonTestRunner {
         };
 
         testClass("E2InContext_2", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

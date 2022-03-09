@@ -55,68 +55,63 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("Lazy".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "supplierParam".equals(p.name)) {
-                assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                if ("0".equals(d.statementId())) {
+                    assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                }
             }
             if (d.variable() instanceof FieldReference fr && "supplier".equals(fr.fieldInfo.name)) {
                 assertEquals("1", d.statementId());
-                assertDv(d, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 1, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
         }
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
-                assertDv(d, 1, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 2, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String causes = switch (d.iteration()) {
-                        case 0 -> "break_init_delay:this.t@Method_get_0.0.0";
-                        case 1, 2 -> "initial@Field_t";
-                        default -> "";
-                    };
-                    assertCurrentValue(d, 3, "t$0");
+                    assertCurrentValue(d, 4, "t$0");
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<s:T>";
+                        case 0 -> "<f:t>";
+                        case 1 -> "<f*:t>";
+                        case 2 -> "<wrapped:t>";
+                        case 3 -> "<s:T>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() >= 3, d.currentValue().isDone());
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals(d.iteration() >= 4, d.currentValue().isDone());
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 1, "instance type Supplier<T>/*@IgnoreMods*/");
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertCurrentValue(d, 2, "instance type Supplier<T>/*@IgnoreMods*/");
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 3, "nullable instance type T");
+                    assertCurrentValue(d, 4, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
-                    String causes = switch (d.iteration()) {
-                        case 0, 1, 2 -> "initial@Field_t";
-                        default -> "";
-                    };
-                    assertCurrentValue(d, 3, "nullable instance type T");
+                    assertCurrentValue(d, 4, "nullable instance type T");
                 }
                 String expect = switch (d.iteration()) {
-                    case 0 -> "<m:requireNonNull>";
-                    case 1 -> "<wrapped:t>";
-                    case 2 -> "<s:T>"; // break init delay gone already
+                    case 0, 1 -> "<m:requireNonNull>";
+                    case 2 -> "<wrapped:t>";
+                    case 3 -> "<s:T>";
                     default -> "nullable instance type T/*@NotNull*/";
                 };
                 if ("1".equals(d.statementId())) {
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
-//                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                    assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
+                    assertDv(d, 4, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         }
@@ -148,30 +143,33 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("t".equals(d.fieldInfo().name)) {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
-            String expected = d.iteration() == 0
-                    ? "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;no precondition info@Method_get_0-E;values:this.t@Field_t"
-                    : "null,nullable instance type T/*@NotNull*/";
+            String expected = switch (d.iteration()) {
+                case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
+                case 1 -> "break_init_delay:this.t@Method_get_2-C;initial:this.supplier@Method_get_1-C;values:this.t@Field_t";
+                default -> "null,nullable instance type T/*@NotNull*/";
+            };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
-            assertEquals(d.iteration() > 0, d.fieldAnalysis().valuesDelayed().isDone());
+            assertEquals(d.iteration() > 1, d.fieldAnalysis().valuesDelayed().isDone());
 
-            assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-            assertEquals(MultiLevel.IGNORE_MODS_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS));
-            assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-            assertEquals("supplierParam", d.fieldAnalysis().getValue().toString());
+            assertDv(d, 1, MultiLevel.IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            String expected = d.iteration() == 0 ? "<f:supplier>" : "supplierParam";
+            assertEquals(expected, d.fieldAnalysis().getValue().toString());
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
         if ("get".equals(d.methodInfo().name)) {
-            String expect = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
+            String expect = d.iteration() <= 3 ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
-            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 
@@ -184,11 +182,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

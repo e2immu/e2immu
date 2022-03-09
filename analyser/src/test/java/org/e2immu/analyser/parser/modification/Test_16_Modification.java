@@ -142,15 +142,18 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Modification_15".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -166,9 +169,9 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

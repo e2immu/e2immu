@@ -27,13 +27,9 @@ public class VariableInLoop_1 {
         NavigationData navigationData();
     }
 
-    private StatementAnalyser findFirstStatementWithDelays(StatementAnalyser firstStatementAnalyser) {
+    private static StatementAnalyser findFirstStatementWithDelays(StatementAnalyser firstStatementAnalyser) {
         StatementAnalyser sa = firstStatementAnalyser;
         while (sa != null) {
-            //AnalyserComponents<String, StatementAnalyserSharedState> components = sa.getAnalyserComponents();
-            //if (components.getStatusesAsMap().values().stream().anyMatch(AnalysisStatus::isDelayed)) {
-            //    return sa;
-            //}
             if (!sa.navigationData().next.isPresent()) return sa;
             Optional<StatementAnalyser> opt = sa.navigationData().next.get();
             if (opt.orElse(null) == null) return sa;

@@ -66,27 +66,24 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(RET_VAR, retVar.fqn);
                 if ("2".equals(d.statementId())) {
                     // note the absence of null!=a
-                    assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
-
-                    // <return value> is nullable
-                    assertEquals(MultiLevel.NULLABLE_DV, d.currentValue().getProperty(d.context(),
-                            Property.NOT_NULL_EXPRESSION, true));
-
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<return value>"
+                            : "null==map.get(a)?List.of():<return value>";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if ("3".equals(d.statementId())) {
-                    assertEquals("null==map.get(a)?List.of():map.get(a)", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<s:List<B>>"
+                            : "null==map.get(a)?List.of():map.get(a)";
+                    assertEquals(expected, d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            d.currentValue().getProperty(d.context(), Property.NOT_NULL_EXPRESSION, true));
-
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
 
             if ("list".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("map.get(a)", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<s:List<B>>" : "map.get(a)";
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         }
@@ -97,10 +94,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("1".equals(d.statementId())) {
                 assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
             if ("3".equals(d.statementId())) {
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         }
@@ -196,14 +193,16 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("1".equals(d.statementId())) {
                 // a != null is in the property of parameter, not in precondition
-                assertTrue(d.localConditionManager().precondition().isEmpty());
+                assertEquals(d.iteration() > 0, d.localConditionManager().precondition().isEmpty());
             }
             if ("2.0.0".equals(d.statementId())) {
-                assertEquals("null==map.get(a)", d.condition().toString());
-                assertEquals("null==map.get(a)", d.absoluteState().toString());
+                String expected = d.iteration() == 0 ? "null==<s:List<B>>" : "null==map.get(a)";
+                assertEquals(expected, d.condition().toString());
+                assertEquals(expected, d.absoluteState().toString());
             }
             if ("3".equals(d.statementId())) {
-                assertEquals("null!=map.get(a)", d.state().toString());
+                String expected = d.iteration() == 0 ? "null!=<s:List<B>>" : "null!=map.get(a)";
+                assertEquals(expected, d.state().toString());
             }
         }
         if ("addAll".equals(d.methodInfo().name)) {
@@ -224,13 +223,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
         if ("list".equals(name)) {
             VariableInfo returnValue1 = d.getReturnAsVariable();
-            assertEquals("null==map.get(a)?List.of():map.get(a)",
-                    d.getReturnAsVariable().getValue().toString());
-            DV retValNotNull = returnValue1.getProperty(Property.NOT_NULL_EXPRESSION);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, retValNotNull);
-
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+            String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<s:List<B>>"
+                    : "null==map.get(a)?List.of():map.get(a)";
+            assertEquals(expected, d.getReturnAsVariable().getValue().toString());
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
         }
         if ("copy".equals(name)) {
             assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -265,11 +261,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(SMapList.class), 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

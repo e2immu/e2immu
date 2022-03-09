@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -129,13 +128,14 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
-                    assertEquals("a", d.currentValue().toString());
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    String a = d.iteration() == 0 ? "<s:A>" : "a";
+                    assertEquals(a, d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }
             }
         };
         testClass("Basics_18", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

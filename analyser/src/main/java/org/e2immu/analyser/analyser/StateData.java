@@ -62,6 +62,10 @@ public class StateData {
         return equalityAccordingToState.getOrDefaultNull(v);
     }
 
+    public boolean inEqualityAccordingToState(Variable variable) {
+        return equalityAccordingToState.isSet(variable);
+    }
+
     /*
      precondition = conditions that cause an escape
      they are generated in the "throw" statement, assert statement

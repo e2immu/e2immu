@@ -173,7 +173,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1
-                                ? "<m:isEmpty>?<s:OutputBuilderSimplified_3>:<m:isEmpty>?b:<return value>"
+                                ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
                                 : "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -194,8 +194,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         // the warning is correct but not particularly useful, because we have no way of ensuring that "new LinkedList"
         // will become content not null
         testClass("OutputBuilderSimplified_3", 0, 1, new DebugConfiguration.Builder()
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -242,7 +242,6 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     // still, this one is yet again a bit different; the order of execution remains (wrongly) important
     @Test
     public void test_7() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("result".equals(d.variableName())) {
@@ -256,14 +255,17 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                             case 0 -> "<f:NONE>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
                             case 1 -> "<vp:NONE:container@Class_Space;immutable@Class_Space>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
                             case 2 -> "Space.NONE==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
-                            default -> "Space.NONE==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 3, 4 -> "Space.NONE==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            default -> "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("<mmc:result>", d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        String expected = d.iteration() < 5 ? "<mmc:result>"
+                                : "countMid.get()>=1?instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
@@ -274,8 +276,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<p:start>";
-                            default -> "Space.NONE==start?nullable instance type OutputElement:<p:start>";
-                            //  default -> "nullable instance type OutputElement";
+                            case 2, 3, 4 -> "Space.NONE==start?nullable instance type OutputElement:<p:start>";
+                            default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -290,18 +292,15 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        assertEquals("<p:end>", d.currentValue().toString());
+                        String expected = d.iteration() < 5 ? "<p:end>" : "nullable instance type OutputElement";
+                        assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        if (d.iteration() == 3) {
-                            // FIXME end waits for CONTAINER on OBS_7
-                            //assertEquals("container:result@Method_apply_2:M", d.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().toString());
-                        }
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<p:end>";
-                            default -> "Space.NONE==end?nullable instance type OutputElement:<p:end>";
-                            //  default -> "nullable instance type OutputElement";
+                            case 2, 3, 4 -> "Space.NONE==end?nullable instance type OutputElement:<p:end>";
+                            default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -327,15 +326,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("joining".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "separator".equals(pi.name)) {
-                    assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
-                    assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
-                    assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    if (d.iteration() == 3) {
-                        // FIXME have no CM because have no CONTAINER
-                        assertEquals("container:result@Method_apply_2:M", d.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().toString());
-                    }
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
@@ -352,7 +347,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     fail("Variable should not have been transferred");
                 } else if (d.variable() instanceof ReturnVariable) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    String expected = "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>";
+                    String expected = d.iteration() <= 4 ? "<new:Collector<OutputBuilderSimplified_7,OutputBuilderSimplified_7,OutputBuilderSimplified_7>>"
+                            : "new Collector<>(){private final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilderSimplified_7> supplier(){return OutputBuilderSimplified_7::new;}public BiConsumer<OutputBuilderSimplified_7,OutputBuilderSimplified_7> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilderSimplified_7> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilderSimplified_7,OutputBuilderSimplified_7> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(expected, d.currentValue().toString());
                 } else fail("Variable " + d.variableName());
             }
@@ -360,24 +356,24 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
-                    // FIXME have no CONTAINER because have no CM
-                    assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start;container@Class_OutputBuilderSimplified_7", d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
+                    assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start;container@Class_OutputBuilderSimplified_7",
+                            d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
                 }
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals(d.iteration() <= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -404,7 +400,6 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                 ParameterAnalysis p1 = d.parameterAnalyses().get(1);
                 assertEquals(MultiLevel.NOT_INVOLVED_DV, p1.getProperty(Property.EXTERNAL_IMMUTABLE));
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("combiner".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 2 ? "<m:combiner>" : "instance type $5";
@@ -420,7 +415,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                String expected = d.iteration() <= BIG ? "<m:apply>" : "result";
+                String expected = d.iteration() <= 4 ? "<m:apply>"
+                        : "Space.NONE==end?countMid.get()>=1?instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -436,11 +432,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
-        // FIXME runs green when alphabetic... but not in this particular ordering
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 

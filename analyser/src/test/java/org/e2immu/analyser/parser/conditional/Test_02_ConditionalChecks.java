@@ -194,21 +194,21 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("null==a||null==b", d.absoluteState().toString());
                     assertEquals("null==a||null==b", d.condition().toString());
-                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().getPrecondition().isEmpty());
                 }
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
                         assertEquals("true", d.state().toString());
                         assertEquals("true", d.condition().toString());
-                        assertEquals("true", d.statementAnalysis().stateData().getPrecondition().toString());
+                        assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
                         assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionGet().isEmpty());
                     }
                 }
             }
         };
         testClass("ConditionalChecks_1", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
@@ -220,15 +220,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                if (d.iteration() > 0) {
-                    for (int param : new int[]{0, 1}) {
-                        assertDv(d.p(param), MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d.p(param), MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
-                    }
-                }
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
+                assertDv(d.p(1), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(1), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
+
                 assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
                 assertEquals(0, d.methodAnalysis().getComputedCompanions().size());
-                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+                assertEquals(d.iteration() > 0, d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
 
@@ -239,24 +238,24 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.state().toString()); //->precondition, in this case, parameter not null
                         // goes into not-null on parameters
-                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                        assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("null==a", d.condition().toString());
                         assertEquals("null==a", d.absoluteState().toString());
                         // not-null does not contribute to the precondition
-                        assertEquals("true", d.statementAnalysis().stateData().getPrecondition().toString());
+                        assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.state().toString()); // in both parameters by now
                         //      assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
-                        assertEquals("true", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                        assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("null==b", d.condition().toString());
                         assertEquals("null==b", d.absoluteState().toString()); // null!=a in parameter @NotNull
-                        assertEquals("true", d.statementAnalysis().stateData().getPrecondition().toString());
+                        assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
                     }
                 }
             }
@@ -280,15 +279,15 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             }
             if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 }
             }
         };
 
         testClass("ConditionalChecks_2", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

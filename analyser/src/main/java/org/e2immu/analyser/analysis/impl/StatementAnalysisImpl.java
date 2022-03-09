@@ -572,9 +572,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
             } else {
-                if (vic.hasEvaluation() &&
+                if (vic.hasEvaluation()
                         // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                        !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))) {
+                        && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))
+                        // see e.g. VariableInLoop_1: don't write now, there'll be an assignment in SAApply.apply soon
+                        && !(stateData.inEqualityAccordingToState(variableInfo.variable()))) {
                     vic.copy(); //otherwise, variable not assigned, not read
                 }
             }

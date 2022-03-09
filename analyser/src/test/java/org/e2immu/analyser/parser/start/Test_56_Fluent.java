@@ -44,9 +44,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_56_Fluent extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_BUILDER_BUILD =
-            "!(instance instanceof Fluent_0)||null==instance?(instance type Builder).build():instance";
-
     public Test_56_Fluent() {
         super(false);
     }
