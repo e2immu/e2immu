@@ -403,12 +403,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         testClass("FormatterSimplified_9", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

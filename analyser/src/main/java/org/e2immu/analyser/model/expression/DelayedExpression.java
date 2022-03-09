@@ -54,6 +54,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;
+        assert causesOfDelay.isDelayed();
         this.priorityProperties = properties;
     }
 

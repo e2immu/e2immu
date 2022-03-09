@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -253,7 +254,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
             Variable variable = variableExpression.variable();
             Expression replacement = null;
             boolean replace = true;
-            FieldReference fieldReference = null;
             if (variable instanceof ParameterInfo parameterInfo) {
                 if (parameterInfo.getMethod() == methodInfo) {
                     replacement = parameterReplacement(parameters, inspectionProvider, parameterInfo);
@@ -265,11 +265,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
                     builder.put(new VariableExpression(variable), ve);
                 }
-            } else if (variable instanceof FieldReference fr) {
-                fieldReference = fr;
-            }
-
-            if (fieldReference != null) {
+            } else if (variable instanceof FieldReference fieldReference) {
                 boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
                 boolean scopeIsThis = fieldReference.scopeIsThis();
                 if (!staticField && !scopeIsThis) {
@@ -282,7 +278,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
                         FieldReference replacementFr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, newScope);
                         replacement = new VariableExpression(replacementFr);
                     } else {
-                        replace = false;
+                        // try to replace parameters hidden in the scope of this field reference (See e.g. Test_Output_03_Formatter)
+                        boolean success = false;
+                        for(ParameterInfo pi: methodInfo.methodInspection.get().getParameters()) {
+                            TranslationMap tm = new TranslationMapImpl.Builder().put(new VariableExpression(pi), parameters.get(pi.index)).build();
+                            Expression replaced = variableExpression.translate(tm);
+                            if(replaced != variableExpression) {
+                                replacement = replaced;
+                                success = true;
+                                break;
+                            }
+                        }
+                        replace = success;
                     }
                     // the variables of the scope are dealt with separately
                 } else if (visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {

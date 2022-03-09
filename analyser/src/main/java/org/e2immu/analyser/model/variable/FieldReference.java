@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.output.Symbol;

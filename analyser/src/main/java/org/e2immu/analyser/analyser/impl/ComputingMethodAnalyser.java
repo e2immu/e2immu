@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;

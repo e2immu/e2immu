@@ -80,26 +80,26 @@ public record Formatter(FormattingOptions options) {
             // we should only indent if we wrote a new line
             if (writeNewLine) indent(indent, writer(writer, tabs));
             int lineLength = options.lengthOfLine() - indent;
-            CurrentExceeds lookAhead = lookAhead(list, pos, lineLength);
+            CurrentExceeds currentExceeds = lookAhead(list, pos, lineLength);
 
             NewLineDouble newLineDouble = NOT_END;
             boolean lineSplit = LINE_SPLIT == (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
-            if (lookAhead.exceeds != null) {
-                pos = handleExceeds(lookAhead, lineSplit, tabs, list, writer(writer, tabs), pos);
+            if (currentExceeds.exceeds != null) {
+                pos = handleExceeds(currentExceeds, lineSplit, tabs, list, writer(writer, tabs), pos);
                 writeNewLine = true;
-            } else if (lookAhead.current == null) {
+            } else if (currentExceeds.current == null) {
                 // direct newline hit
                 writeNewLine = false;
                 pos++;
             } else {
-                writeLine(list, writer(writer, tabs), pos, lookAhead.current.pos);
+                writeLine(list, writer(writer, tabs), pos, currentExceeds.current.pos);
                 if (lineSplit) {
                     pop(tabs, "", writer);
                 }
-                pos = lookAhead.current.pos + 1; // move one step beyond
+                pos = currentExceeds.current.pos + 1; // move one step beyond
 
                 // tab management: note that exceeds is never a guide.
-                Guide guide = lookAhead.current.guide;
+                Guide guide = currentExceeds.current.guide;
                 if (guide != null) {
                     newLineDouble = handleGuide(guide, tabs, writer);
                     writeNewLine = newLineDouble.writeNewLine;

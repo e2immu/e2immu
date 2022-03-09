@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.support.EventuallyFinal;
@@ -54,8 +53,10 @@ public class MethodLevelData {
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
         Precondition cp = combinedPrecondition.get();
-        if(cp == null) return null;
-        return cp.expression().causesOfDelay();
+        if (cp == null) return null;
+        CausesOfDelay causes = cp.expression().causesOfDelay();
+        assert causes.isDelayed();
+        return causes;
     }
 
     public CausesOfDelay linksHaveNotYetBeenEstablished() {
@@ -80,10 +81,10 @@ public class MethodLevelData {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents =
-         new AnalyserComponents.Builder<String, SharedState>(AnalyserProgram.PROGRAM_ALL)
-                .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
-                .add(COMBINE_PRECONDITION, this::combinePrecondition)
-                .build();
+            new AnalyserComponents.Builder<String, SharedState>(AnalyserProgram.PROGRAM_ALL)
+                    .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
+                    .add(COMBINE_PRECONDITION, this::combinePrecondition)
+                    .build();
 
 
     public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
@@ -107,35 +108,26 @@ public class MethodLevelData {
     // preconditions come from the precondition expression in stateData
     // they are accumulated from the previous statement, and from all child statements
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
-        CausesOfDelay previousDelays = sharedState.previous == null ? CausesOfDelay.EMPTY :
-                sharedState.previous.combinedPrecondition.get().expression().causesOfDelay();
+        Stream<Precondition> fromMyStateData = Stream.of(sharedState.stateData.getPrecondition());
 
-        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        CausesOfDelay subBlockDelays = subBlocks.stream()
-                .map(sa -> sa.methodLevelData().combinedPrecondition.get().expression().causesOfDelay())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-
-
-        Stream<Precondition> fromMyStateData =
-                Stream.of(sharedState.stateData.getPrecondition());
         Stream<Precondition> fromPrevious = sharedState.previous != null ?
                 Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
-        Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
+
+        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
+        Stream<Precondition> fromBlocks = subBlocks.stream()
                 .map(sa -> sa.methodLevelData().combinedPrecondition)
                 .map(EventuallyFinal::get);
+
         Precondition empty = Precondition.empty(sharedState.context.getPrimitives());
         Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
                 .map(pc -> pc == null ? empty : pc)
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.context, pc2))
                 .orElse(empty);
 
-        CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays);
-
-        if (allDelayed.isDelayed()) {
+        if (all.isDelayed()) {
             combinedPrecondition.setVariable(all);
-            return allDelayed;
+            return all.causesOfDelay();
         }
-
         setFinalAllowEquals(combinedPrecondition, all);
         return DONE;
     }
