@@ -153,9 +153,8 @@ public final class VariableExpression extends CommonVariableExpression {
         if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
             Expression translatedScope = fieldReference.scope.translate(translationMap);
             if (translatedScope != fieldReference.scope) {
-                ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
-                return VariableExpression.of(new FieldReference(fieldReference.fieldInfo, translatedScope,
-                        translatedType, fieldReference.isStatic, fieldReference.isDefaultScope), suffix);
+                return VariableExpression.of(new FieldReference(InspectionProvider.DEFAULT,
+                        fieldReference.fieldInfo, translatedScope), suffix);
             }
         }
         return this;

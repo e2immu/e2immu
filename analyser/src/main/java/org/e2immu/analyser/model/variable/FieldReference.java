@@ -87,29 +87,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
         return fieldInfo.fullyQualifiedName() + "#" + scope.output(Qualification.FULLY_QUALIFIED_NAME);
     }
 
-    // should only be used by translate
-    public FieldReference(FieldReference fieldReference, Expression newScope) {
-        super(fieldReference.parameterizedType);
-        this.fieldInfo = fieldReference.fieldInfo;
-        this.isStatic = fieldReference.isStatic;
-        this.isDefaultScope = fieldReference.isDefaultScope;
-        this.scope = newScope;
-        this.fullyQualifiedName = computeFqn();
-        this.hashCode = hash(fieldInfo, scope);
-    }
-
-    // called from VariableExpression.translate, where no inspection provider is present
-    public FieldReference(FieldInfo fieldInfo, Expression scope, ParameterizedType parameterizedType, boolean isStatic,
-                          boolean isDefaultScope) {
-        super(parameterizedType);
-        this.fieldInfo = fieldInfo;
-        this.scope = scope;
-        this.isStatic = isStatic;
-        this.isDefaultScope = isDefaultScope;
-        this.fullyQualifiedName = computeFqn();
-        this.hashCode = hash(fieldInfo, scope);
-    }
-
     @Override
     public TypeInfo getOwningType() {
         return fieldInfo.owner;

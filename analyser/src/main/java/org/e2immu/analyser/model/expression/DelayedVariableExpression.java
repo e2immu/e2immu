@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
@@ -200,7 +201,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
             EvaluationResult reEval = fr.scope.reEvaluate(context, translation); // recurse
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
-                FieldReference newRef = new FieldReference(fr, replaceScope);
+                FieldReference newRef = new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, replaceScope);
                 result = new DelayedVariableExpression(msg, debug, newRef, statementTime, causesOfDelay);
             } else {
                 result = this;

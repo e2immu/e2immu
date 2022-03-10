@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -883,11 +884,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
                 if (toRemove.contains(ive.variable())) {
                     Expression newValue = bestValueForToRemove.get(ive.variable());
-                    return new FieldReference(fr, newValue);
+                    return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, newValue);
                 }
                 Variable renamed = renameVariable(ive.variable());
                 if (renamed == ive.variable()) return fr; // keep the same
-                return new FieldReference(fr, VariableExpression.of(renamed));
+                return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, VariableExpression.of(renamed));
             }
             return variable;
         }
@@ -991,6 +992,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
+        TranslationMapImpl.Builder instanceBuilder = new TranslationMapImpl.Builder();
+        Map<Variable, Expression> afterFiltering = new HashMap<>();
         for (Variable toRemove : prepareMerge.toRemove) {
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
@@ -1002,27 +1005,34 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Expression bestValue;
                 Properties bestProperties = best.valueProperties();
                 if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
+                    CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
                     bestValue = new DelayedVariableOutOfScope(identifier,
-                            toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
+                            toRemove.parameterizedType(), best.getLinkedVariables(), causes);
                 } else {
                     // at the moment, there may be references to other variables to be removed inside the best.getValue()
                     // they will be replaced soon in applyTranslations()
                     // on the other hand, we will already avoid self-references!
                     // NOTE: Instance is based on identifier and type
-                    TranslationMapImpl.Builder selfRefBuilder = new TranslationMapImpl.Builder();
-                    Expression instance = Instance.forMerge(identifier, best.variable().parameterizedType(),
-                            bestProperties);
-                    selfRefBuilder.addVariableExpression(best.variable(), instance);
-                    bestValue = best.getValue().translate(selfRefBuilder.build());
+
+                    bestValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
                 }
-                prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
-                prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
+                instanceBuilder.addVariableExpression(best.variable(), bestValue);
+                afterFiltering.put(toRemove, best.getValue());
             } // else: See e.g. Loops_3: block not executed
+        }
+        TranslationMap instances = instanceBuilder.build();
+        for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
+            Expression expression = entry.getValue();
+            Variable toRemove = entry.getKey();
+            Expression bestValue = expression.translate(instances);
+            //prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
+            prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
         }
         prepareMerge.computeRenames();
 
         TranslationMap translationMapBeforeApplyTranslations = prepareMerge.translationMap.build();
-        applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
+        // remove all "toRemove"s
+       // applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
         TranslationMap translationMap = translationMapBeforeApplyTranslations.update(prepareMerge.bestValueForToRemove);
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
@@ -1101,29 +1111,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
-    }
-
-    private void applyTranslations(TranslationMap translationMap, Map<Variable, Expression> bestValueForToRemove) {
-        boolean changed = true;
-        int count = 0;
-        while (changed) {
-            changed = false;
-            for (Map.Entry<Variable, Expression> e : bestValueForToRemove.entrySet()) {
-                Expression current = e.getValue();
-                Expression replaced = current.translate(translationMap);
-                // note the object identity check... every translation should keep the same object if there is nothing to do
-                assert replaced == current || current instanceof DelayedVariableExpression || current instanceof DelayedExpression || !replaced.equals(current)
-                        : "If equals, should be same object: " + current.getClass() + ": " + current;
-                if (replaced != current) {
-                    changed = true;
-                    e.setValue(replaced);
-                }
-            }
-            if (++count > 10) {
-                throw new UnsupportedOperationException("Infinite loop protection");
-            }
-        }
-        // because there are no self-references anymore, this iteration should end!
     }
 
     /**

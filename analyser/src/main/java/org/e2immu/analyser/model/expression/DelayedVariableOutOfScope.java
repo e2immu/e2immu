@@ -51,6 +51,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
             throw new UnsupportedOperationException();
         }
         this.causesOfDelay = causesOfDelay;
+        assert causesOfDelay.isDelayed();
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
     }

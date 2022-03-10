@@ -203,6 +203,8 @@ public class TranslationMapImpl implements TranslationMap {
 
         public Builder addVariableExpression(Variable variable, Expression actual) {
             variableExpressions.put(variable, actual);
+            assert actual.isDelayed() || !actual.variables(true).contains(variable)
+                    : "No self-references allowed! Variable: " + variable;
             return this;
         }
 

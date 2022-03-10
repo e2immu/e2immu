@@ -94,7 +94,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
                         // IMPROVE this could be more elegant c?i+(c?i+i:0)
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>"
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?(<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>)+<m:nextInt>:<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>"
                                 : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:instance type int):instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -370,7 +370,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    if ("1.0.2.0.0".equals(d.statementId()) || "1.0.2".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
             }
         };
@@ -437,18 +439,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        if ("<out of scope:perPackage:1>".equals(fr.scope.toString())) {
+                        if (fr.scopeIsThis()) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "!<m:equals>&&null!=<m:packageName>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
                                 case 1 -> "!<m:equals>&&null!=<f:packageName>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
-                                default -> "instance type boolean";
+                                default -> "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
                             };
                             assertEquals(expected, d.currentValue().toString());
-                        } else if ("instance type PerPackage".equals(fr.scope.toString())) {
-                            assertTrue(d.iteration() >= 2);
-                            String expected = "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
-                            assertEquals(expected, d.currentValue().toString());
-                        } else fail("No other scope possible: " + fr.scope);
+                        } else {
+                            fail("No other scope possible: " + fr.scope);
+                        }
                     }
                 }
                 if ("doImport".equals(d.variableName())) {

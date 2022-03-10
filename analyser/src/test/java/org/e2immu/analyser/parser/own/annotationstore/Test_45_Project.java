@@ -177,11 +177,11 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_0", 2, 14, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addTypeMapVisitor(typeMapVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
