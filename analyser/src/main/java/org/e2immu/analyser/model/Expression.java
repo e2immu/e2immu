@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
@@ -64,7 +65,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     @NotNull
     @Override
-    default Expression translate(TranslationMap translationMap) {
+    default Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException("all expressions need to have this implemented! " + getClass());
     }
 
@@ -193,7 +194,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     @NotNull
-    Expression stateTranslateThisTo(FieldReference fieldReference);
+    Expression stateTranslateThisTo(InspectionProvider inspectionProvider, FieldReference fieldReference);
 
     @NotNull
     Expression createDelayedValue(EvaluationResult context, CausesOfDelay causes);

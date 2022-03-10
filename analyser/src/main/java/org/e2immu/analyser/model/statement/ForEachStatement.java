@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
@@ -26,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -63,12 +63,12 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new ForEachStatement(identifier, label,
                 (LocalVariableCreation) translationMap.translateExpression(structure.initialisers().get(0)),
                 translationMap.translateExpression(expression),
                 positionOfExpression,
-                translationMap.translateBlock(structure.block()));
+                translationMap.translateBlock(inspectionProvider, structure.block()));
     }
 
     @Override

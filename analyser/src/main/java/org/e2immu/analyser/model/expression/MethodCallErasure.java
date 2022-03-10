@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -71,7 +72,7 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException();
     }
 

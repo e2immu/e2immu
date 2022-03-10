@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -63,7 +64,7 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (this.parameterizedType == translatedType) return this;
         return new ClassExpression(primitives, translatedType);

@@ -22,6 +22,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Comparator;
 import java.util.List;
@@ -61,9 +62,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression transState = state == null ? null : state.translate(translationMap);
-        Expression tex = expression.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression transState = state == null ? null : state.translate(inspectionProvider, translationMap);
+        Expression tex = expression.translate(inspectionProvider, translationMap);
         LinkedVariables transLv = linkedVariables == null ? null : linkedVariables.translate(translationMap);
         ParameterizedType transType = castType == null ? null : translationMap.translateType(castType);
         if (transState == state && tex == expression && transLv == linkedVariables && transType == castType) {

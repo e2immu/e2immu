@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -24,8 +23,6 @@ import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-
-import java.util.List;
 
 public class RewriteCondition {
     private RewriteCondition() {
@@ -65,7 +62,7 @@ public class RewriteCondition {
                 TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
                 builder.put(condition, new BooleanConstant(evaluationContext.getPrimitives(), true));
                 builder.put(loopVariable, parameter);
-                Expression translated = componentsWithLvr.translate(builder.build());
+                Expression translated = componentsWithLvr.translate(evaluationContext.getAnalyserContext(), builder.build());
                 // add the condition again, so that when we merge up, other conditions and states can collapse
                 return And.and(evaluationContext, translated, condition);
             }

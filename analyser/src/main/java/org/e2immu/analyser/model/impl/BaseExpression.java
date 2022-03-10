@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -103,12 +104,12 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public Expression stateTranslateThisTo(FieldReference fieldReference) {
+    public Expression stateTranslateThisTo(InspectionProvider inspectionProvider, FieldReference fieldReference) {
         Expression state = state();
         if (state.isBooleanConstant()) return state;
         // the "this" in the state can belong to the type of the object, or any of its super types
         This thisVar = findThis();
-        return state.translate(new TranslationMapImpl.Builder().put(thisVar, fieldReference).build());
+        return state.translate(inspectionProvider, new TranslationMapImpl.Builder().put(thisVar, fieldReference).build());
     }
 
     private This findThis() {

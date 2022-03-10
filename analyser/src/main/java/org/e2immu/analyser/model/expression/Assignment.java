@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -131,9 +132,9 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translatedTarget = target.translate(translationMap);
-        Expression translatedValue = value.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translatedTarget = target.translate(inspectionProvider, translationMap);
+        Expression translatedValue = value.translate(inspectionProvider, translationMap);
         if (translatedValue == this.value && translatedTarget == this.target) return this;
         return new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -92,9 +93,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translatedLhs = lhs.translate(translationMap);
-        Expression translatedRhs = rhs.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translatedLhs = lhs.translate(inspectionProvider, translationMap);
+        Expression translatedRhs = rhs.translate(inspectionProvider, translationMap);
         if (translatedRhs == this.rhs && translatedLhs == this.lhs) return this;
         return new BinaryOperator(identifier, primitives, translatedLhs,
                 operator, translatedRhs, precedence);

@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -72,10 +73,10 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Declaration> translated = declarations.stream().map(d -> {
             LocalVariable tlv = translationMap.translateLocalVariable(d.localVariable);
-            Expression tex = d.expression.translate(translationMap);
+            Expression tex = d.expression.translate(inspectionProvider, translationMap);
             if (tlv == d.localVariable && tex == d.expression) return d;
             return new Declaration(d.identifier, tlv, tex);
         }).collect(TranslationCollectors.toList(declarations));

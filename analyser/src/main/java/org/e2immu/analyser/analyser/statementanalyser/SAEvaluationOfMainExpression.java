@@ -410,7 +410,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
-            toEvaluate = currentReturnValue.translate(tm);
+            toEvaluate = currentReturnValue.translate(sharedState.evaluationContext().getAnalyserContext(), tm);
             evaluationContext = sharedState.evaluationContext().dropConditionManager();
             forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditional();
         }

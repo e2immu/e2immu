@@ -586,7 +586,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 .filter(this::isReplaceVariable)
                 .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
         if (translationMap.isEmpty()) return mergeValue;
-        return mergeValue.translate(translationMap.build());
+        return mergeValue.translate(getAnalyserContext(), translationMap.build());
     }
 
     private void addToTranslationMapBuilder(VariableInfoContainer vic,

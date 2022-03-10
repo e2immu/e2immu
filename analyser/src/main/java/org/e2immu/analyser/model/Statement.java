@@ -19,14 +19,14 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Bundle;
-import org.e2immu.annotation.E2Container;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 public interface Statement extends Element {
 
     Structure getStructure();
 
     @Override
-    default Statement translate(TranslationMap translationMap) {
+    default Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return this;
     }
 

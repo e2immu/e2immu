@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -112,7 +113,7 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default Expression translate(TranslationMap translationMap) {
+    default Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return this;
     }
 

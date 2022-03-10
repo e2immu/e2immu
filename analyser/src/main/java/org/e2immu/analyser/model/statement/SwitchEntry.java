@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -132,12 +133,13 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public Statement translate(TranslationMap translationMap) {
+        public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
             return new StatementsEntry(identifier, primitives,
                     translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     structure.statements().stream()
-                            .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
+                            .flatMap(st -> translationMap.translateStatement(inspectionProvider, st)
+                                    .stream()).collect(Collectors.toList()));
         }
 
         @Override
@@ -195,10 +197,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public Statement translate(TranslationMap translationMap) {
+        public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
             return new BlockEntry(identifier, primitives, translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    translationMap.translateBlock(structure.block()));
+                    translationMap.translateBlock(inspectionProvider, structure.block()));
         }
 
         @Override

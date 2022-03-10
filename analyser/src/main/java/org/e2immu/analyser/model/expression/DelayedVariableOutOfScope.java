@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 import java.util.Objects;
@@ -112,7 +113,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(parameterizedType);
         if (translatedType == parameterizedType) return this;
         // we only translate if parameter type changes

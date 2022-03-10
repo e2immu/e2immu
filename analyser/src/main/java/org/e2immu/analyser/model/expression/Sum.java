@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
@@ -31,9 +32,9 @@ import java.util.stream.Stream;
 public class Sum extends BinaryOperator {
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression tl = lhs.translate(translationMap);
-        Expression tr = rhs.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression tl = lhs.translate(inspectionProvider, translationMap);
+        Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
         return new Sum(identifier, primitives, tl, tr);
     }

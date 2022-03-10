@@ -76,11 +76,10 @@ public class Filter {
      * void someMethod(String a, String b) { if(a == null || b == null) throw new NullPointerException(); ... }
      * The state after the if-statement is a!=null&&b!=null.
      * The condition at the throws is a==null||b==null.
-     *
+     * <p>
      * The first needs analysing in ACCEPT mode: only an AND construct will yield individual info.
      * The second needs analysing in REJECT mode: only an OR will yield individual info IF the goal is to
      * create the reasons for rejection.
-     *
      */
     public enum FilterMode {
         ALL,    // default value = TRUE
@@ -188,7 +187,7 @@ public class Filter {
                     // must make a new one because we could have remapped a local copy to its field
                     Expression expr;
                     if (acceptAndRemapLocalCopy && l.translationMap != null) {
-                        expr = equalsValue.translate(l.translationMap);
+                        expr = equalsValue.translate(analyserContext, l.translationMap);
                     } else {
                         expr = value;
                     }
@@ -197,7 +196,7 @@ public class Filter {
                 if (r != null && l == null) {
                     Expression expr;
                     if (acceptAndRemapLocalCopy && r.translationMap != null) {
-                        expr = equalsValue.translate(r.translationMap);
+                        expr = equalsValue.translate(analyserContext, r.translationMap);
                     } else {
                         expr = value;
                     }
@@ -215,7 +214,7 @@ public class Filter {
                 if (b != null) {
                     Expression expr;
                     if (acceptAndRemapLocalCopy && b.translationMap != null) {
-                        expr = value.translate(b.translationMap);
+                        expr = value.translate(analyserContext, b.translationMap);
                     } else {
                         expr = value;
                     }
@@ -325,8 +324,8 @@ public class Filter {
 
     // EXAMPLE: 0 == java.util.Collection.this.size()  --> map java.util.Collection.this.size() onto 0
     // EXAMPLE: java.util.Collection.this.size() == o.e.a.t.BasicCompanionMethods_6.test(Set<java.lang.String>):0:strings.size() --> copy lhs onto rhs
-    public static record ValueEqualsMethodCallNoParameters(Expression defaultRest,
-                                                           MethodInfo methodInfo) implements FilterMethod<MethodCall> {
+    public record ValueEqualsMethodCallNoParameters(Expression defaultRest,
+                                                    MethodInfo methodInfo) implements FilterMethod<MethodCall> {
 
         @Override
         public FilterResult<MethodCall> apply(Expression value) {
@@ -365,10 +364,10 @@ public class Filter {
 
     // EXAMPLE: java.util.List.contains("a")
 
-    public static record MethodCallBooleanResult(Expression defaultRest,
-                                                 MethodInfo methodInfo,
-                                                 List<Expression> parameterValues,
-                                                 Expression boolValueTrue) implements FilterMethod<MethodCall> {
+    public record MethodCallBooleanResult(Expression defaultRest,
+                                          MethodInfo methodInfo,
+                                          List<Expression> parameterValues,
+                                          Expression boolValueTrue) implements FilterMethod<MethodCall> {
 
         @Override
         public FilterResult<MethodCall> apply(Expression value) {
@@ -384,7 +383,7 @@ public class Filter {
         }
     }
 
-    public static record ExactValue(Expression defaultRest, Expression value) implements FilterMethod<Expression> {
+    public record ExactValue(Expression defaultRest, Expression value) implements FilterMethod<Expression> {
 
         @Override
         public FilterResult<Expression> apply(Expression value) {

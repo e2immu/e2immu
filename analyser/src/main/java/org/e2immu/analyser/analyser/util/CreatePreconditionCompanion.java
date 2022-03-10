@@ -86,7 +86,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
             TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder()
                     .put(methodCall, new VariableExpression(newParameters.get(0)));
             mainInspection.getParameters().forEach(pi -> builder.put(pi, newParameters.get(pi.index + 1)));
-            return value.translate(builder.build());
+            return value.translate(inspectionProvider, builder.build());
         }
         return value; // TODO
     }

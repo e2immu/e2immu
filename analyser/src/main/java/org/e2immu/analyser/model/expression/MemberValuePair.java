@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.EventuallyFinal;
@@ -91,7 +92,7 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException();
     }
 

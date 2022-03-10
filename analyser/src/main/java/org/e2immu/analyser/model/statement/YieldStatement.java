@@ -21,6 +21,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class YieldStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new YieldStatement(identifier, translationMap.translateExpression(expression));
     }
 

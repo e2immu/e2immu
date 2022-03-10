@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
@@ -40,15 +41,13 @@ public interface TranslationMap {
     Variable translateVariable(Variable variable);
 
     @NotNull1
-    List<Statement> translateStatement(Statement statement);
+    List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement);
 
     @NotNull
-    Block translateBlock(Block block);
+    Block translateBlock(InspectionProvider inspectionProvider, Block block);
 
     @NotNull
     ParameterizedType translateType(ParameterizedType parameterizedType);
-
-    TypeInfo translateTypeWithBody(TypeInfo typeInfo);
 
     boolean expandDelayedWrappedExpressions();
 

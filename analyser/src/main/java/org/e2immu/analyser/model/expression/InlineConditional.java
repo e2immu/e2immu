@@ -88,12 +88,12 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression tc = condition.translate(translationMap);
-        Expression tt = ifTrue.translate(translationMap);
-        Expression tf = ifFalse.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression tc = condition.translate(inspectionProvider, translationMap);
+        Expression tt = ifTrue.translate(inspectionProvider, translationMap);
+        Expression tf = ifFalse.translate(inspectionProvider, translationMap);
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
-        return new InlineConditional(identifier, inspectionProvider, tc, tt, tf);
+        return new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
     }
 
 

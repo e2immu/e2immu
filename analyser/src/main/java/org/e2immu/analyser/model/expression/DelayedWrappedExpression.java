@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +118,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         if (translationMap.expandDelayedWrappedExpressions()) {
             return expression;
         }
@@ -147,7 +148,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
         return new DelayedWrappedExpression(identifier, expression, variableInfo, this.causesOfDelay.merge(causesOfDelay));
     }
 
-    public static Expression moveDelayedWrappedExpressionToFront(Expression value) {
+    public static Expression moveDelayedWrappedExpressionToFront(InspectionProvider inspectionProvider, Expression value) {
         if (value.isDelayed() && !(value instanceof DelayedWrappedExpression)) {
             List<DelayedWrappedExpression> x = value.collect(DelayedWrappedExpression.class);
             if (!x.isEmpty()) {
@@ -155,7 +156,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
                     LOGGER.warn("Multiple occurrences of DWE? Taking the first one");
                 }
                 TranslationMap tm = new TranslationMapImpl.Builder().setExpandDelayedWrapperExpressions(true).build();
-                Expression translated = value.translate(tm);
+                Expression translated = value.translate(inspectionProvider, tm);
                 if(translated.isDelayed()) {
                     return x.get(0); // no need to proceed, will not be picked up by FieldAnalyserImpl.values
                 }

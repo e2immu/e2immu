@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,8 +111,9 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        List<Expression> translatedExpressions = expressions.stream().map(e -> e.translate(translationMap))
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        List<Expression> translatedExpressions = expressions.stream()
+                .map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(expressions));
         if (translatedExpressions == expressions) return this;
         return new CommaExpression(expressions);

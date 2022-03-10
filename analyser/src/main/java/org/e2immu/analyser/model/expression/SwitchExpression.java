@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -162,12 +163,12 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<SwitchEntry> translatedSwitchEntries = switchEntries.stream()
-                .map(se -> (SwitchEntry) se.translate(translationMap)).toList();
-        MultiExpression translatedYieldExpressions = expressions.translate(translationMap);
-        return new SwitchExpression(identifier, selector.translate(translationMap), translatedSwitchEntries, returnType,
-                translatedYieldExpressions);
+                .map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap)).toList();
+        MultiExpression translatedYieldExpressions = expressions.translate(inspectionProvider, translationMap);
+        return new SwitchExpression(identifier, selector.translate(inspectionProvider, translationMap),
+                translatedSwitchEntries, returnType, translatedYieldExpressions);
     }
 
     @Override

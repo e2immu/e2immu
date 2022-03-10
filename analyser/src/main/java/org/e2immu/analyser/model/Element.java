@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
@@ -61,7 +62,7 @@ public interface Element {
     // translate
 
     @NotNull
-    default Element translate(TranslationMap translationMap) {
+    default Element translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return this;
     }
 

@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -48,8 +49,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translated = expression.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = expression.translate(inspectionProvider, translationMap);
         if (translated == expression) return this;
         return new Negation(identifier, operator, translated);
     }

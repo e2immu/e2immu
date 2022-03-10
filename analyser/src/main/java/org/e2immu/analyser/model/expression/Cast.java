@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -52,8 +53,8 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translatedExpression = expression.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (translatedExpression == this.expression && translatedType == this.parameterizedType) return this;
         return new Cast(translatedExpression, translatedType);

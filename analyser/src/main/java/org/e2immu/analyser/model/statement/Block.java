@@ -234,10 +234,10 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         if (isEmpty()) return this;
         return new Block(identifier, structure.statements().stream()
-                .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(st),
+                .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(inspectionProvider, st),
                         "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
                 .collect(Collectors.toList()), label);
     }

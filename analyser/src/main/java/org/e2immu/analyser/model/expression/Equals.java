@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Arrays;
@@ -36,11 +37,11 @@ public class Equals extends BinaryOperator {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression e = translationMap.translateExpression(this);
         if (e != this) return e;
-        Expression tl = lhs.translate(translationMap);
-        Expression tr = rhs.translate(translationMap);
+        Expression tl = lhs.translate(inspectionProvider, translationMap);
+        Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
         return new Equals(identifier, primitives, tl, tr);
     }

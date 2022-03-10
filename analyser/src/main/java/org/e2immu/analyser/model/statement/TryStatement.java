@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -96,13 +97,13 @@ public class TryStatement extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new TryStatement(identifier, resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(structure.block()),
+                translationMap.translateBlock(inspectionProvider, structure.block()),
                 catchClauses.stream().map(p -> new Pair<>(
-                        TranslationMapImpl.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
-                        translationMap.translateBlock(p.v))).collect(Collectors.toList()),
-                translationMap.translateBlock(finallyBlock));
+                        TranslationMapImpl.ensureExpressionType(p.k.translate(inspectionProvider, translationMap), CatchParameter.class),
+                        translationMap.translateBlock(inspectionProvider, p.v))).collect(Collectors.toList()),
+                translationMap.translateBlock(inspectionProvider, finallyBlock));
     }
 
     public static class CatchParameter extends BaseExpression implements Expression {

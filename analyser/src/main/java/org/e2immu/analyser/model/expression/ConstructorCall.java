@@ -28,6 +28,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -150,10 +151,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
-                : parameterExpressions.stream().map(e -> e.translate(translationMap))
+                : parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
                 .collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
             return this;

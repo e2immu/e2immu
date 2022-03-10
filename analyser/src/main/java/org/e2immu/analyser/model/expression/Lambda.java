@@ -116,7 +116,7 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         throw new UnsupportedOperationException();
         //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
     }

@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.slf4j.Logger;
@@ -179,7 +180,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     combined = merged;
                 }
 
-                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite, valueToWritePossiblyDelayed, combined);
+                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite,
+                        valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext());
                 if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
                     // trying without setting properties -- too dangerous to set value properties
                     // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
@@ -358,7 +360,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                     EvaluationResult.ChangeData changeData,
                                                     Expression valueToWrite,
                                                     Expression valueToWritePossiblyDelayed,
-                                                    Properties combined) {
+                                                    Properties combined,
+                                                    InspectionProvider inspectionProvider) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
                 if (valueToWrite instanceof NullConstant) {
@@ -416,7 +419,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
         // move DWE to the front, if it is hidden somewhere deeper inside the expression
-        return DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(valueToWritePossiblyDelayed);
+        return DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(inspectionProvider, valueToWritePossiblyDelayed);
     }
 
     private Set<CauseOfDelay> extractBreakInitCause(CausesOfDelay valueToWritePossiblyDelayed, FieldReference target) {

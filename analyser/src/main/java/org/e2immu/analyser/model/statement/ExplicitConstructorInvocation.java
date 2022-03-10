@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new ExplicitConstructorInvocation(identifier, isSuper, methodInfo, structure.updaters().stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));

@@ -63,12 +63,12 @@ public class MultiExpressions extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Expression> multi = multiExpression.stream().toList();
         List<Expression> translated = multi.stream()
-                .map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(multi));
+                .map(e -> e.translate(inspectionProvider, translationMap)).collect(TranslationCollectors.toList(multi));
         if (multi == translated) return this;
-        return new MultiExpressions(identifier, inspectionProvider, new MultiExpression(translated.toArray(Expression[]::new)));
+        return new MultiExpressions(identifier, this.inspectionProvider, new MultiExpression(translated.toArray(Expression[]::new)));
     }
 
     @Override

@@ -845,15 +845,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param toIgnore variables to be ignored by the merge process, they will not get a -M VariableInfo
      * @param toRemove references to these variables (in value, in scope of field ref) will be replaced by Instance objects
      */
-    private record PrepareMerge(List<VariableInfoContainer> toMerge,
+    private record PrepareMerge(InspectionProvider inspectionProvider,
+                                List<VariableInfoContainer> toMerge,
                                 List<VariableInfoContainer> toIgnore,
                                 Set<Variable> toRemove,
                                 Map<Variable, Expression> bestValueForToRemove,
                                 Map<Variable, Variable> renames,
                                 TranslationMapImpl.Builder translationMap) {
-        public PrepareMerge() {
-            this(new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new HashMap<>(), new HashMap<>(),
-                    new TranslationMapImpl.Builder());
+        public PrepareMerge(InspectionProvider inspectionProvider) {
+            this(inspectionProvider, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new HashMap<>(),
+                    new HashMap<>(), new TranslationMapImpl.Builder());
         }
 
         // we go over the list of variables to merge, and try to find if we need to rename them because
@@ -884,20 +885,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
                 if (toRemove.contains(ive.variable())) {
                     Expression newValue = bestValueForToRemove.get(ive.variable());
-                    return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, newValue);
+                    return new FieldReference(inspectionProvider, fr.fieldInfo, newValue);
                 }
                 Variable renamed = renameVariable(ive.variable());
                 if (renamed == ive.variable()) return fr; // keep the same
-                return new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, VariableExpression.of(renamed));
+                return new FieldReference(inspectionProvider, fr.fieldInfo, VariableExpression.of(renamed));
             }
             return variable;
         }
     }
 
     // as a general remark: This and ReturnVariable variables are always merged, never removed
-    private PrepareMerge mergeActions(List<ConditionAndLastStatement> lastStatements,
+    private PrepareMerge mergeActions(InspectionProvider inspectionProvider,
+                                      List<ConditionAndLastStatement> lastStatements,
                                       Set<Variable> mergeEvenIfNotInSubBlocks) {
-        PrepareMerge pm = new PrepareMerge();
+        PrepareMerge pm = new PrepareMerge(inspectionProvider);
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
         // we want to deal with them only once, though.
         Set<Variable> seen = new HashSet<>();
@@ -990,7 +992,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables.keySet());
+        PrepareMerge prepareMerge = mergeActions(evaluationContext.getAnalyserContext(),
+                lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         TranslationMapImpl.Builder instanceBuilder = new TranslationMapImpl.Builder();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
@@ -1024,7 +1027,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
-            Expression bestValue = expression.translate(instances);
+            Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances);
             //prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
             prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
         }
@@ -1032,7 +1035,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         TranslationMap translationMapBeforeApplyTranslations = prepareMerge.translationMap.build();
         // remove all "toRemove"s
-       // applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
+        // applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
         TranslationMap translationMap = translationMapBeforeApplyTranslations.update(prepareMerge.bestValueForToRemove);
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();

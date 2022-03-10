@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 public class DoStatement extends LoopStatement {
 
@@ -40,9 +41,9 @@ public class DoStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
-        Expression tex = expression.translate(translationMap);
-        Block block = translationMap.translateBlock(structure.block());
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression tex = expression.translate(inspectionProvider, translationMap);
+        Block block = translationMap.translateBlock(inspectionProvider, structure.block());
         if (tex == expression && block == structure.block()) return this;
         return new DoStatement(identifier, label, tex, block);
     }

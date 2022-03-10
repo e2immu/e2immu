@@ -56,8 +56,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translatedScope = scope.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translatedScope = scope.translate(inspectionProvider, translationMap);
         ParameterizedType transType = translationMap.translateType(concreteReturnType);
         if (translatedScope == scope && transType == concreteReturnType) return this;
         return new MethodReference(identifier, translatedScope, methodInfo, transType);

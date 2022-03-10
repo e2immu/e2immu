@@ -183,7 +183,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     // special treatment because of == equality.
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
         return Objects.requireNonNullElse(expression, this);
     }
@@ -201,7 +201,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
             EvaluationResult reEval = fr.scope.reEvaluate(context, translation); // recurse
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
-                FieldReference newRef = new FieldReference(InspectionProvider.DEFAULT, fr.fieldInfo, replaceScope);
+                FieldReference newRef = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, replaceScope);
                 result = new DelayedVariableExpression(msg, debug, newRef, statementTime, causesOfDelay);
             } else {
                 result = this;

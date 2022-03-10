@@ -19,6 +19,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 
@@ -37,8 +38,8 @@ public class AssertStatement extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
-        Expression tex = structure.expression().translate(translationMap);
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression tex = structure.expression().translate(inspectionProvider, translationMap);
         if (tex == structure.expression()) return this;
         return new AssertStatement(identifier, tex, message);
     }

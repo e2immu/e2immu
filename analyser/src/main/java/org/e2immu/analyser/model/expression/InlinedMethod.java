@@ -117,8 +117,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
-        Expression translated = expression.translate(translationMap);
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = expression.translate(inspectionProvider, translationMap);
         if (translated == expression) return this;
         return of(identifier, methodInfo, translated, fr -> containsVariableFields);
     }
@@ -281,8 +281,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
                         // try to replace parameters hidden in the scope of this field reference (See e.g. Test_Output_03_Formatter)
                         boolean success = false;
                         for(ParameterInfo pi: methodInfo.methodInspection.get().getParameters()) {
-                            TranslationMap tm = new TranslationMapImpl.Builder().put(new VariableExpression(pi), parameters.get(pi.index)).build();
-                            Expression replaced = variableExpression.translate(tm);
+                            TranslationMap tm = new TranslationMapImpl.Builder()
+                                    .put(new VariableExpression(pi), parameters.get(pi.index)).build();
+                            Expression replaced = variableExpression.translate(evaluationContext.getAnalyserContext(), tm);
                             if(replaced != variableExpression) {
                                 replacement = replaced;
                                 success = true;

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
@@ -22,6 +21,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SMapList;
 
@@ -35,8 +35,8 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
 
     public record SwitchLabel(Expression expression, int from) implements Comparable<SwitchLabel> {
 
-        public SwitchLabel translate(TranslationMap translationMap) {
-            return new SwitchLabel(expression.translate(translationMap), from);
+        public SwitchLabel translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            return new SwitchLabel(expression.translate(inspectionProvider, translationMap), from);
         }
 
         @Override
@@ -76,10 +76,11 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new SwitchStatementOldStyle(identifier, translationMap.translateExpression(expression),
-                (Block) structure.block().translate(translationMap),
-                switchLabels.stream().map(sl -> sl.translate(translationMap)).collect(Collectors.toList()));
+                (Block) structure.block().translate(inspectionProvider, translationMap),
+                switchLabels.stream().map(sl -> sl.translate(inspectionProvider, translationMap))
+                        .collect(Collectors.toList()));
     }
 
     @Override

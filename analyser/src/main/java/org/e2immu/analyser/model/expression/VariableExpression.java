@@ -135,7 +135,7 @@ public final class VariableExpression extends CommonVariableExpression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         // removes all suffixes!
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
@@ -151,10 +151,10 @@ public final class VariableExpression extends CommonVariableExpression {
             return translated3;
         }
         if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
-            Expression translatedScope = fieldReference.scope.translate(translationMap);
+            Expression translatedScope = fieldReference.scope.translate(inspectionProvider, translationMap);
             if (translatedScope != fieldReference.scope) {
-                return VariableExpression.of(new FieldReference(InspectionProvider.DEFAULT,
-                        fieldReference.fieldInfo, translatedScope), suffix);
+                FieldReference fr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, translatedScope);
+                return VariableExpression.of(fr, suffix);
             }
         }
         return this;

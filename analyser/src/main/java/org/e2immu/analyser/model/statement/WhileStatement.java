@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 public class WhileStatement extends LoopStatement {
 
@@ -46,9 +47,9 @@ public class WhileStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new WhileStatement(identifier, label, translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block()));
+                translationMap.translateBlock(inspectionProvider, structure.block()));
     }
 
 

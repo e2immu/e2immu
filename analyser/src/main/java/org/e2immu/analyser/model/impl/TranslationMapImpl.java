@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 
@@ -104,17 +105,17 @@ public class TranslationMapImpl implements TranslationMap {
     }
 
     @Override
-    public List<Statement> translateStatement(Statement statement) {
+    public List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
         List<Statement> list = statements.get(statement);
         if (list == null) {
-            return List.of(statement.translate(this));
+            return List.of(statement.translate(inspectionProvider, this));
         }
-        return list.stream().map(st -> st.translate(this)).collect(Collectors.toList());
+        return list.stream().map(st -> st.translate(inspectionProvider, this)).collect(Collectors.toList());
     }
 
     @Override
-    public Block translateBlock(Block block) {
-        List<Statement> list = translateStatement(block);
+    public Block translateBlock(InspectionProvider inspectionProvider, Block block) {
+        List<Statement> list = translateStatement(inspectionProvider, block);
         if (list.size() != 1) throw new UnsupportedOperationException();
         return (Block) list.get(0);
     }
@@ -129,11 +130,6 @@ public class TranslationMapImpl implements TranslationMap {
         if (params == translatedTypes) return parameterizedType;
         return new ParameterizedType(parameterizedType.typeInfo, parameterizedType.arrays,
                 parameterizedType.wildCard, translatedTypes);
-    }
-
-    @Override
-    public TypeInfo translateTypeWithBody(TypeInfo typeInfo) {
-        return typeInfo; // TODO
     }
 
     @Override

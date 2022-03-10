@@ -84,17 +84,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression asExpression = translationMap.translateExpression(this);
         if (asExpression != this) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
-        Expression translatedObject = object.translate(translationMap);
+        Expression translatedObject = object.translate(inspectionProvider, translationMap);
         List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
-                parameterExpressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(parameterExpressions));
+                parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
+                        .collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedMethod == methodInfo && translatedObject == object && translatedParameters == parameterExpressions) {
             return this;
         }
-        CausesOfDelay causesOfDelay = translatedParameters.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
+        CausesOfDelay causesOfDelay = translatedParameters.stream()
+                .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(translatedMethod, translatedMethod.returnType(),

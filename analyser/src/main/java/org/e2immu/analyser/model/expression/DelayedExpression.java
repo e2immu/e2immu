@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
@@ -243,7 +244,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     // See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
     // list need to be replaced as well.
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         if (linkedVariables.isEmpty()) return this;
         LinkedVariables translated = linkedVariables.translate(translationMap);
         if (translated == linkedVariables) return this;

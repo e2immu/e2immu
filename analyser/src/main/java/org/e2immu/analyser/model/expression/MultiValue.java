@@ -66,13 +66,13 @@ public class MultiValue extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Expression> multi = multiExpression.stream().toList();
         List<Expression> translated = multi.stream()
-                .map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(multi));
+                .map(e -> e.translate(inspectionProvider, translationMap)).collect(TranslationCollectors.toList(multi));
         ParameterizedType translatedType = translationMap.translateType(commonType);
         if (multi == translated && translatedType == commonType) return this;
-        return new MultiValue(identifier, inspectionProvider, MultiExpression.create(translated), translatedType);
+        return new MultiValue(identifier, this.inspectionProvider, MultiExpression.create(translated), translatedType);
     }
 
     @Override

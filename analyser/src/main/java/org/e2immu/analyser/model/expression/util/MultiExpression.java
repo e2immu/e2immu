@@ -64,9 +64,9 @@ public record MultiExpression(Expression... expressions) {
         return expressions.length == 0;
     }
 
-    public MultiExpression translate(TranslationMap translationMap) {
+    public MultiExpression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new MultiExpression(Arrays.stream(expressions)
-                .map(e -> e.translate(translationMap)).toArray(Expression[]::new));
+                .map(e -> e.translate(inspectionProvider, translationMap)).toArray(Expression[]::new));
     }
 
     public Expression lastExpression() {

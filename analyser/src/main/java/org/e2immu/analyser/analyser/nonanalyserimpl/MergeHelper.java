@@ -105,7 +105,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // replaceLocalVariables is based on a translation
         Expression beforePostProcess;
         if (!translationMap.isEmpty()) {
-            beforePostProcess = mergeValue.expression().translate(translationMap);
+            beforePostProcess = mergeValue.expression().translate(evaluationContext.getAnalyserContext(), translationMap);
         } else {
             beforePostProcess = mergeValue.expression();
         }
@@ -113,7 +113,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValuePost = postProcess(evaluationContext, beforePostProcess, postProcessState);
 
-        Expression mergedValue = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(mergedValuePost);
+        Expression mergedValue = DelayedWrappedExpression
+                .moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), mergedValuePost);
         // TODO do post-process and replace local variables change the value properties?
         try {
             vi.setValue(mergedValue); // copy the delayed value

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -198,7 +199,7 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         ParameterizedType translated = translationMap.translateType(this.parameterizedType);
         if (translated == this.parameterizedType) return this;
         return new Instance(identifier, translated, valueProperties);

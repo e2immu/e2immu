@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analysis.FlowData;
@@ -24,6 +23,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 
@@ -64,11 +64,11 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new IfElseStatement(identifier,
                 translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block()),
-                translationMap.translateBlock(elseBlock));
+                translationMap.translateBlock(inspectionProvider, structure.block()),
+                translationMap.translateBlock(inspectionProvider, elseBlock));
     }
 
     @Override

@@ -52,7 +52,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
-            FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
+            FieldReference fieldReference = new FieldReference(context.getAnalyserContext(), fieldInfo);
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, Stage.MERGE);
             if (variableInfo == null) {
                 LOGGER.debug("While field {} is visible, it is not present in last statement of {};" +
@@ -67,7 +67,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         CauseOfDelay.Cause.VALUE));
             }
             if (context.evaluationContext().hasState(variableInfo.getValue())) {
-                Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);
+                Expression state = variableInfo.getValue().stateTranslateThisTo(context.getAnalyserContext(), fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression stateWithInvariants = enrichWithInvariants(context, state);
 
@@ -101,7 +101,7 @@ public class MethodCallIncompatibleWithPrecondition {
                 }
             }
         });
-        return expression.translate(builder.build());
+        return expression.translate(evaluationContext.getAnalyserContext(), builder.build());
     }
 
     /*
@@ -110,11 +110,12 @@ public class MethodCallIncompatibleWithPrecondition {
     private static Expression replaceByAspectsWherePossible(EvaluationResult context, Expression expression) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
+        AnalyserContext analyserContext = context.getAnalyserContext();
         expression.visit(e -> {
             VariableExpression ve;
             if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
-                MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
+                MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
                 for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
                     if (entry.getKey().action() == CompanionMethodName.Action.VALUE) {
                         CompanionMethodName companionMethodName = entry.getKey();
@@ -123,12 +124,12 @@ public class MethodCallIncompatibleWithPrecondition {
                         if (companionMethodName.aspect() != null) {
                             LOGGER.debug("Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
 
-                            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
+                            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodCall.methodInfo.typeInfo);
                             MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                             This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
                             TranslationMap translationMap = new TranslationMapImpl.Builder()
                                     .put(thisVar, ve.variable()).build();
-                            Expression translated = value.translate(translationMap);
+                            Expression translated = value.translate(analyserContext, translationMap);
                             builder.put(e, translated);
                         }
                     }
@@ -136,7 +137,7 @@ public class MethodCallIncompatibleWithPrecondition {
             }
             return true;
         });
-        return expression.translate(builder.build());
+        return expression.translate(analyserContext, builder.build());
     }
 
     private static Expression enrichWithInvariants(EvaluationResult evaluationContext, Expression expression) {
@@ -148,9 +149,10 @@ public class MethodCallIncompatibleWithPrecondition {
             if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
                 TypeInfo typeInfo = methodCall.methodInfo.typeInfo;
-                TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(typeInfo);
+                AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
                 for (MethodInfo aspectMain : typeAnalysis.getAspects().values()) {
-                    MethodAnalysis aspectMainAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(aspectMain);
+                    MethodAnalysis aspectMainAnalysis = analyserContext.getMethodAnalysis(aspectMain);
                     Optional<CompanionMethodName> oInvariant = aspectMainAnalysis.getCompanionAnalyses().keySet()
                             .stream().filter(cmn -> cmn.action() == CompanionMethodName.Action.INVARIANT).findFirst();
                     if (oInvariant.isPresent()) {
@@ -160,7 +162,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
                         TranslationMap translationMap = new TranslationMapImpl.Builder()
                                 .put(new This(InspectionProvider.DEFAULT, aspectMain.typeInfo), ve.variable()).build();
-                        Expression translated = invariant.translate(translationMap);
+                        Expression translated = invariant.translate(analyserContext, translationMap);
                         additionalComponents.add(translated);
                     }
                 }

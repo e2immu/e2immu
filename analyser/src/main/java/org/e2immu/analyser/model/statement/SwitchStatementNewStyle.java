@@ -20,6 +20,7 @@ import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -49,9 +50,10 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new SwitchStatementNewStyle(identifier, translationMap.translateExpression(expression),
-                switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
+                switchEntries.stream().map(se -> (SwitchEntry) se.translate(inspectionProvider, translationMap))
+                        .collect(Collectors.toList()));
     }
 
     @Override

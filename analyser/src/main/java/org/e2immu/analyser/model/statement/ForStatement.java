@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -66,12 +67,12 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return new ForStatement(identifier, label,
                 structure.initialisers().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateExpression(expression),
                 structure.updaters().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(structure.block()));
+                translationMap.translateBlock(inspectionProvider, structure.block()));
     }
 
     @Override

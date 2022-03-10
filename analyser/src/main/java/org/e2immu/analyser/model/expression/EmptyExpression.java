@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
@@ -84,7 +85,7 @@ public final class EmptyExpression  extends BaseExpression implements Expression
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return this;
     }
 

@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public Statement translate(TranslationMap translationMap) {
+    public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return this; // TODO we will need something more complicated here.
     }
 

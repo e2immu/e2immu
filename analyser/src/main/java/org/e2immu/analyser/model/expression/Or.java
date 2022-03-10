@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
@@ -291,9 +292,10 @@ public final class Or extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public Expression translate(TranslationMap translationMap) {
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Expression> translated = expressions.isEmpty() ? expressions :
-                expressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(expressions));
+                expressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
+                        .collect(TranslationCollectors.toList(expressions));
         if (expressions == translated) return this;
         return new Or(identifier, primitives, translated);
     }
