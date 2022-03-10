@@ -434,6 +434,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> saCheck.checkUnusedLoopVariables(navigationData))
                         .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> saCheck.checkUselessAssignments(navigationData))
                         .add(TRANSFER_FROM_CLOSURE_TO_RESULT, this::transferFromClosureToResult)
+                        .setLimitCausesOfDelay(true)
                         .build();
             }
 

@@ -52,8 +52,9 @@ public class AnalyserComponents<T, S> {
             this.analyserProgram = analyserProgram;
         }
 
-        public void setLimitCausesOfDelay(boolean limitCausesOfDelay) {
+        public Builder<T, S> setLimitCausesOfDelay(boolean limitCausesOfDelay) {
             this.limitCausesOfDelay = limitCausesOfDelay;
+            return this;
         }
 
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {

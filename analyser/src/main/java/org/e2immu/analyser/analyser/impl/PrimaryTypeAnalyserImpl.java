@@ -279,7 +279,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
         for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
             if (pair.v.isDelayed()) {
-                LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName(), pair.k.getAnalyserComponents().details());
+                AnalyserComponents<String, ?> acs = pair.k.getAnalyserComponents();
+                LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName()
+                        , acs == null ? "(shallow method analyser)" : acs.details());
                 if (pair.k instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.logAnalysisStatuses();
                 }

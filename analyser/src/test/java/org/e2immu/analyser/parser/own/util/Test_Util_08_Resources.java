@@ -34,8 +34,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             if ("fqnToPath".equals(d.methodInfo().name)) {
                 if ("parts[i]".equals(d.variableName())) {
                     if ("1.0.4".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:String>" : "extension";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("extension", d.currentValue().toString());
                     }
                 }
             }

@@ -97,14 +97,22 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         EvaluationResult reEvaluatedSelector = selector.reEvaluate(context, translation);
         builder.compose(reEvaluatedSelector);
         List<Expression> newExpressionList = new ArrayList<>(expressions.size());
-        expressions.stream().forEach(e -> {
-            EvaluationResult re = e.reEvaluate(context, translation);
-            builder.compose(re);
-            newExpressionList.add(re.getExpression());
-        });
-        // FIXME do we need to re-evaluate and possibly re-compute the switch expressions?
+
+        List<SwitchEntry> newSwitchEntries = new ArrayList<>(switchEntries.size());
+        for (SwitchEntry se : switchEntries) {
+            if (se instanceof SwitchEntry.StatementsEntry statementsEntry && statementsEntry.structure.statements().size() == 1
+                    && statementsEntry.structure.statements().get(0) instanceof ExpressionAsStatement eas) {
+                EvaluationResult re = eas.expression.reEvaluate(context, translation);
+                builder.compose(re);
+                Expression reEvaluated = re.getExpression();
+                newExpressionList.add(reEvaluated);
+                Statement statement = new ExpressionAsStatement(se.identifier, reEvaluated, false);
+                SwitchEntry newSe = new SwitchEntry.StatementsEntry(se.identifier, context.getPrimitives(), reEvaluatedSelector.getExpression(), se.labels, List.of(statement));
+                newSwitchEntries.add(newSe);
+            }
+        }
         MultiExpression newExpressions = new MultiExpression(newExpressionList.toArray(Expression[]::new));
-        SwitchExpression se = new SwitchExpression(identifier, reEvaluatedSelector.getExpression(), switchEntries, returnType, newExpressions);
+        SwitchExpression se = new SwitchExpression(identifier, reEvaluatedSelector.getExpression(), newSwitchEntries, returnType, newExpressions);
         builder.setExpression(se);
         return builder.build();
     }

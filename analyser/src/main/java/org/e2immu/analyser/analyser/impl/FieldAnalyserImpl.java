@@ -142,6 +142,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
+                .setLimitCausesOfDelay(true)
                 .build();
     }
 

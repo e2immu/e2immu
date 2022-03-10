@@ -19,10 +19,13 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,6 +43,86 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
     public void test_7() throws IOException {
         testClass("Precondition_7", 0, 0,
                 new DebugConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_7_1() throws IOException {
+        testClass("Precondition_7_1", 2, 7,
+                new DebugConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_7_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("normalType".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "findType".equals(pi.name)) {
+                    assertEquals("nullable instance type FindType/*@Identity*/", d.currentValue().toString());
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "arrays".equals(pi.name)) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("instance type int", d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "wildCard".equals(pi.name)) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("nullable instance type WildCard", d.currentValue().toString());
+                    }
+                }
+                if ("typeInfo".equals(d.variableName())) {
+                    if ("3".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<vp:TypeInfo:container@Record_TypeInfo;immutable@Record_TypeInfo>";
+                            case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;container@Record_TypeInfo;initial@Field_fqn;mom@Parameter_fqn>";
+                            default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("parameterizedType".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<new:ParameterizedType>"
+                                : "new ParameterizedType(typeInfo,arrays,wildCard,typeParameters)";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("ParameterizedType".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("find".equals(d.methodInfo().name)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("TypeInfo".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        testClass("Precondition_7_2", 1, 3,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build());
     }
 
     @Test

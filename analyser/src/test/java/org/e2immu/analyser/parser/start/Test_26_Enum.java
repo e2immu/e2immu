@@ -393,8 +393,7 @@ public class Test_26_Enum extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             // shallow analyser
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertTrue(d.methodAnalysis().getProperty(Property.IMMUTABLE).isDelayed());
-                assertEquals(0, d.iteration());
+                assertEquals(d.iteration() <= 1, d.methodAnalysis().getProperty(Property.IMMUTABLE).isDelayed());
             }
         };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()

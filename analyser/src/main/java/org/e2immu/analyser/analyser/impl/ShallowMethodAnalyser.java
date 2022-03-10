@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +64,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         try {
-            return internalAnalyse(iteration, closure);
+            return internalAnalyse(iteration);
         } catch (RuntimeException re) {
             LOGGER.error("Error while analysing method {}", methodInfo.fullyQualifiedName);
             throw re;
         }
     }
 
-    private AnalyserResult internalAnalyse(int iteration, EvaluationContext closure) {
+    private AnalyserResult internalAnalyse(int iteration) {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 
@@ -96,31 +98,34 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         // IMPROVE reading preconditions from AnnotatedAPIs...
         methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
-
+        CausesOfDelay causes;
         if (explicitlyEmpty) {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);  // no return statement...
             methodAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            computeMethodPropertiesAfterParameters();
+            methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
+            // the method cannot return a value
+            methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.NOT_INVOLVED_DV);
 
-            parameterAnalyses.forEach(parameterAnalysis -> {
-                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                computeParameterProperties(builder);
-            });
+            CausesOfDelay c1 = computeMethodPropertiesAfterParameters();
+            CausesOfDelay c2 = parameterAnalyses.stream()
+                    .map(pa -> computeParameterProperties((ParameterAnalysisImpl.Builder) pa))
+                    .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+            causes = c1.merge(c2);
         } else {
-            computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
-            computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeModifiedMethod);
+            CausesOfDelay c1 = computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
+            CausesOfDelay c2 = computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeModifiedMethod);
 
-            parameterAnalyses.forEach(parameterAnalysis -> {
-                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                computeParameterProperties(builder);
-            });
+            CausesOfDelay c3 = parameterAnalyses.stream()
+                    .map(pa -> computeParameterProperties((ParameterAnalysisImpl.Builder) pa))
+                    .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-            computeMethodPropertiesAfterParameters();
+            CausesOfDelay c4 = computeMethodPropertiesAfterParameters();
 
-            computeMethodPropertyIfNecessary(Property.INDEPENDENT, this::computeMethodIndependent);
+            CausesOfDelay c5 = computeMethodPropertyIfNecessary(Property.INDEPENDENT, this::computeMethodIndependent);
             checkMethodIndependent();
+            causes = c1.merge(c2).merge(c3).merge(c4).merge(c5);
         }
         if (enableVisitors) {
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -134,17 +139,25 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
         }
+        if (causes.isDelayed()) {
+            assert !causes.containsCauseOfDelay(CauseOfDelay.Cause.MIN_INT);
+            // we cannot really measure progress, because we're dependent on the analysis of other types
+            // add progress here to ensure that we can wait sufficiently long
+            AnalysisStatus status = AnalysisStatus.of(causes).addProgress(true);
+            return new AnalyserResult(status, Messages.EMPTY, VariableAccessReport.EMPTY, List.of());
+        }
         return AnalyserResult.EMPTY;
     }
 
-    private void computeParameterProperties(ParameterAnalysisImpl.Builder builder) {
-        computeParameterModified(builder);
-        computeParameterPropertyIfNecessary(builder, Property.IMMUTABLE, this::computeParameterImmutable);
-        computeParameterPropertyIfNecessary(builder, Property.INDEPENDENT, this::computeParameterIndependent);
-        computeParameterPropertyIfNecessary(builder, Property.NOT_NULL_PARAMETER, this::computeNotNullParameter);
-        computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeContainerParameter);
-        computeParameterPropertyIfNecessary(builder, Property.IGNORE_MODIFICATIONS,
+    private CausesOfDelay computeParameterProperties(ParameterAnalysisImpl.Builder builder) {
+        CausesOfDelay c1 = computeParameterModified(builder);
+        CausesOfDelay c2 = computeParameterPropertyIfNecessary(builder, Property.IMMUTABLE, this::computeParameterImmutable);
+        CausesOfDelay c3 = computeParameterPropertyIfNecessary(builder, Property.INDEPENDENT, this::computeParameterIndependent);
+        CausesOfDelay c4 = computeParameterPropertyIfNecessary(builder, Property.NOT_NULL_PARAMETER, this::computeNotNullParameter);
+        CausesOfDelay c5 = computeParameterPropertyIfNecessary(builder, Property.CONTAINER, this::computeContainerParameter);
+        CausesOfDelay c6 = computeParameterPropertyIfNecessary(builder, Property.IGNORE_MODIFICATIONS,
                 this::computeParameterIgnoreModification);
+        return c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
     }
 
     private DV computeParameterIgnoreModification(ParameterAnalysisImpl.Builder builder) {
@@ -166,37 +179,40 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         return MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
     }
 
-    private void computeMethodPropertiesAfterParameters() {
-        computeMethodPropertyIfNecessary(Property.IMMUTABLE, this::computeMethodImmutable);
-        computeMethodPropertyIfNecessary(Property.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
-        computeMethodPropertyIfNecessary(Property.IDENTITY, () -> bestOfOverridesOrWorstValue(Property.IDENTITY));
-        computeMethodPropertyIfNecessary(Property.IGNORE_MODIFICATIONS, () -> bestOfOverridesOrWorstValue(Property.IGNORE_MODIFICATIONS));
-        computeMethodPropertyIfNecessary(Property.FINALIZER, () -> bestOfOverridesOrWorstValue(Property.FINALIZER));
-        computeMethodPropertyIfNecessary(Property.CONSTANT, () -> bestOfOverridesOrWorstValue(Property.CONSTANT));
+    private CausesOfDelay computeMethodPropertiesAfterParameters() {
+        CausesOfDelay c1 = computeMethodPropertyIfNecessary(Property.IMMUTABLE, this::computeMethodImmutable);
+        CausesOfDelay c2 = computeMethodPropertyIfNecessary(Property.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
+        CausesOfDelay c3 = computeMethodPropertyIfNecessary(Property.IDENTITY, () -> bestOfOverridesOrWorstValue(Property.IDENTITY));
+        CausesOfDelay c4 = computeMethodPropertyIfNecessary(Property.IGNORE_MODIFICATIONS, () -> bestOfOverridesOrWorstValue(Property.IGNORE_MODIFICATIONS));
+        CausesOfDelay c5 = computeMethodPropertyIfNecessary(Property.FINALIZER, () -> bestOfOverridesOrWorstValue(Property.FINALIZER));
+        CausesOfDelay c6 = computeMethodPropertyIfNecessary(Property.CONSTANT, () -> bestOfOverridesOrWorstValue(Property.CONSTANT));
         // @Identity must come before @Container
-        computeMethodPropertyIfNecessary(Property.CONTAINER, this::computeMethodContainer);
+        CausesOfDelay c7 = computeMethodPropertyIfNecessary(Property.CONTAINER, this::computeMethodContainer);
+        return c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6).merge(c7);
     }
 
-    private void computeMethodPropertyIfNecessary(Property property, Supplier<DV> computer) {
+    private CausesOfDelay computeMethodPropertyIfNecessary(Property property, Supplier<DV> computer) {
         DV inMap = methodAnalysis.getPropertyFromMapDelayWhenAbsent(property);
         if (inMap.isDelayed()) {
             DV computed = computer.get();
-            if (computed.isDone()) {
-                methodAnalysis.setProperty(property, computed);
-            }
+            //   if (computed.isDone()) {
+            methodAnalysis.setProperty(property, computed);
+            //    }
+            return computed.causesOfDelay();
         }
+        return CausesOfDelay.EMPTY;
     }
 
-    private static void computeParameterPropertyIfNecessary(ParameterAnalysisImpl.Builder builder,
-                                                            Property property,
-                                                            Function<ParameterAnalysisImpl.Builder, DV> computer) {
+    private static CausesOfDelay computeParameterPropertyIfNecessary(ParameterAnalysisImpl.Builder builder,
+                                                                     Property property,
+                                                                     Function<ParameterAnalysisImpl.Builder, DV> computer) {
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(property);
         if (inMap.isDelayed()) {
             DV computed = computer.apply(builder);
-            if (computed.isDone()) {
-                builder.setProperty(property, computed);
-            }
+            builder.setProperty(property, computed);
+            return computed.causesOfDelay();
         }
+        return inMap.causesOfDelay();
     }
 
     private DV bestOfOverridesOrWorstValue(Property property) {
@@ -219,7 +235,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid()) {
             return MultiLevel.CONTAINER_DV;
         }
-        if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
+        if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR)
+            return MultiLevel.NOT_INVOLVED_DV; // no decision
         TypeInfo bestType = returnType.bestTypeInfo();
         if (bestType == null) return MultiLevel.NOT_CONTAINER_DV; // unbound type parameter
 
@@ -261,16 +278,17 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
 
-    private void computeParameterModified(ParameterAnalysisImpl.Builder builder) {
+    private CausesOfDelay computeParameterModified(ParameterAnalysisImpl.Builder builder) {
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.MODIFIED_VARIABLE);
         DV typeContainer = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo).getProperty(Property.CONTAINER);
 
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_VARIABLE);
-        boolean typeIsContainer = typeContainer.equals(MultiLevel.CONTAINER_DV);
         if (inMap.isDelayed()) {
             DV value;
-            if (typeIsContainer) {
+            if (typeContainer.equals(MultiLevel.CONTAINER_DV)) {
                 value = DV.FALSE_DV;
+            } else if (typeContainer.isDelayed()) {
+                value = typeContainer;
             } else if (override.isDone()) {
                 value = override;
             } else {
@@ -283,16 +301,19 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
             builder.setProperty(Property.MODIFIED_VARIABLE, value);
-        } else if (override.valueIsFalse() && inMap.valueIsTrue()) {
+            return typeContainer.causesOfDelay();
+        }
+        if (override.valueIsFalse() && inMap.valueIsTrue()) {
             analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                     Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                     "Override was non-modifying, while this parameter is modifying"));
-        } else if (typeIsContainer && inMap.valueIsTrue()) {
+        } else if (typeContainer.equals(MultiLevel.CONTAINER_DV) && inMap.valueIsTrue()) {
             if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
                 analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                         Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
             }
         }
+        return CausesOfDelay.EMPTY;
     }
 
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
@@ -324,6 +345,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.INDEPENDENT);
+        if (override == DV.MIN_INT_DV) return value;
         return override.maxIgnoreDelay(value);
     }
 
@@ -347,10 +369,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // typeIndependent is set by hand in AnnotatedAPI files
         DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.INDEPENDENT);
         DV bestOfOverrides = bestOfOverrides(Property.INDEPENDENT);
-        return MultiLevel.DEPENDENT_DV
-                .maxIgnoreDelay(returnValueIndependent)
-                .maxIgnoreDelay(bestOfOverrides)
-                .maxIgnoreDelay(typeIndependent);
+        return returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
     }
 
     private DV computeMethodIndependentReturnValue() {
@@ -375,6 +394,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             return MultiLevel.INDEPENDENT_DV;
         }
         DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);
+        if (immutable.isDelayed()) {
+            return immutable.causesOfDelay();
+        }
         if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
 
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
@@ -389,7 +411,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeMethodNotNull() {
-        if (methodInfo.isConstructor || methodInfo.isVoid()) return DV.MIN_INT_DV; // no decision!
+        if (methodInfo.isConstructor || methodInfo.isVoid()) return MultiLevel.NOT_INVOLVED_DV; // no decision!
         if (methodInfo.returnType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
@@ -402,7 +424,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV bestOfOverrides = DV.MIN_INT_DV;
         for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext)) {
             DV overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(property);
-            bestOfOverrides = bestOfOverrides.maxIgnoreDelay(overrideAsIs);
+            if (bestOfOverrides == DV.MIN_INT_DV) {
+                bestOfOverrides = overrideAsIs;
+            } else {
+                bestOfOverrides = bestOfOverrides.maxIgnoreDelay(overrideAsIs);
+            }
         }
         return bestOfOverrides;
     }
@@ -449,7 +475,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
-        throw new UnsupportedOperationException("Shallow method analyser has no analyser components");
+        return null;
     }
 
     @Override

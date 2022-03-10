@@ -152,7 +152,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
                 .add(COMPUTE_INDEPENDENT, this::computeIndependent);
 
-        analyserComponents = builder.build();
+        analyserComponents = builder.setLimitCausesOfDelay(true).build();
     }
 
     private AnalysisStatus markFirstIteration(SharedState sharedState) {

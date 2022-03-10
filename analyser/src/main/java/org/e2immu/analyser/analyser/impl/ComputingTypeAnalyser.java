@@ -116,7 +116,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.freezeApprovedPreconditionsE2();
         }
 
-        analyserComponents = builder.build();
+        analyserComponents = builder.setLimitCausesOfDelay(true).build();
 
         analyserResultBuilder.addMessages(typeAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.TYPE,
                 typeInfo.isInterface(),
