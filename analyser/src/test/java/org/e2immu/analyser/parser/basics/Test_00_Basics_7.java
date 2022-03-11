@@ -96,7 +96,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 3, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
@@ -159,10 +159,10 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         default -> "true";
                     };
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("true", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("true", d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
@@ -272,10 +272,10 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     case 1 -> "<wrapped:i>";
                     default -> "true";
                 };
-                assertEquals(expect, d.methodAnalysis().getLastStatement()
+                assertEquals("true", d.methodAnalysis().getLastStatement()
                         .getVariable(INC3_RETURN_VAR).current().getValue().toString());
                 String srv = d.iteration() <= 1 ? "<m:increment3>" : "true";
-                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
 
             }
         };

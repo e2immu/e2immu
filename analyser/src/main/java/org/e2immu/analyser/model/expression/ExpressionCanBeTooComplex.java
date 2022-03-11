@@ -52,7 +52,7 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         Expression instance = causesOfDelay.isDelayed()
-                ? DelayedExpression.forTooComplex(booleanType, causesOfDelay)
+                ? DelayedExpression.forTooComplex(identifier, booleanType, causesOfDelay)
                 : Instance.forTooComplex(identifier, booleanType);
         newExpressions.add(instance);
         MultiExpression multiExpression = new MultiExpression(newExpressions.toArray(Expression[]::new));

@@ -666,7 +666,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (range.isDelayed()) {
                 CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
-                        DelayedExpression.forUnspecifiedLoopCondition(primitives.booleanParameterizedType(),
+                        DelayedExpression.forUnspecifiedLoopCondition(statement().getIdentifier(),
+                                primitives.booleanParameterizedType(),
                                 LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay));
             }
 
@@ -690,7 +691,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private Expression isNotEmpty(EvaluationResult context, Expression value, boolean valueIsDelayed) {
         if (valueIsDelayed) {
-            return DelayedExpression.forUnspecifiedLoopCondition(context.getPrimitives().booleanParameterizedType(),
+            return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
+                    context.getPrimitives().booleanParameterizedType(),
                     value.linkedVariables(context).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
         }
         if (value instanceof ArrayInitializer ai) {

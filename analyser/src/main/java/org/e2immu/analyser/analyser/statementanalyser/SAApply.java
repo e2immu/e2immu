@@ -143,58 +143,60 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             if (changeData.markAssignment()) {
-                if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
-                        sharedState.localConditionManager(), sharedState.context())) {
-                    statementAnalysis.ensure(Message.newMessage(getLocation(),
-                            Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
-                }
+                if(!vi.valueIsSet()) {
+                    if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
+                            sharedState.localConditionManager(), sharedState.context())) {
+                        statementAnalysis.ensure(Message.newMessage(getLocation(),
+                                Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
+                    }
 
-                Expression bestValue = SAHelper.bestValue(changeData, vi1);
-                Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
+                    Expression bestValue = SAHelper.bestValue(changeData, vi1);
+                    Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Write value {} to variable {}",
-                            valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
-                            variable.fullyQualifiedName());
-                }
-                // first do the properties that come with the value; later, we'll write the ones in changeData
-                // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
-                // it should not be taken into account anymore. (See e.g. Loops_1)
-                Properties valueProperties = sharedState.evaluationContext()
-                        .getValueProperties(variable.parameterizedType(), valueToWrite, true);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Write value {} to variable {}",
+                                valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
+                                variable.fullyQualifiedName());
+                    }
+                    // first do the properties that come with the value; later, we'll write the ones in changeData
+                    // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
+                    // it should not be taken into account anymore. (See e.g. Loops_1)
+                    Properties valueProperties = sharedState.evaluationContext()
+                            .getValueProperties(variable.parameterizedType(), valueToWrite, true);
 
 
-                Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
+                    Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
 
-                Properties changeDataProperties = Properties.of(changeData.properties());
-                boolean myself = sharedState.evaluationContext().isMyself(variable);
-                Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
-                        groupPropertyValues);
-                // LVs start empty, the changeData.linkedVariables will be added later
-                Properties combined;
-                if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
-                    // captures self-referencing instance fields (but not static fields, as in Enum_)
-                    // a similar check exists in StatementAnalysisImpl.initializeFieldReference
-                    combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
-                } else {
-                    combined = merged;
-                }
+                    Properties changeDataProperties = Properties.of(changeData.properties());
+                    boolean myself = sharedState.evaluationContext().isMyself(variable);
+                    Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
+                            groupPropertyValues);
+                    // LVs start empty, the changeData.linkedVariables will be added later
+                    Properties combined;
+                    if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+                        // captures self-referencing instance fields (but not static fields, as in Enum_)
+                        // a similar check exists in StatementAnalysisImpl.initializeFieldReference
+                        combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
+                    } else {
+                        combined = merged;
+                    }
 
-                Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite,
-                        valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext());
-                if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
-                    // trying without setting properties -- too dangerous to set value properties
-                    // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
-                    // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
-                    Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, combined.get(IMMUTABLE)));
-                    vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, false);
-                } else {
-                    // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
-                    // evaluation context
-                    vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
-                }
-                if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
-                    statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
+                    Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite,
+                            valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext());
+                    if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
+                        // trying without setting properties -- too dangerous to set value properties
+                        // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
+                        // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
+                        Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, combined.get(IMMUTABLE)));
+                        vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, false);
+                    } else {
+                        // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
+                        // evaluation context
+                        vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
+                    }
+                    if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
+                        statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
+                    }
                 }
             } else {
                 if (changeData.value() != null && (changeData.value().isDone() || !(vi1.getValue() instanceof DelayedWrappedExpression))) {

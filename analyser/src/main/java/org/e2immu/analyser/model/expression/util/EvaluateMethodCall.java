@@ -16,16 +16,11 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
@@ -161,15 +156,14 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(methodInfo, concreteReturnType,
-                methodAnalysis, parameters, linkedVariablesForDelay, context);
+        Expression identity = computeIdentity(concreteReturnType, methodAnalysis, parameters, linkedVariablesForDelay);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(methodInfo, concreteReturnType, methodAnalysis, objectValue, linkedVariablesForDelay);
+        Expression fluent = computeFluent(concreteReturnType, methodAnalysis, objectValue, linkedVariablesForDelay);
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
@@ -210,7 +204,8 @@ public class EvaluateMethodCall {
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
-                methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
+                methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                        linkedVariablesForDelay.apply(delays), delays);
             } else {
                 methodValue = Instance.forMethodResult(Identifier.joined("mc", ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
@@ -218,19 +213,19 @@ public class EvaluateMethodCall {
                         concreteReturnType, valueProperties);
             }
         } else {
-            methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType,
+            methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                     linkedVariablesForDelay.apply(modified.causesOfDelay()), modified.causesOfDelay());
         }
         return builder.setExpression(methodValue).build();
     }
 
-    private static EvaluationResult delay(EvaluationResult.Builder builder,
-                                          MethodInfo methodInfo,
-                                          ParameterizedType concreteReturnType,
-                                          LinkedVariables linkedVariables,
-                                          CausesOfDelay causesOfDelay) {
-        return builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables, causesOfDelay))
-                .build();
+    private EvaluationResult delay(EvaluationResult.Builder builder,
+                                   MethodInfo methodInfo,
+                                   ParameterizedType concreteReturnType,
+                                   LinkedVariables linkedVariables,
+                                   CausesOfDelay causesOfDelay) {
+        return builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                linkedVariables, causesOfDelay)).build();
     }
 
     /*
@@ -270,66 +265,6 @@ public class EvaluateMethodCall {
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
 
-    /*
-    special situation
-    We have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
-    this we can resolve immediately
-
-    See also InlinedMethod which has a similar method
-    */
-    private EvaluationResult tryEvaluationShortCut(EvaluationResult.Builder builder,
-                                                   Expression objectValue,
-                                                   LinkedVariables linkedVariables,
-                                                   InlinedMethod iv) {
-        ConstructorCall constructorCall;
-        VariableExpression varEx;
-        ConstructorCall cc;
-        if ((cc = objectValue.asInstanceOf(ConstructorCall.class)) != null) constructorCall = cc;
-        else if ((varEx = objectValue.asInstanceOf(VariableExpression.class)) != null
-                && varEx.variable() instanceof FieldReference fieldReference) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            ConstructorCall cc2;
-            if ((cc2 = fieldAnalysis.getValue().asInstanceOf(ConstructorCall.class)) != null) {
-                constructorCall = cc2;
-            } else {
-                return null;
-            }
-        } else {
-            return null;
-        }
-        VariableExpression ve;
-        if ((ve = iv.expression().asInstanceOf(VariableExpression.class)) != null && constructorCall.constructor() != null) {
-            Variable variable = ve.variable();
-            if (variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-                if (fieldAnalysis.getProperty(Property.FINAL).valueIsTrue()) {
-
-                    int i = 0;
-                    List<ParameterAnalysis> parameterAnalyses = context.evaluationContext()
-                            .getParameterAnalyses(constructorCall.constructor()).toList();
-                    for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                        if (!parameterAnalysis.assignedToFieldIsFrozen()) {
-                            return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
-                                            iv.expression().returnType(), linkedVariables,
-                                            new SimpleSet(
-                                                    new SimpleCause(parameterAnalysis.location(Stage.EVALUATION),
-                                                            CauseOfDelay.Cause.ASSIGNED_TO_FIELD))))
-                                    .build();
-                        }
-                        Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
-                        DV assignedOrLinked = assigned.get(fieldInfo);
-                        if (LinkedVariables.isAssigned(assignedOrLinked)) {
-                            return builder.setExpression(constructorCall.getParameterExpressions().get(i)).build();
-                        }
-                        i++;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     private Expression computeEvaluationOfEquals(MethodInfo methodInfo,
                                                  ParameterizedType concreteReturnType,
                                                  Expression objectValue,
@@ -341,8 +276,8 @@ public class EvaluateMethodCall {
             if (modifying.isDelayed()) {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(modifying.causesOfDelay()),
-                        modifying.causesOfDelay());
+                return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                        linkedVariables.apply(modifying.causesOfDelay()), modifying.causesOfDelay());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
                 return new BooleanConstant(primitives, true);
@@ -496,14 +431,14 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private static Expression computeFluent(MethodInfo methodInfo,
-                                            ParameterizedType concreteReturnType,
-                                            MethodAnalysis methodAnalysis,
-                                            Expression scope,
-                                            Function<CausesOfDelay, LinkedVariables> linkedVariables) {
+    private Expression computeFluent(ParameterizedType concreteReturnType,
+                                     MethodAnalysis methodAnalysis,
+                                     Expression scope,
+                                     Function<CausesOfDelay, LinkedVariables> linkedVariables) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(fluent.causesOfDelay()),
+            return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                    linkedVariables.apply(fluent.causesOfDelay()),
                     fluent.causesOfDelay());
         }
         if (!fluent.valueIsTrue()) return null;
@@ -513,16 +448,14 @@ public class EvaluateMethodCall {
 
     private final static Property[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION};
 
-    private static Expression computeIdentity(MethodInfo methodInfo,
-                                              ParameterizedType concreteReturnType,
-                                              MethodAnalysis methodAnalysis,
-                                              List<Expression> parameters,
-                                              Function<CausesOfDelay, LinkedVariables> linkedVariables,
-                                              EvaluationResult context) {
+    private Expression computeIdentity(ParameterizedType concreteReturnType,
+                                       MethodAnalysis methodAnalysis,
+                                       List<Expression> parameters,
+                                       Function<CausesOfDelay, LinkedVariables> linkedVariables) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(identity.causesOfDelay()),
-                    identity.causesOfDelay());
+            return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                    linkedVariables.apply(identity.causesOfDelay()), identity.causesOfDelay());
         }
         if (!identity.valueIsTrue()) return null;
 

@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
-import java.util.Objects;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
@@ -38,19 +37,21 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     private final CausesOfDelay causesOfDelay;
     private final Properties priorityProperties;
 
-    public DelayedExpression(String msg,
-                             ParameterizedType parameterizedType,
-                             LinkedVariables linkedVariables,
-                             CausesOfDelay causesOfDelay) {
-        this(msg, parameterizedType, linkedVariables, causesOfDelay, Properties.EMPTY);
+    private DelayedExpression(Identifier identifier,
+                              String msg,
+                              ParameterizedType parameterizedType,
+                              LinkedVariables linkedVariables,
+                              CausesOfDelay causesOfDelay) {
+        this(identifier, msg, parameterizedType, linkedVariables, causesOfDelay, Properties.EMPTY);
     }
 
-    public DelayedExpression(String msg,
-                             ParameterizedType parameterizedType,
-                             LinkedVariables linkedVariables,
-                             CausesOfDelay causesOfDelay,
-                             Properties properties) {
-        super(Identifier.CONSTANT);
+    private DelayedExpression(Identifier identifier,
+                              String msg,
+                              ParameterizedType parameterizedType,
+                              LinkedVariables linkedVariables,
+                              CausesOfDelay causesOfDelay,
+                              Properties properties) {
+        super(identifier);
         this.msg = msg;
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
@@ -63,12 +64,13 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return "<" + msg + ">";
     }
 
-    public static DelayedExpression forMethod(MethodInfo methodInfo,
+    public static DelayedExpression forMethod(Identifier identifier,
+                                              MethodInfo methodInfo,
                                               ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables,
                                               CausesOfDelay causesOfDelay) {
         String msg = brackets("m:" + methodInfo.name);
-        return new DelayedExpression(msg, concreteReturnType, linkedVariables, causesOfDelay);
+        return new DelayedExpression(identifier, msg, concreteReturnType, linkedVariables, causesOfDelay);
     }
 
     /*
@@ -78,79 +80,87 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                       LinkedVariables linkedVariables,
                                       CausesOfDelay causes) {
         String msg = brackets("s:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(Identifier.generate("state"), msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forCondition(ParameterizedType parameterizedType,
                                           LinkedVariables linkedVariables,
                                           CausesOfDelay causes) {
         String msg = brackets("c:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(Identifier.generate("condition"), msg, parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType,
+    public static Expression forNewObject(Identifier identifier,
+                                          ParameterizedType parameterizedType,
                                           DV notNull,
                                           LinkedVariables linkedVariables,
                                           CausesOfDelay causes) {
         assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
         String msg = brackets("new:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forArrayAccessValue(ParameterizedType parameterizedType,
+    public static Expression forArrayAccessValue(Identifier identifier,
+                                                 ParameterizedType parameterizedType,
                                                  LinkedVariables linkedVariables,
                                                  CausesOfDelay causes) {
         String msg = brackets("array-access:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forReplacementObject(ParameterizedType parameterizedType,
                                                   LinkedVariables linkedVariables,
                                                   CausesOfDelay causes) {
         String msg = brackets("replace:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(Identifier.generate("replacement"),
+                msg, parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forArrayLength(Primitives primitives, CausesOfDelay causes) {
+    public static Expression forArrayLength(Identifier identifier, Primitives primitives, CausesOfDelay causes) {
         String msg = brackets("delayed array length");
-        return new DelayedExpression(msg, primitives.intParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
+        return new DelayedExpression(identifier, msg, primitives.intParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
         // result is an int, so no linked variables
     }
 
     public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
         String msg = brackets("precondition");
-        return new DelayedExpression(msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
+        return new DelayedExpression(Identifier.generate("precondition"),
+                msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
     }
 
-    public static Expression forSwitchSelector(Primitives primitives, CausesOfDelay causes) {
+    public static Expression forSwitchSelector(Identifier identifier, Primitives primitives, CausesOfDelay causes) {
         String msg = brackets("switch-selector");
-        return new DelayedExpression(msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
+        return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
     }
 
-
-    public static Expression forInstanceOf(Primitives primitives,
+    public static Expression forInstanceOf(Identifier identifier,
+                                           Primitives primitives,
                                            ParameterizedType parameterizedType,
                                            LinkedVariables linkedVariables,
                                            CausesOfDelay causes) {
         String msg = brackets("instanceOf:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, primitives.booleanParameterizedType(), linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), linkedVariables, causes);
     }
 
     public static Expression forMerge(ParameterizedType parameterizedType,
                                       LinkedVariables linkedVariables,
                                       CausesOfDelay causes) {
         String msg = brackets("merge:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(Identifier.generate("merge"), msg, parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, LinkedVariables linkedVariables, CausesOfDelay causes) {
+    public static Expression forUnspecifiedLoopCondition(Identifier identifier,
+                                                         ParameterizedType booleanParameterizedType,
+                                                         LinkedVariables linkedVariables,
+                                                         CausesOfDelay causes) {
         String msg = brackets("loopIsNotEmptyCondition");
-        return new DelayedExpression(msg, booleanParameterizedType, linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, booleanParameterizedType, linkedVariables, causes);
     }
 
     public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
         String msg = brackets("valueOf:" + parameterizedType.printSimple());
-        return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
+        return new DelayedExpression(Identifier.generate("valueOf"), msg, parameterizedType,
+                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
     public static Expression forDelayedValueProperties(ParameterizedType parameterizedType,
@@ -158,30 +168,30 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
         String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes, priorityProperties);
+        return new DelayedExpression(Identifier.generate("dvp"), msg, parameterizedType, linkedVariables, causes, priorityProperties);
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo,
                                                   LinkedVariables linkedVariables,
                                                   CausesOfDelay causesOfDelay) {
         String msg = brackets("f:" + fieldInfo.name);
-        return new DelayedExpression(msg, fieldInfo.type, linkedVariables, causesOfDelay);
+        return new DelayedExpression(fieldInfo.getIdentifier(), msg, fieldInfo.type, linkedVariables, causesOfDelay);
     }
 
-    public static Expression forInlinedMethod(ParameterizedType parameterizedType, CausesOfDelay causes) {
+    public static Expression forInlinedMethod(Identifier identifier, ParameterizedType parameterizedType, CausesOfDelay causes) {
         String msg = brackets("inline");
-        return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
     }
 
-    public static Expression forTooComplex(ParameterizedType parameterizedType, CausesOfDelay causes) {
+    public static Expression forTooComplex(Identifier identifier, ParameterizedType parameterizedType, CausesOfDelay causes) {
         String msg = brackets("too complex");
-        return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
         // result is an int, so no linked variables
     }
 
     // explicit constructor invocation is delayed
-    public static Expression forECI(CausesOfDelay eciDelay) {
-        return new DelayedExpression("<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, LinkedVariables.EMPTY, eciDelay);
+    public static Expression forECI(Identifier identifier, CausesOfDelay eciDelay) {
+        return new DelayedExpression(identifier, "<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, LinkedVariables.EMPTY, eciDelay);
     }
 
     /*
@@ -191,12 +201,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
      */
     @Override
     public boolean equals(Object o) {
-        return this == o;
+        return this == o || o instanceof DelayedExpression de && identifier.equals(de.identifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(msg, parameterizedType);
+        return identifier.hashCode();
     }
 
     @Override
@@ -248,7 +258,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         if (linkedVariables.isEmpty()) return this;
         LinkedVariables translated = linkedVariables.translate(translationMap);
         if (translated == linkedVariables) return this;
-        return new DelayedExpression(msg, translationMap.translateType(parameterizedType),
+        return new DelayedExpression(identifier, msg, translationMap.translateType(parameterizedType),
                 translated, causesOfDelay);
     }
 
@@ -280,6 +290,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, this.causesOfDelay.merge(causesOfDelay));
     }
 }

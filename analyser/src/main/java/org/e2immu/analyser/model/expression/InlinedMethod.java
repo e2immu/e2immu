@@ -105,7 +105,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return new InlinedMethod(identifier, methodInfo, expression, Set.copyOf(variableExpressions),
                     containsVariableFields.get());
         }
-        return DelayedExpression.forInlinedMethod(expression.returnType(), causes.get());
+        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), causes.get());
     }
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {
@@ -396,7 +396,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
-            return DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
+            return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
                     evaluationContext.evaluationContext().linkedVariables(variable).changeAllToDelay(merged), merged);
         }
         return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,

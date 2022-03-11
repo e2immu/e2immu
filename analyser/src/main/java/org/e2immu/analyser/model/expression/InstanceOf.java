@@ -156,7 +156,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         }
         if (value.isDelayed()) {
             LinkedVariables linkedVariables = value.linkedVariables(context);
-            return builder.setExpression(DelayedExpression.forInstanceOf(context.getPrimitives(),
+            return builder.setExpression(DelayedExpression.forInstanceOf(identifier, context.getPrimitives(),
                             parameterizedType, linkedVariables.changeAllToDelay(value.causesOfDelay()), value.causesOfDelay()))
                     .build();
         }

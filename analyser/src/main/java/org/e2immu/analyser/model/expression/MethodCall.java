@@ -99,7 +99,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
                 .merge(translatedObject.causesOfDelay());
         if (causesOfDelay.isDelayed()) {
-            return DelayedExpression.forMethod(translatedMethod, translatedMethod.returnType(),
+            return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new MethodCall(identifier,
@@ -358,7 +358,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // companion methods
         Expression modifiedInstance;
         if (modified.valueIsTrue()) {
-            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(builder, context, methodInfo,
+            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
             if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
@@ -512,7 +512,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            DV modified) {
         assert causesOfDelay.isDelayed();
         LinkedVariables delayedLinkedVariables = linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay);
-        builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
+        builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                 delayedLinkedVariables, causesOfDelay));
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
@@ -568,6 +568,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     static Expression checkCompanionMethodsModifying(
+            Identifier identifier,
             EvaluationResult.Builder builder,
             EvaluationResult context,
             MethodInfo methodInfo,
@@ -632,7 +633,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
-                return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
+                return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
                         objectValue.linkedVariables(context).changeAllToDelay(causesOfDelay), causesOfDelay);
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);

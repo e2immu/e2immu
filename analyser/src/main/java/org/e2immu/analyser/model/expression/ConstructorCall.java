@@ -104,7 +104,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         assert arrayInitializer == null;
         CausesOfDelay causesOfDelay = valueProperties.delays();
         if (causesOfDelay.isDelayed()) {
-            return DelayedExpression.forInstanceOf(primitives, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
+            return DelayedExpression.forInstanceOf(identifier, primitives, parameterizedType,
+                    LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new Instance(identifier, parameterizedType, valueProperties);
     }
@@ -162,7 +163,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
-            return DelayedExpression.forNewObject(translatedType,
+            return DelayedExpression.forNewObject(identifier, translatedType,
                     MultiLevel.EFFECTIVELY_NOT_NULL_DV, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new ConstructorCall(identifier,
@@ -415,13 +416,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         Expression instance;
         if (constructor != null) {
             MethodAnalysis constructorAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
-            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, context,
+            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
                     constructor, constructorAnalysis, null, this, res.v);
             if (modifiedInstance == null) {
                 instance = this;
             } else {
                 instance = modifiedInstance.isDelayed()
-                        ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                        ? DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         linkedVariables(context).changeAllToDelay(modifiedInstance.causesOfDelay()),
                         modifiedInstance.causesOfDelay())
                         : modifiedInstance;
@@ -459,7 +460,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public Expression createDelayedValue(EvaluationResult context, CausesOfDelay causes) {
-        return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+        return DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                 linkedVariables(context).changeAllToDelay(causes), causes);
     }
 

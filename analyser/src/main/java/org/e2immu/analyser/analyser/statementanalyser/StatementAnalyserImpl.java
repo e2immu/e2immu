@@ -25,10 +25,7 @@ import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.statement.*;
@@ -448,7 +445,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 if (forwardAnalysisInfo.switchSelectorIsDelayed().isDelayed()) {
                     CausesOfDelay causes = forwardAnalysisInfo.conditionManager().condition().causesOfDelay()
                             .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
-                    condition = DelayedExpression.forSwitchSelector(statementAnalysis.primitives(), causes);
+                    condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
+                            statementAnalysis.primitives(), causes);
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                 }

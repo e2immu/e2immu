@@ -111,7 +111,8 @@ public class ArrayLength extends BaseExpression implements Expression {
             Expression size = new IntConstant(context.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
             builder.setExpression(size);
         } else if (result.value().isDelayed()) {
-            builder.setExpression(DelayedExpression.forArrayLength(context.getPrimitives(), result.value().causesOfDelay()));
+            builder.setExpression(DelayedExpression.forArrayLength(identifier, context.getPrimitives(),
+                    result.value().causesOfDelay()));
         } else {
             builder.setExpression(this);
         }

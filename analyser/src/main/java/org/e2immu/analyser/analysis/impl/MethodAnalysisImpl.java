@@ -282,7 +282,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 singleReturnValue.setFinal(u);
             } else {
                 // same as in MethodAnalyserImpl, which we don't have access to here
-                DelayedExpression de = DelayedExpression.forMethod(methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
+                DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
+                        methodInfo.returnType(), LinkedVariables.EMPTY,
                         methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
                 singleReturnValue.setVariable(de);
             }

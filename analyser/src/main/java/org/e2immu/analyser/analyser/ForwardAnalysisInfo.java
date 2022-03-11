@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.BreakStatement;
@@ -55,7 +56,8 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
         Expression expression = computeConditionInSwitchStatement(evaluationContext, previousStatement, previous,
                 statementAnalysis);
         if (switchSelectorIsDelayed.isDelayed()) {
-            return DelayedExpression.forSwitchSelector(evaluationContext.getPrimitives(),
+            return DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector"),
+                    evaluationContext.getPrimitives(),
                     switchSelector.causesOfDelay().merge(expression.causesOfDelay()));
         }
         return expression;

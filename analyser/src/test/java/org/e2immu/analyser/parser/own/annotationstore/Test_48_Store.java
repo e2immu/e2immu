@@ -196,7 +196,7 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "instance type boolean?<s:String>:<s:String>" : "object.toString()";
+                        String expectValue = d.iteration() == 0 ? "<s:String>" : "object.toString()";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

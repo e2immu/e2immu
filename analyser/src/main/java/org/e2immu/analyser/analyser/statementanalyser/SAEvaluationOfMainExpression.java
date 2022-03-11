@@ -143,7 +143,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
                 CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eciDelay), true);
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay), true);
                 return eciDelay;
             }
             if (!assignments.isBooleanConstant()) {
@@ -227,7 +227,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
                 CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eciDelay), true);
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay), true);
                 return eciDelay;
             }
             if (!assignments.isBooleanConstant()) {

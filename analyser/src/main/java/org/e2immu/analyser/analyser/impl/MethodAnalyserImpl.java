@@ -234,7 +234,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     protected Expression delayedSrv(CausesOfDelay causesOfDelay) {
-        return DelayedExpression.forMethod(methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
+        return DelayedExpression.forMethod(methodInfo.identifier, methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
                 methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay));
     }
 }
