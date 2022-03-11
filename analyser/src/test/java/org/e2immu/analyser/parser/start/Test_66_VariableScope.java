@@ -102,7 +102,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_1", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -381,7 +381,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;cnn@Parameter_p;container@Class_PerPackage;immutable@Class_PerPackage;independent@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;immutable@Class_PerPackage;link:typesPerPackage@Method_accept_1.0.2:M]";
-                        case 1 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.2:M]";
+                        case 1 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, qualification=cm:qualification@Method_accept_1.0.1-E;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.1-E;svr@Method_apply, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types;link:typesPerPackage@Method_accept_1.0.2:M]";
                         default -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=false:0, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=false:0, qualification=false:0, typesPerPackage=true:1]";
                     };
                     // difference in is simply those 2 fields, with delayed values.
@@ -439,12 +439,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        if (fr.scopeIsThis()) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "!<m:equals>&&null!=<m:packageName>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
-                                case 1 -> "!<m:equals>&&null!=<f:packageName>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
-                                default -> "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
-                            };
+                        if ("instance type PerPackage".equals(fr.scope.toString())) {
+                            String expected = "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
+                            assertEquals(expected, d.currentValue().toString());
+                        } else if ("<m:addTypeReturnImport>?<m:computeIfAbsent>:<m:computeIfAbsent>".equals(fr.scope.toString())) {
+                            String expected = d.iteration() == 0
+                                    ? "!<m:equals>&&null!=<m:packageName>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>"
+                                    : "instance type boolean";
                             assertEquals(expected, d.currentValue().toString());
                         } else {
                             fail("No other scope possible: " + fr.scope);

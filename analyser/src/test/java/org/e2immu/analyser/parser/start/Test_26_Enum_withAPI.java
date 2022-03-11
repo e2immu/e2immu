@@ -170,7 +170,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
                         case 0, 1, 2 -> "1==<m:getCnt>";
-                        case 3 -> "1==<f:cnt>";
+                        case 3 -> "1==<f:Enum_4.ONE.cnt>";
                         default -> "true";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());

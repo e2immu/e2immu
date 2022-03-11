@@ -164,7 +164,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? "null==<f:guide>" : "null==forwardInfo.guide";
+                    String expect = d.iteration() <= 1 ? "null==<f:forwardInfo.guide>" : "null==forwardInfo.guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -238,12 +238,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2 ? "<f:forwardInfo>" :
+                    String expect = d.iteration() <= 2
+                            ? "<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
                             "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2 ? "9==<m:index>&&null!=<f:forwardInfo>" :
+                    String expect = d.iteration() <= 2 ? "9==<m:index>&&null!=<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
                             "null!=(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo&&9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
@@ -263,7 +264,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
                 if ("fwdInfo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 2 ? "<f:forwardInfo>" :
+                        String expect = d.iteration() <= 2
+                                ? "<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
                                 "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expect, d.currentValue().toString());
 

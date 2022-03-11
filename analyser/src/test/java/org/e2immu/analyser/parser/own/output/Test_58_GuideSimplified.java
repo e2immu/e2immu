@@ -199,7 +199,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expectValue =d.iteration()<=3? "\"/*\"+<f:msg>+\"*/\"": TRACE_RETURN;
+                String expectValue =d.iteration()<=3? "\"/*\"+<f:this.position().msg>+\"*/\"": TRACE_RETURN;
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("GuideSimplified_5".equals(d.methodInfo().name)) {

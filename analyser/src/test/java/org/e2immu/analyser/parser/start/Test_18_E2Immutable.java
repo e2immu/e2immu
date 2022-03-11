@@ -118,7 +118,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                          this is the 2nd delay breaking after the null value in the other constructor
                          */
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "2+<field:org.e2immu.analyser.parser.start.testexample.E2Immutable_1.level2#parent2Param>";
+                            case 0 -> "2+<f:parent2Param.level2>";
                             case 1 -> "<wrapped:level2>";
                             default -> "2+parent2Param.level2";
                         };

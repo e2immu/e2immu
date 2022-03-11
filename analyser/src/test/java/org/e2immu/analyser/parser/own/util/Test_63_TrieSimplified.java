@@ -65,11 +65,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("0.1.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "null!=<f:map>" : "null!=map$0";
+                    String expectCondition = d.iteration() == 0 ? "null!=<f:root.map>" : "null!=map$0";
                     assertEquals(expectCondition, d.condition().toString());
                 }
                 if ("0.1.1.0.1".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "null==<m:get>&&null!=<f:map>" : "null==map$0.get(s)&&null!=map$0";
+                    String expectCondition = d.iteration() == 0 ? "null==<m:get>&&null!=<f:root.map>" : "null==map$0.get(s)&&null!=map$0";
                     assertEquals(expectCondition, d.absoluteState().toString());
                 }
             }

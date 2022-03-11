@@ -435,7 +435,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("getMessage".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
-                    String expected = d.iteration() <= 2 ? "<f:msg>" : "\"S\"";
+                    String expected = d.iteration() <= 2 ? "<f:Position.START.msg>" : "\"S\"";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
