@@ -622,10 +622,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

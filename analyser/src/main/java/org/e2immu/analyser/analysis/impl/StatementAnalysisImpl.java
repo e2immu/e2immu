@@ -1028,15 +1028,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
             Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances);
-            //prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
+            prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
             prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
+            prepareMerge.translationMap.put(expression, bestValue);
         }
         prepareMerge.computeRenames();
-
-        TranslationMap translationMapBeforeApplyTranslations = prepareMerge.translationMap.build();
-        // remove all "toRemove"s
-        // applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
-        TranslationMap translationMap = translationMapBeforeApplyTranslations.update(prepareMerge.bestValueForToRemove);
+        TranslationMap translationMap = prepareMerge.translationMap.build();
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();

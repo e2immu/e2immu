@@ -350,8 +350,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i>==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>)";
-                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>)";
+                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
+                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<f:conditionalChecks.i>)";
                             default -> RETURN_VALUE;
                         };
                         assertEquals(expectValue, d.currentValue().debugOutput());
@@ -413,8 +413,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
-                        case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i>==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>)";
-                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>)";
+                        case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
+                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<f:conditionalChecks.i>)";
                         default -> RETURN_VALUE;
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());

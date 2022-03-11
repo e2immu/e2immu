@@ -318,7 +318,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>"
+                                ? "null==<f:from.typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>"
                                 : "null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -330,7 +330,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>)";
                             case 1 -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()?instance type int:min$4.0.3.0.0><m:size>?<m:size>:<vl:min>)";
-                            default -> "8+(targetTypeBounds$4.0.3.isEmpty()&&!List.of().isEmpty()&&null==from.typeInfo$0&&null!=from.typeParameter$0&&null!=target.typeParameter$0?instance type int:!targetTypeBounds$4.0.3.isEmpty()&&!List.of().isEmpty()&&null==from.typeInfo$0&&null!=from.typeParameter$0&&null!=target.typeParameter$0&&(fromTypeBounds$4.0.3.0.0.isEmpty()||typeInfo.length()>=min$4.0.3.0.0)?instance type int:typeInfo.length())";
+                            default -> "8+(targetTypeBounds$4.0.3.isEmpty()&&!List.of().isEmpty()&&null==from.typeInfo$0&&null!=from.typeParameter$0&&null!=target.typeParameter$0?instance type int:!targetTypeBounds$4.0.3.isEmpty()&&!List.of().isEmpty()&&null==from.typeInfo$0&&null!=from.typeParameter$0&&null!=target.typeParameter$0&&(fromTypeBounds$4.0.3.0.0.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3.0.0)?instance type int:instance type ParameterizedType.typeInfo.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -369,7 +369,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null!=<f:typeParameter>" : "false";
+                    String expected = d.iteration() == 0 ? "null!=<f:target.typeParameter>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1-C" : "NEVER:0";

@@ -319,7 +319,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
                     case 1 -> "Precondition[expression=<precondition>&&<precondition>&&<precondition>&&<precondition>, causes=[]]";
                     // why has other. gone from the preconditions???? in <f:t>
-                    case 2 -> "Precondition[expression=null!=t&&null==<f:t>&&null==<f:t>, causes=[methodCall:getT, methodCall:getT]]";
+                    case 2 -> "Precondition[expression=null!=t&&null==<f:other.t>&&null==<f:other.t>, causes=[methodCall:getT, methodCall:getT]]";
                     default -> "Precondition[expression=null!=t, causes=[methodCall:setT, methodCall:getT, methodCall:setT]]";
                 };
                 assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().toString());

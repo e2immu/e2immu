@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -33,7 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @E2Container
-public final class VariableExpression extends CommonVariableExpression {
+public final class VariableExpression extends BaseExpression implements IsVariableExpression {
 
     public static Expression of(Variable v) {
         if (!(v instanceof FieldReference fr) || fr.scope.isDone()) return new VariableExpression(v);
@@ -52,7 +54,7 @@ public final class VariableExpression extends CommonVariableExpression {
         return DelayedVariableExpression.forVariable(v, VariableInfoContainer.NOT_A_FIELD, fr.scope.causesOfDelay());
     }
 
-    public interface Suffix {
+    public interface Suffix extends Comparable<Suffix> {
 
         default OutputBuilder output() {
             return new OutputBuilder();
@@ -63,6 +65,11 @@ public final class VariableExpression extends CommonVariableExpression {
         @Override
         public int hashCode() {
             return 1;
+        }
+
+        @Override
+        public int compareTo(Suffix o) {
+            return o == NO_SUFFIX ? 0 : -1; // I always come first
         }
     };
 
@@ -84,6 +91,15 @@ public final class VariableExpression extends CommonVariableExpression {
             outputBuilder.add(new Text("$" + statementTime));
             return outputBuilder;
         }
+
+        @Override
+        public int compareTo(Suffix o) {
+            if (o == NO_SUFFIX) return 1;
+            if (o instanceof VariableField vf) {
+                return toString().compareTo(vf.toString());
+            }
+            return 1;
+        }
     }
 
     public record VariableInLoop(String assignmentId) implements Suffix {
@@ -95,6 +111,15 @@ public final class VariableExpression extends CommonVariableExpression {
         @Override
         public OutputBuilder output() {
             return new OutputBuilder().add(new Text("$" + assignmentId));
+        }
+
+        @Override
+        public int compareTo(Suffix o) {
+            if (o == NO_SUFFIX) return 1;
+            if (o instanceof VariableInLoop vil) {
+                return assignmentId.compareTo(vil.assignmentId);
+            }
+            return -1;
         }
     }
 
@@ -119,6 +144,35 @@ public final class VariableExpression extends CommonVariableExpression {
         if (!(o instanceof VariableExpression that)) return false;
         if (!variable.equals(that.variable)) return false;
         return Objects.equals(suffix, that.suffix);
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_VARIABLE;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        InlineConditional ic;
+        Expression e;
+        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
+            e = ic.condition;
+        } else e = v;
+        IsVariableExpression ive;
+        if ((ive = e.asInstanceOf(IsVariableExpression.class)) != null) {
+            // compare variables
+            int c = variableId().compareTo(ive.variableId());
+            if (c == 0) {
+                VariableExpression ve;
+                if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
+                    return suffix.compareTo(ve.suffix);
+                }
+                // same variable, but the other one is delayed
+                return -1; // I come first!
+            }
+            return c;
+        }
+        throw new UnsupportedOperationException();
     }
 
     public Suffix getSuffix() {

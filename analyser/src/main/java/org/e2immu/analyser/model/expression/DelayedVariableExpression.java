@@ -17,6 +17,8 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -27,25 +29,23 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 @E2Container
-public class DelayedVariableExpression extends CommonVariableExpression {
+public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
     public final String msg;
-    public final String debug;
+    public final String fqn;
     public final Variable variable;
     public final CausesOfDelay causesOfDelay;
     public final int statementTime;
 
     private DelayedVariableExpression(String msg,
-                                      String debug,
                                       Variable variable,
                                       int statementTime,
                                       CausesOfDelay causesOfDelay) {
         super(Identifier.CONSTANT);
         this.msg = msg;
-        this.debug = debug;
+        this.fqn = "<" + variable.fullyQualifiedName() + ":" + statementTime + ">";
         this.statementTime = statementTime;
         this.causesOfDelay = causesOfDelay;
         assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
@@ -56,8 +56,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
                                                          CausesOfDelay causesOfDelay) {
-        return new DelayedVariableExpression("<p:" + parameterInfo.name + ">",
-                "<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo,
+        return new DelayedVariableExpression("<p:" + parameterInfo.name + ">", parameterInfo,
                 VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
     }
 
@@ -70,39 +69,44 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     public static DelayedVariableExpression forBreakingInitialisationDelay(FieldReference fieldReference,
                                                                            int statementTime,
                                                                            CauseOfDelay causeOfDelay) {
-        return new DelayedVariableExpression("<f*:" + fieldReference.fieldInfo.name + ">",
-                "<field*:" + fieldReference.fullyQualifiedName() + ">", fieldReference, statementTime, new SimpleSet(causeOfDelay));
+        return new DelayedVariableExpression("<f*:" + fieldString(fieldReference) + ">", fieldReference,
+                statementTime, new SimpleSet(causeOfDelay));
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      int statementTime,
                                                      CausesOfDelay causesOfDelay) {
-        return new DelayedVariableExpression("<f:" + fieldReference.fieldInfo.name + ">",
-                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference, statementTime, causesOfDelay);
+        return new DelayedVariableExpression("<f:" + fieldString(fieldReference) + ">", fieldReference,
+                statementTime, causesOfDelay);
+    }
+
+    private static String fieldString(FieldReference fieldReference) {
+        String scopeString = fieldReference.isDefaultScope || fieldReference.isStatic ? "" : fieldReference.scope.minimalOutput() + ".";
+        return scopeString + fieldReference.fieldInfo.name;
     }
 
     public static Expression forVariable(Variable variable, int statementTime, CausesOfDelay causesOfDelay) {
         if (variable instanceof FieldReference fieldReference)
             return forField(fieldReference, statementTime, causesOfDelay);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
-        return new DelayedVariableExpression("<v:" + variable.simpleName() + ">",
-                "<variable:" + variable.fullyQualifiedName() + ">", variable, VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+        return new DelayedVariableExpression("<v:" + variable.simpleName() + ">", variable,
+                VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
     }
 
 
     public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay) {
         String msg = "<vl:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, msg, variable, VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.NOT_A_FIELD, causesOfDelay);
     }
 
     public static Expression forDelayedValueProperties(Variable variable, int statementTime, CausesOfDelay causesOfDelay) {
         String msg = "<vp:" + variable.simpleName() + ":" + causesOfDelay + ">";
-        return new DelayedVariableExpression(msg, msg, variable, statementTime, causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay);
     }
 
     public static Expression forDelayedModificationInMethodCall(Variable variable, CausesOfDelay causesOfDelay) {
         String msg = "<mmc:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, msg, variable, variable.statementTime(), causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causesOfDelay);
     }
 
     /*
@@ -118,6 +122,37 @@ public class DelayedVariableExpression extends CommonVariableExpression {
         return o instanceof DelayedVariableExpression dve
                 && variable.equals(dve.variable)
                 && statementTime == dve.statementTime;
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_VARIABLE;
+    }
+
+    // code very similar to that in VariableExpression; that's important, because we need to keep them closely
+    // aligned AND compatible with equals: sometimes we use TreeMaps, sometimes we use HashMaps.
+    @Override
+    public int internalCompareTo(Expression v) {
+        InlineConditional ic;
+        Expression e;
+        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
+            e = ic.condition;
+        } else e = v;
+        IsVariableExpression ive;
+        if ((ive = e.asInstanceOf(IsVariableExpression.class)) != null) {
+            // compare variables
+            int c = variableId().compareTo(ive.variableId());
+            if (c == 0) {
+                DelayedVariableExpression dve;
+                if ((dve = e.asInstanceOf(DelayedVariableExpression.class)) != null) {
+                    return statementTime - dve.statementTime;
+                }
+                // same variable, but the other one is not delayed
+                return 1; // I come last!
+            }
+            return c;
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -147,7 +182,10 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(msg, debug));
+        if (qualification == Qualification.FULLY_QUALIFIED_NAME) {
+            return new OutputBuilder().add(new Text(fqn, fqn));
+        }
+        return new OutputBuilder().add(new Text(msg, msg));
     }
 
     @Override
@@ -185,7 +223,8 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
-        return Objects.requireNonNullElse(expression, this);
+        if (expression != null && expression.isDelayed()) return expression;
+        return this;
     }
 
     // special treatment because of == equality
@@ -202,7 +241,7 @@ public class DelayedVariableExpression extends CommonVariableExpression {
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
                 FieldReference newRef = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, replaceScope);
-                result = new DelayedVariableExpression(msg, debug, newRef, statementTime, causesOfDelay);
+                result = new DelayedVariableExpression(msg, newRef, statementTime, causesOfDelay);
             } else {
                 result = this;
             }
@@ -232,6 +271,6 @@ public class DelayedVariableExpression extends CommonVariableExpression {
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedVariableExpression(msg, debug, variable, statementTime, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedVariableExpression(msg, variable, statementTime, this.causesOfDelay.merge(causesOfDelay));
     }
 }

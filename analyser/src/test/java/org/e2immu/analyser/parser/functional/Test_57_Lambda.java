@@ -186,7 +186,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     }
                 }
                 if ("l".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "<f:k>" : "x.k";
+                    String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if ("0".equals(d.statementId())) {
@@ -204,7 +204,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:k>" : "x.k";
+                        String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String lv = d.iteration() == 0
