@@ -127,7 +127,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertRange(d, 1, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$1]", "i$1<=9&&i$1>=0");
 
-                    String expectState = d.iteration() == 0 ? "<s:boolean>&&(!<loopIsNotEmptyCondition>||1!=<v:i>)" : "10==i";
+                    String expectState = d.iteration() == 0 ? "<s:boolean>&&1!=<v:i>" : "10==i";
                     assertEquals(expectState, d.state().toString());
                 }
                 if ("2".equals(d.statementId())) {
@@ -138,28 +138,23 @@ public class Test_21_Range_4 extends CommonTestRunner {
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0
-                            ? "(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)" : "1==i||10==i";
+                    String expect = d.iteration() == 0 ? "<s:boolean>" : "1==i||10==i";
                     assertEquals(expect, d.state().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i";
                     assertEquals(expect, d.state().toString());
-                    String expectAbs = d.iteration() == 0 ? "1==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)" : "1==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&1==<v:i>" : "1==i";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0
-                            ? "10==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)"
-                            : "10==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0
-                            ? "10==<v:i>&&(<s:boolean>||<loopIsNotEmptyCondition>)&&(<s:boolean>||1==<v:i>)"
-                            : "10==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }

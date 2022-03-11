@@ -74,6 +74,10 @@ public interface Identifier extends Comparable<Identifier> {
         return new LoopConditionIdentifier(index);
     }
 
+    static Identifier state(String index) {
+        return new StateIdentifier(index);
+    }
+
     static Identifier joined(String expression, List<Identifier> identifiers) {
         return new ListOfIdentifiers(expression, identifiers);
     }
@@ -180,6 +184,23 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return "L:" + index;
+        }
+    }
+
+    record StateIdentifier(String index) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 3;
+        }
+
+        @Override
+        public String compact() {
+            return "S:" + index;
         }
     }
 

@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.range.ConstantRange;
 import org.e2immu.analyser.analysis.range.NumericRange;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
@@ -119,7 +120,7 @@ public class RangeDataImpl implements RangeData {
     private Range forEachConstantRange(ForEachStatement statement,
                                        StatementAnalysis statementAnalysis,
                                        EvaluationResult result) {
-        if(result.value() instanceof ArrayInitializer ai) {
+        if (result.value() instanceof ArrayInitializer ai) {
             if (statement.structure.initialisers().get(0) instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr = lvc.newLocalVariables().get(0);
                 return new ConstantRange(ai, new VariableExpression(lvr));
@@ -300,7 +301,8 @@ public class RangeDataImpl implements RangeData {
             return range.get().conditions(evaluationContext);
         }
         CausesOfDelay causes = range.get().causesOfDelay();
-        return DelayedExpression.forState(evaluationContext.getPrimitives().booleanParameterizedType(),
+        return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
+                evaluationContext.getPrimitives().booleanParameterizedType(),
                 LinkedVariables.delayedEmpty(causes), causes);
     }
 

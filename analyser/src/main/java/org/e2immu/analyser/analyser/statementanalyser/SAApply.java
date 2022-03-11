@@ -674,7 +674,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     return value;
                 }
                 LinkedVariables lv = LinkedVariables.delayedEmpty(merged);
-                return DelayedExpression.forState(variable.parameterizedType(), lv, merged);
+                return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(), lv, merged);
             }
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {

@@ -76,11 +76,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     /*
     expression with delayed state
      */
-    public static Expression forState(ParameterizedType parameterizedType,
+    public static Expression forState(Identifier identifier,
+                                      ParameterizedType parameterizedType,
                                       LinkedVariables linkedVariables,
                                       CausesOfDelay causes) {
         String msg = brackets("s:" + parameterizedType.printSimple());
-        return new DelayedExpression(Identifier.generate("state"), msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forCondition(ParameterizedType parameterizedType,

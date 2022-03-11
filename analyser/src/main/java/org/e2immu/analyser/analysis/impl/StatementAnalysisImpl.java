@@ -1549,7 +1549,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 combined.put(property, v);
             }
         }
-        vic.setValue(value, LinkedVariables.EMPTY, combined, true);
+        Expression toWrite;
+        if(value.isDone()) {
+            CausesOfDelay causes = combined.delays();
+            if(causes.isDelayed()) {
+                toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL), causes);
+            } else {
+                toWrite = value;
+            }
+        } else {
+            toWrite = value;
+        }
+        vic.setValue(toWrite, LinkedVariables.EMPTY, combined, true);
     }
 
     private DV contextImmutable(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldAnalysis fieldAnalysis, DV valueProperty) {

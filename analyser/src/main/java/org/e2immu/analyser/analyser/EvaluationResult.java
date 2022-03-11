@@ -625,7 +625,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // see FirstThen_0 and Singleton_7
             Expression value = stateIsDelayed.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    ? DelayedExpression.forState(resultOfExpression.returnType(),
+                    ? DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
+                    resultOfExpression.returnType(),
                     resultOfExpression.linkedVariables(EvaluationResult.from(evaluationContext)).changeAllToDelay(stateIsDelayed),
                     stateIsDelayed) : resultOfExpression;
 

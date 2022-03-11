@@ -512,8 +512,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression negatedConditionOrExitState;
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
-                negatedConditionOrExitState = DelayedExpression.forState(statementAnalysis.primitives()
-                        .booleanParameterizedType(), LinkedVariables.delayedEmpty(range.causesOfDelay()), range.causesOfDelay());
+                negatedConditionOrExitState = DelayedExpression.forState(loopStatement.identifier,
+                        statementAnalysis.primitives().booleanParameterizedType(),
+                        LinkedVariables.delayedEmpty(range.causesOfDelay()), range.causesOfDelay());
             } else {
                 // at the moment there is no Range which does not return a boolean constant
                 Expression exit = range.exitState(context.evaluationContext());
