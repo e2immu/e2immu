@@ -1175,8 +1175,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // create looks at these+previous, minus those to be removed.
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
-        assert prepareMerge.toMerge.size() == linkedVariablesMap.size(); // same basis
-
         Set<Variable> touched = Stream.concat(linkedVariablesMap.keySet().stream(),
                         linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream()))
                 .filter(v -> !prepareMerge.toRemove.contains(v) && variables.isSet(v.fullyQualifiedName()))
@@ -1550,9 +1548,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         Expression toWrite;
-        if(value.isDone()) {
+        if (value.isDone()) {
             CausesOfDelay causes = combined.delays();
-            if(causes.isDelayed()) {
+            if (causes.isDelayed()) {
                 toWrite = DelayedVariableExpression.forDelayedValueProperties(fieldReference, statementTime(INITIAL), causes);
             } else {
                 toWrite = value;
@@ -2021,7 +2019,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     stateData.setPrecondition(new Precondition(preconditionExpression, precondition.causes()));
                     return preconditionExpression.causesOfDelay();
                 }
-                Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression());
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression().getIdentifier(), precondition.expression());
                 if (translated != null) {
                     Precondition pc = new Precondition(translated, precondition.causes());
                     stateData.setPrecondition(pc);

@@ -143,7 +143,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             if (changeData.markAssignment()) {
-                if(!vi.valueIsSet()) {
+                if (!vi.valueIsSet()) {
                     if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
                             sharedState.localConditionManager(), sharedState.context())) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(),
@@ -352,7 +352,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             causes = valuePropertiesIsDelayed;
         }
         if (!valueToWriteIsDelayed && causes.isDelayed()) {
-            return valueToWrite.createDelayedValue(EvaluationResult.from(sharedState.evaluationContext()), causes);
+            return valueToWrite.createDelayedValue(valueToWrite.getIdentifier(),
+                    EvaluationResult.from(sharedState.evaluationContext()), causes);
         }
         return valueToWrite;
     }
@@ -586,7 +587,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
          */
         evaluationResult.messages().getMessageStream().filter(this::acceptMessage).forEach(statementAnalysis::ensure);
 
-        if(!doNotWritePreconditionFromMethod) {
+        if (!doNotWritePreconditionFromMethod) {
             // not checking on DONE anymore because any delay will also have crept into the precondition itself??
             Precondition precondition = evaluationResult.precondition();
             CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),

@@ -126,7 +126,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public Expression createDelayedValue(EvaluationResult context, CausesOfDelay causes) {
+    public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
         IsVariableExpression ive;
         if ((ive = asInstanceOf(IsVariableExpression.class)) != null) {
             Expression delayed = DelayedVariableExpression.forDelayedValueProperties(ive.variable(),
@@ -136,7 +136,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
             }
             return delayed;
         }
-        return DelayedExpression.forDelayedValueProperties(returnType(),
+        return DelayedExpression.forDelayedValueProperties(identifier, returnType(),
                 linkedVariables(context).changeAllToDelay(causes), causes, Properties.EMPTY);
     }
 

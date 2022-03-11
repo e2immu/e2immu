@@ -129,18 +129,14 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
         return new Precondition(expression, List.of());
     }
 
-    public static Precondition forDelayed(CausesOfDelay causesOfDelay, Primitives primitives) {
-        Expression de = DelayedExpression.forPrecondition(primitives, causesOfDelay);
-        return new Precondition(de, List.of());
-    }
-
     public static Precondition forDelayed(Identifier identifier, CausesOfDelay causesOfDelay, Primitives primitives) {
         Expression de = DelayedExpression.forPrecondition(identifier, primitives, causesOfDelay);
         return new Precondition(de, List.of());
     }
 
     public static Precondition noInformationYet(Location location, Primitives primitives) {
-        return forDelayed(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.NO_PRECONDITION_INFO)), primitives);
+        CausesOfDelay causes = new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.NO_PRECONDITION_INFO));
+        return forDelayed(location.identifier(), causes, primitives);
     }
 
     public boolean isNoInformationYet(MethodInfo currentMethod) {

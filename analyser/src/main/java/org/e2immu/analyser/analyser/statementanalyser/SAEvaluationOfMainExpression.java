@@ -454,7 +454,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (causes.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                 LOGGER.debug("Break init delay -- not delaying");
             } else {
-                return DelayedExpression.forCondition(statementAnalysis.primitives().booleanParameterizedType(),
+                Identifier identifier = statement().getStructure().expression().getIdentifier();
+                return DelayedExpression.forCondition(identifier, statementAnalysis.primitives().booleanParameterizedType(),
                         LinkedVariables.delayedEmpty(causes), causes);
             }
         }

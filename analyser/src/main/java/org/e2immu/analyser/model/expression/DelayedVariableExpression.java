@@ -109,6 +109,11 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causesOfDelay);
     }
 
+    public static Expression forMerge(Variable variable , CausesOfDelay causes) {
+        String msg = "<merge:"+variable.simpleName()+">";
+        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

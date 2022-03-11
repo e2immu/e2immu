@@ -608,8 +608,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Expression acceptAndTranslatePrecondition(Expression rest) {
-            return evaluationContext.acceptAndTranslatePrecondition(rest);
+        public Expression acceptAndTranslatePrecondition(Identifier identifier, Expression rest) {
+            return evaluationContext.acceptAndTranslatePrecondition(identifier, rest);
         }
 
         @Override

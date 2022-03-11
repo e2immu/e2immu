@@ -110,6 +110,30 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
+    static Identifier forTest(int i) {
+        return new TestIdentifier(i);
+    }
+
+    record TestIdentifier(int i) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof TestIdentifier ti) {
+                return i - ti.i;
+            }
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 0;
+        }
+
+        @Override
+        public String compact() {
+            return "I:" + i;
+        }
+    }
+
     class IncrementalIdentifier implements Identifier {
         private static final AtomicInteger generator = new AtomicInteger();
         public final String identifier;

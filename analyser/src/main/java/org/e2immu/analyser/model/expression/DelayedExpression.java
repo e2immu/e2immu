@@ -84,11 +84,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forCondition(ParameterizedType parameterizedType,
+    public static Expression forCondition(Identifier identifier,
+                                          ParameterizedType parameterizedType,
                                           LinkedVariables linkedVariables,
                                           CausesOfDelay causes) {
         String msg = brackets("c:" + parameterizedType.printSimple());
-        return new DelayedExpression(Identifier.generate("condition"), msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forNewObject(Identifier identifier,
@@ -123,10 +124,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         // result is an int, so no linked variables
     }
 
-    public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
-        return forPrecondition(Identifier.generate("precondition"), primitives, causes);
-    }
-
     public static Expression forPrecondition(Identifier identifier, Primitives primitives, CausesOfDelay causes) {
         String msg = brackets("precondition");
         return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
@@ -146,13 +143,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), linkedVariables, causes);
     }
 
-    public static Expression forMerge(ParameterizedType parameterizedType,
-                                      LinkedVariables linkedVariables,
-                                      CausesOfDelay causes) {
-        String msg = brackets("merge:" + parameterizedType.printSimple());
-        return new DelayedExpression(Identifier.generate("merge"), msg, parameterizedType, linkedVariables, causes);
-    }
-
     public static Expression forUnspecifiedLoopCondition(Identifier identifier,
                                                          ParameterizedType booleanParameterizedType,
                                                          LinkedVariables linkedVariables,
@@ -167,12 +157,13 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                 LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
-    public static Expression forDelayedValueProperties(ParameterizedType parameterizedType,
+    public static Expression forDelayedValueProperties(Identifier identifier,
+                                                       ParameterizedType parameterizedType,
                                                        LinkedVariables linkedVariables,
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
         String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
-        return new DelayedExpression(Identifier.generate("dvp"), msg, parameterizedType, linkedVariables, causes, priorityProperties);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes, priorityProperties);
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo,
@@ -230,7 +221,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(msg, msg));
+        String text;
+        if (qualification == Qualification.FULLY_QUALIFIED_NAME) {
+            // for use in the scope of field references
+            text = identifier.compact();
+        } else {
+            text = msg;
+        }
+        return new OutputBuilder().add(new Text(text, text));
     }
 
     @Override

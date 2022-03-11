@@ -62,7 +62,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 String expected = d.iteration() == 1 ? "<f*:i>==-<p:q>+<wrapped:i>" : "true";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
-            if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId()) && d.iteration() > 0) {
+            if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId())) {
                 String expected = d.iteration() == 1 ? "-1==<vp:i:[11 delays]>-<wrapped:i>" : "true";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }

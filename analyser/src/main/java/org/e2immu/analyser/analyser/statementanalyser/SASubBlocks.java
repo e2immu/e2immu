@@ -110,7 +110,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
                 .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
         Expression precondition = cm.precondition(EvaluationResult.from(sharedState.evaluationContext()));
-        Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
+        // the identifier of the "throws" expression, in case we have a delayed precondition
+        Identifier identifier = statement().getStructure().expression().getIdentifier();
+        Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, precondition);
         if (translated != null) {
             LOGGER.debug("Escape with precondition {}", translated);
             Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
@@ -140,8 +142,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // in IfStatement_10, we have an "assert" condition that cannot simply be moved to the precondition, because
             // it turns out the condition will always be false. We really need the local condition manager for next
             // statement to be delayed until we know the precondition can be accepted.
+            // the identifier of the "assert" expression, in case we have a delayed precondition
+            Identifier identifier = statement().getStructure().expression().getIdentifier();
             Expression translated = Objects.requireNonNullElse(
-                    sharedState.evaluationContext().acceptAndTranslatePrecondition(combined),
+                    sharedState.evaluationContext().acceptAndTranslatePrecondition(identifier, combined),
                     new BooleanConstant(statementAnalysis.primitives(), true));
 
             List<Precondition.PreconditionCause> preconditionCauses = Stream.concat(

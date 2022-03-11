@@ -640,7 +640,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     This method accepts delayed variable expressions as well.
      */
     @Override
-    public Expression acceptAndTranslatePrecondition(Expression precondition) {
+    public Expression acceptAndTranslatePrecondition(Identifier identifier, Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
         Map<Expression, Expression> translationMap = new HashMap<>();
         precondition.visit(e -> {
@@ -665,7 +665,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 return translated;
             }
             if (modified.isDelayed()) {
-                return DelayedExpression.forPrecondition(getPrimitives(), modified.causesOfDelay());
+                return DelayedExpression.forPrecondition(identifier, getPrimitives(), modified.causesOfDelay());
             }
         }
         return precondition.isDelayed() ? precondition : null;

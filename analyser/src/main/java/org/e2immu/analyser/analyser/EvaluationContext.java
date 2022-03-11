@@ -288,7 +288,7 @@ public interface EvaluationContext {
         return expression;
     }
 
-    default Expression acceptAndTranslatePrecondition(Expression rest) {
+    default Expression acceptAndTranslatePrecondition(Identifier identifier, Expression rest) {
         return null;
     }
 

@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -32,7 +33,8 @@ class ConditionManagerHelper {
         2- state, comes via conditionManagerForNextStatement
         3- condition, can be updated in case of SwitchOldStyle
          */
-    static ConditionManager makeLocalConditionManager(StatementAnalysis previous,
+    static ConditionManager makeLocalConditionManager(Identifier identifier,
+                                                      StatementAnalysis previous,
                                                       Expression condition) {
         Primitives primitives = previous.primitives();
         Precondition combinedPrecondition;
@@ -43,7 +45,7 @@ class ConditionManagerHelper {
             CausesOfDelay causes = Objects.requireNonNullElseGet(
                     previous.methodLevelData().combinedPreconditionIsDelayedSet(), () ->
                             previous.methodAnalysis().getMethodInfo().delay(CauseOfDelay.Cause.UNREACHABLE));
-            Expression delayedExpression = DelayedExpression.forPrecondition(primitives, causes);
+            Expression delayedExpression = DelayedExpression.forPrecondition(identifier, primitives, causes);
             combinedPrecondition = Precondition.forDelayed(delayedExpression);
         }
 

@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
@@ -310,8 +308,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (finalOverFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
-                methodAnalysis.setPreconditionForEventual(
-                        Precondition.forDelayed(finalOverFields.causesOfDelay(), primitives));
+                methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                        finalOverFields.causesOfDelay(), primitives));
                 return finalOverFields.causesOfDelay();
             }
             if (finalOverFields.valueIsFalse()) {
@@ -337,8 +335,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
-                methodAnalysis.setPreconditionForEventual(
-                        Precondition.forDelayed(haveEventuallyImmutableFields.causesOfDelay(), primitives));
+                methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                        haveEventuallyImmutableFields.causesOfDelay(), primitives));
                 return haveEventuallyImmutableFields.causesOfDelay();
             }
             if (haveEventuallyImmutableFields.valueIsTrue()) {
@@ -362,8 +360,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (haveContentChangeableField.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
-                methodAnalysis.setPreconditionForEventual(
-                        Precondition.forDelayed(haveContentChangeableField.causesOfDelay(), primitives));
+                methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                        haveContentChangeableField.causesOfDelay(), primitives));
                 return haveContentChangeableField.causesOfDelay();
             }
             if (haveContentChangeableField.valueIsTrue()) {
@@ -405,8 +403,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         if (cm.state().isDelayed()) {
                             LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);
-                            methodAnalysis.setPreconditionForEventual(
-                                    Precondition.forDelayed(cm.state().causesOfDelay(), primitives));
+                            methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                                    cm.state().causesOfDelay(), primitives));
                             return cm.state().causesOfDelay();
                         }
                         Expression state = cm.state();

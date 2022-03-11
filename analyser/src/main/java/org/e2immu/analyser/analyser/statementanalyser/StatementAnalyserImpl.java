@@ -450,7 +450,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                 }
-                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(previous, condition);
+                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(condition.getIdentifier(), previous, condition);
             }
 
             EvaluationContext evaluationContext = new SAEvaluationContext(
