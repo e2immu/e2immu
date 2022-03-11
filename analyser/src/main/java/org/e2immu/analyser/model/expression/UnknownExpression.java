@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -65,11 +68,11 @@ public class UnknownExpression extends BaseExpression implements Expression {
     }
 
     public static Expression forSpecial() {
-        return new UnknownExpression(Identifier.CONSTANT, ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, "?");
+        return new UnknownExpression(Identifier.constant("__?__"), ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, "?");
     }
 
     public static Expression forExplicitConstructorInvocation() {
-        return new UnknownExpression(Identifier.CONSTANT, ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "eci");
+        return new UnknownExpression(Identifier.constant("__eci__"), ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "eci");
     }
 
     @Override

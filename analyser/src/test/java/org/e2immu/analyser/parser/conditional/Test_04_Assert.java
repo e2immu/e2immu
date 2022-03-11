@@ -61,8 +61,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "Precondition[expression=<m:isDelayed>&&<precondition>, causes=[escape]]";
-                        case 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
+                        case 0, 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
                         case 2 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
                         default -> "Precondition[expression=!causes.isEmpty(), causes=[escape]]";
                     };

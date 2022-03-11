@@ -233,10 +233,10 @@ public class TestConditionalValue extends CommonAbstractValue {
     @Test
     public void testReturnType() {
         CausesOfDelay delay = new SimpleSet(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
-        Expression a = DelayedExpression.forState(Identifier.state("0"),
+        Expression a = DelayedExpression.forState(Identifier.generate("test"),
                 PRIMITIVES.booleanParameterizedType(), LinkedVariables.delayedEmpty(delay), delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
-        Expression b = UnknownExpression.forReturnVariable(Identifier.CONSTANT, boxed);
+        Expression b = UnknownExpression.forReturnVariable(Identifier.constant("unknown"), boxed);
         Expression inline = inline(c, a, b);
         assertEquals("c?<s:boolean>:<return value>", inline.toString());
         assertEquals(boxed, inline.returnType());

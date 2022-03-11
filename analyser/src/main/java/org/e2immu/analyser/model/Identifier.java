@@ -37,6 +37,10 @@ public interface Identifier extends Comparable<Identifier> {
 
     Identifier CONSTANT = new IncrementalIdentifier("constant");
 
+    static Identifier constant(Object object) {
+        return new ConstantIdentifier(object.getClass().getSimpleName() + ":" + object.hashCode());
+    }
+
     static Identifier from(Node node) {
         if (node == null) return Identifier.generate("null node");
         Optional<Position> begin = node.getBegin();
@@ -60,10 +64,6 @@ public interface Identifier extends Comparable<Identifier> {
 
     static Identifier generate(String origin) {
         return new IncrementalIdentifier(origin);
-    }
-
-    static Identifier stringConstant(String constant) {
-        return new StringConstantIdentifier(constant);
     }
 
     static Identifier catchCondition(String index) {
@@ -221,10 +221,10 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
-    record StringConstantIdentifier(String constant) implements Identifier {
+    record ConstantIdentifier(String constant) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
-            if (o instanceof StringConstantIdentifier sci) return constant.compareTo(sci.constant);
+            if (o instanceof ConstantIdentifier sci) return constant.compareTo(sci.constant);
             return identifierOrder() - o.identifierOrder();
         }
 

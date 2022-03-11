@@ -124,9 +124,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
+        return forPrecondition(Identifier.generate("precondition"), primitives, causes);
+    }
+
+    public static Expression forPrecondition(Identifier identifier, Primitives primitives, CausesOfDelay causes) {
         String msg = brackets("precondition");
-        return new DelayedExpression(Identifier.generate("precondition"),
-                msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
+        return new DelayedExpression(identifier, msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
     }
 
     public static Expression forSwitchSelector(Identifier identifier, Primitives primitives, CausesOfDelay causes) {

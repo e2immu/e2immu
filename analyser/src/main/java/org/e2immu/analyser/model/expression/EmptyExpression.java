@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -26,7 +29,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public final class EmptyExpression  extends BaseExpression implements Expression {
+public final class EmptyExpression extends BaseExpression implements Expression {
     public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
     public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
     public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
@@ -35,7 +38,7 @@ public final class EmptyExpression  extends BaseExpression implements Expression
     private final String msg;
 
     public EmptyExpression(String msg) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant("__unknown_" + msg + "__"));
         this.msg = msg;
     }
 

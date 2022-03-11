@@ -35,7 +35,7 @@ public final class DoubleConstant extends BaseExpression implements ConstantExpr
     private final double constant;
 
     public DoubleConstant(Primitives primitives, double constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }

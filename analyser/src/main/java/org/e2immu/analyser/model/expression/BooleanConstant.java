@@ -37,7 +37,7 @@ public class BooleanConstant extends BaseExpression implements ConstantExpressio
     private final boolean constant;
 
     public BooleanConstant(Primitives primitives, boolean constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }

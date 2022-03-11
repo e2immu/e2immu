@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestInstanceOf extends CommonAbstractValue {
 
     private static Expression instanceOf(Expression e, ParameterizedType p) {
-        return new InstanceOf(Identifier.CONSTANT, PRIMITIVES, p, e, null);
+        return new InstanceOf(Identifier.constant("instanceof"), PRIMITIVES, p, e, null);
     }
 
     @Test

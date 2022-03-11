@@ -96,7 +96,7 @@ public class TestLinkingExpression {
         MethodInfo arrayListConstructor = arrayList.findConstructor(0);
 
         // new ArrayList<>()
-        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
+        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.constant("cc"),
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
                 Diamond.YES, List.of());
         LinkedVariables linkedVariables = newObject.linkedVariables(context);
@@ -115,7 +115,7 @@ public class TestLinkingExpression {
 
         // new ArrayList<>(v), with v a local collection variable
         // because no AnnotatedAPI, v is @Dependent
-        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
+        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.constant("cc"),
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
                 Diamond.YES, List.of(ve));
         LinkedVariables linkedVariables = newObject.linkedVariables(context);
@@ -126,7 +126,7 @@ public class TestLinkingExpression {
         MethodInfo listGet = arrayList.findUniqueMethod("get", 1);
         assertEquals(MultiLevel.INDEPENDENT_1_DV, listGet.methodAnalysis.get().getProperty(Property.INDEPENDENT));
 
-        MethodCall get0 = new MethodCall(Identifier.CONSTANT, newObject, listGet,
+        MethodCall get0 = new MethodCall(Identifier.constant("mc"), newObject, listGet,
                 List.of(newInt(0)));
 
         LinkedVariables lvGet = get0.linkedVariables(context);
@@ -135,7 +135,7 @@ public class TestLinkingExpression {
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
         assertEquals(MultiLevel.DEPENDENT_DV, listSubList.methodAnalysis.get().getProperty(Property.INDEPENDENT));
-        MethodCall subList12 = new MethodCall(Identifier.CONSTANT, newObject, listSubList,
+        MethodCall subList12 = new MethodCall(Identifier.constant("mc"), newObject, listSubList,
                 List.of(newInt(1), newInt(2)));
 
         LinkedVariables lvSubList = subList12.linkedVariables(context);
@@ -169,7 +169,7 @@ public class TestLinkingExpression {
         VariableExpression vi = new VariableExpression(i);
 
         // v.add(0, i)
-        MethodCall add12 = new MethodCall(Identifier.CONSTANT, ve, addIndex, List.of(newInt(0), vi));
+        MethodCall add12 = new MethodCall(Identifier.constant("add12"), ve, addIndex, List.of(newInt(0), vi));
         LinkedVariables lvAdd12 = add12.linkedVariables(context);
         assertTrue(lvAdd12.isEmpty()); // because void method!
 
@@ -198,7 +198,7 @@ public class TestLinkingExpression {
         VariableExpression vj = new VariableExpression(j);
 
         // Collections.addAll(v, i, j)
-        MethodCall methodCall = new MethodCall(Identifier.CONSTANT,
+        MethodCall methodCall = new MethodCall(Identifier.constant("addAll"),
                 new TypeExpression(collectionInteger, Diamond.NO), addAll,
                 List.of(ve, vi, vj));
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());

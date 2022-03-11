@@ -55,7 +55,8 @@ public class Equals extends BinaryOperator {
     }
 
     public static Expression equals(EvaluationResult context, Expression l, Expression r) {
-        return equals(new Identifier.ListOfIdentifiers("equals", List.of(l.getIdentifier(), r.getIdentifier())), context, l, r, true);
+        return equals(Identifier.joined("equals", List.of(l.getIdentifier(), r.getIdentifier())), context,
+                l, r, true);
     }
 
     public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r) {

@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -32,7 +35,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
     public static final NullConstant NULL_CONSTANT = new NullConstant();
 
     protected NullConstant() {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(NullConstant.class));
     }
 
     @Override

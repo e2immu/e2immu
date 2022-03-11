@@ -325,7 +325,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // precondition
-        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, methodInfo, objectValue,
+        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, methodInfo, objectValue,
                 parameterValues);
         builder.addPrecondition(precondition);
 

@@ -36,7 +36,7 @@ public class CharConstant extends BaseExpression implements ConstantExpression<C
     private final char constant;
 
     public CharConstant(Primitives primitives, char constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }

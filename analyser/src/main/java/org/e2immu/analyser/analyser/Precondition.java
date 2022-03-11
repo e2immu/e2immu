@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
@@ -130,6 +131,11 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
 
     public static Precondition forDelayed(CausesOfDelay causesOfDelay, Primitives primitives) {
         Expression de = DelayedExpression.forPrecondition(primitives, causesOfDelay);
+        return new Precondition(de, List.of());
+    }
+
+    public static Precondition forDelayed(Identifier identifier, CausesOfDelay causesOfDelay, Primitives primitives) {
+        Expression de = DelayedExpression.forPrecondition(identifier, primitives, causesOfDelay);
         return new Precondition(de, List.of());
     }
 

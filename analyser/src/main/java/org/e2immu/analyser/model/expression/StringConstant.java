@@ -35,7 +35,7 @@ public final class StringConstant extends BaseExpression implements ConstantExpr
     private final String constant;
 
     public StringConstant(Primitives primitives, String constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }

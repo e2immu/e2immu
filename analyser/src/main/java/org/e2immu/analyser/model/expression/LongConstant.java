@@ -34,7 +34,7 @@ public final class LongConstant extends BaseExpression implements ConstantExpres
     private final long constant;
 
     public LongConstant(Primitives primitives, long constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }

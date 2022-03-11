@@ -167,7 +167,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newOr(Expression... values) {
-        return new Or(Identifier.CONSTANT, PRIMITIVES, Arrays.stream(values).toList());
+        return new Or(Identifier.constant("or"), PRIMITIVES, Arrays.stream(values).toList());
     }
 
     protected static Expression negate(Expression value) {
@@ -179,12 +179,12 @@ public abstract class CommonAbstractValue {
     }
 
     protected static InlineConditional newInline(Expression c, Expression l, Expression r) {
-        return new InlineConditional(Identifier.CONSTANT, context.getAnalyserContext(),
+        return new InlineConditional(Identifier.constant("newInline"), context.getAnalyserContext(),
                 c, l, r);
     }
 
     protected static Expression newEquals(Expression l, Expression r) {
-        return new Equals(Identifier.CONSTANT, PRIMITIVES, l, r);
+        return new Equals(Identifier.constant("newEquals"), PRIMITIVES, l, r);
     }
 
     static ParameterInfo createParameter() {

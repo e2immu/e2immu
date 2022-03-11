@@ -134,7 +134,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             TypeInfo map = typeMap.get(Map.class);
-            FieldInfo fieldInfo = new FieldInfo(Identifier.CONSTANT,
+            FieldInfo fieldInfo = new FieldInfo(Identifier.constant("test"),
                     typeMap.getPrimitives().charParameterizedType(), "test", system);
             fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder().build());
             FieldReference fr1 = new FieldReference(typeMap, fieldInfo);

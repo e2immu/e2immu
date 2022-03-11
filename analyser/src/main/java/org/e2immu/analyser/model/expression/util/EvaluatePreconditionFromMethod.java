@@ -36,6 +36,7 @@ public class EvaluatePreconditionFromMethod {
 
     public static Precondition evaluate(EvaluationResult context,
                                         EvaluationResult.Builder builder,
+                                        Identifier identifierOfMethodCall,
                                         MethodInfo methodInfo,
                                         Expression scopeObject,
                                         List<Expression> parameterValues) {
@@ -57,7 +58,7 @@ public class EvaluatePreconditionFromMethod {
         }
         if (precondition.isDelayed() || scopeObject.isDelayed()) {
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay());
-            return Precondition.forDelayed(causes, context.getPrimitives());
+            return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
         }
 
         // there is a precondition, and we have a list of values... let's see what we can learn

@@ -36,7 +36,7 @@ public final class IntConstant extends BaseExpression implements ConstantExpress
     private final int constant;
 
     public IntConstant(Primitives primitives, int constant) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(constant));
         this.primitives = primitives;
         this.constant = constant;
     }
