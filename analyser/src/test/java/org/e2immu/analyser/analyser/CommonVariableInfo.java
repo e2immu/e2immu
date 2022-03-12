@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -83,8 +86,8 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
-            return !(value instanceof NullConstant); // no opinion
+        public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+            return DV.fromBoolDv(!(value instanceof NullConstant)); // no opinion
         }
 
         @Override

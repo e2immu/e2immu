@@ -96,7 +96,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         };
         // FIXME this error is problematic, needs solving!!
         testClass("VariableInLoop_1", 1, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

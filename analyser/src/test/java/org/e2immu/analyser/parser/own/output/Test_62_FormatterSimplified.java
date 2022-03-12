@@ -164,7 +164,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? "null==<f:forwardInfo.guide>" : "null==forwardInfo.guide";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<null-check>";
+                        case 1 -> "null==<f:forwardInfo.guide>";
+                        default -> "null==forwardInfo.guide";
+                    };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -244,8 +248,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2 ? "9==<m:index>&&null!=<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
-                            "null!=(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo&&9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
+                    String expect = switch (d.iteration()) {
+                        case 0, 1, 2 -> "<null-check>&&9==<m:index>";
+                        default -> "null!=(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo&&9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
+                    };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }

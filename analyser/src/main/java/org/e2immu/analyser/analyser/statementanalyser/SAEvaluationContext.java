@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 import static org.e2immu.analyser.analyser.Stage.INITIAL;
+import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.model.MultiLevel.NULLABLE_DV;
 
 class SAEvaluationContext extends AbstractEvaluationContextImpl {
@@ -230,17 +231,18 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
          */
 
     @Override
-    public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
         if (value instanceof IsVariableExpression ve) {
             VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
-            if (cnn.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
+            DV cnnTF = cnn.isDelayed() ? cnn : cnn.equals(NOT_INVOLVED_DV) ? DV.FALSE_DV : DV.fromBoolDv(!cnn.equals(NULLABLE_DV));
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-            if (nne.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
-            return notNullAccordingToConditionManager(ve.variable());
+            DV nneTF = nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
+            DV cm = notNullAccordingToConditionManager(ve.variable());
+            return cnnTF.max(nneTF).max(cm);
         }
-        return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION,
-                true, false));
+        DV nne = getProperty(value, NOT_NULL_EXPRESSION, true, false);
+        return nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
     }
 
     /*
@@ -381,8 +383,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // we return even if cmNn would be ENN, because our value could be higher
             return cnnInMap;
         }
-        boolean cmNn = notNullAccordingToConditionManager(variable);
-        DV cm = cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV;
+        DV cmNn = notNullAccordingToConditionManager(variable);
+        DV cm = cmNn.isDelayed() ? cmNn : cmNn.valueIsTrue() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV;
         if (isBreakInitDelay) return cm;
         return cnnInMap.max(cm);
     }

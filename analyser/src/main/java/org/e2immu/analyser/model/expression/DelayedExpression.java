@@ -193,6 +193,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, "<simplification>", returnType, LinkedVariables.delayedEmpty(causes), causes);
     }
 
+    public static Expression forNullCheck(Identifier identifier, Primitives primitives, CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "<null-check>", primitives.booleanParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

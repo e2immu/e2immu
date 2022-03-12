@@ -117,7 +117,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
      */
 
     @Test
-    public void test4() throws IOException {
+    public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -131,7 +131,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"
+                String expected = d.iteration() == 0 ? "<null-check>?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -318,7 +318,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==<f:from.typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>"
+                                ? "<null-check>?<s:int>:<m:isEmpty>?<s:int>:<return value>"
                                 : "null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -369,7 +369,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null!=<f:target.typeParameter>" : "false";
+                    String expected = d.iteration() == 0 ? "<null-check>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1-C" : "NEVER:0";

@@ -226,11 +226,11 @@ public class Test_05_Final extends CommonTestRunner {
         };
 
         testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

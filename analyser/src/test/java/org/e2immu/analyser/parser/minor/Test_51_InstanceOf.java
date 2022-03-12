@@ -397,9 +397,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
 
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
@@ -928,7 +928,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
-        testClass("InstanceOf_15", 3, 0, new DebugConfiguration.Builder()
+        testClass("InstanceOf_15", 2, 2, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

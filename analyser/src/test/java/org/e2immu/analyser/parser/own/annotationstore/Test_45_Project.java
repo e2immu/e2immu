@@ -204,9 +204,9 @@ public class Test_45_Project extends CommonTestRunner {
                 assertEquals("previousRead:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
-        testClass("Project_0", 1, 10, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+        testClass("Project_0", 2, 10, new DebugConfiguration.Builder()
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

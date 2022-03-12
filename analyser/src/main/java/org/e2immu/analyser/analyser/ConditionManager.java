@@ -394,8 +394,8 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
-            return false;
+        public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+            return DV.FALSE_DV;
         }
 
         @Override

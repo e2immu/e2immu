@@ -1979,9 +1979,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         candidateVariablesForNullPtrWarningStream().forEach(variable -> {
             VariableInfo vi = findOrNull(variable, Stage.MERGE);
             DV cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
-            if (cnn.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+            if (cnn.equals(NULLABLE_DV)) {
                 ensure(Message.newMessage(location(EVALUATION), Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
-                        "Variable: " + variable.fullyQualifiedName()));
+                       "Variable: " + variable.fullyQualifiedName()));
             }
         });
     }

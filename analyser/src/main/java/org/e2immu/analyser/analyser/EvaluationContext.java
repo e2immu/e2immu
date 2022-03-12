@@ -182,16 +182,16 @@ public interface EvaluationContext {
         return null;
     }
 
-    default boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
-        return true;
+    default DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+        return DV.FALSE_DV;
     }
 
-    default boolean notNullAccordingToConditionManager(Variable variable) {
-        return false;
+    default DV notNullAccordingToConditionManager(Variable variable) {
+        return DV.FALSE_DV;
     }
 
-    default boolean notNullAccordingToConditionManager(Expression expression) {
-        return false;
+    default DV notNullAccordingToConditionManager(Expression expression) {
+        return DV.FALSE_DV;
     }
 
     default LinkedVariables linkedVariables(Variable variable) {

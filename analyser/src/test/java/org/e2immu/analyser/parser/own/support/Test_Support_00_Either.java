@@ -145,11 +145,11 @@ public class Test_Support_00_Either extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

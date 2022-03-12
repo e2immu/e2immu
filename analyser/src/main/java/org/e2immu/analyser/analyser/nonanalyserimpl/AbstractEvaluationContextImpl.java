@@ -16,9 +16,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -26,7 +24,6 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,20 +54,26 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return conditionManager;
     }
 
+    /**
+     * @return delay, DV.TRUE_DV, DV.FALSE_DV
+     */
     @Override
-    public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
-        Expression valueIsNull = new Equals(Identifier.generate("is not null equals"),
-                getPrimitives(), NullConstant.NULL_CONSTANT, value);
-        Expression combined = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull);
-        if (combined instanceof BooleanConstant boolValue) {
-            return !boolValue.constant();
-        }
+    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+        Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
+        Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull);
+        DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
-        return MultiLevel.isEffectivelyNotNull(nne);
+        DV nneToTF;
+        if (nne.isDelayed()) {
+            nneToTF = value.isDelayed() ? nne: DV.FALSE_DV;
+        } else {
+            nneToTF = nne.equals(MultiLevel.NULLABLE_DV) ? DV.FALSE_DV : DV.TRUE_DV;
+        }
+        return negated.max(nneToTF);
     }
 
     @Override
-    public boolean notNullAccordingToConditionManager(Expression expression) {
+    public DV notNullAccordingToConditionManager(Expression expression) {
         EvaluationResult context = EvaluationResult.from(this);
         if (expression.returnType().isNotBooleanOrBoxedBoolean()) {
             // do not use the Condition manager to check for null in creation of isNull
@@ -78,11 +81,12 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
                     context, expression, NullConstant.NULL_CONSTANT, false);
             if (isNull.isBoolValueFalse()) {
                 // this is not according to the condition manager, but always not null
-                return false;
+                return DV.FALSE_DV;
             }
-            return conditionManager.evaluate(context, isNull).isBoolValueFalse();
+            if (isNull.isDelayed()) return isNull.causesOfDelay();
+            return conditionManager.evaluate(context, isNull).invertTrueFalse();
         }
-        return conditionManager.evaluate(context, expression).isBoolValueTrue();
+        return conditionManager.evaluate(context, expression).invertTrueFalse();
     }
 
     /*
@@ -90,7 +94,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
      */
 
     @Override
-    public boolean notNullAccordingToConditionManager(Variable variable) {
+    public DV notNullAccordingToConditionManager(Variable variable) {
         LinkedVariables linkedVariables = linkedVariables(variable);
         Set<Variable> assignedVariables = linkedVariables == null ? Set.of(variable)
                 // always include myself!
@@ -99,16 +103,16 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
         EvaluationResult context = EvaluationResult.from(this);
         Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(context, false);
-        if (!Collections.disjoint(notNullVariablesInState, assignedVariables)) return true;
+        if (!Collections.disjoint(notNullVariablesInState, assignedVariables)) return DV.TRUE_DV;
 
         Set<Variable> notNullVariablesInCondition = conditionManager
                 .findIndividualNullInCondition(context, false);
-        if (!Collections.disjoint(notNullVariablesInCondition, assignedVariables)) return true;
+        if (!Collections.disjoint(notNullVariablesInCondition, assignedVariables)) return DV.TRUE_DV;
         if (variable instanceof FieldReference) {
             Set<Variable> notNullVariablesInPrecondition = conditionManager
                     .findIndividualNullInPrecondition(context, false);
-            return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables);
+            return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables) ? DV.TRUE_DV : DV.FALSE_DV;
         }
-        return false;
+        return DV.FALSE_DV;
     }
 }

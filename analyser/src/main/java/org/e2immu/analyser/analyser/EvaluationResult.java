@@ -126,13 +126,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     of the expression.
      */
 
-    public boolean isNotNull0(boolean useEnnInsteadOfCnn) {
+    public DV isNotNull0(boolean useEnnInsteadOfCnn) {
         assert evaluationContext != null;
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
             if (cd != null) {
                 DV inChangeData = cd.properties.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-                if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
+                if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return DV.TRUE_DV;
             }
         }
         return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
@@ -374,8 +374,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
 
             if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
-                    (evaluationContext.notNullAccordingToConditionManager(variable)
-                            || evaluationContext.notNullAccordingToConditionManager(value))) {
+                    (evaluationContext.notNullAccordingToConditionManager(variable).valueIsTrue()
+                            || evaluationContext.notNullAccordingToConditionManager(value).valueIsTrue())) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
@@ -767,13 +767,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return statementTime;
         }
 
-        public boolean isNotNull(Expression expression) {
+        public DV isNotNull(Expression expression) {
             assert evaluationContext != null;
             if (value instanceof VariableExpression variableExpression) {
                 ChangeData cd = valueChanges.get(variableExpression.variable());
                 if (cd != null) {
                     DV inChangeData = cd.properties.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-                    if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
+                    if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return DV.TRUE_DV;
                 }
             }
             return evaluationContext.isNotNull0(expression, false);

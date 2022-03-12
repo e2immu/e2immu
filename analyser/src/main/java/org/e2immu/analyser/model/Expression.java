@@ -241,4 +241,10 @@ public interface Expression extends Element, Comparable<Expression> {
     default boolean isNotYetAssigned() {
         return false;
     }
+
+    default DV invertTrueFalse() {
+        if (isDelayed()) return causesOfDelay();
+        if (isBoolValueFalse()) return DV.TRUE_DV;
+        return DV.FALSE_DV;
+    }
 }

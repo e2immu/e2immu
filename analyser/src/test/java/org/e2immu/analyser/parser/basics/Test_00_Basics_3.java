@@ -73,14 +73,14 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    String expect = d.iteration() == 0 ? "null!=<f:s>" : "true";
+                    String expect = d.iteration() == 0 ? "<null-check>" : "true";
                     assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
                 String expectValue = switch (d.iteration()) {
                     case 0 -> "<f:s>";
-                    case 1 -> "<vp:s:initial:this.s@Method_setS1_1-C;values:this.s@Field_s>";
+                    case 1 -> "<vp:s:cnn:this.s@Method_setS1_1-C;initial:this.s@Method_setS1_1-C;not_null:this.s@Method_setS1_1-C;values:this.s@Field_s>";
                     default -> "s$0";
                 };
                 assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -221,7 +221,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(GET_S_RET_VAR, d.variableName());
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<f:s>";
-                        case 1 -> "<vp:s:initial:this.s@Method_setS1_1-C;values:this.s@Field_s>";
+                        case 1 -> "<vp:s:cnn:this.s@Method_setS1_1-C;initial:this.s@Method_setS1_1-C;not_null:this.s@Method_setS1_1-C;values:this.s@Field_s>";
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -295,7 +295,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1-C;values:this.s@Field_s"
+                String expect = d.iteration() == 0
+                        ? "cnn:this.s@Method_setS1_1-C;initial:this.s@Method_setS1_1-C;not_null:this.s@Method_setS1_1-C;values:this.s@Field_s"
                         : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 

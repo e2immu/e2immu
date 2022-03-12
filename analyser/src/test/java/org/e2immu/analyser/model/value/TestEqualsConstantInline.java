@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
@@ -182,8 +183,8 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
 
     @Test
     public void test14() {
-        boolean notNull = context.evaluationContext().isNotNull0(newInt(3), false);
-        assertTrue(notNull);
+        DV notNull = context.evaluationContext().isNotNull0(newInt(3), false);
+        assertTrue(notNull.valueIsTrue());
     }
 
     @Test

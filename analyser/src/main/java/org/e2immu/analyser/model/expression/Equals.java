@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -75,12 +76,17 @@ public class Equals extends BinaryOperator {
         Primitives primitives = context.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
-        //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
-
         if (checkForNull) {
-            if (l instanceof NullConstant && context.evaluationContext().isNotNull0(r, false) ||
-                    r instanceof NullConstant && context.evaluationContext().isNotNull0(l, false))
-                return new BooleanConstant(primitives, false);
+            if (l instanceof NullConstant) {
+                DV dv = context.evaluationContext().isNotNull0(r, false);
+                if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
+                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
+            }
+            if (r instanceof NullConstant) {
+                DV dv = context.evaluationContext().isNotNull0(l, false);
+                if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
+                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
+            }
         }
 
         if (l instanceof ConstantExpression<?> lc
@@ -202,23 +208,23 @@ public class Equals extends BinaryOperator {
             return null;
         }
 
-        boolean ifTrueGuaranteedNotEqual;
-        boolean ifFalseGuaranteedNotEqual;
+        DV ifTrueGuaranteedNotEqual;
+        DV ifFalseGuaranteedNotEqual;
 
         Expression recursively1;
         if (inlineConditional.ifTrue instanceof InlineConditional inlineTrue) {
             recursively1 = tryToRewriteConstantEqualsInline(context, c, inlineTrue);
-            ifTrueGuaranteedNotEqual = recursively1 != null && recursively1.isBoolValueFalse();
+            ifTrueGuaranteedNotEqual = recursively1 != null && recursively1.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively1 = null;
             if (c instanceof NullConstant) {
                 ifTrueGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifTrue, false);
             } else {
-                ifTrueGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueFalse();
+                ifTrueGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
             }
         }
 
-        if (ifTrueGuaranteedNotEqual) {
+        if (ifTrueGuaranteedNotEqual.valueIsTrue()) {
             Expression notCondition = Negation.negate(context, inlineConditional.condition);
             return And.and(context,
                     notCondition, Equals.equals(context, inlineConditional.ifFalse, c));
@@ -227,17 +233,17 @@ public class Equals extends BinaryOperator {
         Expression recursively2;
         if (inlineConditional.ifFalse instanceof InlineConditional inlineFalse) {
             recursively2 = tryToRewriteConstantEqualsInline(context, c, inlineFalse);
-            ifFalseGuaranteedNotEqual = recursively2 != null && recursively2.isBoolValueFalse();
+            ifFalseGuaranteedNotEqual = recursively2 != null && recursively2.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively2 = null;
             if (c instanceof NullConstant) {
                 ifFalseGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifFalse, false);
             } else {
-                ifFalseGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueFalse();
+                ifFalseGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
             }
         }
 
-        if (ifFalseGuaranteedNotEqual) {
+        if (ifFalseGuaranteedNotEqual.valueIsTrue()) {
             return And.and(context,
                     inlineConditional.condition, Equals.equals(context, inlineConditional.ifTrue, c));
         }

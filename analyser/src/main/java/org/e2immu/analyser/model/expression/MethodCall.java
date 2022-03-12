@@ -791,7 +791,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 DV methodNotNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
                 if (methodNotNull.isDone()) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
-                    if (!isNotNull && !builder.isNotNull(this)) {
+                    if (!isNotNull && !builder.isNotNull(this).valueIsTrue()) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
                     }
