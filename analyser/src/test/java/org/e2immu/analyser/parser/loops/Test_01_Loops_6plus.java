@@ -68,7 +68,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.2".equals(d.statementId())) {
                     // in the first iteration (0), we compare 1+<v:i> against <v:i>, which should be false but because of
                     // the equality in DVE, we cannot tell
-                    String expect = d.iteration() == 0 ? "false" : "true";
+                    String expect = d.iteration() == 0 ? "<simplification>" : "true";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -124,12 +124,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     assertEquals(expectInterrupt, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                 }
                 if ("1.0.2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "true" : "false";
+                    String expect = d.iteration() == 0 ? "!<simplification>" : "false";
                     assertEquals(expect, d.state().toString());
                     if (d.iteration() == 0) {
                         assertFalse(d.statementAnalysis().flowData().interruptsFlowIsSet());
                     } else {
-                        assertEquals("{}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
+                        assertEquals("{break=CONDITIONALLY:1}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     }
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {

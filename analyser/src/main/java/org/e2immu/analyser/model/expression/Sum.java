@@ -52,19 +52,24 @@ public class Sum extends BinaryOperator {
 
     // we try to maintain a sum of products
     public static Expression sum(EvaluationResult evaluationContext, Expression l, Expression r) {
-        return sum(Identifier.joined("sum", List.of(l.getIdentifier(), r.getIdentifier())),
+        CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
+        Identifier identifier = Identifier.joined("sum", List.of(l.getIdentifier(), r.getIdentifier()));
+        Expression expression = sum(identifier,
                 evaluationContext, l, r, true);
+        return causes.isDelayed() && !expression.isDelayed() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
     }
 
     public static Expression sum(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
-        return sum(identifier, evaluationContext, l, r, true);
+        CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
+        Expression expression = sum(identifier, evaluationContext, l, r, true);
+        return causes.isDelayed() && !expression.isDelayed() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
     }
 
     private static Expression sum(Identifier identifier,
                                   EvaluationResult evaluationContext, Expression l, Expression r, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (l.equals(r)) return Product.product(evaluationContext, new IntConstant(primitives, 2), l);
+        if (l.equals(r)) return Product.product(identifier, evaluationContext, new IntConstant(primitives, 2), l);
         if (l instanceof IntConstant li && li.constant() == 0) return r;
         if (r instanceof IntConstant ri && ri.constant() == 0) return l;
         if (l instanceof Negation ln && ln.expression.equals(r) ||

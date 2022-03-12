@@ -189,6 +189,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, "<eci>", ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, LinkedVariables.EMPTY, eciDelay);
     }
 
+    public static Expression forSimplification(Identifier identifier, ParameterizedType returnType, CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "<simplification>", returnType, LinkedVariables.delayedEmpty(causes), causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

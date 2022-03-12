@@ -43,7 +43,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                                       Variable variable,
                                       int statementTime,
                                       CausesOfDelay causesOfDelay) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(variable.fullyQualifiedName()+":"+statementTime));
         this.msg = msg;
         this.fqn = "<" + variable.fullyQualifiedName() + ":" + statementTime + ">";
         this.statementTime = statementTime;

@@ -159,8 +159,8 @@ public class StateData {
 
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
 
-    public void setValueOfExpression(Expression value, boolean isDelayed) {
-        if (isDelayed) {
+    public void setValueOfExpression(Expression value) {
+        if (value.isDelayed()) {
             assert valueOfExpression.isVariable()
                     : "Already have final value '" + valueOfExpression.get() + "'; trying to write delayed value '" + value + "'";
             valueOfExpression.setVariable(value);

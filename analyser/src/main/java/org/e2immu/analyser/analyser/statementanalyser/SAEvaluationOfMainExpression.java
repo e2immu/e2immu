@@ -143,7 +143,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
                 CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay), true);
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
                 return eciDelay;
             }
             if (!assignments.isBooleanConstant()) {
@@ -189,12 +189,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         // the value can be delayed even if it is "true", for example (Basics_3)
         // see Precondition_3 for an example where different values arise, because preconditions kick in
-        boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
         if (statement() instanceof ExplicitConstructorInvocation) {
             value = UnknownExpression.forExplicitConstructorInvocation();
-            valueIsDelayed2 = false;
         }
-        statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
+        statementAnalysis.stateData().setValueOfExpression(value);
 
         return ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop);
     }
@@ -227,7 +225,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
                 CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay), true);
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
                 return eciDelay;
             }
             if (!assignments.isBooleanConstant()) {

@@ -63,7 +63,11 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId())) {
-                String expected = d.iteration() == 1 ? "-1==<vp:i:[11 delays]>-<wrapped:i>" : "true";
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<simplification>";
+                    case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                    default -> "true";
+                };
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -96,7 +100,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 2, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 3, MUTABLE_DV, EXTERNAL_IMMUTABLE);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
@@ -154,15 +158,15 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
                     String expect = switch (d.iteration()) {
-                        case 0 -> "<f:i>==<f:i>";
+                        case 0 ->  "<simplification>" ;
                         case 1 -> "<wrapped:i>";
                         default -> "true";
                     };
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
@@ -268,14 +272,14 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {
-                    case 0 -> "<f:i>==<f:i>";
+                    case 0 -> "<simplification>";
                     case 1 -> "<wrapped:i>";
                     default -> "true";
                 };
-                assertEquals("true", d.methodAnalysis().getLastStatement()
+                assertEquals(expect, d.methodAnalysis().getLastStatement()
                         .getVariable(INC3_RETURN_VAR).current().getValue().toString());
                 String srv = d.iteration() <= 1 ? "<m:increment3>" : "true";
-                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
 
             }
         };

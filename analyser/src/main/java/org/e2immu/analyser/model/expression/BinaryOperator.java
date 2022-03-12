@@ -138,8 +138,18 @@ public class BinaryOperator extends BaseExpression implements Expression {
         EvaluationResult leftResult = lhs.evaluate(context, forward);
         EvaluationResult rightResult = rhs.evaluate(context, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
-        builder.setExpression(determineValue(primitives, builder, leftResult, rightResult, context));
+        builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context));
         return builder.build();
+    }
+
+    private Expression determineValueProtect(Primitives primitives,
+                                             EvaluationResult.Builder builder,
+                                             EvaluationResult left,
+                                             EvaluationResult right,
+                                             EvaluationResult context) {
+        CausesOfDelay causes = left.causesOfDelay().merge(right.causesOfDelay());
+        Expression expression = determineValue(primitives, builder, left, right, context);
+        return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
     }
 
     private Expression determineValue(Primitives primitives,
@@ -183,14 +193,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
                     r == NullConstant.NULL_CONSTANT && left.isNotNull0(false)) {
                 return new BooleanConstant(primitives, true);
             }
-            return Negation.negate(context,                    Equals.equals(identifier, context, l, r));
+            return Negation.negate(context, Equals.equals(identifier, context, l, r));
         }
         if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return Negation.negate(context,                    Equals.equals(identifier, context, l, r));
+            return Negation.negate(context, Equals.equals(identifier, context, l, r));
         }
 
         // from here on, straightforward operations

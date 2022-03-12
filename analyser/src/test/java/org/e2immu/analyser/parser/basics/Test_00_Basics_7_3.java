@@ -73,11 +73,11 @@ public class Test_00_Basics_7_3 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1.0.3".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<f:i>==<f:i>";
+                            case 0 -> "<simplification>";
                             case 1 -> "<wrapped:i>";
                             default -> "true";
                         };
-                        assertEquals("true", d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }

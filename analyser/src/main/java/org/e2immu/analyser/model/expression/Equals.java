@@ -65,6 +65,13 @@ public class Equals extends BinaryOperator {
 
     public static Expression equals(Identifier identifier,
                                     EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+        CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
+        Expression expression = internalEquals(identifier, context, l, r, checkForNull);
+        return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
+    }
+
+    private static Expression internalEquals(Identifier identifier,
+                                             EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
         Primitives primitives = context.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 

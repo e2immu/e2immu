@@ -131,7 +131,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     }
 
     public VariableExpression(Variable variable, Suffix suffix) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(variable.fullyQualifiedName()+suffix));
         this.variable = variable;
         this.suffix = suffix;
         // a variable expression is never delayed; however, <out of scope> is possible (see Test_Util_06_DependencyGraph)

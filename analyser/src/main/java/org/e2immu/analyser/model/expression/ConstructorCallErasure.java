@@ -34,7 +34,7 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
     private final ParameterizedType formalType;
 
     public ConstructorCallErasure(ParameterizedType formalType) {
-        super(Identifier.CONSTANT);
+        super(Identifier.constant(formalType));
         this.formalType = formalType;
     }
 

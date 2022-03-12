@@ -19,15 +19,19 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -165,6 +169,19 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder().build());
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("methodE".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Expression expression = d.statementAnalysis().stateData().valueOfExpression.get();
+                    assertEquals("instance type boolean", expression.toString());
+                    if (expression instanceof Instance i) {
+                        assertTrue(i.identifier instanceof Identifier.ListOfIdentifiers);
+                    } else fail();
+                }
+            }
+        };
+        testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
     }
 }

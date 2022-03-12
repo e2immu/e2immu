@@ -208,8 +208,8 @@ public class EvaluateMethodCall {
                         linkedVariablesForDelay.apply(delays), delays);
             } else {
                 methodValue = Instance.forMethodResult(Identifier.joined("mc", ListUtil.immutableConcat(
-                                List.of(methodInfo.identifier, objectValue.getIdentifier()),
-                                parameters.stream().map(Expression::getIdentifier).toList())),
+                                List.of(methodInfo.identifier, methodCall.object.getIdentifier()),
+                                methodCall.parameterExpressions.stream().map(Expression::getIdentifier).toList())),
                         concreteReturnType, valueProperties);
             }
         } else {
