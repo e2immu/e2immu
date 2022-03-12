@@ -14,28 +14,16 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotModified;
+import java.util.ArrayList;
+import java.util.List;
 
-public class InlineMethods_2 {
-    private final int r;
+public class InlinedMethod_1 {
 
-    public InlineMethods_2(int r) {
-        this.r = r;
+    public static int length(List<String> list) {
+        return copy(list).size();
     }
 
-    @NotModified
-    public int plus(int i) {
-        return i + r;
-    }
-
-    @Constant("2")
-    public int difference31() {
-        return plus(3) - plus(1);
-    }
-
-    @Constant("0")
-    public int difference11() {
-        return plus(1) - plus(1);
+    private static List<String> copy(List<String> list) {
+        return new ArrayList<>(list);
     }
 }

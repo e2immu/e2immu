@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,8 +43,9 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
 
         // IMPROVE also add assignments
         // catch all variable expressions
-        Set<IsVariableExpression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
-                .flatMap(e -> e.collect(IsVariableExpression.class).stream()).collect(Collectors.toUnmodifiableSet());
+        TreeSet<IsVariableExpression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
+                .flatMap(e -> e.collect(IsVariableExpression.class).stream())
+                .collect(Collectors.toCollection(TreeSet::new));
         List<Expression> newExpressions = new LinkedList<>(variableExpressions);
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);

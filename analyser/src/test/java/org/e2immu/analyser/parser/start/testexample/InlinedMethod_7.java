@@ -14,28 +14,13 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
+// variable field
 
-public class InlineMethods_0 {
+public class InlinedMethod_7 {
 
-    private static int product(int x, int y) {
-        return x*y;
+    public static int doNotExpand() {
+        InlinedMethod_6.VariableField variableField = new InlinedMethod_6.VariableField();
+        variableField.setI(3);
+        return variableField.getI(); // variable field expansion not allowed, different primary type
     }
-    private static int square(int x) {
-        return product(x, x);
-    }
-
-    private static int withIntermediateVariables(int x, int y) {
-        int sum = x+y;
-        int diff = x-y;
-        return sum * diff;
-    }
-
-    @Constant("6")
-    public static final int m1 = product(2, 3);
-    @Constant("16")
-    public static final int m2 = square(4);
-
-    @Constant("-24")
-    public static final int m3 = withIntermediateVariables(5, 7);
 }

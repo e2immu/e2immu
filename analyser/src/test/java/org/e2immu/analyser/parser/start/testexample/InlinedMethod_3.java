@@ -14,13 +14,26 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-// variable field
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotModified;
 
-public class InlineMethods_7 {
+import java.util.Random;
 
-    public static int doNotExpand() {
-        InlineMethods_6.VariableField variableField = new InlineMethods_6.VariableField();
-        variableField.setI(3);
-        return variableField.getI(); // variable field expansion not allowed, different primary type
+public class InlinedMethod_3 {
+
+    @NotModified
+    public static int plusRandom(int i) {
+        int r = new Random().nextInt();
+        return i + r;
+    }
+
+    @Constant(absent = true)
+    public static int difference31() {
+        return plusRandom(3) - plusRandom(1);
+    }
+
+    @Constant(absent = true)
+    public static int difference11() {
+        return plusRandom(1) - plusRandom(1);
     }
 }

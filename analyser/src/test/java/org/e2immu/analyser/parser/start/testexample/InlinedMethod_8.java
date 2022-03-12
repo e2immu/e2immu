@@ -12,12 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import java.util.List;
 import java.util.Set;
 
-public class IfStatement_12 {
+public class InlinedMethod_8 {
 
     static class ParameterizedType {
         private final String s;
@@ -48,7 +48,7 @@ public class IfStatement_12 {
     }
 
     interface InspectionProvider {
-        MethodInspection getMethodInspection(IfStatement_12 ifStatement_12);
+        MethodInspection getMethodInspection(InlinedMethod_8 inlinedMethods8);
     }
 
     record ParameterInfo(ParameterizedType parameterizedType, int index) {
@@ -56,7 +56,7 @@ public class IfStatement_12 {
 
     private final String name;
 
-    public IfStatement_12(String name) {
+    public InlinedMethod_8(String name) {
         this.name = name;
     }
 

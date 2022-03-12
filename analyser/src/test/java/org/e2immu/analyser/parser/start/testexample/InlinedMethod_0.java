@@ -16,38 +16,26 @@ package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Constant;
 
-// expansion of constant
+public class InlinedMethod_0 {
 
-public class InlineMethods_5 {
-
-    public final int i;
-
-    public InlineMethods_5(int p) {
-        i = p;
+    private static int product(int x, int y) {
+        return x*y;
+    }
+    private static int square(int x) {
+        return product(x, x);
     }
 
-    public int sum(int j) {
-        return i + j;
+    private static int withIntermediateVariables(int x, int y) {
+        int sum = x+y;
+        int diff = x-y;
+        return sum * diff;
     }
 
-    public int sum5() {
-        return sum(5);
-    }
+    @Constant("6")
+    public static final int m1 = product(2, 3);
+    @Constant("16")
+    public static final int m2 = square(4);
 
-    @Constant("11")
-    public static int expand1() {
-        InlineMethods_5 i5 = new InlineMethods_5(6);
-        return i5.sum5();
-    }
-
-    @Constant("7")
-    public static int expand2() {
-        InlineMethods_5 i5 = new InlineMethods_5(5);
-        return i5.sum(2);
-    }
-
-    public static int expand3(int a, int b) {
-        InlineMethods_5 il5 = new InlineMethods_5(a);
-        return il5.sum(b);
-    }
+    @Constant("-24")
+    public static final int m3 = withIntermediateVariables(5, 7);
 }

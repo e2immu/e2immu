@@ -36,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
@@ -177,9 +176,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        Set<Variable> targetVariables = translation.values().stream()
-                .flatMap(e -> e.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
-        EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext(), targetVariables);
+        EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         EvaluationResult result = expression.reEvaluate(closureContext, translation);
         if (expression instanceof InlinedMethod im) {
@@ -280,11 +277,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     } else {
                         // try to replace parameters hidden in the scope of this field reference (See e.g. Test_Output_03_Formatter)
                         boolean success = false;
-                        for(ParameterInfo pi: methodInfo.methodInspection.get().getParameters()) {
+                        for (ParameterInfo pi : methodInfo.methodInspection.get().getParameters()) {
                             TranslationMap tm = new TranslationMapImpl.Builder()
                                     .put(new VariableExpression(pi), parameters.get(pi.index)).build();
                             Expression replaced = variableExpression.translate(evaluationContext.getAnalyserContext(), tm);
-                            if(replaced != variableExpression) {
+                            if (replaced != variableExpression) {
                                 replacement = replaced;
                                 success = true;
                                 break;
@@ -436,27 +433,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
         private final EvaluationContext evaluationContext;
-        private final Set<Variable> acceptedVariables;
 
-        protected EvaluationContextImpl(EvaluationContext evaluationContext, Set<Variable> targetVariables) {
+        protected EvaluationContextImpl(EvaluationContext evaluationContext) {
             super(evaluationContext.getIteration(),
                     ConditionManager.initialConditionManager(evaluationContext.getPrimitives()), null);
             this.evaluationContext = evaluationContext;
-            this.acceptedVariables = Stream.concat(variables(true).stream(),
-                    targetVariables.stream()).collect(Collectors.toUnmodifiableSet());
         }
 
         protected EvaluationContextImpl(EvaluationContextImpl parent, ConditionManager conditionManager) {
             super(parent.iteration, conditionManager, null);
             this.evaluationContext = parent.evaluationContext;
-            this.acceptedVariables = parent.acceptedVariables;
-        }
-
-        private void ensureVariableIsKnown(Variable variable) {
-            assert variable instanceof This || acceptedVariables.contains(variable) :
-                    "there should be no other variables in this expression: " +
-                            variable + " is not in accepted variables\n" + acceptedVariables +
-                            " of expression\n" + expression + "\nvariablesOfExpression is " + variablesOfExpression;
         }
 
         @Override
@@ -514,7 +500,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-            ensureVariableIsKnown(variable);
             return new VariableExpression(variable);
         }
 
@@ -542,7 +527,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 LOGGER.debug("Enquiring after {} in method {}", variable.simpleName(), methodInfo.fullyQualifiedName);
                 return property.falseDv;
             }
-            ensureVariableIsKnown(variable);
             if (evaluationContext.isPresent(variable)) {
                 return evaluationContext.getProperty(variable, property);
             }
@@ -556,13 +540,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 LOGGER.debug("Enquiring after {} in method {}", pi.simpleName(), methodInfo.fullyQualifiedName);
                 return property.falseDv;
             }
-            ensureVariableIsKnown(variable);
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, property);
         }
 
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            ensureVariableIsKnown(variable);
             return LinkedVariables.EMPTY;
         }
 
@@ -578,7 +560,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public Instance currentValue(Variable variable) {
-            ensureVariableIsKnown(variable);
             return Instance.forInlinedMethod(identifier, variable.parameterizedType());
         }
 

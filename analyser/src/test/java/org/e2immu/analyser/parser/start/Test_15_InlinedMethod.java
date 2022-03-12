@@ -31,8 +31,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Test_15_InlineMethods extends CommonTestRunner {
-    public Test_15_InlineMethods() {
+public class Test_15_InlinedMethod extends CommonTestRunner {
+    public Test_15_InlinedMethod() {
         super(false);
     }
 
@@ -42,7 +42,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
             MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt();
             assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
         };
-        testClass("InlineMethods_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_0", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -52,7 +52,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
      */
     @Test
     public void test_1() throws IOException {
-        testClass("InlineMethods_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -72,14 +72,14 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 assertEquals("0", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testClass("InlineMethods_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_4() throws IOException {
-        testClass("InlineMethods_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -89,7 +89,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
             if ("expand3".equals(d.methodInfo().name)) {
                 if ("il5".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? "<new:InlineMethods_5>" : "new InlineMethods_5(a)";
+                        String expect = d.iteration() <= 1 ? "<new:InlinedMethod_5>" : "new InlinedMethod_5(a)";
                         assertEquals(expect, d.currentValue().toString());
                         if (d.iteration() > 1) {
                             if (d.currentValue() instanceof ConstructorCall newObject) {
@@ -123,7 +123,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 }
             }
         };
-        testClass("InlineMethods_5", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -162,12 +162,12 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testClass("InlineMethods_6", 0, 0, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
-    // uses InlineMethods_6
+    // uses InlinedMethod_6
     @Test
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -180,7 +180,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
-        testClass(List.of("InlineMethods_6", "InlineMethods_7"), 0, 0, new DebugConfiguration.Builder()
+        testClass(List.of("InlinedMethod_6", "InlinedMethod_7"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
