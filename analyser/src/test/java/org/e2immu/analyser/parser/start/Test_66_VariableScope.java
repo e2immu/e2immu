@@ -102,7 +102,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_1", 0, 0, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -444,8 +444,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         } else if ("<m:computeIfAbsent>".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "!<m:equals>&&null!=<m:packageName>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
-                                case 1 -> "!<m:equals>&&null!=<f:typeInfo.packageName>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
+                                case 0 -> "<null-check>&&!<m:equals>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
+                                case 1 -> "<null-check>&&!<m:equals>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
                                 default -> "instance type boolean";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -466,8 +466,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_6", 1, 0, new DebugConfiguration.Builder()
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

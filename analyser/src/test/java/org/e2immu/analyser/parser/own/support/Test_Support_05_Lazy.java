@@ -76,9 +76,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
-                        case 1 -> "<f*:t>";
-                        case 2 -> "<wrapped:t>";
-                        case 3 -> "<s:T>";
+                        case 1 -> "<null-check>?<vp:t:cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                        case 2, 3 -> "<wrapped:t>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
@@ -121,18 +120,13 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
-                // delay gets broken from iteration 1; state is forced to true
-                String expect = switch (d.iteration()) {
-                    case 0 -> "null==<f:t>";
-                    case 1, 2 -> "true";
-                    default -> "null==t$0";
-                };
-                assertEquals("true", d.state().toString());
+                String state = d.iteration() <= 3 ? "!<null-check>" : "true";
+                assertEquals(state, d.state().toString());
             }
             if ("2".equals(d.statementId())) {
-                // important: if the state says something about t, then after assignment to t this should be
-                // removed!
-                assertEquals("true", d.state().toString());
+                // important: if the state says something about t, then after assignment to t this should be removed!
+                String state = d.iteration() <= 3 ? "!<null-check>" : "true";
+                assertEquals(state, d.state().toString());
                 assertEquals("", d.statementAnalysis().stateData().equalityAccordingToStateStream()
                         .map(Object::toString).collect(Collectors.joining(",")));
             }
@@ -144,8 +138,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
-                case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_2-C;values:this.t@Field_t";
-                case 1 -> "break_init_delay:this.t@Method_get_2-C;initial:this.supplier@Method_get_1-C;values:this.t@Field_t";
+                case 0 -> "cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t";
+                case 1 -> "break_init_delay:this.t@Method_get_0-C;cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,nullable instance type T/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
@@ -182,11 +176,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

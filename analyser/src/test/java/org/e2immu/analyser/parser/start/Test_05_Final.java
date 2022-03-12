@@ -120,7 +120,7 @@ public class Test_05_Final extends CommonTestRunner {
                 }
                 if (S5.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "null==<f:s5>?\"abc\":null" : "\"abc\"";
+                        String expectValue = d.iteration() == 0 ? "<null-check>?\"abc\":null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -215,7 +215,7 @@ public class Test_05_Final extends CommonTestRunner {
                     assertEquals("[0]", changeData.readAtStatementTime().toString());
 
                     // null==s5 should become true because initially, s5 in the constructor IS null
-                    String expect = d.iteration() == 0 ? "null==<f:s5>" : "true";
+                    String expect = d.iteration() == 0 ? "<null-check>" : "true";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
@@ -226,11 +226,11 @@ public class Test_05_Final extends CommonTestRunner {
         };
 
         testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

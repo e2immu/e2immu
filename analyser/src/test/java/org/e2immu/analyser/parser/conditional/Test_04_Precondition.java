@@ -390,26 +390,24 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
 
         testClass("Precondition_3", 1, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
     private static String conditionIn0(int iteration) {
         return switch (iteration) {
-            case 0 -> "!<null-check>";
-            case 1 -> "null!=<f*:integer>";
+            case 0, 1 -> "!<null-check>";
             default -> "null!=integer";
         };
     }
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0 -> "<null-check>&&ii>=0";
-            case 1 -> "null==<f*:integer>&&ii>=0";
+            case 0,1 -> "<null-check>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }

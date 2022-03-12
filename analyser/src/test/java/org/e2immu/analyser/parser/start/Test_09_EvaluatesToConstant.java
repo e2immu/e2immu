@@ -106,7 +106,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals("b:0,param:1", d.variableInfo().getLinkedVariables().toString());
             }
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                if ("1".equals(d.statementId())) {
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
             }
         }
 
@@ -217,7 +219,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals("null==param?\"x\":param", d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
-                assertEquals("false", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 0 ? "<null-check>" : "false";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
@@ -255,10 +258,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

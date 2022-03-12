@@ -49,8 +49,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "null==<f:counter>";
-                        case 1 -> "null==<f*:counter>";
+                        case 0, 1 -> "<null-check>";
                         default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
@@ -68,8 +67,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "null==<f:counter>";
-                        case 1 -> "null==<f*:counter>";
+                        case 0, 1 -> "<null-check>";
                         default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.condition().toString());
@@ -89,8 +87,8 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectedValue =switch(d.iteration()) {
-                            case 0 -> "null==<f:counter>?new AtomicInteger():<f:counter>";
+                        String expectedValue = switch (d.iteration()) {
+                            case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
                             case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
                             default -> "null==StaticSideEffects_1.counter?new AtomicInteger():nullable instance type AtomicInteger";
                         };
@@ -99,7 +97,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectedValue =switch(d.iteration()) {
+                        String expectedValue = switch (d.iteration()) {
                             case 0 -> "<mmc:counter>";
                             case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
                             default -> "instance type AtomicInteger";
@@ -124,11 +122,11 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

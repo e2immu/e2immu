@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
@@ -66,13 +65,13 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(RET_VAR, retVar.fqn);
                 if ("2".equals(d.statementId())) {
                     // note the absence of null!=a
-                    String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<return value>"
+                    String expected = d.iteration() == 0 ? "<null-check>?<s:List<E>>:<return value>"
                             : "null==map.get(a)?List.of():<return value>";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<s:List<B>>"
+                    String expected = d.iteration() == 0 ? "<null-check>?<s:List<E>>:<s:List<B>>"
                             : "null==map.get(a)?List.of():map.get(a)";
                     assertEquals(expected, d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
@@ -196,12 +195,12 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, d.localConditionManager().precondition().isEmpty());
             }
             if ("2.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "null==<s:List<B>>" : "null==map.get(a)";
+                String expected = d.iteration() == 0 ? "<null-check>" : "null==map.get(a)";
                 assertEquals(expected, d.condition().toString());
                 assertEquals(expected, d.absoluteState().toString());
             }
             if ("3".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "null!=<s:List<B>>" : "null!=map.get(a)";
+                String expected = d.iteration() == 0 ? "!<null-check>" : "null!=map.get(a)";
                 assertEquals(expected, d.state().toString());
             }
         }
@@ -222,8 +221,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         String name = d.methodInfo().name;
 
         if ("list".equals(name)) {
-            VariableInfo returnValue1 = d.getReturnAsVariable();
-            String expected = d.iteration() == 0 ? "null==<s:List<B>>?<s:List<E>>:<s:List<B>>"
+            String expected = d.iteration() == 0 ? "<null-check>?<s:List<E>>:<s:List<B>>"
                     : "null==map.get(a)?List.of():map.get(a)";
             assertEquals(expected, d.getReturnAsVariable().getValue().toString());
             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -261,11 +259,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(SMapList.class), 0, 0, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

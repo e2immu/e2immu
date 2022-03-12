@@ -223,7 +223,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("addToS".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    assertEquals("null!=<f:s>", d.condition().toString());
+                    assertEquals("<null-check>", d.condition().toString());
                 } else {
                     assertEquals("null!=s", d.condition().toString());
                 }
@@ -231,8 +231,8 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
         testClass("Container_2", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

@@ -81,14 +81,14 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "(<m:isPresent>||null==<v:sa>)&&(null!=<m:orElse>||null==<v:sa>)?<return value>:<v:sa>"
+                                ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:<return value>"
                                 : "(sa$1.navigationData().next.isPresent()||null==sa$1)&&(null==sa$1||null!=sa$1.navigationData().next.get().orElse(null))?<return value>:sa$1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("sa".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "null==<v:sa>?<vl:sa>:<m:get>" : "null";
+                        String expected = d.iteration() == 0 ? "<null-check>?<m:get>:<vl:sa>" : "null";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -96,7 +96,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         };
         // FIXME this error is problematic, needs solving!!
         testClass("VariableInLoop_1", 1, 2, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

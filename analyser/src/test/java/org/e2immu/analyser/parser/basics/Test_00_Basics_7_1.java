@@ -34,8 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_7_1 extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream/*@IgnoreMods*/";
-
     public Test_00_Basics_7_1() {
         super(true);
     }

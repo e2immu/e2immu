@@ -350,11 +350,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = d.iteration() == 0 ? "<vp:object:cnn@Parameter_s;ext_not_null@Parameter_s>/*(Integer)*/"
-                                : "object/*(Integer)*/";
+                        String expected = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
                         assertEquals(expected, prev.getValue().toString());
 
-                        String expect = d.iteration() == 0 ? "<vp:object:cnn@Parameter_s;ext_not_null@Parameter_s>/*(Integer)*/" : "object/*(Integer)*/";
+                        String expect = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
                     }
@@ -371,19 +370,25 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("!(object instanceof String)||null==object", d.state().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("object instanceof Boolean&&null!=object", d.condition().toString());
+                    String expected = d.iteration() == 0 ? "!<null-check>&&object instanceof Boolean"
+                            : "object instanceof Boolean&&null!=object";
+                    assertEquals(expected, d.condition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
+                    String expected = d.iteration() == 0 ? "(<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected, d.state().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("object instanceof Integer&&null!=object", d.condition().toString());
+                    String expected = d.iteration() == 0 ? "<instanceOf:Integer>" : "object instanceof Integer&&null!=object";
+                    assertEquals(expected, d.condition().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    assertEquals("(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)",
+                    String expected = d.iteration() == 0 ? "!<instanceOf:Integer>&&(<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
+                    assertEquals(expected,
                             d.state().toString());
                 }
             }
@@ -397,9 +402,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
 
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addTypeMapVisitor(typeMapVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
