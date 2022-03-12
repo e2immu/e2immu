@@ -15,6 +15,9 @@
 package org.e2immu.analyser.util;
 
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,9 @@ public class EventuallyFinalExtension {
                 eventuallyFinal.setFinal(t);
             } catch (RuntimeException re) {
                 LOGGER.error("Overwriting final value: old: {}, new {}", eventuallyFinal.get(), t);
+                LOGGER.error("ToString equal? {}", t.toString().equals(eventuallyFinal.get().toString()));
+                ((Logger) LoggerFactory.getLogger(Configuration.EQUALS)).setLevel(Level.DEBUG);
+                LOGGER.error("Computed equality: {}", t.equals(eventuallyFinal.get()));
                 throw re;
             }
         }

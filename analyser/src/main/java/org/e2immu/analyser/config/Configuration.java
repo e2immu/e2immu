@@ -42,6 +42,8 @@ public record Configuration(InputConfiguration inputConfiguration,
                             AnnotationXmlConfiguration annotationXmlConfiguration,
                             DebugConfiguration debugConfiguration) {
 
+    public static final String EQUALS = "org.e2immu.analyser.EQUALS";
+
     @Override
     public String toString() {
         return "Configuration:" +

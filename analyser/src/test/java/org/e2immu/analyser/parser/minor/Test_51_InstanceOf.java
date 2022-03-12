@@ -546,7 +546,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d,1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
@@ -559,12 +559,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
@@ -618,10 +618,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -885,11 +885,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         // IMPROVE could have been 1 rather than 3 potential null pointers: expansion of non-modifying method replicates them
         testClass("InstanceOf_11", 0, 3, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -917,6 +917,19 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     @Test
     public void test_14() throws IOException {
         testClass("InstanceOf_14", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_15() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setProperty".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
+        testClass("InstanceOf_15", 3, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

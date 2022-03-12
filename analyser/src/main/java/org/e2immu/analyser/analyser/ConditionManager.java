@@ -165,9 +165,19 @@ public record ConditionManager(Expression condition,
             complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(Identifier.generate("too complex CM 1"), evaluationContext.getPrimitives().booleanParameterizedType());
+            return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
         }
         return And.and(evaluationContext, expressions);
+    }
+
+    private Identifier getIdentifier() {
+        List<Identifier> list;
+        if (parent == null) {
+            list = List.of(condition.getIdentifier(), state.getIdentifier(), precondition.expression().getIdentifier());
+        } else {
+            list = List.of(condition.getIdentifier(), state.getIdentifier(), precondition.expression().getIdentifier(), parent.getIdentifier());
+        }
+        return Identifier.joined("cm", list);
     }
 
     public Expression stateUpTo(EvaluationResult context, int recursions) {
@@ -222,13 +232,12 @@ public record ConditionManager(Expression condition,
     }
 
 
-    private static Expression combine(EvaluationResult evaluationContext, Expression e1, Expression e2) {
+    private Expression combine(EvaluationResult evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isEmpty() || e2.isEmpty()) throw new UnsupportedOperationException();
         int complexity = e1.getComplexity() + e2.getComplexity();
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(Identifier.generate("too complex CM 2"),
-                    evaluationContext.getPrimitives().booleanParameterizedType());
+            return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
         }
         return And.and(evaluationContext, e1, e2);
     }

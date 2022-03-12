@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -25,6 +26,8 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -185,11 +188,21 @@ public final class Instance extends BaseExpression implements Expression {
         return true;
     }
 
+    private static final Logger EQUALS = LoggerFactory.getLogger(Configuration.EQUALS);
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Instance instance = (Instance) o;
+        if (EQUALS.isDebugEnabled()) {
+            boolean e1 = identifier.equals(instance.identifier);
+            boolean e2 = parameterizedType.equals(instance.parameterizedType);
+            EQUALS.debug("Instance: {}={} && {}: identifier {} vs {}, pt {} vs {}",
+                    e1 && e2, e1, e2,
+                    identifier.compact(), instance.identifier.compact(),
+                    parameterizedType, instance.parameterizedType);
+        }
         return identifier.equals(instance.identifier) && parameterizedType.equals(instance.parameterizedType);
     }
 

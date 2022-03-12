@@ -15,7 +15,7 @@
 
 package org.e2immu.analyser.parser.own.util;
 
-import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.EventuallyFinalExtension;
 import org.junit.jupiter.api.Test;
@@ -29,9 +29,11 @@ public class Test_Util_11_EventuallyFinalExtension extends CommonTestRunner {
         super(true);
     }
 
+    // FIXME this is a bit of a silly test now, because Configuration is not included
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(EventuallyFinalExtension.class), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(EventuallyFinalExtension.class),
+                1, 1, new DebugConfiguration.Builder()
                 .build());
     }
 

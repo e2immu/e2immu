@@ -63,6 +63,8 @@ public class And extends ExpressionCanBeTooComplex {
         return new And(id, context.getPrimitives()).append(context, values);
     }
 
+    // FIXME important: any reduction of delayed values to a non-delayed one, must result in DE.simplification
+
     // we try to maintain a CNF
     private Expression append(EvaluationResult context, Expression... values) {
 

@@ -32,7 +32,7 @@ public class Product extends BinaryOperator {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression tl = lhs.translate(inspectionProvider, translationMap);
         Expression tr = rhs.translate(inspectionProvider, translationMap);
-        if(tl == lhs && tr == rhs) return this;
+        if (tl == lhs && tr == rhs) return this;
         return new Product(identifier, primitives, tl, tr);
     }
 
@@ -52,8 +52,14 @@ public class Product extends BinaryOperator {
         return product(id, evaluationContext, l, r);
     }
 
-    // we try to maintain a sum of products
     public static Expression product(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
+        CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
+        Expression expression = internalProduct(identifier, evaluationContext, l, r);
+        return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
+    }
+
+    // we try to maintain a sum of products
+    private static Expression internalProduct(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0 ||
