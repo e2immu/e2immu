@@ -55,7 +55,9 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
+                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
+                        case 3 -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&<null-check>";
                         default -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&null!=entry.getValue().read";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
@@ -64,13 +66,13 @@ public class Test_45_Project extends CommonTestRunner {
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<m:put>";
+                        case 0, 1, 2, 3 -> "<m:put>";
                         default -> "result$2.put(entry.getKey(),entry.getValue().value)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "<m:debug>" : "<no return value>";
+                    String expected = d.iteration() <= 3 ? "<m:debug>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -86,9 +88,8 @@ public class Test_45_Project extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "null==<m:get>?null:<f:value>";
-                        case 1 -> "null==<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>?null:<f:value>";
-                        case 2 -> "null==<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>?null:<f:value>";
+                        case 0 -> "<null-check>?null:<f:prev.value>";
+                        case 1, 2 -> "<null-check>?null:<f:value>";
                         default -> "null==kvStore.get(key)?null:kvStore.get(key).value";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -104,7 +105,7 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "<vl:result>";
+                            case 0, 1, 2, 3 -> "<vl:result>";
                             default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -112,7 +113,8 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("2.0.1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>?<vl:result>:new HashMap<>()";
+                            case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>?<vl:result>:new HashMap<>()";
+                            case 3 -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&<null-check>?<vl:result>:new HashMap<>()";
                             default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -120,7 +122,9 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1, 2 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<vl:result>";
+                            case 1 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 2 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 3 -> "!entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!entry.getValue().read.isBefore(entry.getValue().updated)||queried.contains(entry.getKey())||!<null-check>?new HashMap<>():<vl:result>";
                             default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -128,13 +132,17 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1, 2 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<vl:result>";
+                            case 1 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 2 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 3 -> "!(nullable instance type Entry<String,Container>).getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!(nullable instance type Entry<String,Container>).getValue().read.isBefore((nullable instance type Entry<String,Container>).getValue().updated)||kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<null-check>?new HashMap<>():<vl:result>";
                             default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
                             case 0 -> "result";
-                            case 1, 2 -> "<out of scope:container:2.0.1>.read,container,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 1 -> "<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 2 -> "<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 3 -> "(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().updated,kvStore,now,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):1:readWithinMillis,result";
                             default -> "";
                         };
                         assertEquals(expectedVars, d.currentValue().variables(true)
@@ -148,7 +156,9 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
+                        case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
+                        case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
+                        case 3 -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&<null-check>";
                         default -> "entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)&&entry.getValue().read.isBefore(entry.getValue().updated)&&null!=entry.getValue().read";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
@@ -177,11 +187,11 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_0", 2, 14, new DebugConfiguration.Builder()
-             //   .addTypeMapVisitor(typeMapVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -194,19 +204,19 @@ public class Test_45_Project extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name) && "prev".equals(fr.scope.toString())) {
-                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertEquals("previousRead:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
         testClass("Project_0", 2, 10, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

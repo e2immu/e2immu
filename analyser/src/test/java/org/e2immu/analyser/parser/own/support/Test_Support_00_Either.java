@@ -60,7 +60,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
+                    String expectValue = d.iteration() == 0 ? "<null-check>?<f:left>:orElse/*@NotNull*/" :
                             "null==left?orElse/*@NotNull*/:left";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -116,7 +116,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             Expression retVal = tv.getValue();
             assertTrue(retVal instanceof InlineConditional);
             InlineConditional conditionalValue = (InlineConditional) retVal;
-            String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
+            String expectValue = d.iteration() == 0 ? "<null-check>?<f:left>:orElse/*@NotNull*/" :
                     "null==left?orElse/*@NotNull*/:left";
             assertEquals(expectValue, conditionalValue.toString());
             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -145,11 +145,11 @@ public class Test_Support_00_Either extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
-         //       .addEvaluationResultVisitor(evaluationResultVisitor)
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

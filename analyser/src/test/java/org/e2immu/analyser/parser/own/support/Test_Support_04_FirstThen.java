@@ -49,8 +49,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         if ("set".equals(d.methodInfo().name)) {
             if ("1.0.0.0.0".equals(d.statementId())) {
                 String expectCondition = switch (d.iteration()) {
-                    case 0 -> "null==<f:first>";
-                    case 1 -> "null==<f*:first>";
+                    case 0, 1 -> "<null-check>";
                     default -> "null==first";
                 };
                 assertEquals(expectCondition, d.condition().toString());
@@ -59,9 +58,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 String expectPre = switch (d.iteration()) {
-                    case 0 -> "null!=<f:then>";
-                    case 1 -> "null!=<vp:then:initial:this.first@Method_set_1.0.0-C;values:this.then@Field_then>";
-                    case 2 -> "null!=<vp:then:break_init_delay:this.first@Method_set_1.0.0-C;values:this.then@Field_then>";
+                    case 0, 1, 2 -> "<null-check>";
                     default -> "null!=then";
                 };
                 assertEquals(expectPre, d.statementAnalysis().stateData().getPrecondition().expression().toString());
@@ -90,8 +87,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
 
         if ("set".equals(name)) {
             String expect = switch (d.iteration()) {
-                case 0 -> "Precondition[expression=null!=<f:first>, causes=[escape]]";
-                case 1 -> "Precondition[expression=null!=<f*:first>, causes=[escape]]";
+                case 0, 1 -> "Precondition[expression=!<null-check>, causes=[escape]]";
                 default -> "Precondition[expression=null!=first, causes=[escape]]";
             };
             assertEquals(expect, d.methodAnalysis().getPrecondition().toString());
@@ -135,11 +131,11 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(FirstThen.class), 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addTypeMapVisitor(typeMapVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
