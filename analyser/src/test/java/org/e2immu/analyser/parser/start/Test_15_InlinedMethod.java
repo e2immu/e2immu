@@ -148,9 +148,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
             if ("expand".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    String expected = d.iteration() == 0
-                            ? "container@Class_VariableField;immutable@Class_VariableField;independent@Class_VariableField;svr@Method_expand"
-                            : "final@Field_i;svr@Method_expand";
+                    String expected = d.iteration() == 0 ? "container@Class_VariableField" : "final@Field_i";
                     assertEquals(expected,
                             d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -163,7 +161,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

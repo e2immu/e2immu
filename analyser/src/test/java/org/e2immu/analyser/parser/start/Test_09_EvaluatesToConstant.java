@@ -119,7 +119,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0-E",
+                        assertEquals("cm@Parameter_a;initial:param@Method_method3_0-E",
                                 d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {
@@ -132,7 +132,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if (d.iteration() == 0) {
                         assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;cnn@Parameter_a;initial:param@Method_method3_0-E",
+                        assertEquals("cm@Parameter_a;initial:param@Method_method3_0-E",
                                 d.currentValue().causesOfDelay().toString());
                         assertNull(d.getProperty(Property.IDENTITY));
                     } else {
@@ -226,7 +226,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 // read: someMethod's parameter a may cause modification or not-null, but not known yet
-                String expectDelay = d.iteration() == 0 ? "cm@Parameter_a;cnn@Parameter_a" : "";
+                String expectDelay = d.iteration() == 0 ? "cm@Parameter_a" : "";
                 assertEquals(expectDelay, d.evaluationResult().causesOfDelay().toString());
             }
             if ("1".equals(d.statementId())) {
@@ -258,10 +258,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
