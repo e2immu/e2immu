@@ -47,6 +47,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         this.properties = properties;
         this.linkedVariables = linkedVariables;
         this.castType = castType;
+        assert state != null && !state.isBoolValueTrue() ||
+                properties != null && !properties.isEmpty() ||
+                linkedVariables != null && !linkedVariables.isEmpty() ||
+                castType != null;
     }
 
     public static Expression wrapPreventIncrementalEvaluation(Expression expression) {
@@ -181,7 +185,23 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public int internalCompareTo(Expression v) {
-        return compareTo(v);
+        if (v instanceof PropertyWrapper pw) {
+            int c = nullLast(state, pw.state, Comparator.naturalOrder());
+            if (c != 0) return c;
+            int d = nullLast(castType, pw.castType, Comparator.comparing(ParameterizedType::toString));
+            if (d != 0) return d;
+            int e = nullLast(properties, pw.properties, Properties::compareMaps);
+            if (e != 0) return e;
+            return nullLast(linkedVariables, pw.linkedVariables, Comparator.naturalOrder());
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    private static <T> int nullLast(T t1, T t2, Comparator<T> comparator) {
+        if (t1 != null && t2 == null) return -1;
+        if (t2 != null && t1 == null) return 1;
+        if (t1 == null) return 0;
+        return comparator.compare(t1, t2);
     }
 
     @Override
@@ -288,6 +308,17 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PropertyWrapper pw)) return false;
+        return expression.equals(pw.expression)
+                && Objects.equals(state, pw.state)
+                && Objects.equals(castType, pw.castType)
+                && properties.equals(pw.properties)
+                && Objects.equals(linkedVariables, pw.linkedVariables);
+    }
+
+   // @Override
+    public boolean equalstt(Object o) {
         if (this == o) return true;
         if (!(o instanceof Expression oUnboxed)) return false;
         Expression unboxed = this;

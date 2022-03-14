@@ -14,15 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-public class Properties {
+public class Properties implements Comparable<Properties> {
     public static final Properties EMPTY = Properties.frozen();
 
     private final Map<Property, DV> map;
@@ -180,11 +177,44 @@ public class Properties {
         return of(merged);
     }
 
-    public Properties writableCopy() {
-        return new Properties(new HashMap<>(map));
-    }
-
     public Properties copy() {
         return Properties.of(map);
+    }
+
+    @Override
+    public int compareTo(Properties o) {
+        return compareMaps(map, o.map);
+    }
+
+    public static <T extends Comparable<? super T>> int compareMaps(Map<T, DV> map1, Map<T, DV> map2) {
+        int c = map1.size() - map2.size();
+        if (c != 0) return c;
+        // same size
+        int differentValue = 0;
+        for (Map.Entry<T, DV> e : map1.entrySet()) {
+            DV dv = map2.get(e.getKey());
+            if (dv != null && differentValue == 0) {
+                // are there different values?
+                differentValue = e.getValue().compareTo(dv);
+            }
+            if (dv == null) {
+                // different keys
+                return compareKeys(map1.keySet(), map2.keySet());
+            }
+        }
+        return differentValue;
+    }
+
+    private static <T extends Comparable<? super T>> int compareKeys(Set<T> set1, Set<T> set2) {
+        TreeSet<T> treeSet1 = new TreeSet<>(set1);
+        TreeSet<T> treeSet2 = new TreeSet<>(set2);
+        Iterator<T> it1 = treeSet1.iterator();
+        Iterator<T> it2 = treeSet2.iterator();
+        while (it1.hasNext()) {
+            assert it2.hasNext();
+            int d = it1.next().compareTo(it2.next());
+            if (d != 0) return d;
+        }
+        return 0;
     }
 }

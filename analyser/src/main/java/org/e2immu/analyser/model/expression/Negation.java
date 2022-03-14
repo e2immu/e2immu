@@ -135,7 +135,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public int internalCompareTo(Expression v) {
-        throw new UnsupportedOperationException();
+        return 0; // the negation wrapper has no other properties than "expression"
     }
 
     @Override

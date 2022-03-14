@@ -106,10 +106,14 @@ public class ExpressionComparator implements Comparator<Expression> {
         // now both are wrapped...
         int w = ((ExpressionWrapper) v1).wrapperOrder() - ((ExpressionWrapper) v2).wrapperOrder();
 
-        // different wrappers
+        // different type of wrappers
         if (w != 0) return w;
 
-        // same wrappers, go deeper
+        // same type of wrapper, but maybe different specifics (PropertyWrapper has a lot of fields, Negation has none)
+        int u = v1.internalCompareTo(v2);
+        if (u != 0) return u;
+
+        // same wrappers, go deeper (v1 may have one wrapper, v2 may have 2)
         return compare(((ExpressionWrapper) v1).getExpression(), ((ExpressionWrapper) v2).getExpression());
     }
 

@@ -60,10 +60,15 @@ public class And extends ExpressionCanBeTooComplex {
 
     public static Expression and(EvaluationResult context, Expression... values) {
         Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        return new And(id, context.getPrimitives()).append(context, values);
+        Expression expression = new And(id, context.getPrimitives()).append(context, values);
+        if (expression.isDone()) {
+            CausesOfDelay causes = Arrays.stream(values).map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+            if (causes.isDelayed()) {
+                return DelayedExpression.forSimplification(id, context.getPrimitives().booleanParameterizedType(), causes);
+            }
+        }
+        return expression;
     }
-
-    // FIXME important: any reduction of delayed values to a non-delayed one, must result in DE.simplification
 
     // we try to maintain a CNF
     private Expression append(EvaluationResult context, Expression... values) {

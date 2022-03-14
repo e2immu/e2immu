@@ -48,7 +48,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
 
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(expected, eval.getValue().toString());
-                        String expectMerge = d.iteration() == 0 ? "<vl:found>" : "instance type boolean||!found$1";
+                        String expectMerge = d.iteration() == 0 ? "<simplification>" : "instance type boolean||!found$1";
                         assertEquals(expectMerge, d.currentValue().toString()); // result of merge, should always be "true"
                     }
                     if ("1.0.0.0.0.0.0".equals(d.statementId())) {

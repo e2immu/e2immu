@@ -170,7 +170,7 @@ public record ConditionManager(Expression condition,
         return And.and(evaluationContext, expressions);
     }
 
-    private Identifier getIdentifier() {
+    public Identifier getIdentifier() {
         List<Identifier> list;
         if (parent == null) {
             list = List.of(condition.getIdentifier(), state.getIdentifier(), precondition.expression().getIdentifier());

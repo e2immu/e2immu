@@ -466,6 +466,7 @@ public class EvaluateMethodCall {
             DV p = context.evaluationContext().getProperty(parameter, property, true, true);
             if (v.isDone() && !v.equals(p)) map.put(property, v);
         }
+        if (map.isEmpty()) return parameter;
         return PropertyWrapper.propertyWrapper(parameter, map);
     }
 

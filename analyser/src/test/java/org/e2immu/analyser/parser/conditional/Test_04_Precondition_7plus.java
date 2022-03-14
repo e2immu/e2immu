@@ -42,7 +42,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
         // IMPROVE 8 errors?
-        testClass("Precondition_7", 8, 11,
+        testClass("Precondition_7", 7, 11,
                 new DebugConfiguration.Builder().build());
     }
 

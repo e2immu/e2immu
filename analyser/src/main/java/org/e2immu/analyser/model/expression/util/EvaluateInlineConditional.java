@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
@@ -39,6 +40,23 @@ public class EvaluateInlineConditional {
                                                                      Expression ifTrue,
                                                                      Expression ifFalse,
                                                                      boolean complain) {
+        EvaluationResult evaluationResult = compute(evaluationContext, condition, ifTrue, ifFalse, complain);
+        if (evaluationResult.value().isDone()) {
+            CausesOfDelay causes = condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
+            if (causes.isDelayed()) {
+                Identifier identifier = Identifier.joined("inline", List.of(condition.getIdentifier(), ifTrue.getIdentifier(), ifFalse.getIdentifier()));
+                Expression delay = DelayedExpression.forSimplification(identifier, evaluationResult.value().returnType(), causes);
+                return new EvaluationResult.Builder(evaluationContext).setExpression(delay).build();
+            }
+        }
+        return evaluationResult;
+    }
+
+    public static EvaluationResult compute(EvaluationResult evaluationContext,
+                                           Expression condition,
+                                           Expression ifTrue,
+                                           Expression ifFalse,
+                                           boolean complain) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BooleanConstant bc) {
             boolean first = bc.constant();
@@ -51,7 +69,7 @@ public class EvaluateInlineConditional {
         // not x ? a: b --> x ? b: a
         Negation negatedCondition;
         if ((negatedCondition = condition.asInstanceOf(Negation.class)) != null) {
-            return conditionalValueConditionResolved(evaluationContext, negatedCondition.expression, ifFalse, ifTrue, complain);
+            return compute(evaluationContext, negatedCondition.expression, ifFalse, ifTrue, complain);
         }
 
         // isFact needs to be caught as soon as, because we're ONLY looking in the condition
@@ -73,21 +91,21 @@ public class EvaluateInlineConditional {
         if ((ifTrueCv = ifTrue.asInstanceOf(InlineConditional.class)) != null) {
             // x ? (x? a: b): c === x ? a : c
             if (ifTrueCv.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrueCv.ifTrue, ifFalse, complain);
+                return compute(evaluationContext, condition, ifTrueCv.ifTrue, ifFalse, complain);
             }
             // x ? (!x ? a: b): c === x ? b : c
             if (ifTrueCv.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrueCv.ifFalse, ifFalse, complain);
+                return compute(evaluationContext, condition, ifTrueCv.ifFalse, ifFalse, complain);
             }
             // x ? (y ? a: b): b --> x && y ? a : b
             // especially important for trailing x?(y ? z: <return variable>):<return variable>
             if (ifFalse.equals(ifTrueCv.ifFalse)) {
-                return conditionalValueConditionResolved(evaluationContext,
+                return compute(evaluationContext,
                         And.and(evaluationContext, condition, ifTrueCv.condition), ifTrueCv.ifTrue, ifFalse, complain);
             }
             // x ? (y ? a: b): a --> x && !y ? b: a
             if (ifFalse.equals(ifTrueCv.ifTrue)) {
-                return conditionalValueConditionResolved(evaluationContext,
+                return compute(evaluationContext,
                         And.and(evaluationContext, condition, Negation.negate(evaluationContext, ifTrueCv.condition)),
                         ifTrueCv.ifFalse, ifFalse, complain);
             }
@@ -97,20 +115,20 @@ public class EvaluateInlineConditional {
         if ((ifFalseCv = ifFalse.asInstanceOf(InlineConditional.class)) != null) {
             // x ? a: (x ? b:c) === x?a:c
             if (ifFalseCv.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalseCv.ifFalse, complain);
+                return compute(evaluationContext, condition, ifTrue, ifFalseCv.ifFalse, complain);
             }
             // x ? a: (!x ? b:c) === x?a:b
             if (ifFalseCv.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalseCv.ifTrue, complain);
+                return compute(evaluationContext, condition, ifTrue, ifFalseCv.ifTrue, complain);
             }
             // x ? a: (y ? a: b) --> x || y ? a: b
             if (ifTrue.equals(ifFalseCv.ifTrue)) {
-                return conditionalValueConditionResolved(evaluationContext,
+                return compute(evaluationContext,
                         Or.or(evaluationContext, condition, ifFalseCv.condition), ifTrue, ifFalseCv.ifFalse, complain);
             }
             // x ? a: (y ? b: a) --> x || !y ? a: b
             if (ifTrue.equals(ifFalseCv.ifFalse)) {
-                return conditionalValueConditionResolved(evaluationContext,
+                return compute(evaluationContext,
                         Or.or(evaluationContext, condition, Negation.negate(evaluationContext, ifFalseCv.condition)),
                         ifTrue, ifFalseCv.ifTrue, complain);
             }
@@ -120,7 +138,7 @@ public class EvaluateInlineConditional {
         if (ifTrue instanceof InlineConditional ifTrueInline && ifTrueInline.condition instanceof And and) {
             Expression ifTrueCondition = removeCommonClauses(evaluationContext, condition, and);
             if (ifTrueCondition != ifTrueInline.condition) {
-                return conditionalValueConditionResolved(evaluationContext,
+                return compute(evaluationContext,
                         condition, new InlineConditional(evaluationContext.getAnalyserContext(), ifTrueCondition,
                                 ifTrueInline.ifTrue, ifTrueInline.ifFalse), ifFalse, complain);
             }
@@ -138,7 +156,7 @@ public class EvaluateInlineConditional {
             if (or.expressions().contains(notCondition)) {
                 Expression newOr = Or.or(evaluationContext,
                         or.expressions().stream().filter(e -> !e.equals(notCondition)).toList());
-                return conditionalValueConditionResolved(evaluationContext, condition, newOr, ifFalse, complain);
+                return compute(evaluationContext, condition, newOr, ifFalse, complain);
             }
         }
         // x ? y : x||z --> x ? y: z
@@ -147,7 +165,7 @@ public class EvaluateInlineConditional {
             if (or.expressions().contains(condition)) {
                 Expression newOr = Or.or(evaluationContext,
                         or.expressions().stream().filter(e -> !e.equals(condition)).toList());
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, newOr, complain);
+                return compute(evaluationContext, condition, ifTrue, newOr, complain);
             }
             Expression notCondition = Negation.negate(evaluationContext, condition);
             if (or.expressions().contains(notCondition)) {
@@ -161,7 +179,7 @@ public class EvaluateInlineConditional {
             if (and.getExpressions().contains(condition)) {
                 Expression newAnd = And.and(evaluationContext,
                         and.getExpressions().stream().filter(e -> !e.equals(condition)).toArray(Expression[]::new));
-                return conditionalValueConditionResolved(evaluationContext, condition, newAnd, ifFalse, complain);
+                return compute(evaluationContext, condition, newAnd, ifFalse, complain);
             }
             Expression notCondition = Negation.negate(evaluationContext, condition);
             if (and.getExpressions().contains(notCondition)) {
@@ -180,7 +198,7 @@ public class EvaluateInlineConditional {
             if (and.getExpressions().contains(notCondition)) {
                 Expression newAnd = And.and(evaluationContext,
                         and.getExpressions().stream().filter(e -> !e.equals(notCondition)).toArray(Expression[]::new));
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, newAnd, complain);
+                return compute(evaluationContext, condition, ifTrue, newAnd, complain);
             }
         }
 

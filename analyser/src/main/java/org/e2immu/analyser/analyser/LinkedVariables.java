@@ -34,7 +34,7 @@ Convention for spotting delays:
 1. at assignment level: no delays, never
 2. at dependent, independent1 level: add the variable, with DELAYED_VALUE
  */
-public class LinkedVariables {
+public class LinkedVariables implements Comparable<LinkedVariables> {
 
     private final Map<Variable, DV> variables;
     private final CausesOfDelay causesOfDelay;
@@ -327,5 +327,10 @@ public class LinkedVariables {
 
     public boolean isDone() {
         return causesOfDelay.isDone();
+    }
+
+    @Override
+    public int compareTo(LinkedVariables o) {
+        return Properties.compareMaps(variables, o.variables);
     }
 }

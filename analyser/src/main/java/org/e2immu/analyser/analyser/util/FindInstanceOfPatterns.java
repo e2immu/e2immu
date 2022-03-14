@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 

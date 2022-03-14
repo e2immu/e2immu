@@ -192,6 +192,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (statement() instanceof ExplicitConstructorInvocation) {
             value = UnknownExpression.forExplicitConstructorInvocation();
         }
+        if(value.isDone() && statement() instanceof IfElseStatement &&  sharedState.localConditionManager().isDelayed()) {
+            value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
+                    value.returnType(), LinkedVariables.EMPTY, sharedState.localConditionManager().causesOfDelay());
+        }
         statementAnalysis.stateData().setValueOfExpression(value);
 
         return ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop);
