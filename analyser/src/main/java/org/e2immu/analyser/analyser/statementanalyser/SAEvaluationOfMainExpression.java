@@ -192,7 +192,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (statement() instanceof ExplicitConstructorInvocation) {
             value = UnknownExpression.forExplicitConstructorInvocation();
         }
-        if(value.isDone() && statement() instanceof IfElseStatement &&  sharedState.localConditionManager().isDelayed()) {
+
+        // this statement can never be fully correct, but it seems to do the job for now... preconditions may arrive late
+        // and my cause delays in the evaluation after a number of iterations
+        if(value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
             value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
                     value.returnType(), LinkedVariables.EMPTY, sharedState.localConditionManager().causesOfDelay());
         }

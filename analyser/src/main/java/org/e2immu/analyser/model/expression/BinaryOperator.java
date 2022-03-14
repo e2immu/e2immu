@@ -169,12 +169,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             if (l == NullConstant.NULL_CONSTANT) {
                 DV dv = right.isNotNull0(false);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
                 DV dv = left.isNotNull0(false);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
             // the following line ensures that a warning is sent when the ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
@@ -200,12 +202,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             if (l == NullConstant.NULL_CONSTANT) {
                 DV dv = right.isNotNull0(false);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r == NullConstant.NULL_CONSTANT) {
                 DV dv = left.isNotNull0(false);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, true);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
             return Negation.negate(context, Equals.equals(identifier, context, l, r));
         }

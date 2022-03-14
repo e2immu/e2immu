@@ -73,14 +73,16 @@ public class ExpressionComparator implements Comparator<Expression> {
         // nothing here
     }
 
-    private record Unwrapped(Expression value) {
+    private record Unwrapped(Expression value, int count) {
 
         public static Unwrapped create(Expression v) {
             Expression unwrapped = v;
+            int count = 0;
             while (unwrapped instanceof ExpressionWrapper e) {
                 unwrapped = e.getExpression();
+                count++;
             }
-            return new Unwrapped(unwrapped);
+            return new Unwrapped(unwrapped, count);
         }
     }
 
@@ -113,6 +115,10 @@ public class ExpressionComparator implements Comparator<Expression> {
         int u = v1.internalCompareTo(v2);
         if (u != 0) return u;
 
+        if(u1.count == 1 && u2.count == 1) {
+            // everything has been compared, no need to delve deeper
+            return 0;
+        }
         // same wrappers, go deeper (v1 may have one wrapper, v2 may have 2)
         return compare(((ExpressionWrapper) v1).getExpression(), ((ExpressionWrapper) v2).getExpression());
     }

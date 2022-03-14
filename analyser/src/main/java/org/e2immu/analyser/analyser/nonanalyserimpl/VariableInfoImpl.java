@@ -233,7 +233,7 @@ public class VariableInfoImpl implements VariableInfo {
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        if (value.isDelayed()) {
+        if (value.isDelayed() || variable instanceof  FieldReference fr && fr.scope.isDelayed()) {
             try {
                 this.value.setVariable(value);
             } catch (IllegalStateException ise) {
