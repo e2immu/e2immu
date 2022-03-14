@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -118,7 +119,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode;immutable@Class_TrieNode;independent@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
+                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
                         case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
                         default -> "upToPosition>instance type int?null:node";
                     };
@@ -145,12 +146,20 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {
                     assertTrue(d.iteration() <= 1);
+
+                }
+                if ("1".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "CM{state=(!<null-check>||!<loopIsNotEmptyCondition>)&&(!<null-check>||!<loopIsNotEmptyCondition>);parent=CM{}}";
+                        case 1 -> "CM{state=(!<null-check>||instance type int>=upToPosition)&&(!<simplification>||instance type int>=upToPosition);parent=CM{}}";
+                        default -> "CM{state=instance type int>=upToPosition;parent=CM{}}";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "(!<null-check>||!<loopIsNotEmptyCondition>)&&(!<null-check>||!<loopIsNotEmptyCondition>)";
                         case 1 -> "(!<null-check>||instance type int>=upToPosition)&&(!<simplification>||instance type int>=upToPosition)";
-                        case 2 -> "<simplification>";
                         default -> "instance type int>=upToPosition";
                     };
                     assertEquals(expected, d.state().toString());
@@ -179,9 +188,24 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:map>";
+                            case 1 -> "upToPosition><out of scope:i:1>?<f:map>:null";
+                            default -> "null";
+                        };
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:map>";
+                            case 1 -> "upToPosition><out of scope:i:1>?<f:map>:null";
+                            default -> "null";
+                        };
+                        assertEquals(expectValue, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        if (d.iteration() >= 2) assertTrue(d.currentValue() instanceof NullConstant);
                     }
                 }
                 if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
@@ -238,7 +262,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1.0.0".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<null-check>?<vp::container@Class_TrieNode;immutable@Class_TrieNode;independent@Class_TrieNode>:<return value>";
+                            case 0 -> "<null-check>?<vp::container@Class_TrieNode>:<return value>";
                             case 1 -> "<simplification>?<vp::initial@Field_map>:<return value>";
                             default -> "null";
                         };
@@ -246,7 +270,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode;immutable@Class_TrieNode;independent@Class_TrieNode>:<return value>";
+                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<return value>";
                             case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:<return value>";
                             default -> "upToPosition>instance type int?null:<return value>";
                         };
@@ -254,7 +278,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode;immutable@Class_TrieNode;independent@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
+                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
                             case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
                             default -> "upToPosition>instance type int?null:node";
                         };
@@ -267,8 +291,6 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("root".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                //assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE_BREAK_DELAY));
-                // wait until TrieNode is immutable
 
                 String expected = d.iteration() <= 1 ? "<f:root>" : "new TrieNode<>()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
@@ -299,14 +321,13 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        // FIXME delay loop now caused by adding And simplification delay
         testClass("TrieSimplified_3", 2, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

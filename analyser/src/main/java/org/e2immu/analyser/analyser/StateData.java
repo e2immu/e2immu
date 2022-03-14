@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
@@ -178,18 +179,18 @@ public class StateData {
     // states of interrupt
 
     // we're adding the break and return states
-    public void addStateOfInterrupt(String index, Expression state, boolean stateIsDelayed) {
+    public void addStateOfInterrupt(String index, Expression state) {
         EventuallyFinal<Expression> cd = statesOfInterrupts.getOrCreate(index, i -> new EventuallyFinal<>());
-        if (stateIsDelayed) {
+        if (state.isDelayed()) {
             cd.setVariable(state);
         } else {
             setFinalAllowEquals(cd, state);
         }
     }
 
-    public void addStateOfReturnInLoop(String index, Expression state, boolean stateIsDelayed) {
+    public void addStateOfReturnInLoop(String index, Expression state) {
         EventuallyFinal<Expression> cd = statesOfReturnInLoop.getOrCreate(index, i -> new EventuallyFinal<>());
-        if (stateIsDelayed) {
+        if (state.isDelayed()) {
             cd.setVariable(state);
         } else {
             setFinalAllowEquals(cd, state);
@@ -207,7 +208,8 @@ public class StateData {
     // (break 1 || ...|| breakN || !condition) && return 1 state && ... && return N state
     public Expression combineInterruptsAndExit(LoopStatement loopStatement,
                                                Expression negatedConditionOrExitState,
-                                               EvaluationResult context) {
+                                               EvaluationResult context,
+                                               Predicate<String> isStillReachable) {
 
         List<Expression> ors = new ArrayList<>();
         if (loopStatement.hasExitCondition()) {
@@ -219,8 +221,10 @@ public class StateData {
             }
         }
         List<Expression> ands = new ArrayList<>();
-        statesOfReturnInLoop.stream().map(Map.Entry::getValue).forEach(e ->
-                ands.add(context.evaluationContext().replaceLocalVariables(e.get())));
+        statesOfReturnInLoop.stream()
+                .filter(e -> isStillReachable.test(e.getKey()))
+                .map(Map.Entry::getValue)
+                .forEach(e -> ands.add(context.evaluationContext().replaceLocalVariables(e.get())));
         if (!ors.isEmpty()) {
             ands.add(Or.or(context, ors.toArray(Expression[]::new)));
         }

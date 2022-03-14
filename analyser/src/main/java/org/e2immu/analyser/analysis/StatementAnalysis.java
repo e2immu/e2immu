@@ -166,6 +166,9 @@ public interface StatementAnalysis extends Analysis,
 
     boolean inLoop();
 
+    // can we still reach index?
+    boolean isStillReachable(String index);
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

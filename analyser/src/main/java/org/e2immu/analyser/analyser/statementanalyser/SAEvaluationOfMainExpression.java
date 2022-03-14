@@ -195,7 +195,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         // this statement can never be fully correct, but it seems to do the job for now... preconditions may arrive late
         // and my cause delays in the evaluation after a number of iterations
-        if(value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
+        if (value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
             value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
                     value.returnType(), LinkedVariables.EMPTY, sharedState.localConditionManager().causesOfDelay());
         }
@@ -218,7 +218,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
             Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), correspondingLoop.steps());
-            correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state, state.isDelayed());
+            correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
             if (state.isDelayed()) return state.causesOfDelay();
             Expression condition = sharedState.localConditionManager().condition();
             if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
@@ -266,7 +266,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (loop != null) {
             Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), loop.steps());
             Expression notState = Negation.negate(sharedState.context(), state);
-            loop.statementAnalysis().stateData().addStateOfReturnInLoop(index(), notState, state.isDelayed());
+            loop.statementAnalysis().stateData().addStateOfReturnInLoop(index(), notState);
             if (state.isDelayed()) {
                 // we'll have to come back
                 CausesOfDelay stateForLoop = state.causesOfDelay();

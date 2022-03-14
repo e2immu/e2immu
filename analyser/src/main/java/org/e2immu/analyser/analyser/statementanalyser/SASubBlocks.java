@@ -529,8 +529,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     negatedConditionOrExitState = exit;
                 }
             }
-            return statementAnalysis.stateData()
-                    .combineInterruptsAndExit(loopStatement, negatedConditionOrExitState, context);
+            return statementAnalysis.stateData().combineInterruptsAndExit(loopStatement, negatedConditionOrExitState,
+                    context, statementAnalysis::isStillReachable);
         }
 
         if (statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {

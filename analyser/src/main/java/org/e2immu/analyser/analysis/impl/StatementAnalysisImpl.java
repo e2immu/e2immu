@@ -1981,7 +1981,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
             if (cnn.equals(NULLABLE_DV)) {
                 ensure(Message.newMessage(location(EVALUATION), Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
-                       "Variable: " + variable.fullyQualifiedName()));
+                        "Variable: " + variable.fullyQualifiedName()));
             }
         });
     }
@@ -2161,5 +2161,22 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
             return parent.inLoop();
         }
         return false;
+    }
+
+    @Override
+    public boolean isStillReachable(String target) {
+        StatementAnalysisImpl current = this;
+        while (true) {
+            if (current.flowData.isUnreachable()) return false;
+            if (target.equals(current.index)) return true; // we're there!
+            if (target.startsWith(current.index)) {
+                int n = current.index.length();
+                int blockIndex = Integer.parseInt(target.substring(n + 1, target.indexOf('.', n + 1)));
+                current = (StatementAnalysisImpl) current.navigationData.blocks.get().get(blockIndex)
+                        .orElseThrow(() -> new UnsupportedOperationException("Looking for " + target + ", block " + blockIndex));
+            } else if (current.index.compareTo(target) < 0 && current.navigationData.next.get().isPresent()) {
+                current = (StatementAnalysisImpl) current.navigationData.next.get().get();
+            }
+        }
     }
 }
