@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
@@ -378,7 +378,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
         DV cnnInMap = cnn.max(inMap);
-        boolean isBreakInitDelay = cnn.isDelayed() && cnn.causesOfDelay().causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY);
+        boolean isBreakInitDelay = cnn.isDelayed() && cnn.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY);
         if (cnnInMap.isDelayed() && !isBreakInitDelay) {
             // we return even if cmNn would be ENN, because our value could be higher
             return cnnInMap;
@@ -472,10 +472,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         CausesOfDelay causes = fieldAnalysis.valuesDelayed().causesOfDelay();
         //assert causes.isDelayed();
         Location here = getLocation(INITIAL);
-        boolean cyclicDependency = causes.causesStream()
-                .anyMatch(cause -> cause instanceof VariableCause vc && vc.cause() == CauseOfDelay.Cause.INITIAL_VALUE
-                        && vc.variable().equals(fr)
-                        && vc.location().equals(here));
+        boolean cyclicDependency = causes.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                cause -> cause instanceof VariableCause vc && vc.variable().equals(fr) && vc.location().equals(here));
         if (cyclicDependency) {
             LOGGER.debug("Breaking the delay by inserting a special delayed value for {} at {}", fr, statementIndex());
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
@@ -693,7 +691,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public CausesOfDelay variableIsDelayed(Variable variable) {
         VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
         if (vi == null) {
-            return new SimpleSet(new VariableCause(variable,
+            return DelayFactory.createDelay(new VariableCause(variable,
                     getLocation(INITIAL), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
         }
         return vi.getValue().causesOfDelay();

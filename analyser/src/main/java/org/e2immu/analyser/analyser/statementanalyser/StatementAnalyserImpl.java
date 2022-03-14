@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
@@ -466,7 +466,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
-                            ? new ProgressWrapper(new SimpleSet(statementAnalysis.location(Stage.MERGE), CauseOfDelay.Cause.REPLACEMENT))
+                            ? new ProgressWrapper(DelayFactory.createDelay(statementAnalysis.location(Stage.MERGE),
+                            CauseOfDelay.Cause.REPLACEMENT))
                             : DONE, false)
                     .build();
 

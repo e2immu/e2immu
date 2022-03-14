@@ -16,8 +16,8 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -124,11 +124,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         });
 
         Location initialLocation = statementAnalysis.location(INITIAL);
-        Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay().causesStream()
-                .filter(c -> c instanceof VariableCause vc
-                        && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                        && vc.location().equals(initialLocation))
-                .map(c -> (VariableCause) c).findFirst();
+        Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay()
+                .findVariableCause(CauseOfDelay.Cause.BREAK_INIT_DELAY, vc -> vc.location().equals(initialLocation));
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
@@ -234,7 +231,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             if (optBreakInitDelay.isPresent() && vi1.isDelayed()) {
                                 // if we break a delay, but the value that we write is still delayed, we propagate the delay (see Basics_7_1)
                                 LOGGER.debug("Propagate break init delay in {} in {}", variable, index());
-                                value = vi1.getValue().mergeDelays(new SimpleSet(optBreakInitDelay.get()));
+                                value = vi1.getValue().mergeDelays(DelayFactory.createDelay(optBreakInitDelay.get()));
                             } else {
                                 value = vi1.getValue();
                             }
@@ -309,7 +306,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (sharedState.evaluationContext().getIteration() == 0) {
                 // we cannot yet know whether the variable will be assigned in this loop, or not
                 // write a delayed value
-                CausesOfDelay causes = new SimpleSet(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+                CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
+                        CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
                 Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
                 Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
                 vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
@@ -347,7 +345,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
         CausesOfDelay causes;
         if (sharedState.evaluationContext().delayStatementBecauseOfECI() && !valuePropertiesIsDelayed.isDelayed()) {
-            causes = new SimpleSet(new SimpleCause(getLocation(), CauseOfDelay.Cause.ECI_HELPER));
+            causes = DelayFactory.createDelay(new SimpleCause(getLocation(), CauseOfDelay.Cause.ECI_HELPER));
         } else {
             causes = valuePropertiesIsDelayed;
         }
@@ -395,7 +393,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
                         if (causes.isDone()) {
                             //just making sure that we are delayed
-                            causes = new SimpleSet(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
+                            causes = DelayFactory.createDelay(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
                         }
                         VariableInfo viCombinedOrPrimitive;
                         if (combinedOrPrimitive == EvaluationContext.PRIMITIVE_VALUE_PROPERTIES) {
@@ -517,7 +515,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     CausesOfDelay causes = vi.getProperty(EXTERNAL_NOT_NULL).causesOfDelay();
                     if (causes.isDelayed()) {
                         // decorate, so that we have an idea which variable is the cause of the problem
-                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                        return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
                                 CauseOfDelay.Cause.EXTERNAL_NOT_NULL)));
                     }
                     return CausesOfDelay.EMPTY;
@@ -532,7 +530,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .map(vi -> {
                     CausesOfDelay causes = vi.getProperty(EXTERNAL_IMMUTABLE).causesOfDelay();
                     if (causes.isDelayed()) {
-                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                        return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
                                 CauseOfDelay.Cause.EXT_IMM)));
                     }
                     return CausesOfDelay.EMPTY;
@@ -549,7 +547,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .map(vi -> {
                     CausesOfDelay causes = vi.getProperty(EXTERNAL_CONTAINER).causesOfDelay();
                     if (causes.isDelayed()) {
-                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                        return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
                                 CauseOfDelay.Cause.EXT_CONTAINER)));
                     }
                     return CausesOfDelay.EMPTY;
@@ -571,7 +569,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .map(vi -> {
                     CausesOfDelay causes = vi.getProperty(EXTERNAL_IGNORE_MODIFICATIONS).causesOfDelay();
                     if (causes.isDelayed()) {
-                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                        return causes.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), getLocation(),
                                 CauseOfDelay.Cause.EXT_IGNORE_MODS)));
                     }
                     return CausesOfDelay.EMPTY;
@@ -664,14 +662,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
         if (stateIsDelayedInChangeData.isDelayed()) {
             // see Precondition_3, Basics_14: both need breaking the delay loop
-            CausesOfDelay marker = new SimpleSet(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.STATE_DELAYED));
-            if (stateIsDelayedInChangeData.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.STATE_DELAYED &&
+            CausesOfDelay marker = DelayFactory.createDelay(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.STATE_DELAYED));
+            if (stateIsDelayedInChangeData.containsCauseOfDelay(CauseOfDelay.Cause.STATE_DELAYED, c ->
                     c instanceof VariableCause vc && vc.variable().equals(variable) && c.location().equals(vc.location()))) {
                 LOGGER.debug("Breaking delay " + marker);
             } else {
                 CausesOfDelay merged = stateIsDelayedInChangeData.merge(marker);
                 // if the delays are caused by a field in break_init_delay, we will return the value rather than a delay
-                if (merged.causesStream().anyMatch(cause -> cause.cause().equals(CauseOfDelay.Cause.BREAK_INIT_DELAY))) {
+                if (merged.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                     return value;
                 }
                 LinkedVariables lv = LinkedVariables.delayedEmpty(merged);

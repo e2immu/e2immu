@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -60,7 +60,7 @@ abstract class AnalysisImpl implements Analysis {
     @Override
     public DV getPropertyFromMapDelayWhenAbsent(Property property) {
         DV v = properties.getOrDefault(property, null);
-        if (v == null) return new SimpleSet(location(Stage.INITIAL), property.causeOfDelay());
+        if (v == null) return DelayFactory.createDelay(location(Stage.INITIAL), property.causeOfDelay());
         return v;
     }
 

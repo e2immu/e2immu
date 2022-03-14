@@ -333,7 +333,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                 }
                 if ("bool".equals(d.variableName())) {
-                    String DELAY = "<vp:object:cnn@Parameter_s;ext_not_null@Parameter_s>/*(Boolean)*/";
+                    String DELAY = "<vp:object:cnn@Parameter_s>/*(Boolean)*/";
 
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
@@ -481,7 +481,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
+                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
                             case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
@@ -493,7 +493,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasMerge());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
+                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
                             case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
@@ -518,13 +518,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/.expression>:expression";
+                            case 0 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:container@Record_Negation>/*(Negation)*/.expression>:expression";
                             case 1 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:initial@Field_expression>/*(Negation)*/.expression>:expression";
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
+                            case 0, 1 -> "<vp:expression:container@Record_Negation>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
                             default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -534,7 +534,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/.expression>:expression";
+                            case 0 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:container@Record_Negation>/*(Negation)*/.expression>:expression";
                             case 1 -> "expression instanceof Negation&&null!=expression?<f:<vp:expression:initial@Field_expression>/*(Negation)*/.expression>:expression";
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
@@ -593,9 +593,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
+                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
                             case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
-                            case 2 -> "<vp:expression:cm:expression@Method_method_2.0.0-E;cm:ne.expression@Method_method_2.0.0-E;cm:ne@Method_method_2.0.0-E;cm:x@Method_method_2.0.0-E;initial@Field_expression;link:ne@Method_method_2.0.0-E>/*(Negation)*/";
+                            case 2 -> "<vp:expression:cm:expression@Method_method_2.0.0-E;cm:ne.expression@Method_method_2.0.0-E;cm:ne@Method_method_2.0.0-E;cm:x@Method_method_2.0.0-E;initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -867,13 +867,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
                     // means: we have to wait until we know the property of the enclosing type
-                    String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
+                    String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
                     assertDv(d, expect, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
                 case "Expression", "EvaluationContext" -> assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext", 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                case "XB" -> assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "XB" -> assertDv(d, "container@Record_XB", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };

@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -34,7 +34,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /*
 Goal:
@@ -125,7 +124,7 @@ public class ComputeLinkedVariables {
             delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
-                SimpleSet.from(delaysInClustering));
+                DelayFactory.createDelay(delaysInClustering));
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -227,11 +226,11 @@ public class ComputeLinkedVariables {
      * already present, we detect a cyclic dependency, and do not inject a delay. Rather, we return the CM property value.
      */
     private DV injectContextModifiedDelay(Variable variable, DV propertyValue) {
-        if (delaysInClustering.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.CONTEXT_MODIFIED &&
-                c instanceof VariableCause vc && vc.variable().equals(variable))) {
+        if (delaysInClustering.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
+                c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
             return propertyValue;
         }
-        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(stage),
+        CausesOfDelay specificDelay = DelayFactory.createDelay(new VariableCause(variable, statementAnalysis.location(stage),
                 CauseOfDelay.Cause.CONTEXT_MODIFIED));
         return delaysInClustering.causesOfDelay().merge(specificDelay);
     }
@@ -241,13 +240,13 @@ public class ComputeLinkedVariables {
      * Cycle of 3 between a constructor parameter assigned to a field, with an accessor, and an instance method that calls the constructor.
      */
     private DV propertyValuePotentiallyBreakDelay(Property property, DV propertyValue) {
-        if (property == Property.CONTEXT_MODIFIED && propertyValue.isDelayed()) {
-            Stream<CauseOfDelay> causes = propertyValue.causesOfDelay().causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.BREAK_MOM_DELAY);
-            if (causes.anyMatch(c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo)) {
-                LOGGER.debug("Breaking a MOM delay for parameter  in {}", propertyValue);
-                return DV.FALSE_DV;
-            }
+        if (property == Property.CONTEXT_MODIFIED && propertyValue.isDelayed() &&
+                propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
+                        c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo)) {
+            LOGGER.debug("Breaking a MOM delay for parameter  in {}", propertyValue);
+            return DV.FALSE_DV;
         }
+
         // normal action
         return propertyValue;
     }

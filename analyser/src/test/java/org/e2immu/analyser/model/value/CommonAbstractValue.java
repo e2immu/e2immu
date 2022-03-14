@@ -15,8 +15,8 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -112,7 +112,7 @@ public abstract class CommonAbstractValue {
         vp = createParameter(); // nullable
         p = new VariableExpression(vp);
         delayedP = DelayedVariableExpression.forParameter((ParameterInfo) vp,
-                new SimpleSet(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED)));
+                DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED)));
         vq = createVariable("q"); // not intercepted
         q = new VariableExpression(vq);
     }

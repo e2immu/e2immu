@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 

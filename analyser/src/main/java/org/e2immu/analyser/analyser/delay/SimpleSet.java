@@ -17,40 +17,28 @@ package org.e2immu.analyser.analyser.delay;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.util.WeightedGraph;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SimpleSet implements CausesOfDelay {
-    // DO NOT USE, use CausesOfDelay.EMPTY!
-    public static final SimpleSet EMPTY = new SimpleSet(Set.of());
-
-    private final Set<CauseOfDelay> causes;
+class SimpleSet extends AbstractDelay {
+    private final List<CauseOfDelay> causes;
+    private final int maxPriority;
 
     // only to be used for CausesOfDelay.EMPTY
 
-    private SimpleSet(Set<CauseOfDelay> causes) {
+    SimpleSet(List<CauseOfDelay> causes, int maxPriority) {
         this.causes = causes;
+        this.maxPriority = maxPriority;
+        assert causes.size() > 1;
+        assert maxPriority != CauseOfDelay.LOW;
     }
 
-    public SimpleSet(Location location, CauseOfDelay.Cause cause) {
-        this(new SimpleCause(location, cause));
-    }
-
-    public SimpleSet(CauseOfDelay cause) {
-        this(Set.of(cause));
-    }
-
-    public static CausesOfDelay from(Set<CauseOfDelay> causes) {
-        return causes.isEmpty() ? CausesOfDelay.EMPTY : mergeIntoMapAndReturn(causes.stream(), new HashMap<>());
+    @Override
+    public int maxPriority() {
+        return maxPriority;
     }
 
     @Override
@@ -66,27 +54,25 @@ public class SimpleSet implements CausesOfDelay {
         return Objects.hash(causes);
     }
 
-    @Override
-    public String label() {
-        throw new UnsupportedOperationException("No label for delays");
-    }
-
     /*
     A single merge will be slower, but we'll have fewer delays to merge in complex methods, which makes it faster again...
      */
     @Override
     public CausesOfDelay merge(CausesOfDelay other) {
         if (other.isDone()) return this;
-        if (isDone()) return other;
+        if (maxPriority < other.maxPriority()) return other;
+        if (maxPriority > other.maxPriority()) return other;
+
         // more complicated than simply merge two sets. We keep only the earliest location of each delay
         Map<String, CauseOfDelay> map = new HashMap<>();
         causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
             throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
         }));
-        return mergeIntoMapAndReturn(other.causesStream(), map);
+        return mergeIntoMapAndReturn(other.causesStream(), map, maxPriority);
     }
 
-    private static SimpleSet mergeIntoMapAndReturn(Stream<CauseOfDelay> causes, Map<String, CauseOfDelay> map) {
+    public static CausesOfDelay mergeIntoMapAndReturn(Stream<CauseOfDelay> causes, Map<String, CauseOfDelay> map, int maxPriority) {
+        // all priorities are equal
         causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
             String i1 = c1.location().statementIdentifierOrNull();
             String i2 = c2.location().statementIdentifierOrNull();
@@ -95,7 +81,10 @@ public class SimpleSet implements CausesOfDelay {
             if (i2 == null) return c1;
             return i1.compareTo(i2) <= 0 ? c1 : c2;
         }));
-        return new SimpleSet(Set.copyOf(map.values()));
+        if (map.size() == 1) {
+            return new SingleDelay(map.values().stream().findFirst().orElseThrow());
+        }
+        return new SimpleSet(map.values().stream().toList(), maxPriority);
     }
 
     @Override
@@ -113,104 +102,7 @@ public class SimpleSet implements CausesOfDelay {
     @Override
     public CausesOfDelay removeAll(Set<CauseOfDelay> breaks) {
         Set<CauseOfDelay> set = causes.stream().filter(c -> !breaks.contains(c)).collect(Collectors.toUnmodifiableSet());
-        return set.isEmpty() ? CausesOfDelay.EMPTY : new SimpleSet(set);
-    }
-
-    @Override
-    public int pos() {
-        return 1;
-    }
-
-    @Override
-    public boolean isDelayed() {
-        return !causes.isEmpty();
-    }
-
-    @Override
-    public boolean isProgress() {
-        return false;
-    }
-
-    @Override
-    public boolean isDone() {
-        return causes.isEmpty();
-    }
-
-    @Override
-    public int value() {
-        return -1;
-    }
-
-    @Override
-    public CausesOfDelay causesOfDelay() {
-        return this;
-    }
-
-    @Override
-    public AnalysisStatus addProgress(boolean progress) {
-        if (progress) {
-            return new ProgressWrapper(this);
-        }
-        return this;
-    }
-
-    @Override
-    public DV min(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
-        if (other.isDelayed()) {
-            return merge(other);
-        }
-        // other is not delayed
-        return this;
-    }
-
-    @Override
-    public DV minIgnoreNotInvolved(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
-        if (other.isDelayed()) {
-            return merge(other);
-        }
-        // other is not delayed
-        return this;
-    }
-
-    private DV merge(DV other) {
-        Map<String, CauseOfDelay> map = new HashMap<>();
-        causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
-            throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
-        }));
-        return mergeIntoMapAndReturn(other.causesOfDelay().causesStream(), map);
-    }
-
-    @Override
-    public DV max(DV other) {
-        if (this == MIN_INT_DV) return other;
-        if (other == MIN_INT_DV) return this;
-        if (other.isDelayed()) {
-            return merge(other);
-        }
-        return this; // other is not a delay
-    }
-
-    @Override
-    public DV maxIgnoreDelay(DV other) {
-        if (other.isDelayed()) {
-            return merge(other);
-        }
-        return other; // other is not a delay
-    }
-
-    @Override
-    public DV replaceDelayBy(DV nonDelay) {
-        assert nonDelay.isDone();
-        return nonDelay;
-    }
-
-    @Override
-    public int compareTo(WeightedGraph.Weight o) {
-        return value() - ((DV) o).value();
+        return DelayFactory.createDelay(set);
     }
 
     @Override
@@ -221,14 +113,6 @@ public class SimpleSet implements CausesOfDelay {
         return causes.stream().map(CauseOfDelay::toString)
                 .sorted()
                 .collect(Collectors.joining(";"));
-    }
-
-    @Override
-    public AnalysisStatus combine(AnalysisStatus other) {
-        if (other instanceof NotDelayed) return this;
-        assert other.isDelayed();
-        assert isDelayed();
-        return merge(other.causesOfDelay()).addProgress(other.isProgress());
     }
 
     @Override

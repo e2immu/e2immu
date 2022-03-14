@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -142,7 +142,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
-                CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
+                CausesOfDelay eciDelay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
                 statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
                 return eciDelay;
             }
@@ -231,7 +231,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             // empty parameters: this(); or super(); this code is replicated a bit higher for the situation of parameters
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
-                CausesOfDelay eciDelay = new SimpleSet(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
+                CausesOfDelay eciDelay = DelayFactory.createDelay(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI);
                 statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
                 return eciDelay;
             }

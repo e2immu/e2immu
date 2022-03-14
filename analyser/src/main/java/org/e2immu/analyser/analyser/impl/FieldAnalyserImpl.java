@@ -20,7 +20,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -946,9 +946,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         // captures: this.field = someParameterOfMySelf.field;
                         added = false; // we'll skip this!
                     } else {
-                        if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
-                                && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                                && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
+                        if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY,
+                                c -> c instanceof VariableCause vc && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
                             // this is not hard condition because in Lazy it takes 2 iterations for the delay to be actually broken
                             LOGGER.debug("Break init delay needs resolving for field {} in method {}", fieldInfo.name,
                                     methodInfo.name);
@@ -1117,7 +1116,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // inject a cause of delay that we can intercept in the next iteration
             FieldReference fr = new FieldReference(analyserContext, fieldInfo);
             VariableCause vc = new VariableCause(fr, new LocationImpl(fieldInfo), CauseOfDelay.Cause.VALUES);
-            delays = delays.merge(new SimpleSet(vc));
+            delays = delays.merge(DelayFactory.createDelay(vc));
         }
         // order does not matter for this class, but is handy for testing
         values.sort(ValueAndPropertyProxy.COMPARATOR);

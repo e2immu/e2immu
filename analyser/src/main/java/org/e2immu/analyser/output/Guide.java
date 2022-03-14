@@ -15,7 +15,6 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.ERContainer;
 
 import java.util.concurrent.atomic.AtomicInteger;

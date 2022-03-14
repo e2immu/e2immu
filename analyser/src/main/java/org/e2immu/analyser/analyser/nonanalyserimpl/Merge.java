@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
@@ -83,10 +83,8 @@ public record Merge(EvaluationContext evaluationContext,
     private VariableInfoImpl breakInitDelay(VariableInfoContainerImpl vici) {
         VariableInfoImpl vii = vici.currentExcludingMerge();
         if (vii.variable() instanceof FieldReference fieldReference && vii.getValue().isDelayed()) {
-            boolean selfReference = vii.getValue().causesOfDelay().causesStream()
-                    .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES)
-                            && c instanceof VariableCause vc
-                            && vc.variable().equals(fieldReference));
+            boolean selfReference = vii.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.VALUES,
+                    c -> c instanceof VariableCause vc && vc.variable().equals(fieldReference));
             if (selfReference) {
                 LOGGER.debug("Detected self-reference in merge helper on variable field {}", fieldReference);
                 Expression instance;
@@ -109,7 +107,7 @@ public record Merge(EvaluationContext evaluationContext,
                 assert instance.isDone();
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate("wrapped in merge"),
                         instance,
-                        vii, new SimpleSet(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
+                        vii, DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
                 vii.setProperty(Property.IMMUTABLE_BREAK, properties.get(Property.IMMUTABLE));
                 vii.setProperty(Property.NOT_NULL_BREAK, properties.get(Property.NOT_NULL_EXPRESSION));
                 vii.setValue(wrapped);

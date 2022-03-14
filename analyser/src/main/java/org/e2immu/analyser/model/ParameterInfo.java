@@ -17,7 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -43,6 +43,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final Identifier identifier;
     public final ParameterizedType parameterizedType;
     public final String name;
+    public final String fullyQualifiedName;
     public final int index;
 
     public final SetOnce<ParameterAnalysis> parameterAnalysis = new SetOnce<>();
@@ -60,6 +61,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.name = Objects.requireNonNull(name);
         this.index = index;
         this.owner = Objects.requireNonNull(owner);
+        this.fullyQualifiedName = owner.fullyQualifiedName() + ":" + index + ":" + name;
     }
 
     @Override
@@ -104,7 +106,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public String fullyQualifiedName() {
-        return owner.fullyQualifiedName() + ":" + index + ":" + name;
+        return fullyQualifiedName;
     }
 
     @Override
@@ -248,7 +250,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
             }
             return owner.fullyQualifiedName.compareTo(o.owner.fullyQualifiedName);
         }
-        return fullyQualifiedName().compareTo(v.fullyQualifiedName());
+        return fullyQualifiedName.compareTo(v.fullyQualifiedName());
     }
 
     @Override
@@ -268,6 +270,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
-        return new SimpleSet(newLocation(), cause);
+        return DelayFactory.createDelay(newLocation(), cause);
     }
 }

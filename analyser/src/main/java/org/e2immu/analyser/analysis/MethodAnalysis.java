@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
-import org.e2immu.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analysis;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.range.Range;

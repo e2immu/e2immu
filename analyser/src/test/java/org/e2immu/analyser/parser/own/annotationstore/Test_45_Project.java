@@ -122,8 +122,8 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
-                            case 2 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 1 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:initial@Field_read;initial@Field_updated;initial@Field_value>.read>?new HashMap<>():<vl:result>";
+                            case 2 -> "queried.contains(entry.getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_value>.read>?new HashMap<>():<vl:result>";
                             case 3 -> "!entry.getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!entry.getValue().read.isBefore(entry.getValue().updated)||queried.contains(entry.getKey())||!<null-check>?new HashMap<>():<vl:result>";
                             default -> "new HashMap<>()";
                         };
@@ -132,16 +132,16 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
-                            case 2 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read>?new HashMap<>():<vl:result>";
+                            case 1 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:initial@Field_read;initial@Field_updated;initial@Field_value>.read>?new HashMap<>():<vl:result>";
+                            case 2 -> "kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<m:isAfter>||!<m:isBefore>||null==<f:<vp:Container:assign_to_field@Parameter_value>.read>?new HashMap<>():<vl:result>";
                             case 3 -> "!(nullable instance type Entry<String,Container>).getValue().read.plusMillis(readWithinMillis).isAfter(now$2)||!(nullable instance type Entry<String,Container>).getValue().read.isBefore((nullable instance type Entry<String,Container>).getValue().updated)||kvStore.entrySet().isEmpty()||queried.contains((nullable instance type Entry<String,Container>).getKey())||!<null-check>?new HashMap<>():<vl:result>";
                             default -> "new HashMap<>()";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
                             case 0 -> "result";
-                            case 1 -> "<vp:Container:cm@Parameter_previousRead;cm@Parameter_value;container@Class_Container;initial@Field_read;initial@Field_updated;initial@Field_value;mom@Parameter_previousRead;mom@Parameter_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
-                            case 2 -> "<vp:Container:assign_to_field@Parameter_previousRead;assign_to_field@Parameter_value;container@Class_Container;mom@Parameter_previousRead;mom@Parameter_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 1 -> "<vp:Container:initial@Field_read;initial@Field_updated;initial@Field_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
+                            case 2 -> "<vp:Container:assign_to_field@Parameter_value>.read,entry,kvStore,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,result";
                             case 3 -> "(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().read,(nullable instance type Entry<String,Container>).getValue().updated,kvStore,now,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried,org.e2immu.analyser.parser.own.annotationstore.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):1:readWithinMillis,result";
                             default -> "";
                         };
@@ -239,9 +239,7 @@ public class Test_45_Project extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0
-                            ? "cm@Parameter_value;cnn@Parameter_value;ext_not_null@Parameter_value;mom@Parameter_value"
-                            : "";
+                    String expect = d.iteration() == 0 ? "cm@Parameter_value;mom@Parameter_value" : "";
                     assertEquals(expect, d.evaluationResult().causesOfDelay().toString());
                 }
             }

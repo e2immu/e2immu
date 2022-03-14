@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.InstanceOf;
+import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.UnaryOperator;
 
 import java.util.List;
 

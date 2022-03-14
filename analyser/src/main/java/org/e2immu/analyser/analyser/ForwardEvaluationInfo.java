@@ -18,7 +18,9 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringJoiner;
 
 public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean doNotReevaluateVariableExpressions,

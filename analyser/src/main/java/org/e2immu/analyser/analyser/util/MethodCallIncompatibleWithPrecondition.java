@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -63,7 +63,7 @@ public class MethodCallIncompatibleWithPrecondition {
             if (!variableInfo.valueIsSet()) {
                 LOGGER.debug("Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
-                return new SimpleSet(new VariableCause(fieldReference, statementAnalysis.location(Stage.MERGE),
+                return DelayFactory.createDelay(new VariableCause(fieldReference, statementAnalysis.location(Stage.MERGE),
                         CauseOfDelay.Cause.VALUE));
             }
             if (context.evaluationContext().hasState(variableInfo.getValue())) {

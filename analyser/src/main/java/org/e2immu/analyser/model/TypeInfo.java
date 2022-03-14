@@ -16,7 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -712,7 +712,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
 
     @Override
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
-        return new SimpleSet(newLocation(), cause);
+        return DelayFactory.createDelay(newLocation(), cause);
     }
 
     // in other words, cannot be subclassed

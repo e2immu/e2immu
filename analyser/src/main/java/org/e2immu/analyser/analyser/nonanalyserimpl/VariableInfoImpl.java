@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
@@ -124,7 +124,7 @@ public class VariableInfoImpl implements VariableInfo {
 
     private static CausesOfDelay initialValue(Location location, Variable variable) {
         assert Stage.isPresent(location.statementIdentifierOrNull()) : "no stage in location" + location;
-        return new SimpleSet(new VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
+        return DelayFactory.createDelay(new VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
     }
 
     @Override
@@ -183,7 +183,7 @@ public class VariableInfoImpl implements VariableInfo {
     public DV getProperty(Property property) {
         DV dv = properties.getOrDefaultNull(property);
         if (dv == null) {
-            return new SimpleSet(new VariableCause(variable, location, property.causeOfDelay()));
+            return DelayFactory.createDelay(new VariableCause(variable, location, property.causeOfDelay()));
         }
         return dv;
     }
@@ -233,7 +233,9 @@ public class VariableInfoImpl implements VariableInfo {
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        if (value.isDelayed() || variable instanceof  FieldReference fr && fr.scope.isDelayed()) {
+        // FIXME this second clause was added to prevent Test_Output_03_Formatter from writing a delayed after a real value...
+        // this is probably not the solution?
+        if (value.isDelayed() || variable instanceof FieldReference fr && fr.scope.isDelayed()) {
             try {
                 this.value.setVariable(value);
             } catch (IllegalStateException ise) {

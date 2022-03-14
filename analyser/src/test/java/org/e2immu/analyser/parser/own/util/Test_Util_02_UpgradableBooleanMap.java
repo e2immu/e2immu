@@ -92,8 +92,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other;ext_not_null@Parameter_other>";
-                        case 1 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other>";
+                        case 0, 1 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other>";
                         default -> "UpgradableBooleanMap::putAll";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -147,7 +146,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=assign_to_field@Parameter_t;cm:e@Method_accept_0-E;link:e@Method_accept_0-E,this=assign_to_field@Parameter_t;cm:this@Method_accept_0-E;link:e@Method_accept_0-E"
+                            ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=cm:e@Method_accept_0-E,this=cm:this@Method_accept_0-E"
                             : "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=false:0,this=true:1";
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Objects::toString)
                             .sorted().collect(Collectors.joining(",")));

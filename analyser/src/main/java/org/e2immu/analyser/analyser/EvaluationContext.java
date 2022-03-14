@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -429,7 +429,7 @@ public interface EvaluationContext {
 
     default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
         if (hiddenContentTypes == null) return new HiddenContent(List.of(),
-                new SimpleSet(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
+                DelayFactory.createDelay(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
         if (hiddenContentTypes.contains(concreteType)) {
             return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
         }
@@ -439,7 +439,7 @@ public interface EvaluationContext {
         if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
             new HiddenContent(List.of(),
-                    new SimpleSet(new SimpleCause(bestType.newLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT))
+                    DelayFactory.createDelay(new SimpleCause(bestType.newLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT))
                             .merge(immutable.causesOfDelay()));
         }
 

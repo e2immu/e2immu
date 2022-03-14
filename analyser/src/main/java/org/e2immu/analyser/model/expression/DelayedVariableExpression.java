@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -43,7 +43,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                                       Variable variable,
                                       int statementTime,
                                       CausesOfDelay causesOfDelay) {
-        super(Identifier.constant(variable.fullyQualifiedName()+":"+statementTime));
+        super(Identifier.constant(variable.fullyQualifiedName() + ":" + statementTime));
         this.msg = msg;
         this.fqn = "<" + variable.fullyQualifiedName() + ":" + statementTime + ">";
         this.statementTime = statementTime;
@@ -63,14 +63,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      int statementTime,
                                                      CauseOfDelay causeOfDelay) {
-        return forField(fieldReference, statementTime, new SimpleSet(causeOfDelay));
+        return forField(fieldReference, statementTime, DelayFactory.createDelay(causeOfDelay));
     }
 
     public static DelayedVariableExpression forBreakingInitialisationDelay(FieldReference fieldReference,
                                                                            int statementTime,
                                                                            CauseOfDelay causeOfDelay) {
         return new DelayedVariableExpression("<f*:" + fieldString(fieldReference) + ">", fieldReference,
-                statementTime, new SimpleSet(causeOfDelay));
+                statementTime, DelayFactory.createDelay(causeOfDelay));
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
@@ -109,8 +109,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causesOfDelay);
     }
 
-    public static Expression forMerge(Variable variable , CausesOfDelay causes) {
-        String msg = "<merge:"+variable.simpleName()+">";
+    public static Expression forMerge(Variable variable, CausesOfDelay causes) {
+        String msg = "<merge:" + variable.simpleName() + ">";
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);
     }
 

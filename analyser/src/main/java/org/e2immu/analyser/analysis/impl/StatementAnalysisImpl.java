@@ -16,7 +16,7 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -1569,7 +1569,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else if (fieldAnalysis.getFieldInfo().owner.primaryType().equals(evaluationContext.getCurrentType().primaryType())) {
             Expression initializerValue = fieldAnalysis.getInitializerValue();
             if (initializerValue == null) {
-                immutable = new SimpleSet(location(INITIAL), CauseOfDelay.Cause.INITIAL_VALUE);
+                immutable = DelayFactory.createDelay(location(INITIAL), CauseOfDelay.Cause.INITIAL_VALUE);
             } else {
                 ParameterizedType pt = initializerValue.returnType();
                 immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false);
@@ -1867,7 +1867,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (localVariablesAssignedInThisLoop == null || localVariablesAssignedInThisLoop.isFrozen()) {
             return CausesOfDelay.EMPTY;
         }
-        return new SimpleSet(location(INITIAL), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED); // DELAY
+        return DelayFactory.createDelay(location(INITIAL), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED); // DELAY
     }
 
     @Override

@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.Objects;
 
@@ -31,8 +30,14 @@ public class SimpleCause implements CauseOfDelay {
         this.withoutStatementIdentifier = cause.label + "@" + location.delayStringWithoutStatementIdentifier();
     }
 
-    public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
-        this(withInspectionAndAnalysis.newLocation(), cause);
+    @Override
+    public int compareTo(CauseOfDelay o) {
+        if (o instanceof SimpleCause sc) {
+            int c = cause.compareTo(sc.cause);
+            if (c != 0) return c;
+            return location.compareTo(sc.location);
+        }
+        return 1; // VC comes before SimpleCause
     }
 
     @Override

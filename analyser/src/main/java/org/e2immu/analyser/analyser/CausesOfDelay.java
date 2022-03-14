@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.AbstractDelay;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.NotNull;
 
@@ -22,8 +22,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public interface CausesOfDelay extends DV, AnalysisStatus {
-
-    CausesOfDelay EMPTY = SimpleSet.EMPTY;
 
     boolean contains(Variable variable);
 
@@ -34,4 +32,87 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
     Stream<CauseOfDelay> causesStream();
 
     CausesOfDelay removeAll(Set<CauseOfDelay> breaks);
+
+    int maxPriority();
+
+    CausesOfDelay EMPTY = new AbstractDelay() {
+
+        @Override
+        public AnalysisStatus combine(AnalysisStatus other) {
+            return other;
+        }
+
+        @Override
+        public AnalysisStatus combine(AnalysisStatus other, boolean limit) {
+            return other;
+        }
+
+        @Override
+        public int numberOfDelays() {
+            return 0;
+        }
+
+        @Override
+        public boolean contains(Variable variable) {
+            return false;
+        }
+
+        @Override
+        public CausesOfDelay merge(CausesOfDelay other) {
+            return other;
+        }
+
+        @Override
+        public Stream<CauseOfDelay> causesStream() {
+            return Stream.of();
+        }
+
+        @Override
+        public CausesOfDelay removeAll(Set<CauseOfDelay> breaks) {
+            return this;
+        }
+
+        @Override
+        public boolean isDelayed() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+
+        @Override
+        public DV min(DV other) {
+            if (other == MIN_INT_DV) return this;
+            return other;
+        }
+
+        @Override
+        public DV max(DV other) {
+            if (other == MIN_INT_DV) return this;
+            return other;
+        }
+
+        @Override
+        public DV maxIgnoreDelay(DV other) {
+            return other;
+        }
+
+        @Override
+        public DV replaceDelayBy(DV nonDelay) {
+            return this;
+        }
+
+        @Override
+        public DV minIgnoreNotInvolved(DV other) {
+            if (other == MIN_INT_DV) return this;
+            return other;
+        }
+
+        @Override
+        public String toString() {
+            return "";
+        }
+    };
 }

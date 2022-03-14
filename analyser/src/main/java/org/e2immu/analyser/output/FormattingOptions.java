@@ -15,7 +15,6 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
 

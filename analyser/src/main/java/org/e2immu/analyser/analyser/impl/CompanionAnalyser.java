@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -202,7 +202,7 @@ public class CompanionAnalyser {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
                 if (remapping == null)
                     return DelayedVariableExpression.forParameter(parameterInfo,
-                            new SimpleSet(
+                            DelayFactory.createDelay(
                                     new VariableCause(variable, getLocation(Stage.INITIAL),
                                             CauseOfDelay.Cause.REMAP_PARAMETER)));
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));

@@ -24,7 +24,10 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);

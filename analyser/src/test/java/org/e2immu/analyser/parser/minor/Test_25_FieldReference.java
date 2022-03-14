@@ -135,7 +135,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String delayed = d.iteration() == 0
-                                ? "cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C;link:newSet@Method_copy_2-E;link:this.setP@Method_copy_2-E"
+                                ? "cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C"
                                 : "mom@Parameter_setP";
                         assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -152,7 +152,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         // assigned the null constant, yet we have no idea about its value properties
                         String aNull = switch (d.iteration()) {
-                            case 0 -> "<vp::container@Record_DV;immutable@Record_DV;independent@Record_DV>";
+                            case 0 -> "<vp::container@Record_DV>";
                             case 1 -> "<vp::initial@Field_v>";
                             default -> "null";
                         };

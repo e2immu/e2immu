@@ -16,13 +16,11 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -218,6 +216,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     @Override
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
-        return new SimpleSet(newLocation(), cause);
+        return DelayFactory.createDelay(newLocation(), cause);
     }
 }

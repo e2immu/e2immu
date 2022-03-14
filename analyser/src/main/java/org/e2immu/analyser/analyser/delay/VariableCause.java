@@ -32,6 +32,18 @@ public class VariableCause implements CauseOfDelay {
     }
 
     @Override
+    public int compareTo(CauseOfDelay o) {
+        if (o instanceof VariableCause vc) {
+            int c = cause.compareTo(vc.cause);
+            if (c != 0) return c;
+            int d = variable.compareTo(vc.variable);
+            if (d != 0) return d;
+            return location.compareTo(vc.location);
+        }
+        return -1; // VC comes before SimpleCause
+    }
+
+    @Override
     public String toString() {
         return cause.label + ":" + variable.debug() + "@" + location.toDelayString();
     }

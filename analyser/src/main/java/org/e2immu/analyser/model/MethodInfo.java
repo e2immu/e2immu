@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -342,7 +342,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     @Override
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
-        return new SimpleSet(newLocation(), cause);
+        return DelayFactory.createDelay(newLocation(), cause);
     }
 
     private static final Set<String> ZERO_PARAMS = Set.of("toString", "hashCode", "clone", "finalize", "getClass",

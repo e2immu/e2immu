@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -138,7 +138,7 @@ public interface AnalysisProvider {
     default DV isTransparent(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = getTypeAnalysis(typeBeingAnalysed);
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return new SimpleSet(typeBeingAnalysed.newLocation(),
+        if (hiddenContentTypes == null) return DelayFactory.createDelay(typeBeingAnalysed.newLocation(),
                 CauseOfDelay.Cause.HIDDEN_CONTENT);
         return DV.fromBoolDv(hiddenContentTypes.contains(parameterizedType));
     }

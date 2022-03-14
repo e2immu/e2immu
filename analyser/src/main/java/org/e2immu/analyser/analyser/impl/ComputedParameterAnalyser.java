@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -233,7 +233,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 if (!vi.linkedVariablesIsSet()) {
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    return new SimpleSet(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE), CauseOfDelay.Cause.LINKING));
+                    return DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
+                            CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
@@ -368,8 +369,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         if (property == MODIFIED_OUTSIDE_METHOD) {
                             // what if I'm the cause of the MOM delay? I need that data to progress!
                             // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
-                            Stream<CauseOfDelay> vcs = findModifiedOutsideMethod(inField.causesOfDelay());
-                            if (vcs.findAny().isPresent()) {
+                            boolean modifiedOutsideMethod = findModifiedOutsideMethod(inField.causesOfDelay());
+                            if (modifiedOutsideMethod) {
                                 CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
                                 delays = delays.merge(breakDelay);
                                 // let's not forget to set the delay, so that the statement analyser picks it up
@@ -460,9 +461,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return AnalysisStatus.of(dv);
     }
 
-    private Stream<CauseOfDelay> findModifiedOutsideMethod(CausesOfDelay causes) {
-        return causes.causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD)
-                .filter(c -> c instanceof VariableCause v && v.variable() == parameterInfo ||
+    private boolean findModifiedOutsideMethod(CausesOfDelay causes) {
+        return causes.containsCauseOfDelay(CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD,
+                c -> c instanceof VariableCause v && v.variable() == parameterInfo ||
                         c instanceof SimpleCause sc && sc.location().getInfo() == parameterInfo);
     }
 
@@ -651,7 +652,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             // @Container: handled separately
 
             // @IgnoreModifications
-            if(!parameterAnalysis.properties.isDone(IGNORE_MODIFICATIONS)) {
+            if (!parameterAnalysis.properties.isDone(IGNORE_MODIFICATIONS)) {
                 parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
             }
 

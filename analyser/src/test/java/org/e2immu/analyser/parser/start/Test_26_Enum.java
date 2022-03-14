@@ -66,8 +66,8 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
-                        case 1 -> "{<vp:ONE:container@Enum_Enum_0;immutable@Enum_Enum_0>,<vp:TWO:container@Enum_Enum_0;immutable@Enum_Enum_0>,<vp:THREE:container@Enum_Enum_0;immutable@Enum_Enum_0>}";
-                        case 2 -> "{<vp:ONE:cm@Parameter_e;container@Enum_Enum_0>,<vp:TWO:cm@Parameter_e;container@Enum_Enum_0>,<vp:THREE:cm@Parameter_e;container@Enum_Enum_0>}";
+                        case 1 -> "{<vp:ONE:container@Enum_Enum_0>,<vp:TWO:container@Enum_Enum_0>,<vp:THREE:container@Enum_Enum_0>}";
+                        case 2 -> "{<vp:ONE:cm@Parameter_e>,<vp:TWO:cm@Parameter_e>,<vp:THREE:cm@Parameter_e>}";
                         default -> "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());

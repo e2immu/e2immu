@@ -36,6 +36,7 @@ public class This implements Variable {
     // display information.
     public final TypeInfo explicitlyWriteType;
     public final boolean writeSuper;
+    private final String fullyQualifiedName;
 
     public This(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
         this(inspectionProvider, typeInfo, null, false);
@@ -46,6 +47,7 @@ public class This implements Variable {
         this.explicitlyWriteType = explicitlyWriteType;
         this.writeSuper = writeSuper;
         typeAsParameterizedType = typeInfo.asParameterizedType(inspectionProvider);
+        this.fullyQualifiedName = typeInfo.fullyQualifiedName + ".this";
     }
 
     public static Variable create(TypeContext typeContext, boolean writeSuper, TypeInfo enclosingType, String typeName) {
@@ -116,7 +118,7 @@ public class This implements Variable {
 
     @Override
     public String fullyQualifiedName() {
-        return typeInfo.fullyQualifiedName + ".this";
+        return fullyQualifiedName;
     }
 
     @Override

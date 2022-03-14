@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 // assignment in if and else block
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.*;
@@ -234,7 +234,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     }
 
     private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
-        SimpleSet causes = new SimpleSet(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
+        CausesOfDelay causes = DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
         Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
         Expression value = new DelayedWrappedExpression(Identifier.generate("dwe break init value props"),
                 vi.getValue(), vi, causes);
@@ -469,7 +469,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                 condition, ifTrue.getValue(), ifFalse.getValue(), false));
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {
-            CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.CONDITION));
+            CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(vi.variable(),
+                    evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.CONDITION));
             Properties delayed = Properties.ofWritable(EvaluationContext.delayedValueProperties(delay));
             return new Merge.ExpressionAndProperties(safe, delayed);
         }
@@ -505,7 +506,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         if (vi.variable() instanceof FieldReference) {
             CausesOfDelay causes = vi.getValue().causesOfDelay();
             if (vi.getValue() instanceof DelayedVariableExpression) {
-                if (causes.causesStream().anyMatch(c -> c instanceof VariableCause vc && vc.cause() == CauseOfDelay.Cause.VALUES
+                if (causes.containsCauseOfDelay(CauseOfDelay.Cause.VALUES, c -> c instanceof VariableCause vc
                         && vc.variable().equals(vi.variable())) && evaluationContext.getCurrentMethod() != null) {
                     MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
                     // we have a field whose values cannot be determined; this is causing issues right now

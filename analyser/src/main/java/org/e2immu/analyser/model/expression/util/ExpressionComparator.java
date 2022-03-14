@@ -16,8 +16,10 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.ExpressionWrapper;
+import org.e2immu.annotation.IgnoreModifications;
 
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 
 public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_CONSTANT_NULL = 30;
@@ -86,8 +88,17 @@ public class ExpressionComparator implements Comparator<Expression> {
         }
     }
 
+    @IgnoreModifications
+    private final IdentityHashMap<Expression, IdentityHashMap<Expression, Integer>> cache = new IdentityHashMap<>();
+
     @Override
     public int compare(Expression v1, Expression v2) {
+        if (cache.size() > 1_000) cache.clear();
+        IdentityHashMap<Expression, Integer> map = cache.computeIfAbsent(v1, e -> new IdentityHashMap<>());
+        return map.computeIfAbsent(v2, e -> compareNotCached(v1, v2));
+    }
+
+    private int compareNotCached(Expression v1, Expression v2) {
         boolean v1Wrapped = v1 instanceof ExpressionWrapper;
         boolean v2Wrapped = v2 instanceof ExpressionWrapper;
 
@@ -115,7 +126,7 @@ public class ExpressionComparator implements Comparator<Expression> {
         int u = v1.internalCompareTo(v2);
         if (u != 0) return u;
 
-        if(u1.count == 1 && u2.count == 1) {
+        if (u1.count == 1 && u2.count == 1) {
             // everything has been compared, no need to delve deeper
             return 0;
         }

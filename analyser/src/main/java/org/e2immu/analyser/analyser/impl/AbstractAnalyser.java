@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 
 import java.util.Collection;
 import java.util.Objects;

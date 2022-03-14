@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.RangeData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -48,7 +48,7 @@ public class RangeDataImpl implements RangeData {
     private final SetOnce<Message> uselessAssignment = new SetOnce<>();
 
     public RangeDataImpl(Location location) {
-        range.setVariable(new Range.Delayed(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE))));
+        range.setVariable(new Range.Delayed(DelayFactory.createDelay(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE))));
         this.location = location;
     }
 
@@ -287,7 +287,7 @@ public class RangeDataImpl implements RangeData {
         StatementAnalysis last = first.lastStatement();
         VariableInfoContainer vic = last.findOrNull(lvr);
         if (vic == null) {
-            return new SimpleSet(new VariableCause(lvr, location, CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+            return DelayFactory.createDelay(new VariableCause(lvr, location, CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
         }
         VariableInfo current = vic.current();
         if (current.getAssignmentIds().getLatestAssignment().compareTo(first.index()) >= 0) {

@@ -537,8 +537,18 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     public static int compareVariables(Expression e1, Expression e2) {
-        Set<Variable> myVariables = new HashSet<>(e1.variables(true));
-        Set<Variable> otherVariables = new HashSet<>(e2.variables(true));
+        List<Variable> variables1 = e1.variables(true);
+        List<Variable> variables2 = e2.variables(true);
+        int s1 = variables1.size();
+        int s2 = variables2.size();
+        if (s1 == 0 && s2 == 0) return 0;
+        if (s1 == 1 && s2 == 0 || s1 == 0) return s1 - s2;
+        if (s1 == 1 && s2 == 1)
+            return variables1.get(0).fullyQualifiedName().compareTo(variables2.get(0).fullyQualifiedName());
+
+        // now the more complex situation
+        Set<Variable> myVariables = new HashSet<>(variables1);
+        Set<Variable> otherVariables = new HashSet<>(variables2);
         int varDiff = myVariables.size() - otherVariables.size();
         if (varDiff != 0) return varDiff;
         String myVarStr = myVariables.stream().map(vv -> vv.fullyQualifiedName())

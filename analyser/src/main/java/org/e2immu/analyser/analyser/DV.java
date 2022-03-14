@@ -14,11 +14,15 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.util.WeightedGraph;
 import org.e2immu.annotation.NotNull;
+
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /*
 Delayable Value
@@ -28,7 +32,7 @@ public interface DV extends WeightedGraph.Weight {
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
     // special value; see explanation at max()
-    DV MIN_INT_DV = new SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
+    DV MIN_INT_DV = DelayFactory.createDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
 
     DV FALSE_DV = new NoDelay(0, "false");
     DV TRUE_DV = new NoDelay(1, "true");
@@ -91,7 +95,25 @@ public interface DV extends WeightedGraph.Weight {
     }
 
     default boolean containsCauseOfDelay(CauseOfDelay.Cause cause) {
+        assert isHighPriority(cause);
         return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause);
+    }
+
+    default boolean containsCauseOfDelay(CauseOfDelay.Cause cause, Predicate<CauseOfDelay> predicate) {
+        assert isHighPriority(cause);
+        return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause && predicate.test(c));
+    }
+
+    default Optional<VariableCause> findVariableCause(CauseOfDelay.Cause cause, Predicate<VariableCause> predicate) {
+        assert isHighPriority(cause);
+        return causesOfDelay().causesStream().filter(c -> c.cause() == cause && c instanceof VariableCause vc && predicate.test(vc))
+                .map(c -> (VariableCause) c)
+                .findFirst();
+    }
+
+    private static boolean isHighPriority(CauseOfDelay.Cause cause) {
+        assert cause.priority == CauseOfDelay.HIGH : "Low priority causes are potentially filtered out";
+        return true;
     }
 
     @NotNull

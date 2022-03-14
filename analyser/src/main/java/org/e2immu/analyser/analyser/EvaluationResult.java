@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -648,14 +648,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         private CausesOfDelay breakSelfReferenceDelay(Variable assignmentTarget, CausesOfDelay stateIsDelayed) {
             if (assignmentTarget instanceof FieldReference fieldReference) {
-                boolean selfReference = stateIsDelayed.causesOfDelay().causesStream()
-                        .anyMatch(c -> (c.cause() == CauseOfDelay.Cause.VALUES)
-                                && c instanceof VariableCause vc
-                                && vc.variable().equals(fieldReference));
+                boolean selfReference = stateIsDelayed.containsCauseOfDelay(CauseOfDelay.Cause.VALUES,
+                        c -> c instanceof VariableCause vc && vc.variable().equals(fieldReference));
                 if (selfReference) {
                     CauseOfDelay cause = new VariableCause(fieldReference, evaluationContext.getLocation(EVALUATION),
                             CauseOfDelay.Cause.BREAK_INIT_DELAY);
-                    return new SimpleSet(cause).merge(stateIsDelayed);
+                    return DelayFactory.createDelay(cause).merge(stateIsDelayed);
                 }
             }
             return stateIsDelayed;

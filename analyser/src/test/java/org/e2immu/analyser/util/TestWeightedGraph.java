@@ -16,8 +16,8 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ public class TestWeightedGraph {
     private static final DV one = new NoDelay(1);
     private static final DV two = new NoDelay(2);
 
-    private static final DV delay = new SimpleSet(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+    private static final DV delay = DelayFactory.createDelay(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
     
     @Test
     public void test1() {

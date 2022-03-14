@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -232,7 +232,7 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void testReturnType() {
-        CausesOfDelay delay = new SimpleSet(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+        CausesOfDelay delay = DelayFactory.createDelay(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
         Expression a = DelayedExpression.forState(Identifier.generate("test"),
                 PRIMITIVES.booleanParameterizedType(), LinkedVariables.delayedEmpty(delay), delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);

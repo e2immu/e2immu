@@ -140,7 +140,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         if (causes.isDelayed()) {
-            assert !causes.containsCauseOfDelay(CauseOfDelay.Cause.MIN_INT);
+            assert causes.causesStream().noneMatch(c -> c.cause() == CauseOfDelay.Cause.MIN_INT);
             // we cannot really measure progress, because we're dependent on the analysis of other types
             // add progress here to ensure that we can wait sufficiently long
             AnalysisStatus status = AnalysisStatus.of(causes).addProgress(true);

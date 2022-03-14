@@ -76,7 +76,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
-                        case 1 -> "<null-check>?<vp:t:cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                        case 1 -> "<null-check>?<vp:t:initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
                         case 2, 3 -> "<wrapped:t>";
                         default -> "t$1-E$0";
                     };
@@ -138,8 +138,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
             String expected = switch (d.iteration()) {
-                case 0 -> "cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t";
-                case 1 -> "break_init_delay:this.t@Method_get_0-C;cnn:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;not_null:this.t@Method_get_0-C;values:this.t@Field_t";
+                case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                case 1 -> "break_init_delay:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,nullable instance type T/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());

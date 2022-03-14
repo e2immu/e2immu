@@ -14,14 +14,10 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.NotModified;
 
 import java.util.Map;
 import java.util.function.Function;

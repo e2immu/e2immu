@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -409,7 +409,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (lastStatement == null) {
                     increment = false;
                 } else if (lastStatement.flowData().initialTimeNotYetSet()) {
-                    SimpleSet initialTime = new SimpleSet(methodAnalysis.location(Stage.INITIAL), CauseOfDelay.Cause.INITIAL_TIME);
+                    CausesOfDelay initialTime = DelayFactory.createDelay(methodAnalysis.location(Stage.INITIAL),
+                            CauseOfDelay.Cause.INITIAL_TIME);
                     CausesOfDelay causes = modified.causesOfDelay().merge(initialTime);
                     return delayedMethod(context, builder, causes, modified);
                 } else {

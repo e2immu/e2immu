@@ -255,7 +255,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:NONE>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
-                            case 1 -> "<vp:NONE:container@Class_Space;immutable@Class_Space>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
+                            case 1 -> "<vp:NONE:container@Class_Space>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
                             case 2 -> "Space.NONE==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
                             case 3, 4 -> "Space.NONE==start?new OutputBuilderSimplified_7():<mmc:result>";
                             default -> "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
@@ -360,7 +360,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
-                    assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start;container@Class_OutputBuilderSimplified_7",
+                    assertEquals("container@Class_OutputBuilderSimplified_7",
                             d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
                 }
             }

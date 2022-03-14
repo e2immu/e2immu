@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
@@ -60,7 +60,7 @@ public class FlowData {
     public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
 
     public FlowData(Location location) {
-        CausesOfDelay initialDelay = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_FLOW_VALUE);
+        CausesOfDelay initialDelay = DelayFactory.createDelay(location, CauseOfDelay.Cause.INITIAL_FLOW_VALUE);
         guaranteedToBeReachedInCurrentBlock = new VariableFirstThen<>(initialDelay);
         guaranteedToBeReachedInMethod = new VariableFirstThen<>(initialDelay);
         interruptsFlow = new VariableFirstThen<>(initialDelay);

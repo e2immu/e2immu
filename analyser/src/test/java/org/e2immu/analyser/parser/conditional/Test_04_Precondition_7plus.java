@@ -81,8 +81,8 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 if ("typeInfo".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:TypeInfo:container@Record_TypeInfo;immutable@Record_TypeInfo>";
-                            case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;container@Record_TypeInfo;initial@Field_fqn;mom@Parameter_fqn>";
+                            case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
+                            case 1 -> "<vp:TypeInfo:initial@Field_fqn>";
                             default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
                         };
                         assertEquals(expected, d.currentValue().toString());

@@ -15,8 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -263,8 +262,7 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result;
         CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
         result = DelayedExpression.forMethod(identifier, methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
-                new SimpleSet(new SimpleCause(evaluationContext.getCurrentType(),
-                        CauseOfDelay.Cause.TYPE_ANALYSIS)));
+                DelayFactory.createDelay(evaluationContext.getCurrentType(), CauseOfDelay.Cause.TYPE_ANALYSIS));
         return result;
     }
 
