@@ -410,7 +410,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     // when a block changes to Execution.NEVER (see e.g. EvaluateToConstant)
     // we're not too worried about overwriting info
     @Override
-    public void copyAllFromPreviousOrEvalIntoMergeIfMergeExists() {
+    public CausesOfDelay copyAllFromPreviousOrEvalIntoMergeIfMergeExists() {
         if (hasMerge()) {
             VariableInfo best = best(Stage.EVALUATION);
             VariableInfoImpl mergeImpl = merge.get();
@@ -420,7 +420,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 DV dv = mergeImpl.getProperty(k, null);
                 if (dv == null || dv.isDelayed()) mergeImpl.setProperty(k, v);
             });
+            return mergeImpl.getProperty(Property.EXTERNAL_IMMUTABLE).causesOfDelay()
+                    .merge(mergeImpl.getProperty(Property.EXTERNAL_NOT_NULL).causesOfDelay())
+                    .merge(mergeImpl.getProperty(Property.EXTERNAL_CONTAINER).causesOfDelay())
+                    .merge(mergeImpl.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS).causesOfDelay());
         }
+        return CausesOfDelay.EMPTY;
     }
 
     @Override

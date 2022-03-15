@@ -21,23 +21,15 @@ import org.e2immu.annotation.NotNull;
 import java.util.Map;
 
 /*
-Variant on _0; we have 2 null ptr warnings. Completely incorrect, I'd say.
+Variant on _1; without getter and setter
  */
-public class TrieSimplified_1<T> {
+public class TrieSimplified_1_2<T> {
 
     @Modified
     private final TrieNode<T> root = new TrieNode<>();
 
     private static class TrieNode<T> {
         Map<String, TrieNode<T>> map;
-
-        public void setMap(Map<String, TrieNode<T>> map) {
-            this.map = map;
-        }
-
-        public Map<String, TrieNode<T>> getMap() {
-            return map;
-        }
     }
 
     @NotNull

@@ -169,7 +169,7 @@ public interface VariableInfoContainer {
     void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);
 
     @Modified
-    void copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+    CausesOfDelay copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
 
     @Modified
     void ensureEvaluation(Location location,

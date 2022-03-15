@@ -15,9 +15,12 @@
 
 package org.e2immu.analyser.parser.own.util;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +35,18 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0, new DebugConfiguration.Builder()
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.INDEPENDENT);
+            }
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

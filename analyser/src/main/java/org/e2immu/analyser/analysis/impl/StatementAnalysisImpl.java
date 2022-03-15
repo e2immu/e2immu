@@ -1201,9 +1201,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
+
+        CausesOfDelay externalDelaysOnIgnoredVariables = CausesOfDelay.EMPTY;
         for (VariableInfoContainer vic : ignoredNotTouched) {
-            vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+            CausesOfDelay delays = vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+            externalDelaysOnIgnoredVariables = externalDelaysOnIgnoredVariables.merge(delays);
         }
+
         if (translationMap.hasVariableTranslations()) {
             groupPropertyValues.translate(translationMap);
         }
@@ -1236,7 +1240,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
-                .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus));
+                .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus)
+                .merge(externalDelaysOnIgnoredVariables));
     }
 
 
