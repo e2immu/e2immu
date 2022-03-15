@@ -318,7 +318,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (vic.hasMerge()) {
                 VariableInfo merge = vic.current();
                 String latestAssignment = merge.getAssignmentIds().getLatestAssignment();
-                if (latestAssignment != null && latestAssignment.startsWith(index())) {
+                if (latestAssignment != null && latestAssignment.startsWith(index() + ".")) {
                     Properties properties = sharedState.evaluationContext().getAnalyserContext().defaultValueProperties(variable.parameterizedType());
                     CausesOfDelay causes = properties.delays();
                     Expression value;
