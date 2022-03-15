@@ -181,6 +181,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+        assert !isUnreachable();
         LOGGER.debug("Analysing type {}, call #{}", typeInfo.fullyQualifiedName,
                 callCounterForDebugging.incrementAndGet());
         try {

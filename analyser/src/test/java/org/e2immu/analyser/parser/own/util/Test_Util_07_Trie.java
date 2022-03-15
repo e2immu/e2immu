@@ -15,9 +15,7 @@
 
 package org.e2immu.analyser.parser.own.util;
 
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -26,6 +24,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Util_07_Trie extends CommonTestRunner {
 
@@ -37,17 +38,16 @@ public class Test_Util_07_Trie extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.INDEPENDENT);
+                assertTrue(d.iteration() < 2, "Should have been made unreachable");
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 20, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals(0, d.iteration(), "Should have been made unreachable");
             }
         };
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 14, 0,
                 new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build());
+                        .build());
     }
 
 }

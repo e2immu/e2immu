@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.support.FlipSwitch;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -27,6 +28,7 @@ import java.util.stream.Stream;
 abstract class AbstractAnalyser implements Analyser {
     public final AnalyserContext analyserContext;
     public final String name;
+    private final FlipSwitch unreachable = new FlipSwitch();
 
     protected AbstractAnalyser(String name, AnalyserContext analyserContext) {
         this.analyserContext = Objects.requireNonNull(analyserContext);
@@ -59,5 +61,19 @@ abstract class AbstractAnalyser implements Analyser {
     @Override
     public void makeImmutable() {
         // default do nothing
+    }
+
+    @Override
+    public boolean makeUnreachable() {
+        if (!unreachable.isSet()) {
+            unreachable.set();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isUnreachable() {
+        return unreachable.isSet();
     }
 }

@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
@@ -58,6 +59,11 @@ public interface Analyser {
     @Modified
     void check();
 
+    @Modified
+    boolean makeUnreachable();
+
+    @NotModified
+    boolean isUnreachable();
     // other methods
 
     @NotNull
@@ -75,4 +81,5 @@ public interface Analyser {
     void makeImmutable();
 
     Stream<Message> getMessageStream();
+
 }

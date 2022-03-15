@@ -115,7 +115,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
     @Override
     public void check() {
-        if (typeInfo.typePropertiesAreContracted()) return;
+        if (typeInfo.typePropertiesAreContracted() || isUnreachable()) return;
 
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 

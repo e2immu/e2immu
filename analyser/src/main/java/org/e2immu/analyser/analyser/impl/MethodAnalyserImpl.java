@@ -144,6 +144,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     @Override
     public void check() {
+        if(isUnreachable()) return;
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
@@ -216,12 +217,27 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     @Override
+    public boolean makeUnreachable() {
+        if(super.makeUnreachable()) {
+            parameterAnalysers.forEach(ParameterAnalyser::makeUnreachable);
+            // no need to act on companionAnalysers
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public void write() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
         methodAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
         parameterAnalysers.forEach(ParameterAnalyser::write);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::write);
+    }
+
+    @Override
+    public void makeImmutable() {
+        parameterAnalysers.forEach(Analyser::makeImmutable);
     }
 
     @Override

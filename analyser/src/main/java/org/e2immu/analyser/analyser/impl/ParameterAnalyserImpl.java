@@ -77,6 +77,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     public void check() {
+        if(isUnreachable()) return;
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());

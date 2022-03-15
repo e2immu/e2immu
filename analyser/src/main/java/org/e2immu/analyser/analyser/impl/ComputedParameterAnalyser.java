@@ -284,6 +284,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
      */
     @Override
     public AnalyserResult analyse(int iteration) {
+        assert !isUnreachable();
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration));
             analyserResultBuilder.setAnalysisStatus(analysisStatus);

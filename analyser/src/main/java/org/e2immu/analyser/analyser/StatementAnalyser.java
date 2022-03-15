@@ -55,4 +55,6 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser> 
 
     @NotNull1
     Stream<Message> getMessageStream();
+
+    void makeUnreachable();
 }

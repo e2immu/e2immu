@@ -31,6 +31,7 @@ import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.support.Either;
+import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final AnalyserContext parent;
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
+    private final FlipSwitch unreachable = new FlipSwitch();
 
     record SharedState(int iteration, EvaluationContext closure) {
     }
@@ -230,11 +232,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public void check() {
-        analysers.forEach(Analyser::check);
+        if (!isUnreachable()) analysers.forEach(Analyser::check);
     }
 
     @Override
     public void analyse() {
+        assert !isUnreachable();
         if (typeAnalysers.size() > 10) {
             LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
         }
@@ -399,5 +402,20 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void loopOverAnalysers(Consumer<Analyser> consumer) {
         analysers.forEach(consumer);
+    }
+
+    @Override
+    public boolean makeUnreachable() {
+        if (!unreachable.isSet()) {
+            unreachable.set();
+            analysers.forEach(Analyser::makeUnreachable);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isUnreachable() {
+        return unreachable.isSet();
     }
 }

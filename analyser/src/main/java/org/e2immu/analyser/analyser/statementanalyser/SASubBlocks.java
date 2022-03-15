@@ -264,8 +264,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.MERGE),
                                 Message.Label.EMPTY_LOOP));
                     }
-
                     sharedState.builder().addMessages(executionOfBlock.startOfBlock.getStatementAnalysis().messageStream());
+                    executionOfBlock.startOfBlock.makeUnreachable();
                 }
             }
         }

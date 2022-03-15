@@ -34,6 +34,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.annotation.Container;
 import org.e2immu.support.Either;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private final SAEvaluationOfMainExpression saEvaluation;
     private final SASubBlocks saSubBlocks;
     private final SACheck saCheck;
+    private final FlipSwitch unreachable = new FlipSwitch();
 
     private StatementAnalyserImpl(AnalyserContext analyserContext,
                                   MethodAnalyser methodAnalyser,
@@ -675,5 +677,15 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     @Override
     public Stream<Message> getMessageStream() {
         return analyserResultBuilder.getMessageStream();
+    }
+
+    @Override
+    public void makeUnreachable() {
+        if (!unreachable.isSet()) {
+            unreachable.set();
+            navigationData.blocks.get().forEach(optSa -> optSa.ifPresent(StatementAnalyser::makeUnreachable));
+            navigationData.next.get().ifPresent(StatementAnalyser::makeUnreachable);
+            if (localAnalysers.isSet()) localAnalysers.get().forEach(PrimaryTypeAnalyser::makeUnreachable);
+        }
     }
 }

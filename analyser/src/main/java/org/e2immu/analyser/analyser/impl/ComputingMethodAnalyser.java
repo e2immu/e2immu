@@ -189,6 +189,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // called from primary type analyser
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+        assert !isUnreachable();
         LOGGER.debug("Analysing method {}", methodInfo.fullyQualifiedName());
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
@@ -217,9 +218,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public void makeImmutable() {
+        super.makeImmutable();
         if (firstStatementAnalyser != null) {
             firstStatementAnalyser.makeImmutable();
         }
+    }
+
+    @Override
+    public boolean makeUnreachable() {
+        if (super.makeUnreachable()) {
+            if (firstStatementAnalyser != null) {
+                firstStatementAnalyser.makeUnreachable();
+            }
+            return true;
+        }
+        return false;
     }
 
     private AnalysisStatus detectMissingStaticModifier() {
