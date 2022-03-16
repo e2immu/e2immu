@@ -560,6 +560,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         assert notNullExpression.isDone();
 
+        DV contextNotNull = variableInfo.getProperty(CONTEXT_NOT_NULL);
+        // see e.g. Identity_2
+        if (contextNotNull.isDelayed()) {
+            LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
+            methodAnalysis.singleReturnValue.setVariable(delayedSrv(contextNotNull.causesOfDelay()));
+            return contextNotNull.causesOfDelay();
+        }
+        assert contextNotNull.isDone();
+
         /* we already have a value for the value property NNE. We wait, however, until we have a value for ENN as well
         if we take the non-constructing methods along for NNE computation.
          */
@@ -575,7 +584,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } else {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
         }
-        DV notNull = notNullExpression.max(externalNotNull);
+        DV notNull = notNullExpression.max(externalNotNull).max(contextNotNull);
         methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
 
         boolean valueIsConstantField;

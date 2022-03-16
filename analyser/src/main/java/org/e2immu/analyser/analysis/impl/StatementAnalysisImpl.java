@@ -953,11 +953,28 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         prepareMerge.toIgnore.add(vicToAdd);
                     }
                     prepareMerge.toRemove.add(variable);
-                } else if (mergeWhenNotRemove.test(variable)) {
-                    VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
-                    prepareMerge.toMerge.add(vicMerge);
-                } else if (vicToAdd != null) {
-                    prepareMerge.toIgnore.add(vicToAdd);
+                } else {
+                    if (mergeWhenNotRemove.test(variable)) {
+                        VariableInfoContainer vicMerge = vicToAdd == null ? vic : vicToAdd;
+                        prepareMerge.toMerge.add(vicMerge);
+                    } else if (vicToAdd != null) {
+                        prepareMerge.toIgnore.add(vicToAdd);
+                    }
+                    /* The following code fragment replaces the variable expressions with loop suffix by a delayed or instance value.
+                    For now, it seems not necessary to do this (see e.g. TrieSimplified_5)
+                    if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && outside.statementIndex().equals(index)) {
+                        VariableExpression ve = new VariableExpression(variable, new VariableExpression.VariableInLoop(index));
+                        VariableInfo best = vic.best(EVALUATION);
+                        Expression value;
+                        Properties valueProperties = best.valueProperties();
+                        CausesOfDelay delays = valueProperties.delays();
+                        if (best.getValue().isDelayed() || delays.isDelayed()) {
+                            value = DelayedVariableExpression.forLocalVariableInLoop(variable, delays);
+                        } else {
+                            value = Instance.forLoopVariable(index, variable, valueProperties);
+                        }
+                        prepareMerge.translationMap.put(ve, value);
+                    }*/
                 }
             }
         });

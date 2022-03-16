@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -206,20 +205,12 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
-            if (d.iteration() >= 1) {
-                if ("idem3".equals(d.methodInfo().name)) {
-                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
-                    assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.IDENTITY));
-                    assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-
-                    VariableInfo vi = d.getReturnAsVariable();
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
-
-
-                    // combining both, we obtain:
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
-                }
+            if ("idem3".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:idem3>" : "s";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

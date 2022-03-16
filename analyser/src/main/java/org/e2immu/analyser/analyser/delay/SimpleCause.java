@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
 
 import java.util.Objects;
@@ -71,5 +72,10 @@ public class SimpleCause implements CauseOfDelay {
     @Override
     public Location location() {
         return location;
+    }
+
+    @Override
+    public boolean variableIsField(FieldInfo fieldInfo) {
+        return location().getInfo() instanceof FieldInfo fi && fi == fieldInfo;
     }
 }

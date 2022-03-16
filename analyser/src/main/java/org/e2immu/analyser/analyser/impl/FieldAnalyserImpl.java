@@ -778,9 +778,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 /* if the field is effectively final, we don't need links established because all assignment
                  occurs in the constructor
                  */
-            LOGGER.debug("Delaying @Immutable of field {}, not all links have been established", fqn);
-            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, allLinksStatus);
-            return allLinksStatus;
+            if (allLinksStatus.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE, c -> c.variableIsField(fieldInfo))) {
+                LOGGER.debug("breaking immutable delay...");
+                // see TrieSimplified_5: the cause of the delay is an absence of the value of this field
+            } else {
+                LOGGER.debug("Delaying @Immutable of field {}, not all links have been established", fqn);
+                fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, allLinksStatus);
+                return allLinksStatus;
+            }
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
@@ -1318,15 +1323,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private AnalysisStatus analyseLinked() {
         assert fieldAnalysis.linkedVariables.isVariable();
-/*
-        DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-        if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
-            fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
-            LOGGER.debug( "Setting linked variables to empty for field {}, @E2Immutable type");
-            // finalizer check at assignment only
-            return DONE;
-        }
-*/
+
         // we ONLY look at the linked variables of fields that have been assigned to
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)

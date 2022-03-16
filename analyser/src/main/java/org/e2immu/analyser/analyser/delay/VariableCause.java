@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 public class VariableCause implements CauseOfDelay {
@@ -65,5 +67,10 @@ public class VariableCause implements CauseOfDelay {
 
     public Variable variable() {
         return variable;
+    }
+
+    @Override
+    public boolean variableIsField(FieldInfo fieldInfo) {
+        return variable instanceof FieldReference fr && fr.fieldInfo == fieldInfo;
     }
 }

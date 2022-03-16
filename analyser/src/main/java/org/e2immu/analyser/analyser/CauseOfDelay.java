@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.annotation.NotNull;
 
@@ -95,9 +96,9 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         WAIT_FOR_ASSIGNMENT("wait_for_assignment", "Wait to see if variable is assigned or not");
 
         public final String msg;
+
         public final String label;
         public final int priority;
-
         Cause(String label, String msg) {
             this(label, msg, LOW);
         }
@@ -107,10 +108,12 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
             this.label = label;
             this.priority = priority;
         }
-    }
 
+    }
     @NotNull
     Cause cause();
+
+    boolean variableIsField(FieldInfo fieldInfo);
 
     String withoutStatementIdentifier();
 
