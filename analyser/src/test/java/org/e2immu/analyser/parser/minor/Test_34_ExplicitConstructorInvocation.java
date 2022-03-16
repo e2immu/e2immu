@@ -21,10 +21,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -203,7 +200,21 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("merge".equals(d.methodInfo().name) && "UnknownExpression".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expected = d.iteration() <= 1 ? "<m:merge>" : "nullable instance type Expression"; // broken by Cause.SINGLE_RETURN_VALUE
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("UnknownExpression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

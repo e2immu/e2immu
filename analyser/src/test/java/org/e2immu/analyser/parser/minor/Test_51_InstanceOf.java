@@ -946,8 +946,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_16() throws IOException {
-        int BIG = 20;
-
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
@@ -961,10 +959,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "cm@Parameter_expression;initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C;svr@Method_apply";
-                        case 1, 2 -> "cm@Parameter_expression;initial@Field_clazz;svr@Method_apply";
-                        case 3 -> "break_imm_delay@Method_instanceOf;cm@Parameter_expression;initial@Field_clazz;svr@Method_apply;svr@Method_instanceOf";
-                        case 4 -> "break_imm_delay@Method_instanceOf;cm@Parameter_expression;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
-                        default -> "cm@Parameter_expression"; // FIXME problem 2
+                        case 1, 2 -> "initial@Field_clazz;svr@Method_apply";
+                        case 3 -> "break_imm_delay@Method_instanceOf;initial@Field_clazz;svr@Method_apply;svr@Method_instanceOf";
+                        case 4 -> "break_imm_delay@Method_instanceOf;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
+                        default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
@@ -981,7 +979,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -997,6 +995,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("subElements".equals(d.methodInfo().name) && "Negation".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
             if ("instanceOf".equals(d.methodInfo().name)) {
                 assertEquals("InstanceOfPositive", d.methodInfo().typeInfo.simpleName);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
@@ -1009,7 +1010,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case 4 -> "break_imm_delay@Method_instanceOf;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
                     default -> "";
                 };
-                assertDv(d, delays, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, delays, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -1028,10 +1029,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("$3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("InstanceOf_16", 0, 0, new DebugConfiguration.Builder()
+        testClass("InstanceOf_16", 0, 9, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

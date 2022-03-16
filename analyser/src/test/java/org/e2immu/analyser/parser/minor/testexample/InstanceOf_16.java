@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+
+import org.e2immu.annotation.Modified;
+
 import java.util.List;
 
 public class InstanceOf_16 {
@@ -23,6 +26,7 @@ public class InstanceOf_16 {
     }
 
     interface Expression {
+        @Modified // because List.of(....) modifies its argument, we evaluate without Annotated API
         List<Expression> subElements();
     }
 

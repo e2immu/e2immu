@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -528,14 +528,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     LOGGER.debug("Breaking delay in srv of {} -- self-reference", methodInfo.fullyQualifiedName);
                     // see e.g. InstanceOf_16, ExplicitConstructorInvocation_10
                     ParameterizedType formalType = methodInfo.returnType();
+                    DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
+                    DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
+                    DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
                     Properties properties = Properties.ofWritable(Map.of(
-                            IMMUTABLE, analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv),
-                            INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
+                            IMMUTABLE, immutable,
+                            INDEPENDENT, independent,
                             NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
-                            CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
+                            CONTAINER, container,
                             IDENTITY, IDENTITY.falseDv,
                             IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
                     value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
+                    methodAnalysis.setProperty(IMMUTABLE, immutable);
+                    if (!methodAnalysis.properties.isDone(INDEPENDENT))
+                        methodAnalysis.setProperty(INDEPENDENT, independent);
+                    methodAnalysis.setProperty(CONTAINER, container);
                 } else {
                     Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay());
                     methodAnalysis.singleReturnValue.setVariable(delayedExpression);
