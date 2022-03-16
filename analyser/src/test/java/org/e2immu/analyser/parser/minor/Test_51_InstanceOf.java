@@ -946,13 +946,97 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_16() throws IOException {
+        int BIG = 20;
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("find".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:InstanceOf>?<m:of>:<m:isUnaryNot>&&<instanceOf:UnaryOperator>&&!<instanceOf:InstanceOf>&&!<null-check>?<m:toList>:<instanceOf:Negation>&&!<instanceOf:InstanceOf>&&!<null-check>&&(!<m:isUnaryNot>||!<instanceOf:UnaryOperator>)?<m:toList>:<m:toList>";
+                        case 1, 2 -> "expression instanceof InstanceOf?<m:of>:expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?<m:toList>:<m:toList>";
+                        case 3 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?<m:toList>:<m:toList>";
+                        case 4 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():<simplification>";
+                        default -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():FindInstanceOfPatterns.find(expression/*(Negation)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList()";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    String delays = switch (d.iteration()) {
+                        case 0 -> "cm@Parameter_expression;initial:expression@Method_find_1-E;initial:unaryOperator.operator@Method_find_1-C;svr@Method_apply";
+                        case 1, 2 -> "cm@Parameter_expression;initial@Field_clazz;svr@Method_apply";
+                        case 3 -> "break_imm_delay@Method_instanceOf;cm@Parameter_expression;initial@Field_clazz;svr@Method_apply;svr@Method_instanceOf";
+                        case 4 -> "break_imm_delay@Method_instanceOf;cm@Parameter_expression;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
+                        default -> "cm@Parameter_expression"; // FIXME problem 2
+                    };
+                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
                 assertFalse(d.variableName().contains("(UnaryOperator)"), "Variable " + d.variableName());
+
+                if (d.variable() instanceof ParameterInfo pi && pi.owner == d.methodInfo() && "expression".equals(pi.name)) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() == 0 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("find".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "CM{state=!<instanceOf:InstanceOf>&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator)||null==expression)&&(!(expression instanceof Negation)||null==expression);parent=CM{}}"
+                            : "CM{state=!(expression instanceof InstanceOf)&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator)||null==expression)&&(!(expression instanceof Negation)||null==expression);parent=CM{}}";
+                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("instanceOf".equals(d.methodInfo().name)) {
+                assertEquals("InstanceOfPositive", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
+            if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                String delays = switch (d.iteration()) {
+                    case 0, 1 -> "svr@Method_apply";
+                    case 2, 3 -> "initial@Field_clazz;svr@Method_apply;svr@Method_find";
+                    case 4 -> "break_imm_delay@Method_instanceOf;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
+                    default -> "";
+                };
+                assertDv(d, delays, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("InstanceOf".equals(d.typeInfo().simpleName)) {
+                assertEquals("Type java.lang.Class<?>", d.typeAnalysis().getTransparentTypes().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("InstanceOfPositive".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("UnaryOperator".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Negation".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
+            if ("$3".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_16", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

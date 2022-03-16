@@ -64,8 +64,7 @@ public class InstanceOf_16 {
             if (expression instanceof InstanceOf instanceOf) {
                 return List.of(new InstanceOfPositive(instanceOf, true));
             }
-            return expression.subElements().stream()
-                    .flatMap(e -> find(e).stream()).toList();
+            return expression.subElements().stream().flatMap(e -> find(e).stream()).toList();
         }
     }
 }

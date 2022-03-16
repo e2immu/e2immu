@@ -376,19 +376,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
-                if ("2".equals(d.statementId())) {
-                    String expect = switch (d.iteration()) {
-                        case 0 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M, qualification=cm:qualification@Method_accept_1.0.1-E, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M]";
-                        case 1 -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=cm:packageName@Method_accept_1.0.1-E;cm:perPackage.allowStar@Method_accept_1.0.2:M;cm:perPackage.types@Method_accept_1.0.2:M;cm:typeInfo@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types, qualification=cm:qualification@Method_accept_1.0.1-E;initial@Field_allowStar;initial@Field_types, typesPerPackage=cm:typesPerPackage@Method_accept_1.0.2:M;initial@Field_allowStar;initial@Field_types]";
-                        default -> "[org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):0:typesReferenced=false:0, org.e2immu.analyser.parser.start.testexample.VariableScope_5.method(java.util.List<org.e2immu.analyser.parser.start.testexample.VariableScope_5.TypeInfo>,java.lang.String):1:myPackage=false:0, qualification=false:0, typesPerPackage=true:1]";
-                    };
-                    // difference in is simply those 2 fields, with delayed values.
-                    assertEquals(expect, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Object::toString).sorted().toList().toString());
-                }
-            }
-        };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
@@ -410,7 +397,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),

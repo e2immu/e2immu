@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
@@ -504,7 +506,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
-        if (variableInfo.isDelayed() || value.isInitialReturnExpression()) {
+        if (value.isDelayed() || value.isInitialReturnExpression()) {
 
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV
@@ -520,13 +522,28 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
             }
-            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(),
-                    value.debugOutput());
-            if (variableInfo.isDelayed()) {
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(variableInfo.getValue().causesOfDelay()));
-                return variableInfo.getValue().causesOfDelay();
+            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
+            if (value.isDelayed()) {
+                if (value.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE, c -> c instanceof SimpleCause sc && sc.location().getInfo() == methodInfo)) {
+                    LOGGER.debug("Breaking delay in srv of {} -- self-reference", methodInfo.fullyQualifiedName);
+                    // see e.g. InstanceOf_16, ExplicitConstructorInvocation_10
+                    ParameterizedType formalType = methodInfo.returnType();
+                    Properties properties = Properties.ofWritable(Map.of(
+                            IMMUTABLE, analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv),
+                            INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
+                            NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
+                            CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
+                            IDENTITY, IDENTITY.falseDv,
+                            IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
+                    value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
+                } else {
+                    Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay());
+                    methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                    return delayedExpression.causesOfDelay();
+                }
+            } else {
+                throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
             }
-            throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
         }
 
         // try to compute the dynamic immutable status of value
@@ -536,8 +553,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(modified.causesOfDelay()));
-                return modified.causesOfDelay();
+                Expression delayedExpression = delayedSrv(modified.causesOfDelay());
+                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                return delayedExpression.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
                 /*
@@ -545,14 +563,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                  fields and local loop variables. It'll depend on where they are expanded
                  whether the result is something sensible or not.
                  */
-                if (value.isDelayed()) {
-                    methodAnalysis.singleReturnValue.setVariable(delayedSrv(value.causesOfDelay()));
-                    return value.causesOfDelay();
-                }
+                assert value.isDone();
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
-                    methodAnalysis.singleReturnValue.setVariable(delayedSrv(value.causesOfDelay()));
-                    return value.causesOfDelay(); // FINAL
+                    Expression delayedExpression = delayedSrv(value.causesOfDelay());
+                    methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                    return delayedExpression.causesOfDelay();
                 }
             }
         }
@@ -564,8 +580,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // see e.g. Identity_2
         if (contextNotNull.isDelayed()) {
             LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
-            methodAnalysis.singleReturnValue.setVariable(delayedSrv(contextNotNull.causesOfDelay()));
-            return contextNotNull.causesOfDelay();
+            Expression delayedExpression = delayedSrv(contextNotNull.causesOfDelay());
+            methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+            return delayedExpression.causesOfDelay();
         }
         assert contextNotNull.isDone();
 
@@ -578,8 +595,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(externalNotNull.causesOfDelay()));
-                return externalNotNull.causesOfDelay();
+                Expression delayedExpression = delayedSrv(externalNotNull.causesOfDelay());
+                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                return delayedExpression.causesOfDelay();
             }
         } else {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
@@ -597,8 +615,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(constantField.causesOfDelay()));
-                return constantField.causesOfDelay();
+                Expression delayedExpression = delayedSrv(constantField.causesOfDelay());
+                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                return delayedExpression.causesOfDelay();
             }
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;
@@ -644,8 +663,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private AnalysisStatus computeImmutable() {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE).isDone()) return DONE;
         DV immutable = computeImmutableValue();
-        if (immutable.isDelayed()) return immutable.causesOfDelay();
         methodAnalysis.setProperty(IMMUTABLE, immutable);
+        if (immutable.isDelayed()) return immutable.causesOfDelay();
         LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
     }

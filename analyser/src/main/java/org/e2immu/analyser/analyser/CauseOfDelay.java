@@ -79,7 +79,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         READ("read", "must be there for property READ, but cannot be delayed"),
         REMAP_PARAMETER("remap_param", "Remapping a parameter for the companion analyser is not yet possible"),
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),
-        SINGLE_RETURN_VALUE("svr", "single return value not yet set"),
+        SINGLE_RETURN_VALUE("svr", "single return value not yet set", HIGH),
         SINGLETON("singleton", ""),
         STATE_DELAYED("state", "variable cannot get value because state is delayed", HIGH),
         TEMP_MM("temp_mm", "Temporary modified method"),
