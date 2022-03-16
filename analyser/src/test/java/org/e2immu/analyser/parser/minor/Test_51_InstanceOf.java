@@ -1008,9 +1008,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     case 0, 1 -> "svr@Method_apply";
                     case 2, 3 -> "initial@Field_clazz;svr@Method_apply;svr@Method_find";
                     case 4 -> "break_imm_delay@Method_instanceOf;initial@Field_clazz;svr@Method_apply;svr@Method_find;svr@Method_instanceOf";
+                    // broken
                     default -> "";
                 };
                 assertDv(d, delays, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+            if("find".equals(d.methodInfo().name)) {
+                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

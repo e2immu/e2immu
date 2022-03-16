@@ -117,7 +117,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(delays));
+                methodAnalysis.singleReturnValue.setVariable(delayedSrv(delays, true));
                 return delays;
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();

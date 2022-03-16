@@ -144,7 +144,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     @Override
     public void check() {
-        if(isUnreachable()) return;
+        if (isUnreachable()) return;
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
@@ -218,7 +218,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     @Override
     public boolean makeUnreachable() {
-        if(super.makeUnreachable()) {
+        if (super.makeUnreachable()) {
             parameterAnalysers.forEach(ParameterAnalyser::makeUnreachable);
             // no need to act on companionAnalysers
             return true;
@@ -249,8 +249,9 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         return delay;
     }
 
-    protected Expression delayedSrv(CausesOfDelay causesOfDelay) {
+    protected Expression delayedSrv(CausesOfDelay causesOfDelay, boolean addSrvDelay) {
+        CausesOfDelay merge = addSrvDelay ? methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay) : causesOfDelay;
         return DelayedExpression.forMethod(methodInfo.identifier, methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
-                methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay));
+                merge);
     }
 }

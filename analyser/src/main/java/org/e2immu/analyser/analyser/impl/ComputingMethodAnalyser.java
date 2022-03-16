@@ -524,7 +524,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
             if (value.isDelayed()) {
-                if (value.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE, c -> c instanceof SimpleCause sc && sc.location().getInfo() == methodInfo)) {
+                IsVariableExpression ive;
+                boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs
+                        && (((ive = rs.expression.asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This
+                        || rs.expression instanceof Cast cast && (((ive = cast.getExpression().asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This));
+                boolean breakValueDelay = !returnThis && value.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE,
+                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == methodInfo);
+                // this is maybe a bit of a cheap hack, but I don't see another solution at the moment
+                // we need the break for InstanceOf_16, we cannot have it for Fluent_xx.
+                if (breakValueDelay) {
                     LOGGER.debug("Breaking delay in srv of {} -- self-reference", methodInfo.fullyQualifiedName);
                     // see e.g. InstanceOf_16, ExplicitConstructorInvocation_10
                     ParameterizedType formalType = methodInfo.returnType();
@@ -544,7 +552,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         methodAnalysis.setProperty(INDEPENDENT, independent);
                     methodAnalysis.setProperty(CONTAINER, container);
                 } else {
-                    Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay());
+                    Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay(), true);
                     methodAnalysis.singleReturnValue.setVariable(delayedExpression);
                     return delayedExpression.causesOfDelay();
                 }
@@ -560,7 +568,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
-                Expression delayedExpression = delayedSrv(modified.causesOfDelay());
+                Expression delayedExpression = delayedSrv(modified.causesOfDelay(), false);
                 methodAnalysis.singleReturnValue.setVariable(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
@@ -573,7 +581,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDone();
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
-                    Expression delayedExpression = delayedSrv(value.causesOfDelay());
+                    Expression delayedExpression = delayedSrv(value.causesOfDelay(), true);
                     methodAnalysis.singleReturnValue.setVariable(delayedExpression);
                     return delayedExpression.causesOfDelay();
                 }
@@ -587,7 +595,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // see e.g. Identity_2
         if (contextNotNull.isDelayed()) {
             LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
-            Expression delayedExpression = delayedSrv(contextNotNull.causesOfDelay());
+            Expression delayedExpression = delayedSrv(contextNotNull.causesOfDelay(), false);
             methodAnalysis.singleReturnValue.setVariable(delayedExpression);
             return delayedExpression.causesOfDelay();
         }
@@ -602,7 +610,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-                Expression delayedExpression = delayedSrv(externalNotNull.causesOfDelay());
+                Expression delayedExpression = delayedSrv(externalNotNull.causesOfDelay(), false);
                 methodAnalysis.singleReturnValue.setVariable(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
@@ -622,7 +630,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
-                Expression delayedExpression = delayedSrv(constantField.causesOfDelay());
+                Expression delayedExpression = delayedSrv(constantField.causesOfDelay(), false);
                 methodAnalysis.singleReturnValue.setVariable(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
@@ -642,12 +650,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
         LOGGER.debug("Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
-        VariableExpression vv;
-        boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
-                vv.variable() instanceof This thisVar &&
-                thisVar.typeInfo == methodInfo.typeInfo;
-        methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
-        LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
+        setFluent(valueBeforeInlining);
 
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
@@ -665,6 +668,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         return DONE;
+    }
+
+    private void setFluent(Expression valueBeforeInlining) {
+        VariableExpression vv;
+        boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
+                vv.variable() instanceof This thisVar &&
+                thisVar.typeInfo == methodInfo.typeInfo;
+        methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
+        LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
     }
 
     private AnalysisStatus computeImmutable() {
