@@ -393,7 +393,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
                         if (causes.isDone()) {
                             //just making sure that we are delayed
-                            causes = DelayFactory.createDelay(getLocation(), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT);
+                            causes = DelayFactory.createDelay(getLocation(), CauseOfDelay.Cause.SA_APPLY_DUMMY_DELAY);
                         }
                         VariableInfo viCombinedOrPrimitive;
                         if (combinedOrPrimitive == EvaluationContext.PRIMITIVE_VALUE_PROPERTIES) {

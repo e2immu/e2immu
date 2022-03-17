@@ -112,6 +112,15 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                                     int errorsToExpect,
                                                     int warningsToExpect,
                                                     DebugConfiguration debugConfiguration) throws IOException {
+        return testSupportAndUtilClasses(classes, errorsToExpect, warningsToExpect, debugConfiguration,
+                new AnalyserConfiguration.Builder().build());
+    }
+
+    protected TypeContext testSupportAndUtilClasses(List<Class<?>> classes,
+                                                    int errorsToExpect,
+                                                    int warningsToExpect,
+                                                    DebugConfiguration debugConfiguration,
+                                                    AnalyserConfiguration analyserConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(JDK_16)
                 .addSources("src/main/java")
@@ -136,6 +145,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .addDebugLogTargets("analyser")
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
+                .setAnalyserConfiguration(analyserConfiguration)
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }

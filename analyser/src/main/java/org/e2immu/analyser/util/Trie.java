@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
@@ -92,13 +93,14 @@ public class Trie<T> extends Freezable {
         }
     }
 
+    @Modified
     public TrieNode<T> add(String[] strings,
                            T data) {
         ensureNotFrozen();
         TrieNode<T> node = root;
         for (String s : strings) {
             TrieNode<T> newTrieNode;
-            if (node.map == null) {
+            if (node.map == null) { // 2.0.1
                 node.map = new HashMap<>();
                 newTrieNode = new TrieNode<>();
                 node.map.put(s, newTrieNode);

@@ -211,13 +211,13 @@ public class Resources {
         if (dir.isDirectory()) {
             File[] subDirs = dir.listFiles(File::isDirectory);
             if (subDirs != null) {
-                for (File subDir : subDirs) {
+                for (File subDir : subDirs) { // 1.0.1.0.0
                     recursivelyAddFiles(baseDirectory, new File(dirRelativeToBase, subDir.getName()));
                 }
             }
             File[] files = dir.listFiles(f -> !f.isDirectory());
-            if (files != null) {
-                String pathString = dirRelativeToBase.getPath();
+            if (files != null) { // 1.0.3
+                String pathString = dirRelativeToBase.getPath(); // 1.0.3.0.0
                 String[] packageParts =
                         pathString.isEmpty() ? new String[0] :
                                 (pathString.startsWith("/") ? pathString.substring(1) : pathString).split("/");

@@ -287,7 +287,7 @@ public class RangeDataImpl implements RangeData {
         StatementAnalysis last = first.lastStatement();
         VariableInfoContainer vic = last.findOrNull(lvr);
         if (vic == null) {
-            return DelayFactory.createDelay(new VariableCause(lvr, location, CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+            return DelayFactory.createDelay(new VariableCause(lvr, location, CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
         }
         VariableInfo current = vic.current();
         if (current.getAssignmentIds().getLatestAssignment().compareTo(first.index()) >= 0) {

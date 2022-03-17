@@ -200,7 +200,7 @@ public abstract class VisitorTestSupport {
         if (d.iteration() < delayedUntil) {
             CausesOfDelay causes = d.statementAnalysis().rangeData().getRange().causesOfDelay();
             assertTrue(causes.isDelayed());
-            assertEquals(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT, causes.causesStream().findFirst().orElseThrow().cause());
+            assertEquals(CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST, causes.causesStream().findFirst().orElseThrow().cause());
             return null;
         }
         Range range = d.statementAnalysis().rangeData().getRange();

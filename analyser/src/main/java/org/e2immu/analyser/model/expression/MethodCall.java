@@ -334,7 +334,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (object instanceof IsVariableExpression ive) {
             linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
-        LinkedVariables linked1Scope = linked1VariablesScope(context);
+        LinkedVariables linked1Scope = recursiveCall ? LinkedVariables.EMPTY : linked1VariablesScope(context);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
             DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
