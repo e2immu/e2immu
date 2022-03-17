@@ -387,11 +387,11 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
         };
 
         testSupportAndUtilClasses(List.of(SetOnce.class), 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

@@ -57,7 +57,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
 
                 } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#example6".equals(d.variableName())) {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("example6.set6:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("example6.set6:0,example6:2", d.variableInfo().getLinkedVariables().toString());
 
                 } else fail("? " + d.variableName());
             }
@@ -80,7 +80,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 // in FieldAnalyserImpl.analyseLinked we block all links to field references
                 // that go to the same fieldInfo, disallowing example6.set6:0
-                assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("example6:2,in6:0", d.fieldAnalysis().getLinkedVariables().toString());
 
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);

@@ -68,7 +68,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedValue = d.iteration() <= 1 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
                         assertEquals(expectedValue, d.currentValue().toString());
 
-                        String expectedLinked = "o1:0";
+                        String expectedLinked = d.iteration() == 0 ? "o1:0" : "o1.list:2,o1:0";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -91,7 +91,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedValue = d.iteration() <= 1 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
 
-                        String expectedLinked = "o2:0,return go:0";
+                        String expectedLinked = d.iteration() == 0 ? "o2:0,return go:0" : "o2.list:2,o2:0,return go:0";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

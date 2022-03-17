@@ -124,9 +124,15 @@ public class StateData {
     private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
 
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
-        if (localConditionManager.isSafeDelayed()) {
-            conditionManagerForNextStatement.setVariable(localConditionManager);
-        } else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
+        try {
+            if (localConditionManager.isSafeDelayed()) {
+                conditionManagerForNextStatement.setVariable(localConditionManager);
+            } else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Error setting new localConditionManager {}, already have {}", localConditionManager,
+                    conditionManagerForNextStatement.get());
+            throw ise;
+        }
     }
 
     public CausesOfDelay conditionManagerForNextStatementStatus() {

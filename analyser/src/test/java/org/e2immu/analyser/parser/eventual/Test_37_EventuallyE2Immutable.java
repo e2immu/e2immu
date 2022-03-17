@@ -188,6 +188,18 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("copyInto".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String expected = d.iteration() <= 1 ? "<m:setT>" : "<no return value>";
+                assertEquals(expected, d.evaluationResult().value().toString());
+                String pc = switch (d.iteration()) {
+                    case 0, 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
+                    case 2 -> "Precondition[expression=<null-check>&&null!=t, causes=[methodCall:getT]]";
+                    default -> "Precondition[expression=null!=t&&null==other.t$0, causes=[methodCall:getT, methodCall:setT]]";
+                };
+                assertEquals(pc, d.evaluationResult().precondition().toString());
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -198,6 +210,14 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+
+                String expected = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
+                    case 2 -> "Precondition[expression=<null-check>&&null!=t, causes=[methodCall:getT]]";
+                    default -> "Precondition[expression=null!=t, causes=[methodCall:getT, methodCall:setT]]";
+                };
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
             }
         };
 
@@ -210,6 +230,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_2", 0, 0, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
@@ -341,9 +362,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_4", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

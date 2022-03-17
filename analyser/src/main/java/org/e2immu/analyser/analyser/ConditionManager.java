@@ -364,7 +364,8 @@ public record ConditionManager(Expression condition,
         Primitives primitives = evaluationContext.getPrimitives();
         Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
         if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {
-            return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, parent);
+            Expression newState = state.isDelayed() ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(), state.causesOfDelay()) : new BooleanConstant(primitives, true);
+            return new ConditionManager(condition, newState, precondition, parent);
         }
         if (withoutNegation instanceof And and) {
             Expression[] expressions = and.getExpressions().stream()

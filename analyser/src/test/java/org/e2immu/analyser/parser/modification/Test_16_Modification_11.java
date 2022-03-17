@@ -90,13 +90,15 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        String expectLinked = d.iteration() <= 2 ? "c:0,this.s2:-1" : "c:0,this.s2:2";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-
+                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:0,this.s2:-1"
+                                : "c.set:2,c:0,new org.e2immu.analyser.parser.modification.testexample.Modification_11.C1(this.s2).set:2,this.s2:2";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    String expectLinked = d.iteration() <= 2 ? "c:0,this.s2:-1" : "c:0,this.s2:2";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<m:addAll>" : "instance type boolean";

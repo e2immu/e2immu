@@ -22,6 +22,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -158,7 +159,8 @@ public class ComputeLinkedVariables {
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
-        LinkedVariables curated = combined
+        LinkedVariables refToScope = variable instanceof FieldReference fr ? combined.merge(linkToScope(fr)) : combined;
+        LinkedVariables curated = refToScope
                 .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
                         immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
@@ -174,6 +176,15 @@ public class ComputeLinkedVariables {
             });
         }
         return curated;
+    }
+
+    private static LinkedVariables linkToScope(FieldReference fr) {
+        Set<Variable> variables = fr.scope.variables(true).stream()
+                .filter(v -> !(v instanceof This))
+                .collect(Collectors.toUnmodifiableSet());
+        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.DEPENDENT_DV;
+        Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
+        return new LinkedVariables(map);
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,
