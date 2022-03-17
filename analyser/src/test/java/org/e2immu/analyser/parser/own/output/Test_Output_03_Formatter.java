@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -72,9 +73,10 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 26, 50, new DebugConfiguration.Builder()
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .build());
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
 }

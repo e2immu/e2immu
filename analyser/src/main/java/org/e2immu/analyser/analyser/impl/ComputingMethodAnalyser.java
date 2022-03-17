@@ -506,6 +506,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
+        DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         if (value.isDelayed() || value.isInitialReturnExpression()) {
 
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
@@ -539,18 +540,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
                     DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
                     DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
+                    notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
                     Properties properties = Properties.ofWritable(Map.of(
                             IMMUTABLE, immutable,
                             INDEPENDENT, independent,
-                            NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
+                            NOT_NULL_EXPRESSION, notNullExpression,
                             CONTAINER, container,
                             IDENTITY, IDENTITY.falseDv,
                             IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
                     value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
-                    methodAnalysis.setProperty(IMMUTABLE, immutable);
+                    if (!methodAnalysis.properties.isDone(IMMUTABLE))
+                        methodAnalysis.setProperty(IMMUTABLE, immutable);
                     if (!methodAnalysis.properties.isDone(INDEPENDENT))
                         methodAnalysis.setProperty(INDEPENDENT, independent);
-                    methodAnalysis.setProperty(CONTAINER, container);
+                    if (!methodAnalysis.properties.isDone(CONTAINER))
+                        methodAnalysis.setProperty(CONTAINER, container);
                 } else {
                     Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay(), true);
                     methodAnalysis.singleReturnValue.setVariable(delayedExpression);
@@ -587,8 +591,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
         }
-
-        DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         assert notNullExpression.isDone();
 
         DV contextNotNull = variableInfo.getProperty(CONTEXT_NOT_NULL);
