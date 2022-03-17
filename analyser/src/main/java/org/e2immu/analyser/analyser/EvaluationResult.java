@@ -135,7 +135,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return DV.TRUE_DV;
             }
         }
-        return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
+        return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn, ForwardEvaluationInfo.DEFAULT);
     }
 
     public Expression currentValue(Variable variable) {
@@ -774,7 +774,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return DV.TRUE_DV;
                 }
             }
-            return evaluationContext.isNotNull0(expression, false);
+            return evaluationContext.isNotNull0(expression, false, ForwardEvaluationInfo.DEFAULT);
         }
 
 

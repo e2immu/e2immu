@@ -58,7 +58,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
      * @return delay, DV.TRUE_DV, DV.FALSE_DV
      */
     @Override
-    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
         Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull);
         DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
@@ -78,7 +78,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         if (expression.returnType().isNotBooleanOrBoxedBoolean()) {
             // do not use the Condition manager to check for null in creation of isNull
             Expression isNull = Equals.equals(expression.getIdentifier(),
-                    context, expression, NullConstant.NULL_CONSTANT, false);
+                    context, expression, NullConstant.NULL_CONSTANT, false, ForwardEvaluationInfo.DEFAULT);
             if (isNull.isBoolValueFalse()) {
                 // this is not according to the condition manager, but always not null
                 return DV.FALSE_DV;

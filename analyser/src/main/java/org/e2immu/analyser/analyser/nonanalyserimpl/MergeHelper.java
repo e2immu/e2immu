@@ -146,7 +146,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                    Expression postProcessState) {
         if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
-            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child), ForwardEvaluationInfo.DEFAULT).getExpression();
+            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child), ForwardEvaluationInfo.MERGE)
+                    .getExpression();
             LOGGER.debug("Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
             return reEval;
         }

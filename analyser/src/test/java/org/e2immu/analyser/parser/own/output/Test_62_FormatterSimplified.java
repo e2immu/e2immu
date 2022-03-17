@@ -92,11 +92,51 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            if ("forward".equals(d.methodInfo().name)) {
+                if ("outputElement".equals(d.variableName())) {
+                    if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("8.0.5".equals(d.statementId())) {
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+                if ("string".equals(d.variableName())) {
+                    if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
+                        fail("The variable 'string' should not exist here");
+                    }
+                }
+                if ("chars".equals(d.variableName())) {
+                    if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "!<instanceOf:Space>&&!<instanceOf:Guide>&&<m:length>>=1&&<v:end>><v:pos>&&<f:NEWLINE>!=<m:get>?<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):<vl:chars>";
+                            case 1 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<s:boolean>?<vl:chars>:<m:length>>=1?<s:int>:instance type int:instance type int";
+                            case 2 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:initial@Field_split>?<s:boolean>?<vl:chars>:<m:length>>=1?<s:int>:instance type int:instance type int";
+                            default -> "!(outputElement$8 instanceof Guide)&&!(outputElement$8 instanceof Space)&&(nullable instance type String).length()>=1&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE?nullable instance type Boolean&&!(outputElement instanceof Guide guide)&&(nullable instance type String).length()<=0&&(pos>=end||list.get(pos)==Space.NEWLINE)?chars$8:(nullable instance type String).length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement$8 instanceof Guide)&&!(outputElement$8 instanceof Space)&&(nullable instance type String).length()>=1&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&(!instance type boolean||!wroteOnce||nullable instance type Space.split==Split.NEVER||-(nullable instance type String).length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&(nullable instance type String).length()>=1&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE?1:0))&&(pos>=end||list.get(pos)==Space.NEWLINE)?1:0):instance type int";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("combine".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+            }
+            if ("forward".equals(d.methodInfo().name)) {
+                if ("8".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "CM{state=(<v:allowBreak>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(!<v:allowBreak>||!<v:wroteOnce>||<instanceOf:Guide>||<m:length><=0||-<v:chars>+maxChars-<m:length>>=(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0))&&(<v:wroteOnce>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(<instanceOf:Space>||!<m:apply>||!<instanceOf:Guide>||<v:chars>>=maxChars)&&(<instanceOf:Guide>||!<m:apply>||<m:length><=0||-1+<v:chars>-maxChars+<m:length>+(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)>=0)&&(<instanceOf:Space>||!<instanceOf:Guide>||-1-<v:chars>+maxChars>=0)&&(<v:pos>>=<v:end>||<f:NEWLINE>==<m:get>);parent=CM{}}";
+                        case 1 -> "CM{state=[chars,end$8,<vp:NONE:container@Class_ElementarySpace>,<vp:NEWLINE:container@Record_Space>,<f:symbol.left().split>,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
+                        case 2 -> "CM{state=[chars,end$8,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,<vp:NEWLINE:initial@Field_split>,<f:symbol.left().split>,Split.NEVER,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
+                        default -> "CM{state=!(outputElement instanceof Guide guide)&&(instance type boolean||!nullable instance type Boolean||(nullable instance type String).length()<=0)&&(!instance type boolean||!wroteOnce||(nullable instance type String).length()<=0||nullable instance type Space.split==Split.NEVER||-(nullable instance type String).length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&(nullable instance type String).length()>=1&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE?1:0))&&(!nullable instance type Boolean||wroteOnce||(nullable instance type String).length()<=0)&&(!nullable instance type Boolean||(nullable instance type String).length()<=0||nullable instance type Space.split!=Split.NEVER)&&(!nullable instance type Boolean||(nullable instance type String).length()<=0||-1+(nullable instance type String).length()+chars-maxChars+(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&(nullable instance type String).length()>=1&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE?1:0)>=0)&&(pos>=end||list.get(pos)==Space.NEWLINE);parent=CM{}}";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                }
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

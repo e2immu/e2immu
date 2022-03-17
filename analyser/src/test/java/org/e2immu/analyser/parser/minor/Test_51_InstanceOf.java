@@ -950,7 +950,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("find".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<instanceOf:InstanceOf>?<m:of>:<m:isUnaryNot>&&<instanceOf:UnaryOperator>&&!<instanceOf:InstanceOf>&&!<null-check>?<m:toList>:<instanceOf:Negation>&&!<instanceOf:InstanceOf>&&!<null-check>&&(!<m:isUnaryNot>||!<instanceOf:UnaryOperator>)?<m:toList>:<m:toList>";
+                        case 0 -> "<instanceOf:InstanceOf>?<m:of>:<simplification>&&!<instanceOf:InstanceOf>?<m:toList>:<simplification>&&!<simplification>&&!<instanceOf:InstanceOf>?<m:toList>:<m:toList>";
                         case 1, 2 -> "expression instanceof InstanceOf?<m:of>:expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?<m:toList>:<m:toList>";
                         case 3 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?<m:toList>:<m:toList>";
                         case 4 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&!(expression instanceof InstanceOf)?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():<simplification>";

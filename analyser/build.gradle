@@ -41,6 +41,7 @@ test {
 
     maxHeapSize = "2G"
     useJUnitPlatform()
+    maxParallelForks = 4
 }
 
 dependencies {

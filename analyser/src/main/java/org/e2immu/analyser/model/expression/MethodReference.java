@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
@@ -105,7 +102,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     Property.CONTEXT_MODIFIED, modified,
                     Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
-            scopeForward = new ForwardEvaluationInfo(map, false, true, forwardEvaluationInfo.assignmentTarget(), true);
+            scopeForward = new ForwardEvaluationInfo(map, false, true,
+                    forwardEvaluationInfo.assignmentTarget(), true, Stage.INITIAL);
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {

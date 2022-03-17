@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
@@ -57,35 +58,42 @@ public class Equals extends BinaryOperator {
 
     public static Expression equals(EvaluationResult context, Expression l, Expression r) {
         return equals(Identifier.joined("equals", List.of(l.getIdentifier(), r.getIdentifier())), context,
-                l, r, true);
+                l, r, true, ForwardEvaluationInfo.DEFAULT);
     }
 
-    public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r) {
-        return equals(identifier, context, l, r, true);
+    public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r,
+                                    ForwardEvaluationInfo forwardEvaluationInfo) {
+        return equals(identifier, context, l, r, true, forwardEvaluationInfo);
     }
 
     public static Expression equals(Identifier identifier,
-                                    EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+                                    EvaluationResult context, Expression l, Expression r, boolean checkForNull,
+                                    ForwardEvaluationInfo forwardEvaluationInfo) {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
-        Expression expression = internalEquals(identifier, context, l, r, checkForNull);
+        Expression expression = internalEquals(identifier, context, l, r, checkForNull, forwardEvaluationInfo);
         return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
     }
 
     private static Expression internalEquals(Identifier identifier,
-                                             EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+                                             EvaluationResult context,
+                                             Expression l, Expression r,
+                                             boolean checkForNull,
+                                             ForwardEvaluationInfo forwardEvaluationInfo) {
         Primitives primitives = context.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
         if (checkForNull) {
             if (l instanceof NullConstant) {
-                DV dv = context.evaluationContext().isNotNull0(r, false);
+                DV dv = context.evaluationContext().isNotNull0(r, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r instanceof NullConstant) {
-                DV dv = context.evaluationContext().isNotNull0(l, false);
+                DV dv = context.evaluationContext().isNotNull0(l, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
-                if (dv.isDelayed()) return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
+                if (dv.isDelayed())
+                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
         }
 
@@ -97,11 +105,11 @@ public class Equals extends BinaryOperator {
         }
 
         if (l instanceof InlineConditional inlineConditional) {
-            Expression result = tryToRewriteConstantEqualsInline(context, r, inlineConditional);
+            Expression result = tryToRewriteConstantEqualsInline(context, r, inlineConditional, forwardEvaluationInfo);
             if (result != null) return result;
         }
         if (r instanceof InlineConditional inlineConditional) {
-            Expression result = tryToRewriteConstantEqualsInline(context, l, inlineConditional);
+            Expression result = tryToRewriteConstantEqualsInline(context, l, inlineConditional, forwardEvaluationInfo);
             if (result != null) return result;
         }
 
@@ -197,7 +205,8 @@ public class Equals extends BinaryOperator {
     // see test ConditionalChecks_7; TestEqualsConstantInline
     public static Expression tryToRewriteConstantEqualsInline(EvaluationResult context,
                                                               Expression c,
-                                                              InlineConditional inlineConditional) {
+                                                              InlineConditional inlineConditional,
+                                                              ForwardEvaluationInfo forwardEvaluationInfo) {
         if (c instanceof InlineConditional inline2) {
             // silly check a1?b1:c1 == a1?b2:c2 === b1 == b2 && c1 == c2
             if (inline2.condition.equals(inlineConditional.condition)) {
@@ -213,12 +222,13 @@ public class Equals extends BinaryOperator {
 
         Expression recursively1;
         if (inlineConditional.ifTrue instanceof InlineConditional inlineTrue) {
-            recursively1 = tryToRewriteConstantEqualsInline(context, c, inlineTrue);
+            recursively1 = tryToRewriteConstantEqualsInline(context, c, inlineTrue, forwardEvaluationInfo);
             ifTrueGuaranteedNotEqual = recursively1 != null && recursively1.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively1 = null;
             if (c instanceof NullConstant) {
-                ifTrueGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifTrue, false);
+                ifTrueGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifTrue, false,
+                        forwardEvaluationInfo);
             } else {
                 ifTrueGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
             }
@@ -232,12 +242,13 @@ public class Equals extends BinaryOperator {
 
         Expression recursively2;
         if (inlineConditional.ifFalse instanceof InlineConditional inlineFalse) {
-            recursively2 = tryToRewriteConstantEqualsInline(context, c, inlineFalse);
+            recursively2 = tryToRewriteConstantEqualsInline(context, c, inlineFalse, forwardEvaluationInfo);
             ifFalseGuaranteedNotEqual = recursively2 != null && recursively2.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively2 = null;
             if (c instanceof NullConstant) {
-                ifFalseGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifFalse, false);
+                ifFalseGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifFalse, false,
+                        forwardEvaluationInfo);
             } else {
                 ifFalseGuaranteedNotEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
             }

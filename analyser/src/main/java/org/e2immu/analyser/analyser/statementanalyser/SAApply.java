@@ -684,7 +684,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!localConditionManager.state().isBoolValueTrue()) {
                 Expression state = localConditionManager.state();
 
-                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), false, true, variable, true);
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), false,
+                        true, variable, true, INITIAL);
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
                 Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);

@@ -86,7 +86,7 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+        public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
             return DV.fromBoolDv(!(value instanceof NullConstant)); // no opinion
         }
 

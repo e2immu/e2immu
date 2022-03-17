@@ -182,7 +182,7 @@ public interface EvaluationContext {
         return null;
     }
 
-    default DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+    default DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         return DV.FALSE_DV;
     }
 

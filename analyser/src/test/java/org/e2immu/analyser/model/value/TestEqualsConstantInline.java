@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
@@ -38,7 +39,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
                 NullConstant.NULL_CONSTANT,
                 b);
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                NullConstant.NULL_CONSTANT, inlineConditional);
+                NullConstant.NULL_CONSTANT, inlineConditional, ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("null==an", result.toString());
     }
@@ -51,7 +52,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
                 Equals.equals(context, NullConstant.NULL_CONSTANT, an),
                 b, NullConstant.NULL_CONSTANT);
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                NullConstant.NULL_CONSTANT, inlineConditional);
+                NullConstant.NULL_CONSTANT, inlineConditional, ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("null!=an", result.toString());
     }
@@ -64,7 +65,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
         InlineConditional inlineConditional = inline(
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                NullConstant.NULL_CONSTANT, inlineConditional);
+                NullConstant.NULL_CONSTANT, inlineConditional, ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("!a&&null==s", result.toString());
     }
@@ -75,7 +76,8 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
         InlineConditional inlineConditional = inline(
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                new StringConstant(analyserContext.getPrimitives(), "y"), inlineConditional);
+                new StringConstant(analyserContext.getPrimitives(), "y"), inlineConditional,
+                ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("!a&&\"y\"==s", result.toString());
     }
@@ -87,7 +89,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
         InlineConditional inlineConditional2 = inline(
                 a, s, p);
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                inlineConditional1, inlineConditional2);
+                inlineConditional1, inlineConditional2, ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("\"x\"==s&&s==p", result.toString());
     }
@@ -99,7 +101,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
         InlineConditional inlineConditional2 = inline(
                 a, s, new StringConstant(analyserContext.getPrimitives(), "y"));
         Expression result = Equals.tryToRewriteConstantEqualsInline(context,
-                inlineConditional1, inlineConditional2);
+                inlineConditional1, inlineConditional2, ForwardEvaluationInfo.DEFAULT);
         assertNotNull(result);
         assertEquals("false", result.toString());
     }
@@ -183,7 +185,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
 
     @Test
     public void test14() {
-        DV notNull = context.evaluationContext().isNotNull0(newInt(3), false);
+        DV notNull = context.evaluationContext().isNotNull0(newInt(3), false, ForwardEvaluationInfo.DEFAULT);
         assertTrue(notNull.valueIsTrue());
     }
 

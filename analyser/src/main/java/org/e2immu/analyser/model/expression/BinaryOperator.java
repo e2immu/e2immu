@@ -138,7 +138,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         EvaluationResult leftResult = lhs.evaluate(context, forward);
         EvaluationResult rightResult = rhs.evaluate(context, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
-        builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context));
+        builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();
     }
 
@@ -146,9 +146,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
                                              EvaluationResult.Builder builder,
                                              EvaluationResult left,
                                              EvaluationResult right,
-                                             EvaluationResult context) {
+                                             EvaluationResult context,
+                                             ForwardEvaluationInfo forwardEvaluationInfo) {
         CausesOfDelay causes = left.causesOfDelay().merge(right.causesOfDelay());
-        Expression expression = determineValue(primitives, builder, left, right, context);
+        Expression expression = determineValue(primitives, builder, left, right, context, forwardEvaluationInfo);
         return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
     }
 
@@ -156,7 +157,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
                                       EvaluationResult.Builder builder,
                                       EvaluationResult left,
                                       EvaluationResult right,
-                                      EvaluationResult context) {
+                                      EvaluationResult context,
+                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         Expression l = left.value();
         Expression r = right.value();
 
@@ -186,14 +188,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true).valueIsTrue() && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
-            return Equals.equals(identifier, context, l, r);
+            return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
         }
         if (operator == primitives.equalsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return Equals.equals(identifier, context, l, r);
+            return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
         }
         if (operator == primitives.notEqualsOperatorObject()) {
             if (l.equals(r)) new BooleanConstant(primitives, false);
@@ -211,14 +213,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
-            return Negation.negate(context, Equals.equals(identifier, context, l, r));
+            return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));
         }
         if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return Negation.negate(context, Equals.equals(identifier, context, l, r));
+            return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));
         }
 
         // from here on, straightforward operations

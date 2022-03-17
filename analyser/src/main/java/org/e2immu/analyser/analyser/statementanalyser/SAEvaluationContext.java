@@ -231,9 +231,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
          */
 
     @Override
-    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
+    public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (value instanceof IsVariableExpression ve) {
-            VariableInfo variableInfo = findForReading(ve.variable(), true);
+            VariableInfo variableInfo = findForReading(ve.variable(), true, forwardEvaluationInfo.stage());
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
             DV cnnTF = cnn.isDelayed() ? cnn : cnn.equals(NOT_INVOLVED_DV) ? DV.FALSE_DV : DV.fromBoolDv(!cnn.equals(NULLABLE_DV));
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
@@ -359,7 +359,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         DV directNN = value.getProperty(context, NOT_NULL_EXPRESSION, true);
         if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
-                    context, value, NullConstant.NULL_CONSTANT, false);
+                    context, value, NullConstant.NULL_CONSTANT, false, ForwardEvaluationInfo.DEFAULT);
             Expression evaluation = conditionManager.evaluate(context, valueIsNull);
             if (evaluation.isBoolValueFalse()) {
                 // IMPROVE should not necessarily be ENN, could be ContentNN depending
@@ -400,6 +400,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return variableInfo.getLinkedVariables();
     }
 
+    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
+        return findForReading(variable, isNotAssignmentTarget, INITIAL);
+    }
+
     /**
      * Important that the closure is used for local variables and parameters (we'd never find them otherwise).
      * However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
@@ -407,12 +411,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * <p>
      * Equally important, if we have a local copy already, we must use it! See e.g. BasicCompanionMethods_11
      */
-    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
+    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget, Stage stage) {
         boolean haveVariable = statementAnalysis.variableIsSet(variable.fullyQualifiedName());
         if (!haveVariable && closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
-            return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget);
+            return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget, stage);
         }
-        return initialValueForReading(variable, isNotAssignmentTarget);
+        if (stage == INITIAL) {
+            return initialValueForReading(variable, isNotAssignmentTarget);
+        }
+        String fqn = variable.fullyQualifiedName();
+        VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
+        return vic.current();
     }
 
     /**

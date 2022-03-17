@@ -71,7 +71,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         // FIXME of course 26 errors is not acceptable
         testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                26, 52, new DebugConfiguration.Builder()
+                26, 50, new DebugConfiguration.Builder()
                      //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                      //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
