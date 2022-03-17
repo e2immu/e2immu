@@ -270,6 +270,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     }
 
     @Override
+    public List<Variable> variablesWithoutCondition() {
+        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
+        }
+        return List.of(variable);
+    }
+
+    @Override
     public CausesOfDelay causesOfDelay() {
         return causesOfDelay;
     }

@@ -190,6 +190,11 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
+    public List<Variable> variablesWithoutCondition() {
+        return ListUtil.immutableConcat(ifTrue.variablesWithoutCondition(), ifFalse.variablesWithoutCondition());
+    }
+
+    @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult conditionResult = condition.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(conditionResult);

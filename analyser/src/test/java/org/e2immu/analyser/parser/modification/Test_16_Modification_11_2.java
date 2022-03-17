@@ -116,8 +116,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:0,this.s2:-1"
-                                : "c.set:2,c:0,new org.e2immu.analyser.parser.modification.testexample.Modification_11.C1(this.s2).set:2,this.s2:2";
+                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:0,this.s2:-1" : "c.set:2,c:0,this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

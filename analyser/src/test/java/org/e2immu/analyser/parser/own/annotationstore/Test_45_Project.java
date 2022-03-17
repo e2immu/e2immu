@@ -211,7 +211,11 @@ public class Test_45_Project extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                String linked = d.iteration() <= 2 ? "" : "previousRead:0,this.kvStore:3";
+                String linked = switch (d.iteration()) {
+                    case 0, 1, 2 -> "";
+                    case 3 -> "<vp:Container:assign_to_field@Parameter_value>.updated:2,previousRead:0,this.kvStore:3";
+                    default -> "previousRead:0,this.kvStore:3";
+                };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };

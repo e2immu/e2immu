@@ -131,7 +131,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     }
 
     public VariableExpression(Variable variable, Suffix suffix) {
-        super(Identifier.constant(variable.fullyQualifiedName()+suffix));
+        super(Identifier.constant(variable.fullyQualifiedName() + suffix));
         this.variable = variable;
         this.suffix = suffix;
         // a variable expression is never delayed; however, <out of scope> is possible (see Test_Util_06_DependencyGraph)
@@ -291,7 +291,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 && !currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
             ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyDoNotReevaluateVariableExpressionsDoNotComplain();
             EvaluationResult er = currentValue.evaluate(context, fwd);
-            if(er.getExpression().isDone()) {
+            if (er.getExpression().isDone()) {
                 evaluated = er.getExpression();
             } else {
                 evaluated = currentValue;
@@ -405,6 +405,14 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     public List<Variable> variables(boolean descendIntoFieldReferences) {
         if (descendIntoFieldReferences && variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(fr.scope.variables(true), List.of(variable));
+        }
+        return List.of(variable);
+    }
+
+    @Override
+    public List<Variable> variablesWithoutCondition() {
+        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
         }
         return List.of(variable);
     }

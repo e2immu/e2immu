@@ -63,6 +63,7 @@ public class TestAnalyseCode {
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
+                .setComputeFieldAnalyserAcrossAllMethods(true)
                 .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ITERATION_2))
                 .build();
 

@@ -179,7 +179,7 @@ public class ComputeLinkedVariables {
     }
 
     private static LinkedVariables linkToScope(FieldReference fr) {
-        Set<Variable> variables = fr.scope.variables(true).stream()
+        Set<Variable> variables = fr.scope.variablesWithoutCondition().stream()
                 .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
         DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.DEPENDENT_DV;

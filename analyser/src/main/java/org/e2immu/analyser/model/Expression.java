@@ -19,6 +19,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -62,6 +63,11 @@ public interface Expression extends Element, Comparable<Expression> {
     default List<LocalVariableReference> newLocalVariables() {
         return List.of();
     }
+
+    /*
+    used to compute the variables linking a field and its scope. main point: does not include condition in InlineConditional
+     */
+    default List<Variable> variablesWithoutCondition() { return List.of(); }
 
     @NotNull
     @Override
