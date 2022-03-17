@@ -113,7 +113,7 @@ public class EvaluateParameters {
             }
 
             ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
-                    forwardEvaluationInfo.assignmentTarget(), true, forwardEvaluationInfo.stage());
+                    forwardEvaluationInfo.assignmentTarget(), true, forwardEvaluationInfo.stage(), forwardEvaluationInfo.nullableInMerge());
             parameterResult = parameterExpression.evaluate(context, forward);
             parameterValue = parameterResult.value();
         } else {

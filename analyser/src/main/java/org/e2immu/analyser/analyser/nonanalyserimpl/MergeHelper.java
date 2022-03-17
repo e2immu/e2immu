@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -146,7 +147,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                    Expression postProcessState) {
         if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
-            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child), ForwardEvaluationInfo.MERGE)
+            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child),
+                            ForwardEvaluationInfo.DEFAULT.merge(Set.of(vi.variable())))
                     .getExpression();
             LOGGER.debug("Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
             return reEval;

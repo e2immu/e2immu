@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 public record ForwardEvaluationInfo(Map<Property, DV> properties,
@@ -27,20 +28,30 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean notAssignmentTarget,
                                     Variable assignmentTarget,
                                     boolean complainInlineConditional,
-                                    Stage stage) {
+                                    Stage stage,
+                                    Set<Variable> nullableInMerge) {
+    public ForwardEvaluationInfo(Map<Property, DV> properties,
+                                 boolean doNotReevaluateVariableExpressions,
+                                 boolean notAssignmentTarget,
+                                 Variable assignmentTarget,
+                                 boolean complainInlineConditional) {
+        this(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget, complainInlineConditional, Stage.INITIAL, Set.of());
+    }
 
     public ForwardEvaluationInfo(Map<Property, DV> properties,
                                  boolean doNotReevaluateVariableExpressions,
                                  boolean notAssignmentTarget,
                                  Variable assignmentTarget,
                                  boolean complainInlineConditional,
-                                 Stage stage) {
+                                 Stage stage,
+                                 Set<Variable> nullableInMerge) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
         this.complainInlineConditional = complainInlineConditional;
         this.doNotReevaluateVariableExpressions = doNotReevaluateVariableExpressions;
         this.stage = stage;
+        this.nullableInMerge = nullableInMerge;
     }
 
     public boolean assignToField() {
@@ -67,36 +78,38 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
     }
 
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
-            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false, true, null, true,
-            Stage.INITIAL);
-
-    public static ForwardEvaluationInfo MERGE = new ForwardEvaluationInfo(
-            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false, true, null, true,
-            Stage.MERGE);
+            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false, true, null, true);
 
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false,
-            false, null, true, Stage.INITIAL);
+            false, null, true);
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), false,
-            true, null, true, Stage.INITIAL);
+            true, null, true);
 
     public ForwardEvaluationInfo copyDefault() {
         return new ForwardEvaluationInfo(Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
-                doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional, stage);
+                doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional,
+                stage, nullableInMerge);
+    }
+
+    public ForwardEvaluationInfo merge(Set<Variable> nullableInMerge) {
+        return new ForwardEvaluationInfo(properties,
+                doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget, complainInlineConditional,
+                Stage.MERGE, nullableInMerge);
     }
 
     public ForwardEvaluationInfo notNullNotAssignment() {
         return new ForwardEvaluationInfo(
                 Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                true, assignmentTarget, complainInlineConditional, stage);
+                true, assignmentTarget, complainInlineConditional, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo notNullKeepAssignment() {
         return new ForwardEvaluationInfo(
                 Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, complainInlineConditional, stage);
+                notAssignmentTarget, assignmentTarget, complainInlineConditional, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
@@ -105,35 +118,39 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
                 properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV));
         map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, true,
-                assignmentTarget, complainInlineConditional, stage);
+                assignmentTarget, complainInlineConditional, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyAddAssignmentTarget(Variable variable) {
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, stage);
+                notAssignmentTarget, variable, complainInlineConditional, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyAddAssignmentTargetEnsureNotNull(Variable variable) {
         Map<Property, DV> map = new HashMap<>(properties);
         map.merge(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV, DV::max);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, stage);
+                notAssignmentTarget, variable, complainInlineConditional, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyDoNotComplainInlineConditional() {
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, false, stage);
+                notAssignmentTarget, assignmentTarget, false, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyDoNotReevaluateVariableExpressionsDoNotComplain() {
         return new ForwardEvaluationInfo(properties, true, notAssignmentTarget,
-                assignmentTarget, false, stage);
+                assignmentTarget, false, stage, nullableInMerge);
     }
 
     public ForwardEvaluationInfo copyRemoveContextNotNull() {
         Map<Property, DV> map = new HashMap<>(properties);
         map.remove(Property.CONTEXT_NOT_NULL);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, stage);
+                complainInlineConditional, stage, nullableInMerge);
+    }
+
+    public boolean isNullable(Variable variable) {
+        return stage == Stage.MERGE && nullableInMerge.contains(variable);
     }
 }

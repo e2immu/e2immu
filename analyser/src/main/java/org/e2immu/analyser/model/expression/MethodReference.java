@@ -103,7 +103,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
             scopeForward = new ForwardEvaluationInfo(map, false, true,
-                    forwardEvaluationInfo.assignmentTarget(), true, Stage.INITIAL);
+                    forwardEvaluationInfo.assignmentTarget(), true);
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {
