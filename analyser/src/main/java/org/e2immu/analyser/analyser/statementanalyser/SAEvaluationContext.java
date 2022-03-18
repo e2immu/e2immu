@@ -310,10 +310,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         EvaluationResult context = EvaluationResult.from(this);
         for (Property property : toCompute) {
             DV dv;
-            // FIXME should i be much more aggressive here? also other properties? ore more lax
-            if (IMMUTABLE == property && value instanceof ConstructorCall cc && cc.constructor() != null && cc.constructor().typeInfo == getCurrentType() && getCurrentMethod() != null && !getCurrentMethod().getMethodInspection().isStatic()) {
-                dv = MultiLevel.MUTABLE_DV;
-            } else if (NOT_NULL_EXPRESSION == property) {
+            if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else {
                 dv = value.getProperty(context, property, duringEvaluation);

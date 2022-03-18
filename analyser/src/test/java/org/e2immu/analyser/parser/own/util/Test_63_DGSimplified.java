@@ -36,43 +36,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_63_DGSimplified extends CommonTestRunner {
 
-    public static final String IMM_DELAY = "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap";
-
     public Test_63_DGSimplified() {
         super(true);
     }
 
     @Test
     public void test_0() throws IOException {
-        int BIG = 20;
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("comparator".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 String expected = switch (d.iteration()) {
-                    default -> "ext_imm:this@Method_comparator_0-E";
+                    case 0, 1, 3, 4, 5 -> "ext_imm:this@Method_comparator_0-E";
                     case 2 -> "initial@Field_nodeMap";
+                    default -> "";
                 };
                 assertEquals(expected, d.externalStatus().toString());
             }
             if ("test".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        default -> "ext_imm:this@Method_test_0-E";
-                        case 2 -> "initial@Field_nodeMap";
-                        case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
+                        case 0, 1, 4, 5, 6 -> "ext_imm:this@Method_test_0-E";
+                        case 2, 3 -> "initial@Field_nodeMap";
+                        default -> "";
                     };
                     assertEquals(expected, d.externalStatus().toString());
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    assertEquals("<m:put>", d.evaluationResult().value().toString());
+                    String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type Node<T>";
+                    assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
                         case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
-                        case 1 -> "mom@Parameter_t";
-                        case 2 -> "initial@Field_nodeMap;mom@Parameter_t";
-                        case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                        default -> IMM_DELAY;
+                        case 1 -> "initial@Field_dependsOn;initial@Field_t;mom@Parameter_t";
+                        case 2 -> "mom@Parameter_t";
+                        default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
                 }
@@ -83,10 +81,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "copy.nodeMap=cm:copy.nodeMap@Method_accept_0:M;initial:node.dependsOn@Method_accept_0.0.0-C, copy=cm:copy@Method_accept_0:M;initial:node.dependsOn@Method_accept_0.0.0-C, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;initial:node.dependsOn@Method_accept_0.0.0-C";
-                        case 1 -> "copy.nodeMap=cm:copy.nodeMap@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, copy=cm:copy@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
-                        case 2 -> "copy.nodeMap=cm:copy.nodeMap@Method_accept_0:M;initial@Field_nodeMap, copy=cm:copy@Method_accept_0:M;initial@Field_nodeMap, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;initial@Field_nodeMap";
-                        case 3 -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                        default -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap";
+                        case 1 -> "copy.nodeMap=cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, copy=cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
+                        default -> "copy.nodeMap=true:1, copy=true:1, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=true:1";
                     };
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                 }
@@ -96,18 +92,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "cm:accept@Method_accept_0.0.1-E;cm:copy.nodeMap@Method_accept_0.0.1-E;cm:copy@Method_accept_0.0.1-E;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E;initial:node.dependsOn@Method_accept_0.0.0-C";
                         case 1 -> "cm:accept@Method_accept_0.0.1-E;cm:copy.nodeMap@Method_accept_0.0.1-E;cm:copy@Method_accept_0.0.1-E;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E;initial@Field_dependsOn;initial@Field_t";
-                        case 2 -> "cm:accept@Method_accept_0.0.1-E;cm:copy.nodeMap@Method_accept_0.0.1-E;cm:copy@Method_accept_0.0.1-E;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E;initial@Field_nodeMap";
-                        case 3 -> "cm:accept@Method_accept_0.0.1-E;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E;initial@Field_nodeMap";
-                        default -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap";
+                        case 2 -> "mom@Parameter_t";
+                        default -> "";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial:node.dependsOn@Method_accept_0.0.0-C";
-                        case 1 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
-                        case 2 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap";
-                        default -> IMM_DELAY;
+                        case 1 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
+                        default -> "";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 }
@@ -125,25 +119,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("<new:DGSimplified_0<T>>", d.currentValue().toString());
+                        assertEquals("new DGSimplified_0<>()", d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "independent@Class_DGSimplified_0";
-                            case 1 -> "final@Field_nodeMap";
-                            case 2 -> "initial@Field_nodeMap";
-                            // FIXME how come copy.nodeMap..._0:M is part of this delay? travels all the way to methodLevelData() on 0.0.1 in accept which blocks... itself
-                            case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                            default -> IMM_DELAY;
-                        };
-                        assertEquals(expected, d.currentValue().causesOfDelay().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -151,49 +136,35 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
                     if ("copy".equals(fr.scope.toString())) {
                         if ("0.0.1".equals(d.statementId())) {
-                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             assertEquals("copy.nodeMap:0,copy:2", d.variableInfo().getLinkedVariables().toString());
                             assertTrue(d.variableInfo().linkedVariablesIsSet());
                         }
                         if ("0".equals(d.statementId())) {
-                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else fail("Scope " + fr.scope);
                 }
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("<new:DGSimplified_0<T>>", eval.getValue().toString());
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "independent@Class_DGSimplified_0";
-                            case 1 -> "final@Field_nodeMap";
-                            case 2 -> "initial@Field_nodeMap";
-                            case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                            default -> IMM_DELAY;
-                        };
-                        assertEquals(expected, eval.getValue().causesOfDelay().toString());
+                        assertEquals("nullable instance type DGSimplified_0<T>", eval.getValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("copy.nodeMap:-1,copy:0", d.variableInfo().getLinkedVariables().toString());
-                        assertFalse(d.variableInfo().linkedVariablesIsSet());
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "initial:node.dependsOn@Method_accept_0.0.0-C";
-                            case 1 -> "final@Field_nodeMap";
-                            case 2 -> "initial@Field_nodeMap";
-                            case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                            default -> IMM_DELAY;
-                        };
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() == 0 ? "copy.nodeMap:-1,copy:0" : "copy.nodeMap:2,copy:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "initial:node.dependsOn@Method_accept_0.0.0-C" : "";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     assertEquals("copyRemove", pi.owner.name);
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String links = switch (d.iteration()) {
                             case 0 -> "initial:node.dependsOn@Method_accept_0.0.0-C";
                             case 1 -> "initial@Field_dependsOn;initial@Field_t";
@@ -217,7 +188,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("addNode".equals(d.methodInfo().name)) {
                 // ... or not, mm@Method_addNode
@@ -234,10 +205,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String delay = switch (d.iteration()) {
                     case 0 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial:node.dependsOn@Method_accept_0.0.0-C";
                     case 1 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
-                    case 2 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                    default -> IMM_DELAY;
+                    default -> "true:1";
                 };
-                assertDv(d, delay, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, delay, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -245,10 +215,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String delay = switch (d.iteration()) {
                     case 0 -> "final@Field_nodeMap";
                     case 1 -> "initial@Field_nodeMap";
-                    case 2 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
-                    default -> IMM_DELAY;
+                    case 2, 3 -> "mm@Method_addNode";
+                    case 4 -> "assign_to_field@Parameter_t";
+                    default -> "";
                 };
-                assertDv(d, delay, BIG, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, delay, 5, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
             }
         };

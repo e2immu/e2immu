@@ -20,10 +20,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.NullConstant;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -35,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -223,6 +219,15 @@ public interface EvaluationContext {
         if (value instanceof NullConstant) {
             assert formalType != null : "Use other call!";
             return valuePropertiesOfNullConstant(formalType);
+        }
+        if (value instanceof ConstructorCall cc && cc.constructor() != null && isMyself(cc.returnType()) && getCurrentMethod() != null && !getCurrentMethod().getMethodInspection().isStatic()) {
+            return Properties.ofWritable(Map.of(
+                    IMMUTABLE, IMMUTABLE.falseDv,
+                    INDEPENDENT, INDEPENDENT.falseDv,
+                    CONTAINER, CONTAINER.falseDv,
+                    IDENTITY, IDENTITY.falseDv,
+                    IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
+                    NOT_NULL_EXPRESSION, NOT_NULL_EXPRESSION.falseDv));
         }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
