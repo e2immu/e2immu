@@ -233,7 +233,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (value instanceof IsVariableExpression ve) {
-            if(forwardEvaluationInfo.isNullable(ve.variable())) return NULLABLE_DV;
+            if (forwardEvaluationInfo.isNullable(ve.variable())) return NULLABLE_DV;
             VariableInfo variableInfo = findForReading(ve.variable(), true, forwardEvaluationInfo.stage());
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
             DV cnnTF = cnn.isDelayed() ? cnn : cnn.equals(NOT_INVOLVED_DV) ? DV.FALSE_DV : DV.fromBoolDv(!cnn.equals(NULLABLE_DV));
@@ -311,7 +311,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         EvaluationResult context = EvaluationResult.from(this);
         for (Property property : toCompute) {
             DV dv;
-            if (NOT_NULL_EXPRESSION == property) {
+            if (IMMUTABLE == property && value instanceof ConstructorCall cc && cc.constructor() != null && cc.constructor().typeInfo == getCurrentType() && getCurrentMethod() != null && !getCurrentMethod().getMethodInspection().isStatic()) {
+                dv = MultiLevel.MUTABLE_DV;
+            } else if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else {
                 dv = value.getProperty(context, property, duringEvaluation);

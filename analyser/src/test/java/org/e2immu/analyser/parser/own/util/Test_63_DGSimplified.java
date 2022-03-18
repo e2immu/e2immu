@@ -19,12 +19,10 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,7 +38,44 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        int BIG = 20;
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("copyRemove".equals(d.methodInfo().name)) {
+                if ("copy".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("<new:DGSimplified_0<T>>", d.currentValue().toString());
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
+                    if ("copy".equals(fr.scope.toString())) {
+                        if ("0.0.1".equals(d.statementId())) {
+                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                        if ("0".equals(d.statementId())) {
+                            assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    } else fail("Scope " + fr.scope);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d-> {
+          if("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+              assertDv(d, 5, DV.TRUE_DV, Property.MODIFIED_METHOD);
+          }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("DGSimplified_0".equals(d.typeInfo().simpleName)) {
+                assertDv(d, BIG, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
+            }
+        };
         testClass("DGSimplified_0", 5, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
