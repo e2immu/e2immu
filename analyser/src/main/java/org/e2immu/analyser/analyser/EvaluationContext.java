@@ -492,4 +492,6 @@ public interface EvaluationContext {
     default boolean delayStatementBecauseOfECI() {
         return false;
     }
+
+    int getDepth();
 }

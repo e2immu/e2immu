@@ -29,14 +29,22 @@ import java.util.stream.Stream;
 
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
+    public final int depth; // how many closures in each other?
     public final int iteration;
     public final EvaluationContext closure;
     public final ConditionManager conditionManager;
 
-    protected AbstractEvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+    protected AbstractEvaluationContextImpl(int depth, int iteration, ConditionManager conditionManager, EvaluationContext closure) {
         this.iteration = iteration;
         this.conditionManager = conditionManager;
         this.closure = closure;
+        this.depth = depth;
+        assert depth < 20 : "Depth of " + depth + " reached";
+    }
+
+    @Override
+    public int getDepth() {
+        return depth;
     }
 
     @Override
@@ -65,7 +73,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
         DV nneToTF;
         if (nne.isDelayed()) {
-            nneToTF = value.isDelayed() ? nne: DV.FALSE_DV;
+            nneToTF = value.isDelayed() ? nne : DV.FALSE_DV;
         } else {
             nneToTF = nne.equals(MultiLevel.NULLABLE_DV) ? DV.FALSE_DV : DV.TRUE_DV;
         }

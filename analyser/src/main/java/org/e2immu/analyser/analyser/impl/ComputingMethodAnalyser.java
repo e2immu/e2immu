@@ -1039,7 +1039,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
-            super(iteration, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
         }
 
         @Override

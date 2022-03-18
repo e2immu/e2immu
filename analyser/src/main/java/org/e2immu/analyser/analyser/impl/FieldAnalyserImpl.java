@@ -1577,7 +1577,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
-            super(iteration, conditionManager, closure);
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
         }
 
 

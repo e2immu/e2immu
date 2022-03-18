@@ -219,11 +219,11 @@ public abstract class CommonAbstractValue {
     static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(ConditionManager conditionManager) {
-            super(0, conditionManager, null);
+            super(1, 0, conditionManager, null);
         }
 
         EvaluationContextImpl() {
-            super(0, ConditionManager.initialConditionManager(PRIMITIVES), null);
+            super(1, 0, ConditionManager.initialConditionManager(PRIMITIVES), null);
         }
 
         @Override

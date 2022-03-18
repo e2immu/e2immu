@@ -385,6 +385,11 @@ public record ConditionManager(Expression condition,
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
 
         @Override
+        public int getDepth() {
+            return 1;
+        }
+
+        @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
         }

@@ -66,6 +66,11 @@ public abstract class CommonVariableInfo {
     protected final EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
+        public int getDepth() {
+            return 0;
+        }
+
+        @Override
         public TypeInfo getCurrentType() {
             return primitives.stringTypeInfo();
         }

@@ -89,7 +89,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean base,
                         boolean preventAbsoluteStateComputation,
                         boolean delayStatementBecauseOfECI) {
-        super(iteration, conditionManager, closure);
+        super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
         this.myMethodAnalyser = myMethodAnalyser;

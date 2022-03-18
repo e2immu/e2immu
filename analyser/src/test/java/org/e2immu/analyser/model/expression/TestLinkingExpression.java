@@ -86,6 +86,11 @@ public class TestLinkingExpression {
                     }
                 };
             }
+
+            @Override
+            public int getDepth() {
+                return 0;
+            }
         };
         context = EvaluationResult.from(ec);
     }

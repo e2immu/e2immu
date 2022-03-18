@@ -141,7 +141,7 @@ public class CompanionAnalyser {
             remap.put(parameterInfo.name, value);
         }
         LOGGER.debug("Companion map for {} of {}: {}", companionMethodName, mainMethod.fullyQualifiedName(), remap);
-        if(!companionAnalysis.remapParameters.isSet()) {
+        if (!companionAnalysis.remapParameters.isSet()) {
             companionAnalysis.remapParameters.set(Map.copyOf(remap));
             companionAnalysis.parameterValues.set(parameterValues);
         }
@@ -150,7 +150,7 @@ public class CompanionAnalyser {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager, null);
+            super(1, iteration, conditionManager, null);
         }
 
         @Override

@@ -30,6 +30,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,6 +45,8 @@ import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions, OneVariable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
+
     public final boolean objectIsImplicit; // irrelevant after evaluation
     public final Expression object;
     public final List<Expression> parameterExpressions;
@@ -276,7 +280,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (currentMethod != null) {
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            recursiveCall = recursiveCall(context.evaluationContext());
+            recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         } else {
             partOfCallCycle = false;
             recursiveCall = false;
@@ -399,11 +403,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.build();
     }
 
-    private boolean recursiveCall(EvaluationContext evaluationContext) {
+    public static boolean recursiveCall(MethodInfo methodInfo, EvaluationContext evaluationContext) {
         MethodAnalyser currentMethod = evaluationContext.getCurrentMethod();
-        if (currentMethod != null && currentMethod.getMethodInfo() == this.methodInfo) return true;
+        if (currentMethod != null && currentMethod.getMethodInfo() == methodInfo) return true;
         if (evaluationContext.getClosure() != null) {
-            return recursiveCall(evaluationContext.getClosure());
+            LOGGER.debug("Going recursive on call to {}, to {} ", methodInfo.fullyQualifiedName,
+                    evaluationContext.getClosure().getCurrentType().fullyQualifiedName);
+            return recursiveCall(methodInfo, evaluationContext.getClosure());
         }
         return false;
     }
