@@ -276,7 +276,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (currentMethod != null) {
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            recursiveCall = currentMethod.getMethodInfo() == this.methodInfo;
+            recursiveCall = recursiveCall(context.evaluationContext());
         } else {
             partOfCallCycle = false;
             recursiveCall = false;
@@ -397,6 +397,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return delayedMethod(context, builder, objectValue.causesOfDelay(), modified);
         }
         return builder.build();
+    }
+
+    private boolean recursiveCall(EvaluationContext evaluationContext) {
+        MethodAnalyser currentMethod = evaluationContext.getCurrentMethod();
+        if (currentMethod != null && currentMethod.getMethodInfo() == this.methodInfo) return true;
+        if (evaluationContext.getClosure() != null) {
+            return recursiveCall(evaluationContext.getClosure());
+        }
+        return false;
     }
 
     private EvaluationResult incrementStatementTime(MethodAnalysis methodAnalysis,
