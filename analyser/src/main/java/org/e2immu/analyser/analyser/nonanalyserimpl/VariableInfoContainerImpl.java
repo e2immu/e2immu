@@ -242,7 +242,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         boolean valueIsDone = value.isDone() && !value.isNotYetAssigned();
         propertiesToSet.forEach((vp, v) -> {
-            if (v.isDelayed() && valueIsDone && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
+            if (v.isDelayed() && valueIsDone && vp.valueProperty) {
                 throw new IllegalStateException("Not allowed to even try to set delay on a value property");
             }
             variableInfo.setProperty(vp, v);
@@ -367,8 +367,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                 .forEach(e -> {
-                    assert !EvaluationContext.VALUE_PROPERTIES.contains(e.getKey())
-                            || vi1.getValue().isDelayed() || e.getValue().isDone();
+                    assert !e.getKey().valueProperty || vi1.getValue().isDelayed() || e.getValue().isDone();
                     write.setProperty(e.getKey(), e.getValue());
                 });
         return write;
@@ -394,7 +393,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             previous.propertyStream()
                     .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                     .forEach(e -> {
-                        assert !EvaluationContext.VALUE_PROPERTIES.contains(e.getKey()) || previous.getValue().isDelayed() || e.getValue().isDone();
+                        assert !e.getKey().valueProperty || previous.getValue().isDelayed() || e.getValue().isDone();
                         setProperty(e.getKey(), e.getValue(), false, Stage.EVALUATION);
                     });
 
@@ -444,7 +443,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     if (GroupPropertyValues.PROPERTIES.contains(vp)) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
-                        assert !EvaluationContext.VALUE_PROPERTIES.contains(vp) || eval.getValue().isDelayed() || value.isDone();
+                        assert !vp.valueProperty || eval.getValue().isDelayed() || value.isDone();
                         mergeImpl.setProperty(vp, value);
                     }
                 });
@@ -467,7 +466,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     if (GroupPropertyValues.PROPERTIES.contains(vp)) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
-                        assert !EvaluationContext.VALUE_PROPERTIES.contains(vp) || eval.getValue().isDelayed() || value.isDone();
+                        assert !vp.valueProperty || eval.getValue().isDelayed() || value.isDone();
                         mergeImpl.setProperty(vp, value);
                     }
                 });

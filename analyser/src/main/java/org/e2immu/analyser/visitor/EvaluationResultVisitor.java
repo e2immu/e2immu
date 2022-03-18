@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.visitor;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -30,7 +31,9 @@ public interface EvaluationResultVisitor {
                 MethodInfo methodInfo,
                 String statementId,
                 StatementAnalysis statementAnalysis,
-                EvaluationResult evaluationResult) {
+                EvaluationResult evaluationResult,
+                CausesOfDelay status,
+                CausesOfDelay externalStatus) {
 
         public boolean haveSetProperty(String variableName, Property property) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)

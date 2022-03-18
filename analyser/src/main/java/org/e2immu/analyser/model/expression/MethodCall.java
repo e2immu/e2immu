@@ -858,7 +858,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
         DV formal = methodAnalysis.getProperty(property);
-        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
+        if (property.valueProperty) {
 
             DV adjusted;
             // dynamic value? if the method has a type parameter as part of the result, we could be returning different values

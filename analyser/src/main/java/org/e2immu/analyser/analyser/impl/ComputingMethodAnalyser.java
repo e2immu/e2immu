@@ -155,6 +155,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
     }
 
+    @Override
+    public String fullyQualifiedAnalyserName() {
+        return "CMA " + methodInfo.fullyQualifiedName;
+    }
+
     private AnalysisStatus markFirstIteration(SharedState sharedState) {
         methodAnalysis.markFirstIteration();
         return DONE;

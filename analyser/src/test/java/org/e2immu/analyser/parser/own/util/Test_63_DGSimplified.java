@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,47 @@ public class Test_63_DGSimplified extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         int BIG = 20;
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("comparator".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                String expected = switch (d.iteration()) {
+                    default -> "ext_imm:this@Method_comparator_0-E";
+                    case 2 -> "initial@Field_nodeMap";
+                };
+                assertEquals(expected, d.externalStatus().toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        default -> "ext_imm:this@Method_test_0-E";
+                        case 2 -> "initial@Field_nodeMap";
+                        case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
+                    };
+                    assertEquals(expected, d.externalStatus().toString());
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("0.0.1".equals(d.statementId())) {
+                    assertEquals("<m:put>", d.evaluationResult().value().toString());
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
+                        case 1 -> "mom@Parameter_t";
+                        case 2 -> "initial@Field_nodeMap;mom@Parameter_t";
+                        case 3 -> "cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;initial@Field_nodeMap";
+                        default -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_nodeMap";
+                    };
+                    assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("comparator".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() == 0 ? "<m:compare>"
+                            : "e1.getValue().dependsOn$0.size()==e2.getValue().dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):e1.getValue().dependsOn$0.size()-e2.getValue().dependsOn$0.size()";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -55,16 +96,35 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                             assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
                         if ("0".equals(d.statementId())) {
-                            assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else fail("Scope " + fr.scope);
                 }
             }
         };
-        MethodAnalyserVisitor methodAnalyserVisitor = d-> {
-          if("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-              assertDv(d, 5, DV.TRUE_DV, Property.MODIFIED_METHOD);
-          }
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("nodeMap".equals(d.fieldInfo().name)) {
+                assertEquals("instance type HashMap<T,Node<T>>", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("addNode".equals(d.methodInfo().name)) {
+                // ... or not, mm@Method_addNode
+                assertDv(d.p(0), 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("comparator".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:comparator>"
+                        : "e1.getValue().dependsOn$0.size()==e2.getValue().dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):e1.getValue().dependsOn$0.size()-e2.getValue().dependsOn$0.size()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DGSimplified_0".equals(d.typeInfo().simpleName)) {
@@ -73,10 +133,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_0", 5, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test

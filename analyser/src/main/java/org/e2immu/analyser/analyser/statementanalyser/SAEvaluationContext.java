@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -284,7 +283,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getVariableProperty
-    private Properties getVariableProperties(Variable variable, Set<Property> properties, boolean duringEvaluation) {
+    private Properties getVariableProperties(Variable variable, List<Property> properties, boolean duringEvaluation) {
         if (duringEvaluation) {
             return getPropertiesFromPreviousOrInitial(variable, properties);
         }
@@ -293,7 +292,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     // identical to getProperty, but then for multiple properties!
     @Override
-    public Properties getProperties(Expression value, Set<Property> toCompute, boolean duringEvaluation,
+    public Properties getProperties(Expression value, List<Property> toCompute, boolean duringEvaluation,
                                     boolean ignoreStateInConditionManager) {
 
         if (value instanceof IsVariableExpression ve) {
@@ -551,7 +550,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getProperty
-    private Properties getProperties(Variable variable, Set<Property> properties) {
+    private Properties getProperties(Variable variable, List<Property> properties) {
         VariableInfo vi = statementAnalysis.findOrThrow(variable);
         return properties.stream().collect(Properties.collect(vi::getProperty, true));
     }
@@ -563,7 +562,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getPropertyFromPreviousOrInitial
-    public Properties getPropertiesFromPreviousOrInitial(Variable variable, Set<Property> properties) {
+    public Properties getPropertiesFromPreviousOrInitial(Variable variable, List<Property> properties) {
         VariableInfo vi = findForReading(variable, true);
         return properties.stream().collect(Properties.collect(vi::getProperty, true));
     }

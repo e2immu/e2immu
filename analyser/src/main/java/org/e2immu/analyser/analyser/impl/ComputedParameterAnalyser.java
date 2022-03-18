@@ -66,6 +66,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         this.fieldAnalysers = fieldAnalyserStream.collect(Collectors.toUnmodifiableMap(FieldAnalyser::getFieldInfo, fa -> fa));
     }
 
+    @Override
+    public String fullyQualifiedAnalyserName() {
+        return "CPA " + parameterInfo.fullyQualifiedName;
+    }
+
     record SharedState(int iteration) {
     }
 
@@ -295,13 +300,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
     }
 
-    private static final Set<Property> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
+    private static final List<Property> PROPERTY_LIST = List.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
             EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER); // For now, NOT going with EXTERNAL_IGNORE_MODS
 
-    private static Set<Property> propertiesToCopy(DV assignedOrLinked) {
-        if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
-        if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return Set.of(MODIFIED_OUTSIDE_METHOD);
-        return Set.of();
+    private static List<Property> propertiesToCopy(DV assignedOrLinked) {
+        if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
+        if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return List.of(MODIFIED_OUTSIDE_METHOD);
+        return List.of();
     }
 
     private AnalysisStatus analyseFieldAssignments(SharedState sharedState) {
@@ -348,7 +353,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         for (Map.Entry<FieldInfo, DV> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             DV assignedOrLinked = e.getValue();
-            Set<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
+            List<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
@@ -418,7 +423,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
 
-        for (Property property : PROPERTIES) {
+        for (Property property : PROPERTY_LIST) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
                 if (property == EXTERNAL_CONTAINER || property == EXTERNAL_NOT_NULL || property == EXTERNAL_IGNORE_MODIFICATIONS) {
@@ -444,6 +449,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (delays.isDelayed()) {
             parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
+            LOGGER.debug("Delaying parameter analyser {}, delays: {}, progress? {}", parameterInfo.fullyQualifiedName,
+                    delays, changed);
             return delays.addProgress(changed);
         }
 
@@ -520,7 +527,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private void noFieldsInvolved() {
-        for (Property property : PROPERTIES) {
+        for (Property property : PROPERTY_LIST) {
             if (!parameterAnalysis.properties.isDone(property)) {
                 parameterAnalysis.setProperty(property, property.valueWhenAbsent());
             }

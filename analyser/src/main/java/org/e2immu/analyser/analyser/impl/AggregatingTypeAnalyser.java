@@ -61,6 +61,11 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
+    public String fullyQualifiedAnalyserName() {
+        return "ATA " + typeInfo.fullyQualifiedName;
+    }
+
+    @Override
     public void initialize() {
         Stream<TypeInfo> implementations = obtainImplementingTypes();
         List<TypeAnalysis> analysers = implementations.map(analyserContext::getTypeAnalysis).toList();

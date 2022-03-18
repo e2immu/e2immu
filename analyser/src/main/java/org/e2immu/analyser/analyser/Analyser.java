@@ -25,7 +25,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-public interface Analyser {
+public interface Analyser extends Comparable<Analyser> {
 
     enum AnalyserIdentification {
         TYPE(null), // type does not have notNull
@@ -82,4 +82,10 @@ public interface Analyser {
 
     Stream<Message> getMessageStream();
 
+    String fullyQualifiedAnalyserName();
+
+    @Override
+    default int compareTo(Analyser o) {
+        return fullyQualifiedAnalyserName().compareTo(o.fullyQualifiedAnalyserName());
+    }
 }

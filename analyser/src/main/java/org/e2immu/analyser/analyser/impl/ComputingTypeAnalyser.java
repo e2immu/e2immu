@@ -125,6 +125,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
+    public String fullyQualifiedAnalyserName() {
+        return "CTA " + typeInfo.fullyQualifiedName;
+    }
+
+    @Override
     public AnalyserComponents<String, Integer> getAnalyserComponents() {
         return analyserComponents;
     }
@@ -139,7 +144,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         List<MethodAnalyser> myConstructors = new LinkedList<>();
         List<FieldAnalyser> myFieldAnalysers = new LinkedList<>();
 
-        analyserContext.methodAnalyserStream().forEach(methodAnalyser -> {
+        analyserContext.methodAnalyserStream().sorted().forEach(methodAnalyser -> {
             if (methodAnalyser.getMethodInfo().typeInfo == typeInfo) {
                 if (methodAnalyser.getMethodInfo().isConstructor) {
                     myConstructors.add(methodAnalyser);
@@ -154,7 +159,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         });
-        analyserContext.fieldAnalyserStream().forEach(fieldAnalyser -> {
+        analyserContext.fieldAnalyserStream().sorted().forEach(fieldAnalyser -> {
             if (fieldAnalyser.getFieldInfo().owner == typeInfo) {
                 myFieldAnalysers.add(fieldAnalyser);
             }
@@ -354,6 +359,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         // STEP 6: ensure + collect interface types
 
         {
+            CausesOfDelay causes = CausesOfDelay.EMPTY;
             for (ParameterizedType ifType : typeInspection.interfacesImplemented()) {
                 TypeInfo ifTypeInfo = ifType.typeInfo;
                 if (!ifTypeInfo.isAggregated()) {
@@ -362,14 +368,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
                         ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
                         typeAnalyser.analyseTransparentTypes();
+                        causes = causes.merge(delays);
                     }
                     CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
                     if (delays2.isDelayed()) {
                         LOGGER.debug("Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
                                 ifTypeInfo.simpleName);
-                        return delays2;
+                        causes = causes.merge(delays2);
                     }
                 }
+            }
+            if (causes.isDelayed()) {
+                LOGGER.debug("Delaying transparent type computation of {}, delays: {}", typeInfo.fullyQualifiedName,
+                        causes);
+                return causes;
             }
         }
         Set<ParameterizedType> explicitTypesFromInterfaces = typeInspection.interfacesImplemented()
@@ -739,7 +751,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (ALT_CONTAINER != CONTAINER) {
                 typeAnalysis.setProperty(ALT_CONTAINER, merge);
             }
-            return AnalysisStatus.of(allCauses);
+            LOGGER.debug("Delaying container {}, delays: {}", typeInfo.fullyQualifiedName, merge);
+            return AnalysisStatus.of(merge);
         }
         typeAnalysis.setProperty(ALT_CONTAINER, MultiLevel.CONTAINER_DV);
         LOGGER.debug("Mark {} as {}", typeInfo.fullyQualifiedName, ALT_CONTAINER);
@@ -1042,7 +1055,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             DV transparentType = fieldAnalysis.isTransparentType();
             if (transparentType.isDelayed()) {
                 LOGGER.debug("Field {} not yet known if of transparent type, delaying @E2Immutable on type", fieldFQN);
-                typeAnalysis.setProperty(ALT_IMMUTABLE, transparentType);
                 causesFields = causesFields.merge(transparentType.causesOfDelay());
                 continue;
             }
@@ -1064,7 +1076,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         DV partial = analyserContext.getTypeAnalysis(ownOrInner).getProperty(Property.PARTIAL_IMMUTABLE);
                         if (partial.isDelayed()) {
                             LOGGER.debug("Field {} of nested type has no PARTIAL_IMMUTABLE yet", fieldFQN);
-                            typeAnalysis.setProperty(ALT_IMMUTABLE, fieldImmutable);
                             causesFields = causesFields.merge(fieldImmutable.causesOfDelay());
                             continue;
                         }
@@ -1079,7 +1090,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         fieldE2Immutable = MultiLevel.Effective.EVENTUAL_AFTER; // must follow rules, but is not eventual
                     } else {
                         LOGGER.debug("Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, fieldImmutable);
                         causesFields = causesFields.merge(fieldImmutable.causesOfDelay());
                     }
                 }
@@ -1106,7 +1116,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
                 if (!eventual && modified.isDelayed()) {
                     LOGGER.debug("Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
-                    typeAnalysis.setProperty(ALT_IMMUTABLE, modified);
                     causesFields = causesFields.merge(modified.causesOfDelay());
                     continue;
                 }
@@ -1138,6 +1147,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (causesFields.isDelayed()) {
             typeAnalysis.setProperty(Property.IMMUTABLE, causesFields);
             if (ALT_IMMUTABLE != Property.IMMUTABLE) typeAnalysis.setProperty(ALT_IMMUTABLE, causesFields);
+            LOGGER.debug("Delaying immutable of {} because of fields, delays: {}", typeInfo.fullyQualifiedName, causesFields);
             return causesFields;
         }
 

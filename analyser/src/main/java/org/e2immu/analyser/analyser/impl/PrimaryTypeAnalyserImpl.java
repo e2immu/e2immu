@@ -201,6 +201,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
+    public String fullyQualifiedAnalyserName() {
+        return "PTA " + name;
+    }
+
+    @Override
     public AnalyserContext getParent() {
         return parent;
     }

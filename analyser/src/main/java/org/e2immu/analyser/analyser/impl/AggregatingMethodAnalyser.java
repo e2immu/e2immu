@@ -77,6 +77,11 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
+    public String fullyQualifiedAnalyserName() {
+        return "AMA " + methodInfo.fullyQualifiedName;
+    }
+
+    @Override
     public void initialize() {
         Stream<MethodInfo> implementations = obtainImplementingTypes().map(ti -> ti.findMethodImplementing(methodInfo));
         List<MethodAnalysis> analysers = implementations.map(analyserContext::getMethodAnalysis).toList();

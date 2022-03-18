@@ -60,6 +60,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         // no-op
     }
 
+    @Override
+    public String fullyQualifiedAnalyserName() {
+        return "SMA " + methodInfo.fullyQualifiedName;
+    }
 
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {

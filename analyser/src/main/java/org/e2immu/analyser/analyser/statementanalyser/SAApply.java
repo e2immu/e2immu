@@ -287,7 +287,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
                 .debugConfiguration().evaluationResultVisitors()) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult));
+                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
+                    applyStatusAndEnnStatus.ennStatus()));
         }
 
         return applyStatusAndEnnStatus;

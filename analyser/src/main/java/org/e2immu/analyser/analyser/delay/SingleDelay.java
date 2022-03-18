@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class SingleDelay extends AbstractDelay {
+    //private static final Logger LOGGER = LoggerFactory.getLogger(SingleDelay.class);
 
     private final CauseOfDelay cause;
 
@@ -62,12 +63,23 @@ public class SingleDelay extends AbstractDelay {
     @Override
     public CausesOfDelay merge(CausesOfDelay other) {
         if (other.isDone()) return this;
-        if (maxPriority() < other.maxPriority()) return other;
-        if (maxPriority() > other.maxPriority()) return this;
+        if (maxPriority() < other.maxPriority()) {
+            //LOGGER.debug("Dropping {} in favour of {}", this, other);
+            return other;
+        }
+        if (maxPriority() > other.maxPriority()) {
+            //LOGGER.debug("Dropping {} in favour of {}", other, this);
+            return this;
+        }
         if (equals(other)) return this;
         if (maxPriority() == CauseOfDelay.LOW && other.maxPriority() == CauseOfDelay.LOW) {
             if (other instanceof SingleDelay sd) {
-                return cause.compareTo(sd.cause) < 0 ? this : other;
+                if (cause.compareTo(sd.cause) < 0) {
+                    //LOGGER.debug("Dropping {} in favour of {}", other, this);
+                    return this;
+                }
+                //LOGGER.debug("Dropping {} in favour of {}", this, other);
+                return other;
             } else {
                 throw new UnsupportedOperationException();
             }

@@ -43,4 +43,8 @@ public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
         return AnalyserResult.EMPTY;
     }
 
+    @Override
+    public String fullyQualifiedAnalyserName() {
+        return "APA " + parameterInfo.fullyQualifiedName;
+    }
 }

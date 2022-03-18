@@ -20,7 +20,10 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.Instance;
+import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.UnknownExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -124,7 +127,7 @@ public interface EvaluationContext {
 
     // will have a more performant implementation in SAEvaluationContext,
     // because getVariableProperty is pretty expensive
-    default Properties getProperties(Expression value, Set<Property> properties, boolean duringEvaluation,
+    default Properties getProperties(Expression value, List<Property> properties, boolean duringEvaluation,
                                      boolean ignoreStateInConditionManager) {
         Properties writable = Properties.writable();
         for (Property property : properties) {
@@ -195,8 +198,8 @@ public interface EvaluationContext {
         return LinkedVariables.EMPTY;
     }
 
-    // DO NOT change this set unless you adapt NewObject as well; it maintains a set of value properties
-    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
+    // do not change order: compatible with SingleDelay
+    List<Property> VALUE_PROPERTIES = List.of(CONTAINER, IDENTITY, IGNORE_MODIFICATIONS, IMMUTABLE, INDEPENDENT, NOT_NULL_EXPRESSION);
 
     Properties PRIMITIVE_VALUE_PROPERTIES = Properties.of(Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
             IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
@@ -395,8 +398,8 @@ public interface EvaluationContext {
         return variable instanceof FieldReference fr
                 && fr.fieldInfo.owner != nestedType
                 && fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType())
-              //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
-              //  && !(fr.isStatic);
+                //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
+                //  && !(fr.isStatic);
                 && fr.scope instanceof VariableExpression ve && acceptForVariableAccessReport(ve.variable(), nestedType);
     }
 
