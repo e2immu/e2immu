@@ -75,6 +75,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
                 }
             }
+            if ("copyRemove".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() <= 5 ? "<m:freeze>" : "<no return value>";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("copyRemove".equals(d.methodInfo().name)) {
@@ -121,6 +127,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new DGSimplified_0<>()", d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 5 ? "<mmc:copy>" : "instance type DGSimplified_0<T>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
@@ -223,7 +235,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
             }
         };
-        testClass("DGSimplified_0", 5, 0, new DebugConfiguration.Builder()
+        // TODO improve on errors
+        testClass("DGSimplified_0", 7, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

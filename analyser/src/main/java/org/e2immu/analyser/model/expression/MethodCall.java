@@ -397,8 +397,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.setExpression(result);
 
         checkCommonErrors(builder, context, objectValue);
-        if (objectValue.isDelayed()) {
-            return delayedMethod(context, builder, objectValue.causesOfDelay(), modified);
+        if (objectValue.isDelayed() || modifiedInstance != null && modifiedInstance.isDelayed()) {
+            CausesOfDelay causes = modifiedInstance != null
+                    ? objectValue.causesOfDelay().merge(modifiedInstance.causesOfDelay())
+                    : objectValue.causesOfDelay();
+            return delayedMethod(context, builder, causes, modified);
         }
         return builder.build();
     }
