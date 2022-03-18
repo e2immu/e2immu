@@ -102,11 +102,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         return fieldInfo;
     }
 
-    @Override
-    public boolean isDeclaredFunctionalInterface() {
-        return false;// TODO
-    }
-
     public static class Builder extends AbstractAnalysisBuilder implements FieldAnalysis {
         public final TypeInfo bestType;
         public final boolean isExplicitlyFinal;
@@ -294,10 +289,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         private DV typeContainer() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
-        }
-
-        public boolean isDeclaredFunctionalInterface() {
-            return false; // TODO
         }
 
         public void setValues(List<ValueAndPropertyProxy> values, CausesOfDelay delayed) {

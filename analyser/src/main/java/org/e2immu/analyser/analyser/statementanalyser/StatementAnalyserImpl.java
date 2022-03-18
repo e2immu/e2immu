@@ -617,6 +617,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
             AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
             TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
+            CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
             statementAnalysis.variableStream().forEach(vi -> {
                 // naive approach
                 if (closure.acceptForVariableAccessReport(vi.variable(), currentType)) {
@@ -631,7 +632,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                      the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
                      Only when the links have been established, can we be sure that modified will progress in a stable fashion.
                      */
-                    CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+
                     DV combined = modified.isDelayed() || linksEstablished.isDone() ? modified :
                             modified.causesOfDelay().merge(linksEstablished);
                     builder.addVariableModified(vi.variable(), combined); // also when delayed!!!

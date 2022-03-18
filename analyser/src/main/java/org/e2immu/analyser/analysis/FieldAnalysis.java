@@ -122,6 +122,4 @@ public interface FieldAnalysis extends Analysis {
         }
         return instance;
     }
-
-    boolean isDeclaredFunctionalInterface();
 }
