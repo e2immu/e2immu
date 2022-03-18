@@ -248,16 +248,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("result".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < 3 ? "<new:OutputBuilderSimplified_7>" : "new OutputBuilderSimplified_7()";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("new OutputBuilderSimplified_7()", d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:NONE>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
-                            case 1 -> "<vp:NONE:container@Class_Space>==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
-                            case 2 -> "Space.NONE==start?<new:OutputBuilderSimplified_7>:<mmc:result>";
-                            case 3, 4 -> "Space.NONE==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 0 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 1 -> "<vp:NONE:container@Class_Space>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 2, 3, 4 -> "Space.NONE==start?new OutputBuilderSimplified_7():<mmc:result>";
                             default -> "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -435,9 +433,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 
@@ -520,8 +518,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("result".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() < 3 ? "<new:OutputBuilderSimplified_12>" : "new OutputBuilderSimplified_12()";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("new OutputBuilderSimplified_12()", d.currentValue().toString());
                     }
                 }
             }
@@ -619,7 +616,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

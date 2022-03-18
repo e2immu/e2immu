@@ -255,12 +255,12 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() <= 1 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -269,12 +269,12 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("set3:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -285,15 +285,15 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("set3:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         // NO s3!
-                        String expectLv = d.iteration() <= 1 ? "s3:-1,set3:-1,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:0" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -301,22 +301,22 @@ public class Test_17_Container extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (S.equals(d.fieldInfo().fullyQualifiedName())) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         testClass("Container_3", 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

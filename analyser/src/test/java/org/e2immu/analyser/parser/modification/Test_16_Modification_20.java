@@ -80,11 +80,12 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("c".equals(d.variableName())) {
-                    String expectValue = d.iteration() <= 3 ? "<new:C1>" : "new C1(s2)";
-                    String expectLinked = d.iteration() <= 2 ? "c:0,this.s2:-1" : "c:0";
-
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString(), "where? " + d.statementId());
-                    assertEquals(expectValue, d.currentValue().toString(), "where? " + d.statementId());
+                    if("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 3 ? "<new:C1>" : "new C1(s2)";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String expectLinked = d.iteration() <= 2 ? "c:0,this.s2:-1" : "c:0";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -143,11 +144,11 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
-                //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                 //       .addTypeMapVisitor(typeMapVisitor)
-                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

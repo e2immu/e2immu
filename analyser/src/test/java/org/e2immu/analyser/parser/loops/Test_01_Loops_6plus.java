@@ -523,18 +523,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&9==<m:getValue>?4:<vl:res>";
-                            case 1 -> "<loopIsNotEmptyCondition>&&9==<m:getValue>?4:instance type int";
-                            default -> "map$0.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?instance type int:4";
-                        };
+                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&9==<m:getValue>?4:<vl:res>"
+                                : "map$0.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?instance type int:4";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
         };
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -548,11 +545,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? "<m:entrySet>" : "kvStore$0.entrySet()";
+                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "kvStore$0.entrySet()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? "<m:getValue>" : "entry.getValue()";
+                String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry.getValue()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -563,7 +560,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>&&0!=<f:<m:getValue>.read>?<mmc:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:<vp:Container:initial@Field_read>.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
                             default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -575,12 +572,16 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? "entry:0,key:-1" : "entry:0";
+                        String expectLv = d.iteration() == 0 ? "entry:0,key:-1" : "entry:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() <= 1 ? "container:-1,entry:0,key:-1" : "entry:0";
+                        String expectL1 = switch (d.iteration()) {
+                            case 0 -> "container:-1,entry:0,key:-1";
+                            case 1 -> "container:-1,entry:0";
+                            default -> "entry:0";
+                        };
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -622,10 +623,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -642,8 +643,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "readWithinMillis".equals(p.name)) {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 2, 3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
+                            case 1, 2, 3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -655,7 +656,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

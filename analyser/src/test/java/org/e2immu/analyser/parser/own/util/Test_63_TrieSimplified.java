@@ -55,11 +55,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("0.1.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 3 ? "<m:get>" : "root.map$0.get(s)";
+                    String expectCondition = d.iteration() < 3 ? "<m:get>" : "root.map$0.get(s)";
                     assertEquals(expectCondition, d.evaluationResult().value().toString());
                 }
                 if ("0.1.1.0.1".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 3 ? "<m:put>" : "nullable instance type TrieNode<T>";
+                    String expectCondition = d.iteration() < 3 ? "<m:put>" : "nullable instance type TrieNode<T>";
                     assertEquals(expectCondition, d.evaluationResult().value().toString());
                 }
             }
@@ -77,8 +77,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("0.1.1.0.1".equals(d.statementId())) {
                     String expectCondition = switch (d.iteration()) {
-                        case 0, 1 -> "<null-check>&&!<null-check>";
-                        case 2, 3 -> "<null-check>&&null!=<f:root.map>";
+                        case 0 -> "<null-check>&&!<null-check>";
+                        case 1, 2 -> "<null-check>&&null!=<f:root.map>";
                         default -> "null!=root.map$0&&null==root.map$0.get(s)";
                     };
                     assertEquals(expectCondition, d.absoluteState().toString());
@@ -88,32 +88,32 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("root".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<f:root>" : "instance type TrieNode<T>";
+                String expected = d.iteration() <= 1 ? "<f:root>" : "instance type TrieNode<T>";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:add>" : "root";
+                String expected = d.iteration() < 3 ? "<m:add>" : "root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         testClass("TrieSimplified_1", 0, 0, new DebugConfiguration.Builder()
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

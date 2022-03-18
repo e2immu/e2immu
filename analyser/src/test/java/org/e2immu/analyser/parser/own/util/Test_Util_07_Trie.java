@@ -32,8 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_07_Trie extends CommonTestRunner {
 
@@ -71,7 +70,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "node.map:-1,node:0,this.root:-1";
                             case 2 -> "node$2.map:-1,node.map:-1,node:0,this.root:-1";
-                            default -> "node$2.map:1,node.map:1,node:0,this.root:0";
+                            default -> "node$2.map:2,node.map:2,node:0,this.root:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -81,7 +80,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "newTrieNode:-1,node.map:-1,node:0,this.root:-1";
                             case 2 -> "newTrieNode:-1,node$2.map:-1,node.map:-1,node:0,this.root:-1";
-                            default -> "newTrieNode:3,node$2.map:1,node.map:1,node:0,this.root:0";
+                            default -> "newTrieNode:3,node$2.map:2,node.map:2,node:0,this.root:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -112,8 +111,14 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
-                    if ("4".equals(d.statementId())) {
-                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    if ("node".equals(fr.scope.toString())) {
+                        if ("4".equals(d.statementId())) {
+                            assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    } else if ("strings.length>0?null==node$2.map$0?new TrieNode<>():strings.length>0&&null!=node$2.map$0&&null==node$2.map$0.get(instance type String)?new TrieNode<>():node$2.map$0.get(instance type String):nullable instance type TrieNode<T>".equals(fr.scope.toString())) {
+                        assertTrue(d.iteration() > 0);
+                    } else {
+                        fail("Have scope " + fr.scope);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
@@ -123,8 +128,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             String linked = switch (d.iteration()) {
                                 case 0, 1 -> "newTrieNode:-1,node.map:0,node:-1,this.root:-1";
-                                case 2 -> "newTrieNode:-1,node$2.map:1,node.map:0,node:1,this.root:1";
-                                default -> "newTrieNode:3,node$2.map:1,node.map:0,node:1,this.root:1";
+                                case 2 -> "newTrieNode:-1,node$2.map:2,node.map:0,node:2,this.root:2";
+                                default -> "newTrieNode:3,node$2.map:2,node.map:0,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -134,8 +139,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             String linked = switch (d.iteration()) {
                                 case 0, 1 -> "node$2.map:0";
-                                case 2 -> "newTrieNode:-1,node$2.map:0,node.map:-1,node:1,this.root:1";
-                                default -> "newTrieNode:3,node$2.map:0,node.map:1,node:1,this.root:1";
+                                case 2 -> "newTrieNode:-1,node$2.map:0,node.map:-1,node:2,this.root:2";
+                                default -> "newTrieNode:3,node$2.map:0,node.map:2,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -186,10 +191,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 7,
                 new DebugConfiguration.Builder()
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
