@@ -17,9 +17,11 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.*;
@@ -33,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Output_03_Formatter extends CommonTestRunner {
 
@@ -59,14 +61,45 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
             if ("write".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6".equals(d.statementId())) {
                         assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6.0.0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
+                }
+            }
+            if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("tab".equals(d.variableName())) {
+                    if ("0.0.3".equals(d.statementId())) {
+                        String expected = d.iteration() < 2 ? "<m:pop>" : "nullable instance type Tab";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    assertNotEquals("0", d.statementId());
+                }
+                if (d.variable() instanceof FieldReference fr && "writer".equals(fr.fieldInfo.name)) {
+                    if ("tab".equals(fr.scope.toString())) {
+                        if ("0".equals(d.statementId())) {
+                            String expected = d.iteration() < 2 ? "<f:writer>" : "nullable instance type Writer";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("0.0.3".equals(d.statementId())) {
+                            String expected = d.iteration() < 2 ? "<f:writer>" : "nullable instance type Writer";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else if ("<m:pop>".equals(fr.scope.toString())) {
+                        assertEquals("0", d.statementId()); // FIXME should not exist here, linked to local variable out of scope??
+                    } else if ("tabs.peek()".equals(fr.scope.toString())) {
+                        if ("0.0.3".equals(d.statementId())) {
+                            assertEquals("nullable instance type Writer", d.currentValue().toString());
+                        }
+                    } else if ("nullable instance type Tab".equals(fr.scope.toString())) {
+                        if ("0.0.3".equals(d.statementId())) {
+                            assertEquals("nullable instance type Writer", d.currentValue().toString());
+                        }
+                    } else fail("scope " + fr.scope);
                 }
             }
         };
@@ -74,13 +107,33 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
             if ("NOT_END".equals(d.fieldInfo().name)) {
                 assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
+            if ("writer".equals(d.fieldInfo().name) && "Tab".equals(d.fieldInfo().owner.simpleName)) {
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
+                assertEquals("new StringWriter()", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+                assertTrue(d.fieldAnalysis().valuesDelayed().isDone());
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String delay = "initial:tab.writer@Method_pop_0.0.3-C";
+                assertDv(d, delay, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("swap".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("writer".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() == 0 ? "<m:writer>" : "tabs.isEmpty()?writer:tabs.peek().writer$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

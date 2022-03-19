@@ -834,10 +834,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
+        DV scopeDelays = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference fr
+                        && fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
+                .map(vi -> connectedToMyTypeHierarchy((FieldReference) vi.variable()))
+                .reduce(CausesOfDelay.EMPTY, DV::max);
+        if (scopeDelays.isDelayed()) {
+            methodAnalysis.setProperty(MODIFIED_METHOD, scopeDelays);
+            LOGGER.debug("Delaying @Modified of method {}, scope is delayed", methodInfo.fullyQualifiedName);
+            return scopeDelays.causesOfDelay();
+        }
+
         List<VariableInfo> relevantVariableInfos = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference fr
                         && fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo)
-                        && connectedToMyTypeHierarchy(fr))
+                        && connectedToMyTypeHierarchy(fr).valueIsTrue())
                 .toList();
         // first step, check (my) field assignments
         boolean fieldAssignments = relevantVariableInfos.stream().anyMatch(VariableInfo::isAssigned);
@@ -896,15 +907,18 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     - scope is recursively "this"
     - static scope, pointing to a type in my primary type
      */
-    private boolean connectedToMyTypeHierarchy(FieldReference fr) {
-        if (fr.scopeIsThis()) return true;
-        if (fr.scope == null) return true;
+    private DV connectedToMyTypeHierarchy(FieldReference fr) {
+        if (fr.scopeIsThis()) return DV.TRUE_DV;
+        if (fr.scope == null) return DV.TRUE_DV;
         IsVariableExpression ive;
         if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr2) {
             return connectedToMyTypeHierarchy(fr2);
         }
-        TypeInfo typeInfo = fr.scope.returnType().bestTypeInfo();
-        return typeInfo != null && typeInfo.primaryType() == fr.fieldInfo.owner.primaryType();
+        if (fr.scope instanceof TypeExpression te) {
+            TypeInfo typeInfo = te.parameterizedType.bestTypeInfo();
+            return DV.fromBoolDv(typeInfo != null && typeInfo.primaryType() == fr.fieldInfo.owner.primaryType());
+        }
+        return fr.scope.isDelayed() ? fr.scope.causesOfDelay() : DV.FALSE_DV;
     }
 
     public boolean fieldInMyTypeHierarchy(FieldInfo fieldInfo, TypeInfo typeInfo) {
