@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.support.Either;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.Freezable;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final SetOnce<VariableInfoImpl> merge;
 
     private final Stage levelForPrevious;
+
+    private final FlipSwitch removed = new FlipSwitch();
 
     /*
     factory method for existing variables; potentially revert VariableDefinedOutsideLoop nature
@@ -496,5 +499,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public String toString() {
         String code = (isInitial() ? "I" : "P") + (hasEvaluation() ? "E" : "-") + (hasMerge() ? "M" : "-");
         return current().variable().fullyQualifiedName() + " " + code;
+    }
+
+    @Override
+    public boolean isNotRemoved() {
+        return !removed.isSet();
+    }
+
+    public void remove() {
+        if(!removed.isSet()) removed.set();
     }
 }

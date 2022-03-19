@@ -911,14 +911,18 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (fr.scopeIsThis()) return DV.TRUE_DV;
         if (fr.scope == null) return DV.TRUE_DV;
         IsVariableExpression ive;
-        if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr2) {
-            return connectedToMyTypeHierarchy(fr2);
+        if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null) {
+            if (methodInfo.typeInfo.isMyself(ive.returnType(), analyserContext)) return DV.TRUE_DV;
+            if (ive.variable() instanceof FieldReference fr2) {
+                return connectedToMyTypeHierarchy(fr2);
+            }
         }
         if (fr.scope instanceof TypeExpression te) {
             TypeInfo typeInfo = te.parameterizedType.bestTypeInfo();
             return DV.fromBoolDv(typeInfo != null && typeInfo.primaryType() == fr.fieldInfo.owner.primaryType());
         }
-        return fr.scope.isDelayed() ? fr.scope.causesOfDelay() : DV.FALSE_DV;
+        //fr.scope.isDelayed() ? fr.scope.causesOfDelay() :
+        return DV.FALSE_DV;
     }
 
     public boolean fieldInMyTypeHierarchy(FieldInfo fieldInfo, TypeInfo typeInfo) {

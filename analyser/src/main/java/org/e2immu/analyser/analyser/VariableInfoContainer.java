@@ -183,4 +183,8 @@ public interface VariableInfoContainer {
      * @return if you access previous, do you get to EVAL or MERGE?
      */
     Stage getLevelForPrevious();
+
+    boolean isNotRemoved();
+
+    void remove();
 }

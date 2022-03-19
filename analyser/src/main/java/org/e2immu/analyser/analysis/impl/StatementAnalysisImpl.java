@@ -362,7 +362,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
-        return variables.stream()
+        return rawVariableStream()
                 .map(e -> e.getValue().current())
                 .filter(v -> v.variable() instanceof FieldReference fieldReference
                         && fieldReference.fieldInfo == fieldInfo);
@@ -586,7 +586,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
         EvaluationResult context = EvaluationResult.from(evaluationContext);
-        variables.stream()
+        rawVariableStream()
                 .map(Map.Entry::getValue)
                 .filter(VariableInfoContainer::isInitial)
                 .forEach(vic -> {
@@ -654,7 +654,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     assume that all parameters, also those from closures, are already present
      */
     private void init1PlusStartOfMethodDoParameters(AnalyserContext analyserContext) {
-        variables.stream().map(Map.Entry::getValue)
+        rawVariableStream().map(Map.Entry::getValue)
                 .filter(vic -> vic.getPreviousOrInitial().variable() instanceof ParameterInfo)
                 .forEach(vic -> {
                     VariableInfo prevInitial = vic.getPreviousOrInitial();
@@ -903,7 +903,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
         // we want to deal with them only once, though.
         Set<Variable> seen = new HashSet<>();
-        Map<Variable, VariableInfoContainer> useVic = variables.stream()
+        Map<Variable, VariableInfoContainer> useVic = rawVariableStream()
                 .collect(Collectors.toUnmodifiableMap(e -> e.getValue().current().variable(), Map.Entry::getValue));
 
         // first group: variables seen in any of the sub blocks.
@@ -930,7 +930,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // normal variables not accessed in the block, defined before the block, can be ignored
         //
         // if recognized: remove (into remove+ignore), otherwise ignore
-        Stream<VariableInfoContainer> atTopLevel = variables.stream().map(Map.Entry::getValue);
+        Stream<VariableInfoContainer> atTopLevel = rawVariableStream().map(Map.Entry::getValue);
         mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), mergeEvenIfNotInSubBlocks::contains, null);
         return pm;
     }
@@ -1063,8 +1063,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             VariableInfoContainer destination;
             if (!variables.isSet(renamed.fullyQualifiedName())) {
                 VariableNature variableNature;
-                if (renamed instanceof FieldReference fr && fr.anyScopeDelayedOutOfScope()) {
-                    variableNature = new VariableNature.OutOfScopeVariable(index);
+                if (renamed instanceof FieldReference fr) {
+                    if (fr.anyScopeDelayedOutOfScope()) {
+                        variableNature = new VariableNature.OutOfScopeVariable(index);
+                    } else if (fr.scope.isDelayed()) {
+                        variableNature = new VariableNature.DelayedScope();
+                    } else {
+                        variableNature = vic.variableNature();
+                    }
                 } else {
                     variableNature = vic.variableNature();
                 }
@@ -1073,6 +1079,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 destination = vic;
             } else {
                 destination = variables.get(renamed.fullyQualifiedName());
+            }
+            if(destination.variableNature() instanceof VariableNature.DelayedScope ds) {
+                ds.setIteration(evaluationContext.getIteration());
             }
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
@@ -1125,6 +1134,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 throw new UnsupportedOperationException("Have not yet encountered this situation");
             }
         }
+
+        rawVariableStream().forEach(e -> {
+            if(e.getValue().variableNature() instanceof VariableNature.DelayedScope ds && ds.getIteration()<evaluationContext.getIteration()) {
+                LOGGER.debug("Removing {}, not actively merged anymore", e.getKey());
+                e.getValue().remove();
+            }
+        });
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
@@ -1821,17 +1837,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public Stream<VariableInfo> variableStream() {
-        return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
+        return variables.stream().map(Map.Entry::getValue)
+                .filter(VariableInfoContainer::isNotRemoved)
+                .map(VariableInfoContainer::current);
     }
 
     @Override
     public Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream() {
-        return variables.stream();
+        return variables.stream().filter(e -> e.getValue().isNotRemoved());
     }
 
     @Override
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level) {
         return variables.stream()
+                .filter(e -> e.getValue().isNotRemoved())
                 .filter(e -> switch (level) {
                     case INITIAL -> throw new UnsupportedOperationException();
                     case EVALUATION -> e.getValue().hasEvaluation();

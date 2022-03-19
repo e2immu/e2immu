@@ -21,8 +21,8 @@ import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -61,13 +61,13 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
             if ("write".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6.0.0".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -90,7 +90,9 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("<m:pop>".equals(fr.scope.toString())) {
-                        assertEquals("0", d.statementId()); // FIXME should not exist here, linked to local variable out of scope??
+                        assertEquals("0", d.statementId());
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.DelayedScope);
+                        assertTrue(d.iteration() < 2);
                     } else if ("tabs.peek()".equals(fr.scope.toString())) {
                         if ("0.0.3".equals(d.statementId())) {
                             assertEquals("nullable instance type Writer", d.currentValue().toString());
@@ -105,7 +107,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NOT_END".equals(d.fieldInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("writer".equals(d.fieldInfo().name) && "Tab".equals(d.fieldInfo().owner.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);
@@ -117,7 +119,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
             if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
                 String delay = "initial:tab.writer@Method_pop_0.0.3-C";
-                assertDv(d, delay, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }

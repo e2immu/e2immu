@@ -287,5 +287,18 @@ public interface VariableNature {
             return statementIndex;
         }
     }
+
+    class DelayedScope implements VariableNature {
+        private int iteration;
+
+        public int getIteration() {
+            return iteration;
+        }
+
+        public void setIteration(int iteration) {
+            assert this.iteration <= iteration;
+            this.iteration = iteration;
+        }
+    }
 }
 
