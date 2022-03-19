@@ -19,7 +19,11 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -31,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -184,6 +189,25 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int params = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("goTo".equals(d.methodInfo().name) && params == 2) {
+                String expected = d.iteration() <= 4 ? "<m:goTo>" : "upToPosition>instance type int&&(null==upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i])||null==upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1)?null:upToPosition>instance type int&&(instance type int>=upToPosition||null!=upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]))&&(instance type int>=upToPosition||null!=upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1)?null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]):nullable instance type TrieNode<T>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 5) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("node$1, node$1.map$0, org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i], upToPosition, upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1",
+                                inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                        List<Variable> dvs = inlinedMethod.getVariablesOfExpression().stream()
+                                .map(VariableExpression::variable)
+                                .filter(variable -> variable instanceof DependentVariable)
+                                .toList();
+                        assertEquals(1, dvs.size());
+                        DependentVariable dv = (DependentVariable) dvs.get(0);
+                        assertEquals("org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings",
+                                dv.expressionOrArrayVariable.getRight().fullyQualifiedName());
+                    } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
+            }
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }

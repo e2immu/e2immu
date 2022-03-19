@@ -1002,7 +1002,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     public AnalysisStatus mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
                                                       Expression stateOfConditionManagerBeforeExecution,
-                                                      Expression postProcessState,
                                                       List<ConditionAndLastStatement> lastStatements,
                                                       boolean atLeastOneBlockExecuted,
                                                       int statementTime,
@@ -1110,7 +1109,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Merge merge = new Merge(evaluationContext, destination);
 
                     // the main merge operation
-                    CausesOfDelay mergeDelay = merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
+                    CausesOfDelay mergeDelay = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
                             localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
                     delay = delay.merge(mergeDelay);
 

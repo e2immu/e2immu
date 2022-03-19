@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
@@ -28,6 +27,10 @@ public class TrieSimplified_3<T> {
     @ERContainer
     private static class TrieNode<T> {
         Map<String, TrieNode<T>> map;
+    }
+
+    private TrieNode<T> goTo(String[] strings) {
+        return goTo(strings, strings.length);
     }
 
     @Nullable

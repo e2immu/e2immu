@@ -232,8 +232,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (value instanceof IsVariableExpression ve) {
-            if (forwardEvaluationInfo.isNullable(ve.variable())) return NULLABLE_DV;
-            VariableInfo variableInfo = findForReading(ve.variable(), true, forwardEvaluationInfo.stage());
+            VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
             DV cnnTF = cnn.isDelayed() ? cnn : cnn.equals(NOT_INVOLVED_DV) ? DV.FALSE_DV : DV.fromBoolDv(!cnn.equals(NULLABLE_DV));
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
@@ -400,10 +399,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return variableInfo.getLinkedVariables();
     }
 
-    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
-        return findForReading(variable, isNotAssignmentTarget, INITIAL);
-    }
-
     /**
      * Important that the closure is used for local variables and parameters (we'd never find them otherwise).
      * However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
@@ -411,17 +406,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * <p>
      * Equally important, if we have a local copy already, we must use it! See e.g. BasicCompanionMethods_11
      */
-    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget, Stage stage) {
+    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
         boolean haveVariable = statementAnalysis.variableIsSet(variable.fullyQualifiedName());
         if (!haveVariable && closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
-            return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget, stage);
+            return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget);
         }
-        if (stage == INITIAL) {
-            return initialValueForReading(variable, isNotAssignmentTarget);
-        }
-        String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
-        return vic.current();
+        return initialValueForReading(variable, isNotAssignmentTarget);
     }
 
     /**

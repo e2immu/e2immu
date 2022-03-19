@@ -91,7 +91,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }

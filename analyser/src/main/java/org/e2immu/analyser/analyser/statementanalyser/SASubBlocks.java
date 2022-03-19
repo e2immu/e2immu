@@ -316,8 +316,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), addToStateAfterStatement,
-                    lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape, setCnnVariables);
+                    sharedState.localConditionManager().state(), lastStatements, atLeastOneBlockExecuted,
+                    maxTimeWithEscape, setCnnVariables);
             analysisStatus = analysisStatus.combine(copyStatus);
 
             // compute the escape situation of the sub-blocks
@@ -334,9 +334,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
-            Expression postProcessState = new BooleanConstant(statementAnalysis.primitives(), true);
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime, Map.of());
+                    sharedState.localConditionManager().state(), List.of(), false, maxTime, Map.of());
             analysisStatus = analysisStatus.combine(copyStatus);
         }
 

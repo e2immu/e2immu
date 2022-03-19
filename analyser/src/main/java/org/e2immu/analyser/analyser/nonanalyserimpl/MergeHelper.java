@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,23 +59,24 @@ and potentially already in the value as well. In the former, the state of 1 shou
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeHelper.class);
 
-    record MergeHelperResult(VariableInfoImpl vii, CausesOfDelay delays){}
+    record MergeHelperResult(VariableInfoImpl vii, CausesOfDelay delays) {
+    }
+
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
      */
     public MergeHelperResult mergeIntoNewObject(Expression stateOfDestination,
-                                               Expression postProcessState,
-                                               Merge.ExpressionAndProperties overwriteValue,
-                                               boolean atLeastOneBlockExecuted,
-                                               List<ConditionAndVariableInfo> mergeSources,
-                                               GroupPropertyValues groupPropertyValues,
-                                               TranslationMap translationMap) {
+                                                Merge.ExpressionAndProperties overwriteValue,
+                                                boolean atLeastOneBlockExecuted,
+                                                List<ConditionAndVariableInfo> mergeSources,
+                                                GroupPropertyValues groupPropertyValues,
+                                                TranslationMap translationMap) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
-        CausesOfDelay causes = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
+        CausesOfDelay causes = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, overwriteValue,
                 atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
         return new MergeHelperResult(newObject, causes);
     }
@@ -88,13 +88,12 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      * that point to the old variable.
      */
     public CausesOfDelay mergeIntoMe(Expression stateOfDestination,
-                            Expression postProcessState,
-                            Merge.ExpressionAndProperties overwriteValue,
-                            boolean atLeastOneBlockExecuted,
-                            VariableInfoImpl previous,
-                            List<ConditionAndVariableInfo> mergeSources,
-                            GroupPropertyValues groupPropertyValues,
-                            TranslationMap translationMap) {
+                                     Merge.ExpressionAndProperties overwriteValue,
+                                     boolean atLeastOneBlockExecuted,
+                                     VariableInfoImpl previous,
+                                     List<ConditionAndVariableInfo> mergeSources,
+                                     GroupPropertyValues groupPropertyValues,
+                                     TranslationMap translationMap) {
         assert atLeastOneBlockExecuted || previous != vi;
 
         Merge.ExpressionAndProperties mergeValue;
@@ -105,18 +104,15 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
-        Expression beforePostProcess;
+        Expression beforeMoveDWE;
         if (!translationMap.isEmpty()) {
-            beforePostProcess = mergeValue.expression().translate(evaluationContext.getAnalyserContext(), translationMap);
+            beforeMoveDWE = mergeValue.expression().translate(evaluationContext.getAnalyserContext(), translationMap);
         } else {
-            beforePostProcess = mergeValue.expression();
+            beforeMoveDWE = mergeValue.expression();
         }
 
-        // postProcess, if applied, uses evaluation in a child context
-        Expression mergedValuePost = postProcess(evaluationContext, beforePostProcess, postProcessState);
-
         Expression mergedValue = DelayedWrappedExpression
-                .moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), mergedValuePost);
+                .moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), beforeMoveDWE);
         // TODO do post-process and replace local variables change the value properties?
         try {
             vi.setValue(mergedValue); // copy the delayed value
@@ -141,20 +137,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
     private boolean allValuePropertiesSet() {
         return EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> vi.getProperty(p).isDone());
-    }
-
-    private Expression postProcess(EvaluationContext evaluationContext,
-                                   Expression beforePostProcess,
-                                   Expression postProcessState) {
-        if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
-            EvaluationContext child = evaluationContext.childState(postProcessState);
-            Expression reEval = beforePostProcess.evaluate(EvaluationResult.from(child),
-                            ForwardEvaluationInfo.DEFAULT.merge(Set.of(vi.variable())))
-                    .getExpression();
-            LOGGER.debug("Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
-            return reEval;
-        }
-        return beforePostProcess;
     }
 
     private String mergedReadId(String previousId,

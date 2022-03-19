@@ -27,31 +27,18 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean doNotReevaluateVariableExpressions,
                                     boolean notAssignmentTarget,
                                     Variable assignmentTarget,
-                                    boolean complainInlineConditional,
-                                    Stage stage,
-                                    Set<Variable> nullableInMerge) {
+                                    boolean complainInlineConditional) {
+ 
     public ForwardEvaluationInfo(Map<Property, DV> properties,
                                  boolean doNotReevaluateVariableExpressions,
                                  boolean notAssignmentTarget,
                                  Variable assignmentTarget,
                                  boolean complainInlineConditional) {
-        this(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget, complainInlineConditional, Stage.INITIAL, Set.of());
-    }
-
-    public ForwardEvaluationInfo(Map<Property, DV> properties,
-                                 boolean doNotReevaluateVariableExpressions,
-                                 boolean notAssignmentTarget,
-                                 Variable assignmentTarget,
-                                 boolean complainInlineConditional,
-                                 Stage stage,
-                                 Set<Variable> nullableInMerge) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
         this.complainInlineConditional = complainInlineConditional;
         this.doNotReevaluateVariableExpressions = doNotReevaluateVariableExpressions;
-        this.stage = stage;
-        this.nullableInMerge = nullableInMerge;
     }
 
     public boolean assignToField() {
@@ -90,26 +77,19 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
 
     public ForwardEvaluationInfo copyDefault() {
         return new ForwardEvaluationInfo(Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
-                doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional,
-                stage, nullableInMerge);
-    }
-
-    public ForwardEvaluationInfo merge(Set<Variable> nullableInMerge) {
-        return new ForwardEvaluationInfo(properties,
-                doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget, complainInlineConditional,
-                Stage.MERGE, nullableInMerge);
+                doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo notNullNotAssignment() {
         return new ForwardEvaluationInfo(
                 Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                true, assignmentTarget, complainInlineConditional, stage, nullableInMerge);
+                true, assignmentTarget, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo notNullKeepAssignment() {
         return new ForwardEvaluationInfo(
                 Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, complainInlineConditional, stage, nullableInMerge);
+                notAssignmentTarget, assignmentTarget, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
@@ -118,39 +98,35 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
                 properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV));
         map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, true,
-                assignmentTarget, complainInlineConditional, stage, nullableInMerge);
+                assignmentTarget, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo copyAddAssignmentTarget(Variable variable) {
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, stage, nullableInMerge);
+                notAssignmentTarget, variable, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo copyAddAssignmentTargetEnsureNotNull(Variable variable) {
         Map<Property, DV> map = new HashMap<>(properties);
         map.merge(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV, DV::max);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, stage, nullableInMerge);
+                notAssignmentTarget, variable, complainInlineConditional);
     }
 
     public ForwardEvaluationInfo copyDoNotComplainInlineConditional() {
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, false, stage, nullableInMerge);
+                notAssignmentTarget, assignmentTarget, false);
     }
 
     public ForwardEvaluationInfo copyDoNotReevaluateVariableExpressionsDoNotComplain() {
         return new ForwardEvaluationInfo(properties, true, notAssignmentTarget,
-                assignmentTarget, false, stage, nullableInMerge);
+                assignmentTarget, false);
     }
 
     public ForwardEvaluationInfo copyRemoveContextNotNull() {
         Map<Property, DV> map = new HashMap<>(properties);
         map.remove(Property.CONTEXT_NOT_NULL);
         return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, stage, nullableInMerge);
-    }
-
-    public boolean isNullable(Variable variable) {
-        return stage == Stage.MERGE && nullableInMerge.contains(variable);
+                complainInlineConditional);
     }
 }
