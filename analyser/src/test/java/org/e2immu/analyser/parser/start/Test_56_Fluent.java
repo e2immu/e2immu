@@ -151,7 +151,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
-                assertDv(d, 5, DV.FALSE_DV, Property.FLUENT);
+                assertDv(d, DV.FALSE_DV, Property.FLUENT);
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }

@@ -496,7 +496,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
         // see Fluent_0 for one way, and Store_7 for the other direction
         ParameterizedType myType = methodInfo.typeInfo.asParameterizedType(analyserContext);
-        if (myType.isNotAssignableFromTo(analyserContext, methodInspection.getReturnType())) {
+        if (myType.isNotAssignableFromTo(analyserContext, methodInspection.getReturnType()) || methodInspection.isStatic()) {
             methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
         }
 
