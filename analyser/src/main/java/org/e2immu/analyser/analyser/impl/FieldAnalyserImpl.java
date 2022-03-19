@@ -1433,7 +1433,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
-            LOGGER.debug("Field {} is @NotModified, since it is final and primitive", fqn);
+            LOGGER.debug("Field {} is @NotModified, since it is of primitive type", fqn);
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             return DONE;
         }

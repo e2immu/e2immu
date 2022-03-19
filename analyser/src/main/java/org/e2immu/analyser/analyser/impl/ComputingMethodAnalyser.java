@@ -834,11 +834,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
+        List<VariableInfo> relevantVariableInfos = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference fr
+                        && fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo)
+                        && connectedToMyTypeHierarchy(fr))
+                .toList();
         // first step, check (my) field assignments
-        boolean fieldAssignments = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference fr &&
-                        fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
-                .anyMatch(VariableInfo::isAssigned);
+        boolean fieldAssignments = relevantVariableInfos.stream().anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             LOGGER.debug("Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(property, DV.TRUE_DV);
@@ -848,14 +850,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // if there are no field assignments, there may be modifying method calls
 
         // second step, check that CM is present (this generally implies that links have been established)
-        DV contextModified = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference fr &&
-                        fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
-                .map(vi -> vi.getProperty(CONTEXT_MODIFIED))
+        DV contextModified = relevantVariableInfos.stream().map(vi -> vi.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.FALSE_DV, DV::max);
         if (contextModified.isDelayed()) {
-            LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified",
-                    methodInfo.distinguishingName());
+            LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified", methodInfo.distinguishingName());
             methodAnalysis.setProperty(property, contextModified);
             return contextModified.causesOfDelay();
         }
@@ -890,6 +888,23 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(property, contextModified);
         return DONE;
+    }
+
+    /*
+    should return true when:
+    - scope is "this"
+    - scope is recursively "this"
+    - static scope, pointing to a type in my primary type
+     */
+    private boolean connectedToMyTypeHierarchy(FieldReference fr) {
+        if (fr.scopeIsThis()) return true;
+        if (fr.scope == null) return true;
+        IsVariableExpression ive;
+        if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr2) {
+            return connectedToMyTypeHierarchy(fr2);
+        }
+        TypeInfo typeInfo = fr.scope.returnType().bestTypeInfo();
+        return typeInfo != null && typeInfo.primaryType() == fr.fieldInfo.owner.primaryType();
     }
 
     public boolean fieldInMyTypeHierarchy(FieldInfo fieldInfo, TypeInfo typeInfo) {
