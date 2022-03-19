@@ -40,7 +40,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();
-        dependentVariable = new DependentVariable(identifier, expression, index, returnType);
+        dependentVariable = new DependentVariable(identifier, expression, index, returnType, "");
     }
 
     @Override
@@ -119,7 +119,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
         } else {
             Expression arrayExpression = DependentVariable.singleVariable(expression) != null ? expression : arrayValue;
             boolean delayed = arrayExpression.isDelayed() || indexValue.value().isDelayed();
-            DependentVariable evaluatedDependentVariable = new DependentVariable(identifier, expression, indexValue.value(), returnType);
+            DependentVariable evaluatedDependentVariable = new DependentVariable(identifier, expression,
+                    indexValue.value(), returnType, context.evaluationContext().statementIndex());
             if (evaluatedDependentVariable.hasArrayVariable()) {
                 builder.markRead(evaluatedDependentVariable.arrayVariable());
             }

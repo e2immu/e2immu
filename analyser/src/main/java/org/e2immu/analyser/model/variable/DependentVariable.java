@@ -42,12 +42,15 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public final String name;
     public final String simpleName;
     public final Either<NonVariable, Variable> expressionOrArrayVariable;
+    public final String statementIndex;
 
     public DependentVariable(Identifier identifier,
                              Expression arrayExpression,
                              Expression indexExpression,
-                             @NotNull ParameterizedType parameterizedType) {  // the formal type
+                             @NotNull ParameterizedType parameterizedType,//formal type
+                             String statementIndex) {
         super(parameterizedType);
+        this.statementIndex = statementIndex; // not-"" when created during analysis
         Variable arrayVariable = singleVariable(arrayExpression);
         this.expressionOrArrayVariable = arrayVariable == null
                 ? Either.left(new NonVariable(arrayExpression, identifier))

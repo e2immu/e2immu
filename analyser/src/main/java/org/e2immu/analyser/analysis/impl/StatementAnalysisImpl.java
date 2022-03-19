@@ -573,7 +573,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
             } else {
-                if(vic.previousIsRemoved()) {
+                if (vic.previousIsRemoved()) {
                     vic.remove();
                 }
                 if (vic.hasEvaluation()
@@ -1084,7 +1084,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 destination = variables.get(renamed.fullyQualifiedName());
             }
-            if(destination.variableNature() instanceof VariableNature.DelayedScope ds) {
+            if (destination.variableNature() instanceof VariableNature.DelayedScope ds) {
                 ds.setIteration(evaluationContext.getIteration());
             }
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
@@ -1098,6 +1098,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     inSwitchStatementOldStyle);
             if (variable instanceof ReturnVariable) {
                 localAtLeastOneBlock = atLeastOneBlockExecuted && lastStatements.size() == toMerge.size() + lastStatements.stream().mapToInt(cav -> cav.alwaysEscapes() ? 1 : 0).sum();
+            } else if (variable instanceof DependentVariable dv && dv.statementIndex.startsWith(index + ".")) {
+                localAtLeastOneBlock = true; // the dependent variable was dynamically created inside one of the blocks
             } else {
                 // in a Try statement, the blocks are successive rather than exclusive
                 localAtLeastOneBlock = atLeastOneBlockExecuted && (statement instanceof TryStatement ||
@@ -1141,7 +1143,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         rawVariableStream().forEach(e -> {
-            if(e.getValue().variableNature() instanceof VariableNature.DelayedScope ds && ds.getIteration()<evaluationContext.getIteration()) {
+            if (e.getValue().variableNature() instanceof VariableNature.DelayedScope ds && ds.getIteration() < evaluationContext.getIteration()) {
                 LOGGER.debug("Removing {}, not actively merged anymore", e.getKey());
                 e.getValue().remove();
             }
