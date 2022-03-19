@@ -509,4 +509,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void remove() {
         if(!removed.isSet()) removed.set();
     }
+
+    public boolean previousIsRemoved() {
+       return previousOrInitial.isLeft() && !previousOrInitial.getLeft().isNotRemoved();
+    }
 }

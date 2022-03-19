@@ -561,7 +561,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
-        variables.toImmutableMap().values().forEach(vic -> {
+        rawVariableStream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo variableInfo = vic.current();
             if (vic.isInitial()) {
                 Variable variable = variableInfo.variable();
@@ -573,6 +573,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
             } else {
+                if(vic.previousIsRemoved()) {
+                    vic.remove();
+                }
                 if (vic.hasEvaluation()
                         // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
                         && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))
@@ -1055,6 +1058,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
+        CausesOfDelay delay = CausesOfDelay.EMPTY;
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
             Variable variable = current.variable();
@@ -1104,8 +1108,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Merge merge = new Merge(evaluationContext, destination);
 
                     // the main merge operation
-                    merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
+                    CausesOfDelay mergeDelay = merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
                             localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
+                    delay = delay.merge(mergeDelay);
 
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .map(lv -> lv.translate(translationMap))
@@ -1143,7 +1148,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         });
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
+                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay);
     }
 
     /**
@@ -1202,7 +1207,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Set<Variable> variablesWhereMergeOverwrites,
                                                      PrepareMerge prepareMerge,
                                                      Map<Variable, DV> setCnnVariables,
-                                                     TranslationMap translationMap) {
+                                                     TranslationMap translationMap,
+                                                     CausesOfDelay delay) {
         // then, per cluster of variables
         // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
         // create looks at these+previous, minus those to be removed.
@@ -1272,7 +1278,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
+        return AnalysisStatus.of(delay.merge(ennStatus).merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
                 .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables));
     }

@@ -187,4 +187,6 @@ public interface VariableInfoContainer {
     boolean isNotRemoved();
 
     void remove();
+
+    boolean previousIsRemoved();
 }

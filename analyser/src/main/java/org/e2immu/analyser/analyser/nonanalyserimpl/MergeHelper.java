@@ -60,10 +60,11 @@ and potentially already in the value as well. In the former, the state of 1 shou
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeHelper.class);
 
+    record MergeHelperResult(VariableInfoImpl vii, CausesOfDelay delays){}
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
      */
-    public VariableInfoImpl mergeIntoNewObject(Expression stateOfDestination,
+    public MergeHelperResult mergeIntoNewObject(Expression stateOfDestination,
                                                Expression postProcessState,
                                                Merge.ExpressionAndProperties overwriteValue,
                                                boolean atLeastOneBlockExecuted,
@@ -75,9 +76,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
-        new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
+        CausesOfDelay causes = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
                 atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
-        return newObject;
+        return new MergeHelperResult(newObject, causes);
     }
 
     /**
@@ -86,7 +87,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      * In case of a rename operation, "me" is a new VII object; the mergeSources still have VI's
      * that point to the old variable.
      */
-    public void mergeIntoMe(Expression stateOfDestination,
+    public CausesOfDelay mergeIntoMe(Expression stateOfDestination,
                             Expression postProcessState,
                             Merge.ExpressionAndProperties overwriteValue,
                             boolean atLeastOneBlockExecuted,
@@ -131,11 +132,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         // TODO maybe we should do these together with the value as well?
         mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
 
-
         if (evaluationContext.isMyself(vi.variable())) {
             vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
             vi.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
+        return mergedValue.causesOfDelay();
     }
 
     private boolean allValuePropertiesSet() {

@@ -49,13 +49,13 @@ public record Merge(EvaluationContext evaluationContext,
         }
     }
 
-    public void merge(Expression stateOfDestination,
-                      Expression postProcessState,
-                      ExpressionAndProperties overwriteValue,
-                      boolean atLeastOneBlockExecuted,
-                      List<ConditionAndVariableInfo> mergeSources,
-                      GroupPropertyValues groupPropertyValues,
-                      TranslationMap translationMap) {
+    public CausesOfDelay merge(Expression stateOfDestination,
+                               Expression postProcessState,
+                               ExpressionAndProperties overwriteValue,
+                               boolean atLeastOneBlockExecuted,
+                               List<ConditionAndVariableInfo> mergeSources,
+                               GroupPropertyValues groupPropertyValues,
+                               TranslationMap translationMap) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         VariableInfoContainerImpl vici = (VariableInfoContainerImpl) vic;
@@ -68,16 +68,16 @@ public record Merge(EvaluationContext evaluationContext,
         VariableInfoImpl existing = breakInitDelay(vici);
         if (!vic.hasMerge()) {
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing);
-            VariableInfoImpl vii = mergeHelper.mergeIntoNewObject(stateOfDestination,
+            MergeHelper.MergeHelperResult mhr = mergeHelper.mergeIntoNewObject(stateOfDestination,
                     postProcess, overwriteValue, atLeastOneBlockExecuted,
                     mergeSources, groupPropertyValues, translationMap);
-            vici.setMerge(vii);
-        } else {
-            MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
-            mergeHelper.mergeIntoMe(stateOfDestination,
-                    postProcess, overwriteValue, atLeastOneBlockExecuted, existing,
-                    mergeSources, groupPropertyValues, translationMap);
+            vici.setMerge(mhr.vii());
+            return mhr.delays();
         }
+        MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
+        return mergeHelper.mergeIntoMe(stateOfDestination,
+                postProcess, overwriteValue, atLeastOneBlockExecuted, existing,
+                mergeSources, groupPropertyValues, translationMap);
     }
 
     private VariableInfoImpl breakInitDelay(VariableInfoContainerImpl vici) {

@@ -26,10 +26,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -56,18 +53,61 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     // the real deal
     @Test
     public void test_1() throws IOException {
-        int BIG = 20;
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("write".equals(d.methodInfo().name)) {
+                if ("6.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 3 ? "<m:pop>" : "<no return value>";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 4, d.status().isDone());
+                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
+                }
+                if ("7.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 3 ? "<m:write>" : "<no return value>";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 4, d.status().isDone());
+                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
+                    assertTrue(d.iteration() < 6);
+                }
+                if ("7".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "!<vl:writeNewLine>";
+                        case 1, 2 -> "!(end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        case 3 -> "!(end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        // FIXME this "out of scope" should not be there
+                        default -> "!(pos>=end&&end$5>pos$5?(<f:null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position==Position.END&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() >= 14, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 14, d.status().isDone());
+                    assertEquals(d.iteration() >= 6, d.externalStatus().isDone());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("write".equals(d.methodInfo().name)) {
+                if ("writeNewLine".equals(d.variableName())) {
+                    if ("5".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:(<null-check>?<s:boolean>:<s:boolean>)&&!<null-check>:<vl:writeNewLine>";
+                            case 1, 2 -> "end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            case 3 -> "end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            default -> "pos>=end&&end$5>pos$5?(<f:null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position==Position.END&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(d.iteration() >= 14, d.currentValue().isDone());
+                    }
+                }
                 if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
                     if ("5".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6".equals(d.statementId())) {
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6.0.0".equals(d.statementId())) {
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -107,7 +147,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NOT_END".equals(d.fieldInfo().name)) {
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("writer".equals(d.fieldInfo().name) && "Tab".equals(d.fieldInfo().owner.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);
@@ -148,6 +188,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 26, 50, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
