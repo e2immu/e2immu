@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.analyser.output.formatter.Forward;
+import org.e2immu.analyser.output.formatter.ForwardInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -64,8 +66,8 @@ public class TestFormatter1 {
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
         Formatter formatter = new Formatter(options);
 
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        formatter.forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -86,8 +88,8 @@ public class TestFormatter1 {
                 .add(new Text("abstract")).add(Space.ONE)
                 .add(new Text("method")).add(Symbol.SEMICOLON);
 
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -107,7 +109,7 @@ public class TestFormatter1 {
                           int p1,
                           int p2) {
                           return p1 + p2;
-                        }  
+                        }
                         """,
                 new Formatter(options).write(createExample1()));
     }
@@ -118,8 +120,8 @@ public class TestFormatter1 {
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
 
         // the space is recognized by the forward method
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(createExample1().list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, createExample1().list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -181,7 +183,7 @@ public class TestFormatter1 {
                           double d) {
                           log(p1, p2);
                           return p1 + p2;
-                        }  
+                        }
                         """,
                 //      01234567890123456789
                 new Formatter(options).write(createExample2()));
@@ -213,8 +215,8 @@ public class TestFormatter1 {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
         // around 90 characters long
 
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(createExample2().list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, createExample2().list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -262,7 +264,7 @@ public class TestFormatter1 {
                             assert c;
                             exit(1);
                           }
-                        }  
+                        }
                         """,
                 //      01234567890123456789
                 //        if(a) { assert b; } -> the end of the guide is within 20...
@@ -276,8 +278,8 @@ public class TestFormatter1 {
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
         assertEquals("""
                         try {
-                          if(a) { 
-                            assert b; 
+                          if(a) {
+                            assert b;
                           } else {
                             assert c;
                             exit(1);
@@ -334,7 +336,7 @@ public class TestFormatter1 {
         assertEquals("""
                         @NotModified
                         @Independent
-                        @NotNull 
+                        @NotNull
                         public int method(
                           int p1,
                           int p2) {
@@ -353,8 +355,8 @@ public class TestFormatter1 {
         List<OutputElement> list = createExample4().list;
         assertEquals(41, list.size());
 
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        formatter.forward(list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -460,13 +462,13 @@ public class TestFormatter1 {
         assertTrue(list.get(58) instanceof Guide);
 
         assertEquals("""
-                @E2Container 
-                public class Basics_0 { 
-                    @Constant("abc") 
-                    @E2Container(absent = true) 
-                    @Final(absent = true) 
-                    @NotNull 
-                    private final String explicitlyFinal = "abc"; 
+                @E2Container
+                public class Basics_0 {
+                    @Constant("abc")
+                    @E2Container(absent = true)
+                    @Final(absent = true)
+                    @NotNull
+                    private final String explicitlyFinal = "abc";
                 }
                 """, formatter.write(createExample5(false)));
     }
@@ -485,7 +487,7 @@ public class TestFormatter1 {
     public void testGuide5CompactShortLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80).setCompact(true).build();
         assertEquals("""
-                @E2Container 
+                @E2Container
                 public class Basics_0{
                 @Constant("abc")
                 @E2Container(absent=true)
@@ -502,14 +504,14 @@ public class TestFormatter1 {
         Formatter formatter = new Formatter(options);
 
         assertEquals("""
-                @E2Container 
-                public class Basics_0 { 
-                    @Constant("abc") 
-                    @E2Container(absent = true) 
-                    @Final(absent = true) 
-                    @NotNull 
-                    private final String explicitlyFinal = "abc"; 
-                    private String nonFinal = "xyz"; 
+                @E2Container
+                public class Basics_0 {
+                    @Constant("abc")
+                    @E2Container(absent = true)
+                    @Final(absent = true)
+                    @NotNull
+                    private final String explicitlyFinal = "abc";
+                    private String nonFinal = "xyz";
                 }
                 """, formatter.write(createExample5(true)));
     }
@@ -546,8 +548,8 @@ public class TestFormatter1 {
         List<OutputElement> list = createExample7().list;
         assertEquals(30, list.size());
 
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        formatter.forward(list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -578,8 +580,8 @@ public class TestFormatter1 {
                 .add(new Text("p2")) // 11
                 .add(Symbol.RIGHT_PARENTHESIS) // 12
                 .add(Symbol.SEMICOLON); // 13
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -602,8 +604,8 @@ public class TestFormatter1 {
                 .add(Symbol.binaryOperator("==")) // 4
                 .add(new Text("c")) //5
                 .add(Symbol.SEMICOLON); // 6
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -629,8 +631,8 @@ public class TestFormatter1 {
                 .add(new Text("\"d\"")) // 9
                 .add(Symbol.RIGHT_BRACE)
                 .add(Symbol.SEMICOLON); // 11
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -642,8 +644,8 @@ public class TestFormatter1 {
     public void testForward4() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(15)
                 .setSpacesInTab(2).setTabsForLineSplit(1).build();
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(createExample0().list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, createExample0().list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -655,8 +657,8 @@ public class TestFormatter1 {
     public void testForward5() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(15)
                 .setSpacesInTab(2).setTabsForLineSplit(1).build();
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(createExample0().list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        Forward.forward(options, createExample0().list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -677,8 +679,8 @@ public class TestFormatter1 {
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(guideGenerator.start())
                 .add(new Text("int")); // 5
-        List<Formatter.ForwardInfo> info = new ArrayList<>();
-        boolean interrupted = new Formatter(options).forward(outputBuilder.list, fi -> {
+        List<ForwardInfo> info = new ArrayList<>();
+        boolean interrupted = Forward.forward(options, outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;

@@ -25,30 +25,19 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Output_03_Formatter extends CommonTestRunner {
+public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
 
-    public Test_Output_03_Formatter() {
+    public Test_Output_03_FormatterLookahead() {
         super(true);
     }
 
-    // without the whole formatter package
     @Test
     public void test_0() throws IOException {
-        testSupportAndUtilClasses(List.of(ElementarySpace.class, OutputElement.class, FormattingOptions.class,
-                        TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                6, 15, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
-    }
-
-    // the real deal
-    @Test
-    public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(Formatter.class,
-                        Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
+        testSupportAndUtilClasses(List.of(Forward.class, Lookahead.class,
+                        CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                26, 50, new DebugConfiguration.Builder()
+                7, 27, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

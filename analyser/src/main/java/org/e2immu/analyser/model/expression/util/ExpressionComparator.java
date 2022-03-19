@@ -49,9 +49,10 @@ public class ExpressionComparator implements Comparator<Expression> {
     // variables, types
     public static final int ORDER_ARRAY = 61;
     public static final int ORDER_INSTANCE = 63;
-    public static final int ORDER_INLINE_METHOD = 64;
-    public static final int ORDER_METHOD = 65;
-    public static final int ORDER_VARIABLE = 66;
+    public static final int ORDER_NEW_INSTANCE = 64;
+    public static final int ORDER_INLINE_METHOD = 65;
+    public static final int ORDER_METHOD = 66;
+    public static final int ORDER_VARIABLE = 67;
     public static final int ORDER_TYPE = 68;
     public static final int ORDER_NO_VALUE = 69;
 

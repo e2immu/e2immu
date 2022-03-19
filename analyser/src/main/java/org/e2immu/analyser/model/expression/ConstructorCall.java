@@ -177,7 +177,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_INSTANCE;
+        return ExpressionComparator.ORDER_NEW_INSTANCE;
     }
 
 
