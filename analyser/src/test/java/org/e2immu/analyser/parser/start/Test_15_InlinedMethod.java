@@ -182,4 +182,24 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
+    @Test
+    public void test_9() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:get>"
+                        : "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:method>"
+                        : "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+            }
+        };
+        testClass("InlinedMethod_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
 }

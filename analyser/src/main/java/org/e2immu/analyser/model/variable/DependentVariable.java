@@ -42,7 +42,9 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public final String name;
     public final String simpleName;
     public final Either<NonVariable, Variable> expressionOrArrayVariable;
+    public final Either<NonVariable, Variable> expressionOrIndexVariable;
     public final String statementIndex;
+    private final Identifier identifier;
 
     public DependentVariable(Identifier identifier,
                              Expression arrayExpression,
@@ -50,12 +52,16 @@ public class DependentVariable extends VariableWithConcreteReturnType {
                              @NotNull ParameterizedType parameterizedType,//formal type
                              String statementIndex) {
         super(parameterizedType);
+        this.identifier = identifier;
         this.statementIndex = statementIndex; // not-"" when created during analysis
         Variable arrayVariable = singleVariable(arrayExpression);
         this.expressionOrArrayVariable = arrayVariable == null
                 ? Either.left(new NonVariable(arrayExpression, identifier))
                 : Either.right(arrayVariable);
         Variable indexVariable = singleVariable(indexExpression);
+        this.expressionOrIndexVariable = indexVariable == null
+                ? Either.left(new NonVariable(indexExpression, identifier))
+                : Either.right(indexVariable);
         String indexString = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.fullyQualifiedName());
         String indexSimple = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.simpleName());
         if (arrayVariable != null) {
@@ -66,6 +72,10 @@ public class DependentVariable extends VariableWithConcreteReturnType {
             simpleName = "AV$[" + indexSimple + "]";
         }
         this.owningType = arrayVariable != null ? arrayVariable.getOwningType() : null;
+    }
+
+    public Identifier getIdentifier() {
+        return identifier;
     }
 
     public static Variable singleVariable(Expression expression) {
