@@ -15,6 +15,8 @@
 
 package org.e2immu.analyser.parser.own.output;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -41,9 +43,29 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
+                    String expected = d.iteration() == 0 ? "<m:add>" : "nullable instance type OutputBuilder/*@Identity*//*{L a:statically_assigned:0}*/";
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                String typeOfParameter = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName;
+                if("OutputBuilder".equals(typeOfParameter)) {
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                } else if("OutputElement".equals(typeOfParameter)) {
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                } else fail();
+            }
+        };
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, Space.class, TypeName.class),
                 6, 6, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 
@@ -82,8 +104,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 4) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals(4, inlinedMethod.getVariablesOfExpression().size());
-                        assertTrue(inlinedMethod.getVariablesOfExpression().stream().allMatch(ve -> ve.variable() instanceof FieldReference));
+                        assertEquals(5, inlinedMethod.getVariablesOfExpression().size());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }

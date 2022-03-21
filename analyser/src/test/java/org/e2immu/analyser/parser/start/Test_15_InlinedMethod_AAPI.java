@@ -101,7 +101,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "(<m:equals>||<m:equals>)&&(<m:equals>||<m:isLong>)";
                             case 1, 2 -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||<m:isLong>)";
-                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||s.startsWith(\"x\")||null==s)";
+                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||(instance type boolean&&inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0).parameterizedType.s.startsWith(\"x\")||null==(instance type boolean&&inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0).parameterizedType.s)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -133,7 +133,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
             }
         };
-        testClass("InlinedMethod_8", 1, 4, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_8", 1, 5, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

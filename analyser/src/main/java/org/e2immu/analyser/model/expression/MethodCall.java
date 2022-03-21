@@ -366,9 +366,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     methodAnalysis, object, objectValue, parameterValues);
             if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
-                LinkedVariables thisLv = linkedVariables(context);
-                modifiedInstance = thisLv.isEmpty() ? unlinkedModifiedInstance
-                        : PropertyWrapper.propertyWrapper(unlinkedModifiedInstance, thisLv);
+                modifiedInstance = linkedVariables.isEmpty() ? unlinkedModifiedInstance
+                        : PropertyWrapper.propertyWrapper(unlinkedModifiedInstance, linkedVariables);
             } else {
                 modifiedInstance = null;
             }

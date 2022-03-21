@@ -114,7 +114,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 0 -> "!<instanceOf:Space>&&!<instanceOf:Guide>&&<m:length>>=1&&<v:end>><v:pos>&&<f:NEWLINE>!=<m:get>?<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):<vl:chars>";
                             case 1 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<s:boolean>?<vl:chars>:<m:length>>=1?<s:int>:instance type int:instance type int";
                             case 2 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:initial@Field_split>?<s:boolean>?<vl:chars>:<m:length>>=1?<s:int>:instance type int:instance type int";
-                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(nullable instance type String).length()>=1&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE?nullable instance type Boolean?chars$8:(nullable instance type String).length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&(nullable instance type String).length()>=1&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE?1:0):instance type int";
+                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos$8)/*(Symbol)*/.symbol.length()>=1?nullable instance type Boolean?chars$8:list.get(pos$8)/*(Symbol)*/.symbol.length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos$8)/*(Symbol)*/.symbol.length()>=1?1:0):instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -132,7 +132,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         case 0 -> "CM{state=(<v:allowBreak>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(!<v:allowBreak>||!<v:wroteOnce>||<instanceOf:Guide>||<m:length><=0||-<v:chars>+maxChars-<m:length>>=(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0))&&(<v:wroteOnce>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(<instanceOf:Space>||!<m:apply>||!<instanceOf:Guide>||<v:chars>>=maxChars)&&(<instanceOf:Guide>||!<m:apply>||<m:length><=0||-1+<v:chars>-maxChars+<m:length>+(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)>=0)&&(<instanceOf:Space>||!<instanceOf:Guide>||-1-<v:chars>+maxChars>=0)&&(<v:pos>>=<v:end>||<f:NEWLINE>==<m:get>);parent=CM{}}";
                         case 1 -> "CM{state=[chars,end$8,<vp:NONE:container@Class_ElementarySpace>,<vp:NEWLINE:container@Record_Space>,<f:symbol.left().split>,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
                         case 2 -> "CM{state=[chars,end$8,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,<vp:NEWLINE:initial@Field_split>,<f:symbol.left().split>,Split.NEVER,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
-                        default -> "CM{state=!(outputElement instanceof Guide guide)&&(instance type boolean||!nullable instance type Boolean||(nullable instance type String).length()<=0)&&(!instance type boolean||!wroteOnce||(nullable instance type String).length()<=0||nullable instance type Space.split==Split.NEVER||-(nullable instance type String).length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&(nullable instance type String).length()>=1&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE?1:0))&&(!nullable instance type Boolean||wroteOnce||(nullable instance type String).length()<=0)&&(!nullable instance type Boolean||(nullable instance type String).length()<=0||nullable instance type Space.split!=Split.NEVER)&&(!nullable instance type Boolean||(nullable instance type String).length()<=0||-1+(nullable instance type String).length()+chars-maxChars+(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&(nullable instance type String).length()>=1&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE?1:0)>=0)&&(pos>=end||list.get(pos)==Space.NEWLINE);parent=CM{}}";
+                        default -> "CM{state=!(outputElement instanceof Guide guide)&&(instance type boolean||!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!instance type boolean||!wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left.split==Split.NEVER||-list.get(pos)/*(Symbol)*/.symbol.length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0))&&(!nullable instance type Boolean||wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left.split!=Split.NEVER)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||-1+list.get(pos)/*(Symbol)*/.symbol.length()+chars-maxChars+(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0)>=0)&&(pos>=end||list.get(pos)==Space.NEWLINE);parent=CM{}}";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                     assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
@@ -146,7 +146,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        testClass("FormatterSimplified_2", 4, 6, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_2", 4, 8, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -204,13 +204,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = switch (d.iteration()) {
-                        case 0 -> "<null-check>";
-                        case 1 -> "null==<f:forwardInfo.guide>";
-                        default -> "null==forwardInfo.guide";
-                    };
+                    String expect = d.iteration() == 0 ? "<null-check>" : "null==forwardInfo.guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -218,11 +214,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 1, d.statementAnalysis().flowData().interruptsFlowIsSet());
+                    assertEquals(d.iteration() >= 1, d.statementAnalysis().flowData().interruptsFlowIsSet());
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     DV exec = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
-                    if (d.iteration() <= 1) {
+                    if (d.iteration() == 0) {
                         assertTrue(exec.isDelayed());
                     } else {
                         assertEquals(FlowData.ALWAYS, exec);

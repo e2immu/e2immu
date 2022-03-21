@@ -59,7 +59,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         assertTrue(d.statementAnalysis().stateData().getPrecondition().isDelayed());
                     } else {
-                        String expect = d.iteration() == 1 ? "!<m:containsKey>" : "!map.containsKey(k)";
+                        String expect = d.iteration() == 1 ? "<precondition>" : "!map.containsKey(k)";
                         assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     }
                     assertEquals(d.iteration() >= 2,
@@ -94,7 +94,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
-                    String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
+                    String expectValue = d.iteration() == 0 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertLinked(d, 1, "assign_to_field@Parameter_k", "k:0");
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -104,7 +104,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "<mmc:map>";
+                            case 0 -> "<mmc:map>";
                             default -> "instance type HashMap<K,V>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -117,7 +117,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("k:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<p:k>" : "nullable instance type K/*@Identity*/";
+                        String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertLinked(d, 2, "assign_to_field@Parameter_k", "k:0");
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -129,7 +129,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<p:v>" : "nullable instance type V";
+                        String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -139,7 +139,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
+                        String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -174,7 +174,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

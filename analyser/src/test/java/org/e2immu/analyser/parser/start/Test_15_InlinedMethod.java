@@ -66,7 +66,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("i+r", inlinedMethod.toString());
-                    assertEquals("i, r", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                    assertEquals("i, r, this", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                 } else fail();
             }
             if ("difference31".equals(d.methodInfo().name) && d.iteration() > 1) {

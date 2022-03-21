@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -172,17 +173,28 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("isReady".equals(d.methodInfo().name)) {
+                String expected2 = d.iteration() == 0 ? "<m:isReady>" : "bool.isSet()&&string.isSet()";
+                assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals(3, inlinedMethod.getVariablesOfExpression().size());
+                        assertEquals("bool, string, this", inlinedMethod.getVariablesOfExpression()
+                                .stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                    } else fail();
+                }
+            }
             if ("isTReady".equals(d.methodInfo().name)) {
-                String expectT = d.iteration() <= 3 ? "<m:isTReady>" : "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
+                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             final String expected12 = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 4 ? "<m:isReady1>" : expected12;
+                String expected1 = d.iteration() <= 3 ? "<m:isReady1>" : expected12;
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("isReady2".equals(d.methodInfo().name)) {
                 String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : expected12;
@@ -345,7 +357,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventuallyFinal".equals(fr.fieldInfo.name)) {
                     assertEquals("ev/*@NotNull*/", d.currentValue().toString());
-                    if(d.currentValue() instanceof PropertyWrapper pw) {
+                    if (d.currentValue() instanceof PropertyWrapper pw) {
                         assertFalse(pw.properties().containsKey(Property.IMMUTABLE));
                         assertTrue(pw.expression() instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo);
                     } else fail();

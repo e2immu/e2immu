@@ -45,7 +45,6 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isDelayed>";
-                        case 2 -> "!<m:isEmpty>";
                         default -> "!causes.isEmpty()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -62,7 +61,6 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "Precondition[expression=<m:isDelayed>, causes=[escape]]";
-                        case 2 -> "Precondition[expression=!<m:isEmpty>, causes=[escape]]";
                         default -> "Precondition[expression=!causes.isEmpty(), causes=[escape]]";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());

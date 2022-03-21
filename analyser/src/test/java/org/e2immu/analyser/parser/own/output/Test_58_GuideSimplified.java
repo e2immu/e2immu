@@ -199,7 +199,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expectValue =d.iteration()<=3? "\"/*\"+<f:this.position().msg>+\"*/\"": TRACE_RETURN;
+                String expectValue = d.iteration() <= 2 ? "\"/*\"+<f:this.position().msg>+\"*/\"" : TRACE_RETURN;
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("GuideSimplified_5".equals(d.methodInfo().name)) {
@@ -213,7 +213,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 3 ? "<m:trace>" : TRACE_RETURN;
+                String expect = d.iteration() <= 2 ? "<m:trace>" : TRACE_RETURN;
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("position".equals(d.methodInfo().name)) {

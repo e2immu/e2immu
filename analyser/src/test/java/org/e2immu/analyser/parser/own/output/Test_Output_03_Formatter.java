@@ -45,7 +45,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     public void test_0() throws IOException {
         testSupportAndUtilClasses(List.of(ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                6, 15, new DebugConfiguration.Builder()
+                6, 16, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -75,12 +75,11 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         case 0 -> "!<vl:writeNewLine>";
                         case 1, 2 -> "!(end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                         case 3 -> "!(end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
-                        // FIXME this "out of scope" should not be there
-                        default -> "!(pos>=end&&end$5>pos$5?(<f:null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position==Position.END&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        default -> "!(tabs.isEmpty()&&pos>=end&&end$5>pos$5?(null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=nullable instance type Guide&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=nullable instance type Guide&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 14, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 14, d.status().isDone());
+                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 4, d.status().isDone());
                     assertEquals(d.iteration() >= 6, d.externalStatus().isDone());
                 }
             }
@@ -93,10 +92,10 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:(<null-check>?<s:boolean>:<s:boolean>)&&!<null-check>:<vl:writeNewLine>";
                             case 1, 2 -> "end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                             case 3 -> "end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
-                            default -> "pos>=end&&end$5>pos$5?(<f:null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position==Position.END&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&pos>=end&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine>||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            default -> "end$5>pos$5?(null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=nullable instance type Guide&&nullable instance type Position==Position.END&&end$5>pos$5?new NewLineDouble(instance type boolean,instance type boolean,false,true):null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=nullable instance type Guide&&nullable instance type Position!=Position.END&&nullable instance type Position==Position.START&&end$5>pos$5?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false).writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() >= 14, d.currentValue().isDone());
+                        assertEquals(d.iteration() >= 4, d.currentValue().isDone());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
@@ -187,12 +186,12 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                16, 47, new DebugConfiguration.Builder()
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                16, 48, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

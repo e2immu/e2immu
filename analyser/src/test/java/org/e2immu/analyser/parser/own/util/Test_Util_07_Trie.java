@@ -195,16 +195,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 5) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("node$1, node$1.map$0, org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i], upToPosition, upToPosition>instance type int&&null==node$1.map$0?node$1:node$1.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]).map$1",
+                        assertEquals("i, node$1, strings, upToPosition",
                                 inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
-                        List<Variable> dvs = inlinedMethod.getVariablesOfExpression().stream()
-                                .map(VariableExpression::variable)
-                                .filter(variable -> variable instanceof DependentVariable)
-                                .toList();
-                        assertEquals(1, dvs.size());
-                        DependentVariable dv = (DependentVariable) dvs.get(0);
-                        assertEquals("org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings",
-                                dv.expressionOrArrayVariable.getRight().fullyQualifiedName());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }

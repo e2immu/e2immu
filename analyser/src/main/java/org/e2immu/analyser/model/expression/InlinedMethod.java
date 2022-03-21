@@ -101,7 +101,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     if (contains) containsVariableFields.set(true);
                 }
                 // descend into scope, expressions of dependent variable!
-                return !add;
+                return !add || ve.variable() instanceof FieldReference;
             }
             if (e instanceof DelayedVariableExpression dve) {
                 causes.set(causes.get().merge(dve.causesOfDelay));
@@ -224,7 +224,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return variablesOfExpression.stream().flatMap(ve -> ve.variables(descendIntoFieldReferences).stream()).toList();
+        return expression.variables(descendIntoFieldReferences);
     }
 
     public boolean canBeApplied(EvaluationResult context) {
@@ -285,8 +285,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return parameterReplacement(parameters, inspectionProvider, parameterInfo);
         }
         if (variable instanceof This) {
-            if (scope.isInstanceOf(VariableExpression.class)) {
-                return new VariableExpression(variable);
+            if (!methodInfo.methodInspection.get().isStatic()) {
+                return scope;
             }
             return defaultReplacement;
         }
@@ -298,10 +298,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     .getFieldAnalysis(fieldReference.fieldInfo);
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             if (effectivelyFinal.valueIsTrue()) {
-                boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
-                if (staticField) {
-                    return null;
-                }
                 return replacementForConstructorCall(evaluationResult, scope, fieldReference);// keep the final field
             }
             if (effectivelyFinal.valueIsFalse()) {

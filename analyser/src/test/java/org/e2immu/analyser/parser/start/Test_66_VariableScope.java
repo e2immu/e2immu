@@ -431,8 +431,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         } else if ("<m:computeIfAbsent>".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>&&!<m:equals>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
-                                case 1 -> "<null-check>&&!<m:equals>?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
-                                default -> "instance type boolean";
+                                case 1 -> "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
+                                default -> fail();
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else {

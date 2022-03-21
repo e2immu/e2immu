@@ -46,7 +46,7 @@ public class Test_48_Store extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("Project_0", "Store_0"), 2, 21, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_0"), 2, 19, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

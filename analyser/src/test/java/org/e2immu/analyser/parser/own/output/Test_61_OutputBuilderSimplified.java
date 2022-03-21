@@ -65,7 +65,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo p && "o1".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectedValue = d.iteration() <= 1 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
+                        String expectedValue = d.iteration() == 0 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
                         assertEquals(expectedValue, d.currentValue().toString());
 
                         String expectedLinked = d.iteration() == 0 ? "o1:0" : "o1.list:2,o1:0";
@@ -75,7 +75,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
-                    assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
 
                 if (d.variable() instanceof ParameterInfo p && "o2".equals(p.name)) {
@@ -88,7 +88,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectedValue = d.iteration() <= 1 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
+                        String expectedValue = d.iteration() == 0 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
 
                         String expectedLinked = d.iteration() == 0 ? "o2:0,return go:0" : "o2.list:2,o2:0,return go:0";
@@ -100,7 +100,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         // links have not been established
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         // mutable, because self type
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type OutputBuilderSimplified_2", d.currentValue().toString());
@@ -143,7 +143,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 1 ? "<m:isEmpty>" : "a.list.isEmpty()";
+                    String expectValue = d.iteration() == 0 ? "<m:isEmpty>" : "a.list.isEmpty()";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }
@@ -152,13 +152,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "a".equals(p.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:a>"
+                        String expected = d.iteration() == 0 ? "<p:a>"
                                 : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());
                     }
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<mmc:a>"
+                        String expected = d.iteration() == 0 ? "<mmc:a>"
                                 : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());
@@ -166,17 +166,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1
-                                ? "<m:isEmpty>?b:<return value>"
+                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?b:<return value>"
                                 : "a.list.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        String expectValue = switch (d.iteration()) {
-                            case 0 -> "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>";
-                            case 1 -> "<m:isEmpty>?<p:a>:<return value>";
-                            default -> "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
-                        };
+                        String expectValue = d.iteration() == 0 ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
+                                : "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -575,7 +571,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // combiner!
                 String expected = d.iteration() <= 2 ? "<m:apply>"
-                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()&&!bb.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:dependent:2}*/";
+                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()&&!bb.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:statically_assigned:0}*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
