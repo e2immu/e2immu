@@ -20,8 +20,8 @@ import org.e2immu.annotation.NotModified;
 public class InlinedMethod_2 {
     private final int r;
 
-    public InlinedMethod_2(int r) {
-        this.r = r;
+    public InlinedMethod_2(int rr) {
+        this.r = rr;
     }
 
     @NotModified

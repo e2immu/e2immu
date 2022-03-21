@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -100,4 +102,8 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         }
         return VariableInfoContainer.NOT_A_FIELD;
     }
+
+   default void visit(Predicate<Expression> predicate) {
+        // do nothing, but any variable containing an expression should go there (field reference, dependent variable)
+   }
 }

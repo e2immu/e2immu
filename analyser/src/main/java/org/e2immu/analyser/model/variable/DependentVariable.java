@@ -16,12 +16,14 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * variable representing a complex expression by name, concretely, used to store array access variables.
@@ -138,5 +140,13 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     public Variable arrayVariable() {
         return expressionOrArrayVariable.getRight();
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (expressionOrArrayVariable.isLeft()) expressionOrArrayVariable.getLeft().value.visit(predicate);
+        else new VariableExpression(expressionOrArrayVariable.getRight()).visit(predicate);
+        if (expressionOrIndexVariable.isLeft()) expressionOrIndexVariable.getLeft().value.visit(predicate);
+        else new VariableExpression(expressionOrIndexVariable.getRight()).visit(predicate);
     }
 }

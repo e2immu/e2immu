@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -33,6 +34,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public final class VariableExpression extends BaseExpression implements IsVariableExpression {
@@ -251,20 +253,29 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             }
             return builder.setExpression(inMap).build();
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).markRead(variable);
-        if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
-            // the variable itself is not in the map, but we may have to substitute
-            // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
-            // IMPROVE how should we go recursive here? we should call reEvaluate, but may bump into
-            // unknown fields (t is known, but t.s1 is not), which causes infinite delays.
-            Expression scopeInMap = translation.get(ve);
-            VariableExpression newScope;
-            if (scopeInMap != null && (newScope = scopeInMap.asInstanceOf(VariableExpression.class)) != null) {
-                Variable newFieldRef = new FieldReference(context.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-                return builder.setExpression(new VariableExpression(newFieldRef)).build();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        if (variable instanceof FieldReference fr && fr.scope != null) {
+            EvaluationResult er = fr.scope.reEvaluate(context, translation);
+            Expression newScope = er.getExpression();
+            if (!newScope.equals(fr.scope)) {
+                FieldReference newFr = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, newScope);
+                VariableExpression ve = new VariableExpression(newFr);
+                return builder.setExpression(ve).markRead(newFr).build();
             }
         }
-        return builder.setExpression(new VariableExpression(variable)).build();
+        if (variable instanceof DependentVariable dv) {
+            EvaluationResult arrayEr = dv.expressionOrArrayVariable.isLeft()
+                    ? dv.expressionOrArrayVariable.getLeft().value().reEvaluate(context, translation)
+                    : new VariableExpression(dv.expressionOrArrayVariable.getRight()).reEvaluate(context, translation);
+            EvaluationResult indexEr = dv.expressionOrIndexVariable.isLeft()
+                    ? dv.expressionOrIndexVariable.getLeft().value().reEvaluate(context, translation)
+                    : new VariableExpression(dv.expressionOrIndexVariable.getRight()).reEvaluate(context, translation);
+            Expression newArrayExpression = arrayEr.getExpression();
+            Expression newIndexExpression = indexEr.getExpression();
+            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), newArrayExpression, newIndexExpression, dv.parameterizedType, dv.statementIndex);
+            return builder.setExpression(new VariableExpression(newDv)).markRead(newDv).build();
+        }
+        return builder.setExpression(new VariableExpression(variable)).markRead(variable).build();
     }
 
     @Override
@@ -489,5 +500,12 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     public String variableId() {
         if (suffix != NO_SUFFIX) return variable.fullyQualifiedName() + suffix;
         return variable.fullyQualifiedName();
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            variable.visit(predicate);
+        }
     }
 }

@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import static org.e2immu.analyser.output.QualifiedName.Required.*;
 
@@ -196,5 +197,10 @@ public class FieldReference extends VariableWithConcreteReturnType {
             return fr.anyScopeDelayedOutOfScope();
         }
         return false;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (scope != null) scope.visit(predicate);
     }
 }

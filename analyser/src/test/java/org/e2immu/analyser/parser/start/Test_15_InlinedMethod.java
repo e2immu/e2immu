@@ -18,9 +18,11 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,13 +59,14 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 .build());
     }
 
+    // the final field "i" is linked to the parameter "rr"
     @Test
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("i+r", inlinedMethod.toString());
-                    //  assertSame(InlinedMethod.Applicability.EVERYWHERE, inlinedMethod.applicability());
+                    assertEquals("i, r", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                 } else fail();
             }
             if ("difference31".equals(d.methodInfo().name) && d.iteration() > 1) {
@@ -109,7 +113,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 }
             }
             if ("sum5".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:sum5>" : "5+i";
+                String expect = d.iteration() == 0 ? "<m:sum5>" : "5+i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
@@ -184,12 +188,27 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
     @Test
     public void test_9() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<m:get>+<m:get>";
+                    case 1 -> "<simplification>";
+                    default -> "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                };
+                assertEquals(expected, d.evaluationResult().value().toString());
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:get>"
                         : "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals(2, inlinedMethod.getVariablesOfExpression().size());
+                        assertTrue(inlinedMethod.getVariablesOfExpression().stream().allMatch(ve -> ve.variable() instanceof ParameterInfo));
+                    } else fail();
+                }
             }
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:method>"
@@ -199,6 +218,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_9", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

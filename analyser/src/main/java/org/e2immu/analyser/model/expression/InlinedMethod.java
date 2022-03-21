@@ -23,9 +23,8 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -90,13 +89,19 @@ public class InlinedMethod extends BaseExpression implements Expression {
         AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
         expression.visit(e -> {
             if (e instanceof VariableExpression ve) {
-                variableExpressions.add(ve);
+                boolean add = ve.variable() instanceof ParameterInfo pi && pi.owner == methodInfo ||
+                        ve.variable() instanceof This ||
+                        ve.variable() instanceof LocalVariableReference ||
+                        ve.variable() instanceof FieldReference fr && (fr.fieldInfo.isStatic() || fr.scopeIsThis(methodInfo.typeInfo));
+                if (add) {
+                    variableExpressions.add(ve);
+                }
                 if (ve.variable() instanceof FieldReference fr) {
                     boolean contains = isVariableField.test(fr);
                     if (contains) containsVariableFields.set(true);
                 }
-                // do not descend into scopes which are VEs as well
-                return false;
+                // descend into scope, expressions of dependent variable!
+                return !add;
             }
             if (e instanceof DelayedVariableExpression dve) {
                 causes.set(causes.get().merge(dve.causesOfDelay));
@@ -245,6 +250,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     /*
      We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
+
+     x*y -> variableExpressions = x param 0, y param 1; parameters = new values
+
+     variablesOfExpression have been properly filtered already!
      */
     public Map<Expression, Expression> translationMap(EvaluationResult evaluationContext,
                                                       List<Expression> parameters,
@@ -253,121 +262,55 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                                       Identifier identifierOfMethodCall) {
         Map<Expression, Expression> builder = new HashMap<>();
 
-
         for (VariableExpression variableExpression : variablesOfExpression) {
-            Expression replacement = tryToReplace(variableExpression, parameters, scope, typeOfTranslation,
-                    builder, evaluationContext);
+            Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext);
             if (replacement != null) {
                 Variable variable = variableExpression.variable();
                 Expression toMap = ensureReplacement(evaluationContext, identifierOfMethodCall, variable, replacement);
                 builder.put(variableExpression, toMap);
-            }
+            } // possibly a field need not replacing
         }
         return Map.copyOf(builder);
     }
 
-    private Expression tryToReplace(VariableExpression variableExpression,
-                                    List<Expression> parameters,
-                                    Expression scope,
-                                    TypeInfo typeOfTranslation,
-                                    Map<Expression, Expression> builder,
-                                    EvaluationResult evaluationResult) {
+    private Expression replace(VariableExpression variableExpression,
+                               List<Expression> parameters,
+                               Expression scope,
+                               TypeInfo typeOfTranslation,
+                               EvaluationResult evaluationResult) {
         Variable variable = variableExpression.variable();
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
-            if (parameterInfo.getMethod() == methodInfo) {
-                return parameterReplacement(parameters, inspectionProvider, parameterInfo);
-            }
-            return null; // do not replace
+            assert parameterInfo.getMethod() == methodInfo : "Parameter " + parameterInfo + " should not have been in variablesOfExpression";
+            return parameterReplacement(parameters, inspectionProvider, parameterInfo);
         }
         if (variable instanceof This) {
-            VariableExpression ve;
-            if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-                builder.put(new VariableExpression(variable), ve);
+            if (scope.isInstanceOf(VariableExpression.class)) {
+                return new VariableExpression(variable);
             }
             return defaultReplacement;
         }
-        if (variable instanceof DependentVariable dv) {
-            Expression replacedArrayVariable;
-            boolean replace;
-            if (dv.hasArrayVariable()) {
-                Variable arrayVariable = dv.arrayVariable();
-                Expression replacement = tryToReplace(new VariableExpression(arrayVariable), parameters, scope, typeOfTranslation, builder, evaluationResult);
-                replace = replacement != null;
-                replacedArrayVariable = replacement == null ? new VariableExpression(arrayVariable) : replacement;
-            } else {
-                replace = false;
-                replacedArrayVariable = dv.expressionOrArrayVariable.getLeft().value();
-            }
-            Expression replacedIndexVariable;
-            if (dv.expressionOrIndexVariable.isRight()) {
-                Variable indexVariable = dv.expressionOrIndexVariable.getRight();
-                Expression replacement = tryToReplace(new VariableExpression(indexVariable), parameters, scope, typeOfTranslation, builder, evaluationResult);
-                replace |= replacement != null;
-                replacedIndexVariable = replacement == null ? new VariableExpression(indexVariable) : replacement;
-            } else {
-                replacedIndexVariable = dv.expressionOrArrayVariable.getLeft().value();
-            }
-            if (replace) {
-                Variable newDependent = new DependentVariable(dv.getIdentifier(), replacedArrayVariable,
-                        replacedIndexVariable, dv.parameterizedType, dv.statementIndex);
-                return new VariableExpression(newDependent);
-            }
-            return defaultReplacement;
-        }
-        if (variable instanceof FieldReference fieldReference) {
-            boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
-            boolean scopeIsThis = fieldReference.scopeIsThis();
-            if (!staticField && !scopeIsThis) {
-                if (scope instanceof VariableExpression ve && !(ve.variable() instanceof This)
-                        && fieldReference.scope instanceof VariableExpression veScope
-                        && veScope.variable() instanceof FieldReference frScope) {
-                    // we'll need to replace the scope of this field reference
-                    FieldReference newScopeFr = new FieldReference(inspectionProvider, frScope.fieldInfo, scope);
-                    Expression newScope = new VariableExpression(newScopeFr);
-                    FieldReference replacementFr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, newScope);
-                    return new VariableExpression(replacementFr);
-                }
-                // try to replace parameters hidden in the scope of this field reference (See e.g. Test_Output_03_Formatter)
-                for (ParameterInfo pi : methodInfo.methodInspection.get().getParameters()) {
-                    TranslationMap tm = new TranslationMapImpl.Builder()
-                            .put(new VariableExpression(pi), parameters.get(pi.index)).build();
-                    Expression replaced = variableExpression.translate(evaluationResult.getAnalyserContext(), tm);
-                    if (replaced != variableExpression) {
-                        return replaced;
-                    }
-                }
-                return null;
-                // the variables of the scope are dealt with separately
-            }
-            if (visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
-                // maybe the final field is linked to a parameter, and we have a value for that parameter?
+        if (variable instanceof FieldReference fieldReference &&
+                visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
+            // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
-                FieldAnalysis fieldAnalysis = evaluationResult.getAnalyserContext()
-                        .getFieldAnalysis(fieldReference.fieldInfo);
-                DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
-                Expression replacement;
-                if (effectivelyFinal.valueIsTrue()) {
-                    if (staticField) {
-                        replacement = null;
-                    } else {
-                        // can return defaultReplacement
-                        replacement = replacementForConstructorCall(evaluationResult, scope, fieldReference);
-                    }
-                } else if (effectivelyFinal.valueIsFalse()) {
-                    // variable field: replace the VE with Suffix by one without (i$0 --> i)
-                    replacement = replacementForVariableField(inspectionProvider, fieldReference, scope);
-                } else {
-                    replacement = defaultReplacement;
+            FieldAnalysis fieldAnalysis = evaluationResult.getAnalyserContext()
+                    .getFieldAnalysis(fieldReference.fieldInfo);
+            DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
+            if (effectivelyFinal.valueIsTrue()) {
+                boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
+                if (staticField) {
+                    return null;
                 }
-                VariableExpression ve;
-                if (replacement == defaultReplacement && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-                    return replacementForScopeField(evaluationResult, inspectionProvider, fieldReference,
-                            staticField, ve);
-                }
-                return replacement;
+                return replacementForConstructorCall(evaluationResult, scope, fieldReference);// keep the final field
+            }
+            if (effectivelyFinal.valueIsFalse()) {
+                // variable field: replace the VE with Suffix by one without (i$0 --> i)
+                return replacementForVariableField(inspectionProvider, fieldReference, scope);
             }
         }
+
+        // e.g., local variable reference, see InlinedMethod_3
         return defaultReplacement;
     }
 
@@ -375,20 +318,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                                    FieldReference fieldReference,
                                                    Expression scope) {
         return new VariableExpression(new FieldReference(inspectionProvider, fieldReference.fieldInfo, scope));
-    }
-
-    private Expression replacementForScopeField(EvaluationResult context,
-                                                InspectionProvider inspectionProvider,
-                                                FieldReference fieldReference,
-                                                boolean staticField,
-                                                VariableExpression ve) {
-        FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
-                staticField ? null : ve);
-        CausesOfDelay causesOfDelay = context.evaluationContext().variableIsDelayed(scopeField);
-        if (causesOfDelay.isDelayed()) {
-            return DelayedVariableExpression.forField(scopeField, context.evaluationContext().getInitialStatementTime(), causesOfDelay);
-        }
-        return new VariableExpression(scopeField);
     }
 
     private Expression replacementForConstructorCall(EvaluationResult evaluationContext,
@@ -403,7 +332,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 return constructorCall.getParameterExpressions().get(index);
             }
         }
-        return defaultReplacement;
+        return null;
     }
 
     private Expression parameterReplacement(List<Expression> parameters,
