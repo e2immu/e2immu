@@ -64,8 +64,6 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
     @Test
     public void test19() throws IOException {
-        final int LIMIT = 4;
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
@@ -78,11 +76,11 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
-                            case 1 -> "initial@Field_set";
+                            case 1 -> "cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
                             case 2 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set;mom@Parameter_setC";
                             default -> "mom@Parameter_setC";
                         };
-                        assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
+                        assertCurrentValue(d, 4, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
@@ -94,7 +92,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() < LIMIT ? "<f:set>" : "nullable instance type Set<String>";
+                        String expectValue = d.iteration() < 4 ? "<f:set>" : "nullable instance type Set<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // delays in iteration 1, because no value yet
@@ -157,7 +155,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         : "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set";
                 assertDv(d, expectedDelay, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
-                String expectContainerDelay = 0 == d.iteration() ? "container@Class_C1" : "mom@Parameter_setC";
+                String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;mom@Parameter_setC" : "mom@Parameter_setC";
                 assertDv(d, expectContainerDelay, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };

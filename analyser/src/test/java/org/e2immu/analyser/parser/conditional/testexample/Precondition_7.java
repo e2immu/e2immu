@@ -42,6 +42,7 @@ public class Precondition_7 {
 
         ParameterizedType objectParameterizedType();
     }
+
     interface NamedType {
     }
 
@@ -77,6 +78,7 @@ public class Precondition_7 {
 
     interface TypeContext {
         NamedType get(String name, boolean complain);
+
         Primitives getPrimitives();
     }
 
@@ -236,8 +238,7 @@ public class Precondition_7 {
                                                           FindType findType,
                                                           String signature,
                                                           IterativeParsing iterativeParsing) {
-        Result result = from(typeContext, findType,
-                signature.substring(iterativeParsing.startPos));
+        Result result = from(typeContext, findType, signature.substring(iterativeParsing.startPos));
         int end = iterativeParsing.startPos + result.nextPos;
         IterativeParsing next = new IterativeParsing();
         next.result = result.parameterizedType;

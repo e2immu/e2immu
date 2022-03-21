@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -30,8 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Precondition_7plus extends CommonTestRunner {
 
@@ -39,11 +39,70 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         super(true);
     }
 
+    // important: there is an internal call cycle from "from" to "normalType" to "iterativelyParseTypes" back to "from"
     @Test
     public void test_7() throws IOException {
-        // IMPROVE 8 errors?
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("from".equals(d.methodInfo().name)) {
+                if ("0.0.07".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)"
+                            : "'L'==(!instance type boolean&&'['!=firstChar&&'['==firstChar$0.0.06&&'*'!=signature.charAt(0)?signature.charAt(1+firstCharPos$0.0.06):instance type char)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("0.0.07.0.0".equals(d.statementId())) {
+                    String expected = "<m:normalType>";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    String delay = switch (d.iteration()) {
+                        case 0 -> "cm@Parameter_findType;cm@Parameter_signature;cm@Parameter_typeContext;cm@Parameter_wildCard;initial:arrays@Method_from_0.0.06.0.0-C;initial:firstChar@Method_from_0.0.06-C;initial:firstCharPos@Method_from_0.0.06.0.1-C;initial:org.e2immu.analyser.parser.conditional.testexample.Precondition_7.ARRAY_BRACKET@Method_from_0.0.06-C;initial:signature@Method_from_0.0.06.0.2-E";
+                        case 1-> "cm@Parameter_findType;cm@Parameter_signature;cm@Parameter_typeContext;cm@Parameter_wildCard";
+                        case 2 -> "cm@Parameter_findType;cm@Parameter_name;cm@Parameter_signature;cm@Parameter_typeContext;cm@Parameter_wildCard";
+                        default -> "[48 delays]";
+                      //  default -> "cm@Parameter_wildCard;svr@Method_normalType";
+                        //  default -> "";
+                    };
+                    assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("from".equals(d.methodInfo().name)) {
+                if ("0.0.07".equals(d.statementId())) {
+
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("from".equals(d.methodInfo().name)) {
+                // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
+                // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
+                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertDv(d.p(1), 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+            }
+            if ("normalType".equals(d.methodInfo().name)) {
+                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+            }
+            if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
+                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Precondition_7".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 20, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("Precondition_7", 7, 11,
-                new DebugConfiguration.Builder().build());
+                new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build());
     }
 
     @Test
@@ -82,7 +141,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
-                            case 1 -> "<vp:TypeInfo:initial@Field_fqn>";
+                            case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;initial@Field_fqn;mom@Parameter_fqn>";
                             default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
                         };
                         assertEquals(expected, d.currentValue().toString());

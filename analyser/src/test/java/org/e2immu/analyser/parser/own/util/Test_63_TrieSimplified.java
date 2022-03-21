@@ -565,9 +565,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String value = d.iteration() <= 2 ? "<vl:s>" : "instance type String";
                         assertEquals(value, d.currentValue().toString());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "cnn:strings@Method_add_1-E";
-                            case 1 -> "initial@Field_data;initial@Field_map";
-                            case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                            case 0 -> "initial:node.map@Method_add_1.0.1.0.2-C;initial:node@Method_add_1.0.1.0.2-C";
+                            case 1, 2 -> "initial:node.map@Method_add_1.0.1.0.2-C;initial:node@Method_add_1.0.1.0.2-C;initial@Field_data;initial@Field_map";
                             default -> "";
                         };
                         assertEquals(expected, d.currentValue().causesOfDelay().toString());
@@ -642,8 +641,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(current, d.currentValue().toString());
                         String expected = switch (d.iteration()) {
                             case 0 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C";
-                            case 1 -> "initial@Field_data;initial@Field_map";
-                            case 2 -> "cnn:node$1.map@Method_add_1.0.1-C"; // Trail 13
+                            case 1, 2 -> "initial@Field_data;initial@Field_map";
                             default -> "";
                         };
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -656,8 +654,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(val, d.currentValue().toString());
                         String expected = switch (d.iteration()) {
                             case 0 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C";
-                            case 1 -> "initial@Field_data;initial@Field_map";
-                            case 2 -> "cnn:node$1.map@Method_add_1.0.1-C"; // Trail 12
+                            case 1, 2 -> "initial@Field_data;initial@Field_map";
                             default -> "";
                         };
                         assertEquals(expected, d.currentValue().causesOfDelay().toString());
@@ -773,8 +770,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "cnn:strings@Method_add_1-E"; // Trail 7 --> where does this comes from? s is linked to "strings"!!!
-                                case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                                case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                                case 1, 2 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -788,8 +784,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "cnn:strings@Method_add_1-E";
-                                case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                                case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                                case 1, 2 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -803,8 +798,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "cnn:strings@Method_add_1-E";
-                                case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                                case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                                case 1, 2 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -823,7 +817,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "immutable@Class_TrieNode";
                                 case 1 -> "initial@Field_data;initial@Field_map";
-                                case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                                case 2 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -839,8 +833,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(linkedVars, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "cnn:strings@Method_add_1-E"; // Trail 4 --> 1.0.1
-                                case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                                case 2, 3 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                                case 1, 2, 3 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -861,8 +854,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_add_1.0.1.0.0-C";
-                        case 1 -> "initial@Field_data;initial@Field_map";
-                        case 2 -> "cnn:node$1.map@Method_add_1.0.1-C"; // Trail 11... where does this come from? try node
+                        case 1, 2 -> "initial@Field_data;initial@Field_map"; // Trail 11... where does this come from? try node
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -871,23 +863,20 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type TrieNode<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cnn:strings@Method_add_1-E"; // Trail 10 ... still this cnn on "strings"
-                        case 1 -> "initial@Field_data;initial@Field_map";
-                        case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
+                        case 0 -> "initial:node.map@Method_add_1.0.1.0.2-C;initial:node@Method_add_1.0.1.0.2-C"; // Trail 10 ... still this cnn on "strings"
+                        case 1, 2 -> "initial@Field_data;initial@Field_map";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
                 }
-                String expectedDelay = switch (d.iteration()) {
-                    case 0 -> "initial:node.data@Method_add_2-C;initial:node.map@Method_add_1.0.1-C";
-                    case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                    case 2 -> "cnn:node$1.map@Method_add_1.0.1-C";
-                    case 3 -> "cnn:strings.length>0?null==node$1.map$0?new org.e2immu.analyser.parser.own.util.testexample.TrieSimplified_5.TrieNode<>():strings.length>0&&null!=node$1.map$0&&null==node$1.map$0.get(instance type String)?new org.e2immu.analyser.parser.own.util.testexample.TrieSimplified_5.TrieNode<>():node$1.map$0.get(instance type String):nullable instance type TrieNode<T>.data@Method_add_2-C";
-                    default -> "";
-                };
                 if ("2.0.0".equals(d.statementId())) {
                     String value = "new LinkedList<>()/*0==this.size()*/";
                     assertEquals(value, d.evaluationResult().value().toString());
+                    String expectedDelay = switch (d.iteration()) {
+                        case 0 -> "initial:node.data@Method_add_2-C;initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1.0.2-C";
+                        case 1, 2, 3 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
+                        default -> "";
+                    };
                     assertEquals(expectedDelay, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("2".equals(d.statementId())) {
@@ -897,7 +886,6 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         default -> "null==strings.length>0?null==node$1.map$0?new TrieNode<>():strings.length>0&&null!=node$1.map$0&&null==node$1.map$0.get(instance type String)?new TrieNode<>():node$1.map$0.get(instance type String):nullable instance type TrieNode<T>.data$3";
                     };
                     assertEquals(value, d.evaluationResult().value().toString());
-                    assertEquals(expectedDelay, d.evaluationResult().causesOfDelay().toString());
                 }
             }
         };
@@ -926,8 +914,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 String expected = switch (d.iteration()) {
                     case 0 -> "cnn:strings@Method_add_1-E"; // Trail 3 --> node.map in add, links delay
-                    case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
-                    case 2, 3 -> "cnn:node$1.map@Method_add_1.0.1-C"; // FIXME
+                    case 1, 2, 3 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                     default -> "";
                 };
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());

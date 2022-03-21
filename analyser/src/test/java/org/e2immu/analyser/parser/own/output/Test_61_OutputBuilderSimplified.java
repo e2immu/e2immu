@@ -354,7 +354,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
-                    assertEquals("container@Class_OutputBuilderSimplified_7",
+                    assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start",
                             d.typeAnalysis().getProperty(Property.CONTAINER).causesOfDelay().toString());
                 }
             }

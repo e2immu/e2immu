@@ -67,8 +67,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
-                        case 0 -> "initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                        case 1 -> "wait_for_assignment:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-E";
+                        case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -93,8 +92,8 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:add>" : "instance type TrieNode<URL>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:files@Method_recursivelyAddFiles_1.0.3.0.2-C;initial:org.e2immu.analyser.util.Resources.LOGGER@Method_recursivelyAddFiles_1.0.3.0.2.0.1.0.1-C;initial:packageParts@Method_recursivelyAddFiles_1.0.3.0.2.0.1-C";
-                        case 1 -> "container:partsFromFile@Method_recursivelyAddFiles_1.0.3.0.2.0.1.0.1-E";
+                        case 0 -> "initial:files@Method_recursivelyAddFiles_1.0.3.0.2-C;initial:org.e2immu.analyser.util.Resources.LOGGER@Method_recursivelyAddFiles_1.0.3.0.2.0.1.0.1-C;initial:packageParts@Method_recursivelyAddFiles_1.0.3.0.2.0.1-C;initial:this.data@Method_recursivelyAddFiles_1.0.3.0.2.0.1.0.2-C";
+                        case 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:files@Method_recursivelyAddFiles_1.0.3.0.2-C;initial:packageParts@Method_recursivelyAddFiles_1.0.3.0.2.0.1-C;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -159,8 +158,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String delays = switch (d.iteration()) {
-                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                            case 1 -> "wait_for_assignment:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-E";
+                            case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                             default -> "";
                         };
                         assertEquals(delays, d.currentValue().causesOfDelay().toString());
@@ -170,8 +168,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
                         assertEquals(expected, d.currentValue().toString());
                         String delays = switch (d.iteration()) {
-                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                            case 1 -> "wait_for_assignment:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-E";
+                            case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                             default -> "";
                         };
                         assertEquals(delays, d.currentValue().causesOfDelay().toString());

@@ -67,7 +67,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type Node<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
+                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:copy.nodeMap@Method_accept_0.0.1-C;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t;mom@Parameter_t";
                         case 2 -> "mom@Parameter_t";
                         default -> "";

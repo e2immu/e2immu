@@ -61,7 +61,7 @@ class SimpleSet extends AbstractDelay {
     public CausesOfDelay merge(CausesOfDelay other) {
         if (other.isDone()) return this;
         if (maxPriority < other.maxPriority()) return other;
-        if (maxPriority > other.maxPriority()) return other;
+        if (maxPriority > other.maxPriority()) return this;
 
         // more complicated than simply merge two sets. We keep only the earliest location of each delay
         Map<String, CauseOfDelay> map = new HashMap<>();

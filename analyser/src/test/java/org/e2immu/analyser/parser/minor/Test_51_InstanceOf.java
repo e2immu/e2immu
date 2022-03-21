@@ -881,7 +881,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 case "Expression", "EvaluationContext" -> assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext", 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                case "XB" -> assertDv(d, "container@Record_XB", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "XB" -> assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };

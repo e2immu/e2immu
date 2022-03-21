@@ -2196,7 +2196,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         if (count > 10) {
             LOGGER.error("Delay map:");
             applyCausesOfDelay.forEach((k, v) -> LOGGER.error("{}: {}", k, v));
-            throw new NoProgressException("Interrupting at statement " + index + " in method " + methodAnalysis.getMethodInfo().fullyQualifiedName);
+          //  throw new NoProgressException("Interrupting at statement " + index + " in method " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
         // new d
         return count <= 2;
