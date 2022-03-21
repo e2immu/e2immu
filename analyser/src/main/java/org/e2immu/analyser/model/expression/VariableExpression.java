@@ -260,6 +260,8 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             if (!newScope.equals(fr.scope)) {
                 FieldReference newFr = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, newScope);
                 VariableExpression ve = new VariableExpression(newFr);
+                EvaluationResult er2 = ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+                if (er2.causesOfDelay().isDone()) return builder.compose(er2).build();
                 return builder.setExpression(ve).markRead(newFr).build();
             }
         }
@@ -273,7 +275,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             Expression newArrayExpression = arrayEr.getExpression();
             Expression newIndexExpression = indexEr.getExpression();
             DependentVariable newDv = new DependentVariable(dv.getIdentifier(), newArrayExpression, newIndexExpression, dv.parameterizedType, dv.statementIndex);
-            return builder.setExpression(new VariableExpression(newDv)).markRead(newDv).build();
+            VariableExpression ve = new VariableExpression(newDv);
+            EvaluationResult er2 = ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            if (er2.causesOfDelay().isDone()) return builder.compose(er2).build();
+            return builder.setExpression(ve).markRead(newDv).build();
         }
         return builder.setExpression(new VariableExpression(variable)).markRead(variable).build();
     }

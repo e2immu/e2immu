@@ -655,7 +655,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
 
-        testClass("Loops_19", 0, 3, new DebugConfiguration.Builder()
+        testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
