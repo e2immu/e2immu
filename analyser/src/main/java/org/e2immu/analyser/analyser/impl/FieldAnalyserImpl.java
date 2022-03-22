@@ -257,7 +257,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
-        LOGGER.debug("Analysing field {}", fqn);
+        LOGGER.info("Analysing field {} iteration {}", fqn, iteration);
 
         // analyser visitors
         try {

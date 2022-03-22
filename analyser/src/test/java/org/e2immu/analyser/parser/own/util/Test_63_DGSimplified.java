@@ -263,8 +263,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("3.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C";
-                        case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
-                        case 2 -> "cnn:this.nodeMap.get(t).dependsOn@Method_recursivelyComputeDependencies_3-C";
+                        case 1, 2 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -292,8 +291,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             String delays = switch (d.iteration()) {
                                 case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn";
-                                case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
-                                case 2 -> "cnn:this.nodeMap.get(t).dependsOn@Method_recursivelyComputeDependencies_3-C";
+                                case 1, 2 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
                                 default -> "";
                             };
                             assertEquals(delays, d.currentValue().causesOfDelay().toString());
@@ -318,7 +316,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
-                    assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD); // TODO ensure this is correct
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
             }
         };
@@ -330,10 +328,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         // TODO too many errors
         testClass("DGSimplified_1", 8, 3, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

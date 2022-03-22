@@ -388,11 +388,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         // those get filtered out. See e.g. Enum_0, which extends implicitly from java.lang.Enum
         @Override
         public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
-            if (!explicitTypes.isSet() && getTypeInfo().shallowAnalysis()) {
-                Set<ParameterizedType> set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
-                Set<ParameterizedType> filtered = set.stream().filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet()).collect(Collectors.toUnmodifiableSet());
-                explicitTypes.set(new SetOfTypes(filtered));
-                return filtered;
+            if (!explicitTypes.isSet()) {
+                if(getTypeInfo().shallowAnalysis()){
+                    Set<ParameterizedType> set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
+                    Set<ParameterizedType> filtered = set.stream().filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet()).collect(Collectors.toUnmodifiableSet());
+                    explicitTypes.set(new SetOfTypes(filtered));
+                    return filtered;
+                }
+                return null; // not yet set
             }
             return explicitTypes.get(typeInfo.fullyQualifiedName).types();
         }

@@ -65,6 +65,10 @@ public class EvaluatePreconditionFromMethod {
         // the precondition is using parameter info's as variables so we'll have to substitute
         Map<Expression, Expression> translationMap = translationMap(context.getAnalyserContext(),
                 methodInfo, parameterValues, scopeObject);
+        CausesOfDelay translationDelays = translationMap.values().stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if(translationDelays.isDelayed()) {
+            return Precondition.forDelayed(identifierOfMethodCall, translationDelays, context.getPrimitives());
+        }
         Expression reEvaluated;
         if (!translationMap.isEmpty()) {
             EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap);

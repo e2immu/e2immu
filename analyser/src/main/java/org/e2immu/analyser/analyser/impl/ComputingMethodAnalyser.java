@@ -198,7 +198,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         assert !isUnreachable();
-        LOGGER.debug("Analysing method {}", methodInfo.fullyQualifiedName());
+        LOGGER.info("Analysing method {} it {}", methodInfo.fullyQualifiedName(), iteration);
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
         SharedState sharedState = new SharedState(evaluationContext);

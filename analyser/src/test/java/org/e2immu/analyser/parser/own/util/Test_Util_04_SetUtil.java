@@ -15,20 +15,40 @@
 
 package org.e2immu.analyser.parser.own.util;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class Test_Util_04_SetUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(SetUtil.class),  0, 0, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("immutableUnion".equals(d.methodInfo().name)) {
+                if ("4".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 0, d.status().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.externalStatus().isDelayed());
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("SetUtil".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testSupportAndUtilClasses(List.of(SetUtil.class), 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

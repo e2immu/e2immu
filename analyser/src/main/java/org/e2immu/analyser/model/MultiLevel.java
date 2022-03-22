@@ -224,6 +224,7 @@ public class MultiLevel {
     }
 
     public static DV effectivelyImmutable(int level) {
+        assert level >= 0 && level <= MAX_LEVEL;
         if (level == IMMUTABLE_1.level) return EFFECTIVELY_E1IMMUTABLE_DV;
         if (level == IMMUTABLE_2.level) return EFFECTIVELY_E2IMMUTABLE_DV;
         if (level == IMMUTABLE_R.level) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
@@ -231,6 +232,7 @@ public class MultiLevel {
     }
 
     public static DV eventuallyImmutable(int level) {
+        assert level >= 0 && level <= MAX_LEVEL;
         if (level == IMMUTABLE_1.level) return EVENTUALLY_E1IMMUTABLE_DV;
         if (level == IMMUTABLE_2.level) return EVENTUALLY_E2IMMUTABLE_DV;
         if (level == IMMUTABLE_R.level) return EVENTUALLY_RECURSIVELY_IMMUTABLE_DV;
@@ -238,6 +240,7 @@ public class MultiLevel {
     }
 
     public static DV beforeImmutableDv(int level) {
+        assert level >= 0 && level <= MAX_LEVEL;
         if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV;
         if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV;
         if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV;
@@ -245,6 +248,7 @@ public class MultiLevel {
     }
 
     public static DV afterImmutableDv(int level) {
+        assert level >= 0 && level <= MAX_LEVEL;
         if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV;
         if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV;
         if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV;
@@ -311,6 +315,8 @@ public class MultiLevel {
     // ImmutableSet<T>. If T is E2, then combination is E3
     // ImmutableSet<Integer> -> MAX
     public static DV sumImmutableLevels(DV base, DV parameters) {
+        assert base.isDone();
+        assert parameters.isDone();
         int levelBase = level(base);
         int levelParams = level(parameters);
         if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return composeImmutable(effective(base), MAX_LEVEL);

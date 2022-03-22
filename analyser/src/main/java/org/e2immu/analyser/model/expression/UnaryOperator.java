@@ -16,6 +16,9 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SingleDelay;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -199,7 +202,8 @@ public class UnaryOperator extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        throw new UnsupportedOperationException("Not yet evaluated");
+        return DelayFactory.createDelay(context.evaluationContext().getLocation(duringEvaluation?Stage.EVALUATION: Stage.MERGE),
+                CauseOfDelay.Cause.VALUE);
     }
 
     @Override

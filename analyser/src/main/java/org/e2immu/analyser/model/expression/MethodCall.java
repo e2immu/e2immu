@@ -292,7 +292,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        if(partOfCallCycle && modifiedMethod.isDelayed()) {
+        if (partOfCallCycle && modifiedMethod.isDelayed()) {
             modifiedMethod = methodAnalysis.getMethodProperty(Property.TEMP_MODIFIED_METHOD);
         }
         DV modified = recursiveCall || breakCallCycleDelay ? DV.FALSE_DV : modifiedMethod;
@@ -902,6 +902,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
+            assert formal.isDone();
             // the independence of the result, and the immutable level of the hidden content, will determine the result
             DV methodIndependent = methodAnalysis.getProperty(Property.INDEPENDENT);
             if (methodIndependent.isDelayed()) return methodIndependent;
@@ -953,7 +954,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 minParams = minParams.min(hiddenImmutable);
             }
         }
+        if (minParams == DV.MAX_INT_DV) return formal;
         if (causesOfDelay.isDelayed()) return causesOfDelay;
+        if (minParams.isDelayed()) return minParams;
         return MultiLevel.sumImmutableLevels(formal, minParams);
     }
 

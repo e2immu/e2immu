@@ -187,7 +187,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         assert !isUnreachable();
-        LOGGER.debug("Analysing type {}, call #{}", typeInfo.fullyQualifiedName,
+        LOGGER.info("Analysing type {}, it {}, call #{}", typeInfo.fullyQualifiedName, iteration,
                 callCounterForDebugging.incrementAndGet());
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
@@ -341,7 +341,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
                 CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
-                if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType()) {
+                // third clause to avoid cycles
+                if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType() && !typeInfo.isEnclosedIn(parentClass)) {
                     ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
                     typeAnalyser.analyseTransparentTypes();
                 }
@@ -362,7 +363,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             CausesOfDelay causes = CausesOfDelay.EMPTY;
             for (ParameterizedType ifType : typeInspection.interfacesImplemented()) {
                 TypeInfo ifTypeInfo = ifType.typeInfo;
-                if (!ifTypeInfo.isAggregated()) {
+                // 2nd clause to avoid cycles
+                if (!ifTypeInfo.isAggregated() && !typeInfo.isEnclosedIn(ifTypeInfo)) {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
                     CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
                     if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
@@ -389,7 +391,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .filter(i -> !i.typeInfo.isAggregated())
                 .flatMap(i -> {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
-                    return typeAnalysis.getExplicitTypes(analyserContext).stream();
+                    Set<ParameterizedType> explicitTypes = typeAnalysis.getExplicitTypes(analyserContext);
+                    if (explicitTypes == null)
+                        return Stream.of(); // FIXME is this correct? if we cause a delay, will it cause cycles?
+                    return explicitTypes.stream();
                 })
                 .collect(Collectors.toUnmodifiableSet());
 
