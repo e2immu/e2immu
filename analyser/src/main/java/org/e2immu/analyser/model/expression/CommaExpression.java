@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -98,11 +95,11 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         List<Expression> newExpressions = new ArrayList<>(this.expressions.size());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         for (Expression expression : this.expressions) {
-            EvaluationResult result = expression.reEvaluate(context, translation);
+            EvaluationResult result = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
             newExpressions.add(result.getExpression());
             builder.compose(result);
         }

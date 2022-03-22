@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.Sum;
@@ -30,7 +31,7 @@ public class TestReEvaluate extends CommonAbstractValue {
         Expression square = Product.product(context, i, i);
         assertEquals("i*i", square.toString());
         Map<Expression, Expression> translate = Map.of(i, newInt(3));
-        Expression re = square.reEvaluate(context, translate).value();
+        Expression re = square.reEvaluate(context, translate, ForwardReEvaluationInfo.DEFAULT).value();
         assertEquals("9", re.toString());
     }
 
@@ -40,10 +41,10 @@ public class TestReEvaluate extends CommonAbstractValue {
                 newInt(10), negate(Product.product(context, i, j)));
         assertEquals("10-(i*j)", value.toString());
         Map<Expression, Expression> translate = Map.of(i, newInt(3));
-        Expression re = value.reEvaluate(context, translate).value();
+        Expression re = value.reEvaluate(context, translate, ForwardReEvaluationInfo.DEFAULT).value();
         assertEquals("10-(3*j)", re.toString());
         Map<Expression, Expression> translate2 = Map.of(j, newInt(2));
-        Expression re2 = re.reEvaluate(context, translate2).value();
+        Expression re2 = re.reEvaluate(context, translate2, ForwardReEvaluationInfo.DEFAULT).value();
         assertEquals("4", re2.toString());
     }
 }

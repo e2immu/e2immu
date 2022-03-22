@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
@@ -40,9 +41,9 @@ public class Product extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.multiplyOperatorInt(), rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
         return builder.setExpression(Product.product(identifier, context, reLhs.value(), reRhs.value())).build();
     }

@@ -368,7 +368,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         EvaluationResult translated = variableInfo.getValue()
-                                .reEvaluate(EvaluationResult.from(sharedState.evaluationContext()), translation);
+                                .reEvaluate(EvaluationResult.from(sharedState.evaluationContext()), translation, ForwardReEvaluationInfo.DEFAULT);
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(new FieldReference(analyserContext, fieldInfo)),

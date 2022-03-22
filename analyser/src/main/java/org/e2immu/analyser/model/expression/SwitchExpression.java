@@ -93,9 +93,9 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        EvaluationResult reEvaluatedSelector = selector.reEvaluate(context, translation);
+        EvaluationResult reEvaluatedSelector = selector.reEvaluate(context, translation, forwardReEvaluationInfo);
         builder.compose(reEvaluatedSelector);
         List<Expression> newExpressionList = new ArrayList<>(expressions.size());
 
@@ -103,7 +103,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         for (SwitchEntry se : switchEntries) {
             if (se instanceof SwitchEntry.StatementsEntry statementsEntry && statementsEntry.structure.statements().size() == 1
                     && statementsEntry.structure.statements().get(0) instanceof ExpressionAsStatement eas) {
-                EvaluationResult re = eas.expression.reEvaluate(context, translation);
+                EvaluationResult re = eas.expression.reEvaluate(context, translation, forwardReEvaluationInfo);
                 builder.compose(re);
                 Expression reEvaluated = re.getExpression();
                 newExpressionList.add(reEvaluated);

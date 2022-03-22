@@ -186,10 +186,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
-        EvaluationResult result = expression.reEvaluate(closureContext, translation);
+        EvaluationResult result = expression.reEvaluate(closureContext, translation, forwardReEvaluationInfo);
         if (expression instanceof InlinedMethod im) {
             Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), context.getAnalyserContext());
             return new EvaluationResult.Builder(context).compose(result).setExpression(newIm).build();

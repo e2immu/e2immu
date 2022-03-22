@@ -55,7 +55,8 @@ public class EvaluateMethodCall {
                                         boolean objectIsImplicit,
                                         Expression objectValue,
                                         ParameterizedType concreteReturnType,
-                                        List<Expression> parameters) {
+                                        List<Expression> parameters,
+                                        ForwardReEvaluationInfo forwardReEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
         if (recursiveCall) {
@@ -85,7 +86,7 @@ public class EvaluateMethodCall {
             Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
             Map<Expression, Expression> translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
-            return inlineValue.reEvaluate(context, translationMap);
+            return inlineValue.reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT);
         }
 
         if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -178,10 +179,12 @@ public class EvaluateMethodCall {
                 // if this method was identity?
 
                 InlinedMethod iv;
-                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context)) {
+                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
+                        forwardReEvaluationInfo.allowInline(methodInfo)) {
                     Map<Expression, Expression> translationMap = iv.translationMap(context,
                             parameters, objectValue, context.getCurrentType(), identifier);
-                    EvaluationResult reSrv = iv.reEvaluate(context, translationMap);
+                    ForwardReEvaluationInfo forward = forwardReEvaluationInfo.addMethod(methodInfo);
+                    EvaluationResult reSrv = iv.reEvaluate(context, translationMap, forward);
                     return builder.compose(reSrv).setExpression(reSrv.value()).build();
                 }
                 if (srv.isConstant()) {
@@ -319,7 +322,7 @@ public class EvaluateMethodCall {
                 .forEach(pair -> translationMap.put(pair.k, pair.v));
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationResult child = context.child(state, true);
-        Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
+        Expression resultingValue = companionValue.reEvaluate(child, translationMap, ForwardReEvaluationInfo.DEFAULT).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (methodInfo.returnType().typeInfo.isBoolean()) {
@@ -376,7 +379,7 @@ public class EvaluateMethodCall {
                 });
 
         if (translationMap.isEmpty()) return null;
-        Expression newState = state.reEvaluate(context, translationMap).value();
+        Expression newState = state.reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT).value();
 
         DV notNull = MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
         return PropertyWrapper.addState(methodCall, newState, Map.of(NOT_NULL_EXPRESSION, notNull));

@@ -252,9 +252,9 @@ public final class Or extends ExpressionCanBeTooComplex {
     // no implementation of the filters
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         List<EvaluationResult> reClauseERs = expressions.stream()
-                .map(v -> v.reEvaluate(context, translation))
+                .map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo))
                 .collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         Identifier id = Identifier.joined("and", Arrays.stream(reClauses).map(Expression::getIdentifier).toList());

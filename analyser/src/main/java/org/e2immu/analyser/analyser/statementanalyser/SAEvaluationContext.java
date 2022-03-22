@@ -653,7 +653,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         } else {
             // we need an evaluation context that simply translates, but does not interpret stuff
             EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
-            translated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), translationMap).getExpression();
+            translated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), translationMap, ForwardReEvaluationInfo.DEFAULT).getExpression();
         }
         List<Variable> variables = translated.variables(false);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {

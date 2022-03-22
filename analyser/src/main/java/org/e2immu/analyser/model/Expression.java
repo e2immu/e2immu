@@ -154,7 +154,7 @@ public interface Expression extends Element, Comparable<Expression> {
     boolean isBoolValueFalse();
 
     @NotNull
-    default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         Expression inMap = translation.get(this);
         return new EvaluationResult.Builder(context).setExpression(inMap == null ? this : inMap).build();
     }

@@ -88,8 +88,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = expression.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reValue = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
         return reEvaluated(context, reValue);
     }
 

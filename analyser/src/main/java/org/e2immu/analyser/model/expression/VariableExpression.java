@@ -236,7 +236,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     Full evaluation causes a lot of trouble with improper delays because we have no decent ForwardEvaluationInfo
      */
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         Expression inMap = translation.get(this);
         if (inMap != null) {
             VariableExpression ve;
@@ -255,7 +255,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         if (variable instanceof FieldReference fr && fr.scope != null) {
-            EvaluationResult er = fr.scope.reEvaluate(context, translation);
+            EvaluationResult er = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo);
             Expression newScope = er.getExpression();
             if (!newScope.equals(fr.scope)) {
                 FieldReference newFr = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, newScope);
@@ -267,11 +267,11 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
         if (variable instanceof DependentVariable dv) {
             EvaluationResult arrayEr = dv.expressionOrArrayVariable.isLeft()
-                    ? dv.expressionOrArrayVariable.getLeft().value().reEvaluate(context, translation)
-                    : new VariableExpression(dv.expressionOrArrayVariable.getRight()).reEvaluate(context, translation);
+                    ? dv.expressionOrArrayVariable.getLeft().value().reEvaluate(context, translation, forwardReEvaluationInfo)
+                    : new VariableExpression(dv.expressionOrArrayVariable.getRight()).reEvaluate(context, translation, forwardReEvaluationInfo);
             EvaluationResult indexEr = dv.expressionOrIndexVariable.isLeft()
-                    ? dv.expressionOrIndexVariable.getLeft().value().reEvaluate(context, translation)
-                    : new VariableExpression(dv.expressionOrIndexVariable.getRight()).reEvaluate(context, translation);
+                    ? dv.expressionOrIndexVariable.getLeft().value().reEvaluate(context, translation, forwardReEvaluationInfo)
+                    : new VariableExpression(dv.expressionOrIndexVariable.getRight()).reEvaluate(context, translation, forwardReEvaluationInfo);
             Expression newArrayExpression = arrayEr.getExpression();
             Expression newIndexExpression = indexEr.getExpression();
             DependentVariable newDv = new DependentVariable(dv.getIdentifier(), newArrayExpression, newIndexExpression, dv.parameterizedType, dv.statementIndex);

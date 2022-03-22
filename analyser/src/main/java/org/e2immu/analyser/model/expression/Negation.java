@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -45,8 +42,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }
 
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = expression.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reValue = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reValue);
         return builder.setExpression(Negation.negate(context, reValue.value())).build();
     }

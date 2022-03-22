@@ -252,7 +252,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {
-            LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
+            LOGGER.warn("Caught exception while analysing block {} of: {}, position {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName(),
+                    statementAnalysis.location(Stage.INITIAL));
             throw rte;
         }
     }

@@ -234,7 +234,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     // special treatment because of == equality
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         Optional<Map.Entry<Expression, Expression>> found = translation.entrySet().stream()
                 .filter(e -> e.getKey() instanceof VariableExpression ve && ve.variable().equals(variable))
                 .findFirst();
@@ -242,7 +242,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         if (found.isPresent()) {
             result = found.get().getValue();
         } else if (variable instanceof FieldReference fr && fr.scope != null) {
-            EvaluationResult reEval = fr.scope.reEvaluate(context, translation); // recurse
+            EvaluationResult reEval = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo); // recurse
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
                 FieldReference newRef = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, replaceScope);

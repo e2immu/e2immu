@@ -72,9 +72,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         List<EvaluationResult> reClauseERs = multiExpression.stream()
-                .map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
+                .map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder(context)
                 .compose(reClauseERs)

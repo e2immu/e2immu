@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Qualification;
@@ -43,9 +44,9 @@ public class Sum extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.plusOperatorInt(), rhs, Precedence.ADDITIVE);
     }
 
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
         return builder.setExpression(Sum.sum(identifier, context, reLhs.getExpression(), reRhs.getExpression())).build();
     }

@@ -16,9 +16,9 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -139,5 +140,31 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("find".equals(d.methodInfo().name)) {
+                // the visualisation is f.contains(s) "because" (we should improve on this) this is an inlined method, with f as parameter
+                String expected = d.iteration() <= 1 ? "<m:find>"
+                        : "s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(ff.equals(s)).findAny().orElse(s):stream.filter(f.contains(s)).findFirst().orElse(null)";
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                    }
+                }
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("InlinedMethod_10", 0, 1, new DebugConfiguration.Builder()
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+    @Test
+    public void test_11() throws IOException {
+        testClass("InlinedMethod_11", 0, 1, new DebugConfiguration.Builder()
+                .build());
     }
 }

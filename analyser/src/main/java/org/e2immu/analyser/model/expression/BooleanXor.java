@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -28,9 +29,9 @@ public class BooleanXor extends BinaryOperator {
         super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.XOR);
     }
 
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
+        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
         return builder.setExpression(BooleanXor.booleanXor(identifier, context, reLhs.value(), reRhs.value())).build();
     }

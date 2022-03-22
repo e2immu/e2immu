@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Precondition;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
@@ -71,7 +68,7 @@ public class EvaluatePreconditionFromMethod {
         }
         Expression reEvaluated;
         if (!translationMap.isEmpty()) {
-            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap);
+            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT);
             reEvaluated = eRreEvaluated.value();
             builder.composeIgnoreExpression(eRreEvaluated);
         } else {

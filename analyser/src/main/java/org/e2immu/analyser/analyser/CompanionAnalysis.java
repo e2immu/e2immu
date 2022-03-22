@@ -58,6 +58,6 @@ public interface CompanionAnalysis {
     default Expression reEvaluate(EvaluationResult context, List<Expression> parameterValues) {
         Map<Expression, Expression> translationMap = new HashMap<>();
         ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return getValue().reEvaluate(context, Map.copyOf(translationMap)).value();
+        return getValue().reEvaluate(context, Map.copyOf(translationMap), ForwardReEvaluationInfo.DEFAULT).value();
     }
 }

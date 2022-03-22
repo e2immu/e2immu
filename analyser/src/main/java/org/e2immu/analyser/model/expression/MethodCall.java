@@ -240,16 +240,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation) {
-        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(context, translation)).collect(Collectors.toList());
-        EvaluationResult reObject = object.reEvaluate(context, translation);
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
+        EvaluationResult reObject = object.reEvaluate(context, translation, forwardReEvaluationInfo);
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         DV modified = context.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(Property.MODIFIED_METHOD);
         EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                 context.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
-                reParamValues);
+                reParamValues, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams)
                 .compose(reObject, mv);
         if (reObject.value() instanceof IsVariableExpression ve) {
@@ -359,7 +359,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay delayedFinalizer = checkFinalizer(context, builder, methodAnalysis, objectValue);
 
-        CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed()) {
             CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer);
             return delayedMethod(context, builder, causes, modified);
@@ -384,10 +385,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression result;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
-            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
+            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo,
+                    contentNotNullRequired);
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
-                    methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
+                    methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
+                    ForwardReEvaluationInfo.DEFAULT);
             builder.compose(mv);
             if (mv.value() == objectValue && modifiedInstance != null) {
                 result = modifiedInstance;
@@ -768,7 +771,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         Expression companionValue = companionAnalysis.getValue();
         EvaluationResult child = context.child(instanceState, true);
-        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
+        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap, ForwardReEvaluationInfo.DEFAULT);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();
     }

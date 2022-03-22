@@ -82,7 +82,7 @@ public class AssignmentIncompatibleWithPrecondition {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                 EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
-                                Expression stateInTermsOfField = state.reEvaluate(neutralContext, map).getExpression();
+                                Expression stateInTermsOfField = state.reEvaluate(neutralContext, map, ForwardReEvaluationInfo.DEFAULT).getExpression();
                                 return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
                             }
                         }
@@ -145,7 +145,7 @@ public class AssignmentIncompatibleWithPrecondition {
                                                    Expression value,
                                                    Expression precondition) {
         Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
-        Expression reEvaluated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), map).getExpression();
+        Expression reEvaluated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), map, ForwardReEvaluationInfo.DEFAULT).getExpression();
         // false ~ incompatible with precondition
         if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
         return null;
