@@ -30,6 +30,9 @@ public class OrgSlf4j {
         void warn(@NotNull String s, Object... objects);
 
         @NotModified
+        void error(@NotNull String s);
+
+        @NotModified
         void error(@NotNull String s, Object object);
 
         @NotModified

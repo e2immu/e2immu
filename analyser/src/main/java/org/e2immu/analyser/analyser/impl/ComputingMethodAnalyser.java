@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -575,6 +576,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+            if(methodInfo.partOfCallCycle() && modified.isDelayed()) {
+                modified = methodAnalysis.getProperty(TEMP_MODIFIED_METHOD);
+            }
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 Expression delayedExpression = delayedSrv(modified.causesOfDelay(), false);
@@ -785,7 +789,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV modified = methodAnalysis.getProperty(Property.TEMP_MODIFIED_METHOD);
         TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
-        Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
+        Set<MethodInfo> cycle = computeMyCycle();
         TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
 
         // we decide for the group
@@ -821,6 +825,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         LOGGER.debug("Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
         return modified.causesOfDelay();
+    }
+
+    private Set<MethodInfo> computeMyCycle() {
+        return methodInfo.methodResolution.get().methodsOfOwnClassReached().stream()
+                .filter(MethodInfo::partOfCallCycle).collect(Collectors.toUnmodifiableSet());
     }
 
     private AnalysisStatus computeModified() {

@@ -273,29 +273,35 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        boolean partOfCallCycle;
+        boolean breakCallCycleDelay;
         boolean recursiveCall;
+        boolean partOfCallCycle;
 
         MethodAnalyser currentMethod = context.getCurrentMethod();
         if (currentMethod != null) {
             // internal circular dependency (as opposed to one outside the primary type)
-            partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+            partOfCallCycle = methodInfo.partOfCallCycle();
+            breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         } else {
-            partOfCallCycle = false;
+            breakCallCycleDelay = false;
             recursiveCall = false;
+            partOfCallCycle = false;
         }
 
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        DV modified = recursiveCall || partOfCallCycle ? DV.FALSE_DV : modifiedMethod;
+        if(partOfCallCycle && modifiedMethod.isDelayed()) {
+            modifiedMethod = methodAnalysis.getMethodProperty(Property.TEMP_MODIFIED_METHOD);
+        }
+        DV modified = recursiveCall || breakCallCycleDelay ? DV.FALSE_DV : modifiedMethod;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
         boolean contentNotNullRequired = notNullForward.equals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
 
-        ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
+        ImmutableData immutableData = recursiveCall || breakCallCycleDelay ? NOT_EVENTUAL :
                 computeContextImmutable(context);
 
         // modification on a type expression -> make sure that this gets modified too!
@@ -324,7 +330,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 context, forwardEvaluationInfo,
-                methodInfo, recursiveCall || partOfCallCycle, objectValue);
+                methodInfo, recursiveCall || breakCallCycleDelay, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
