@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -157,14 +158,68 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testClass("InlinedMethod_10", 0, 1, new DebugConfiguration.Builder()
-                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+        testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
     @Test
     public void test_11() throws IOException {
-        testClass("InlinedMethod_11", 0, 1, new DebugConfiguration.Builder()
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("variables".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:variables>" : "this.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList())";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("this", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        if (inlinedMethod.expression() instanceof MethodCall mc1) {
+                            if (mc1.object instanceof MethodCall mc2) {
+                                assertEquals(1, mc2.parameterExpressions.size());
+                                if (mc2.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
+                                    assertEquals("e", inlinedMethod2.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                                } else fail();
+                            } else fail();
+                        } else fail();
+                    }
+                }
+            }
+            if ("compare".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 2 ? "<m:compare>"
+                        : "e1.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 3) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("e1,e2", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        if (inlinedMethod.expression() instanceof MethodCall mc1) {
+                            assertEquals(1, mc1.parameterExpressions.size());
+                            if (mc1.parameterExpressions.get(0) instanceof MethodCall mc2) {
+                                if (mc2.object instanceof MethodCall mc3) {
+                                    assertEquals("sorted", mc3.methodInfo.name);
+                                    if (mc3.object instanceof MethodCall mc4) {
+                                        assertEquals("map", mc4.methodInfo.name);
+                                        if (mc4.object instanceof MethodCall mc5) {
+                                            assertEquals("stream", mc5.methodInfo.name);
+                                            if (mc5.object instanceof MethodCall mc6) {
+                                                assertEquals("collect", mc6.methodInfo.name);
+                                                if (mc6.object instanceof MethodCall mc7) {
+                                                    assertEquals("flatMap", mc7.methodInfo.name);
+                                                    assertEquals(1, mc7.parameterExpressions.size());
+                                                    if (mc7.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
+                                                        assertEquals("e", inlinedMethod2.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                                                    } else fail();
+                                                } else fail();
+                                            } else fail();
+                                        } else fail();
+                                    } else fail();
+                                } else fail();
+                            } else fail();
+                        } else fail();
+                    }
+                }
+            }
+        };
+        testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

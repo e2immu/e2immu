@@ -190,6 +190,15 @@ public class InlinedMethod extends BaseExpression implements Expression {
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         EvaluationResult result = expression.reEvaluate(closureContext, translation, forwardReEvaluationInfo);
+
+        boolean allParametersCovered = variablesOfExpression.stream().filter(ve -> ve.variable() instanceof ParameterInfo).allMatch(translation::containsKey);
+        boolean haveParameters = variablesOfExpression.stream().anyMatch(ve -> ve.variable() instanceof ParameterInfo);
+        if (!allParametersCovered && haveParameters) {
+            Expression newIm = of(identifier, methodInfo, result.getExpression(), context.getAnalyserContext());
+            return new EvaluationResult.Builder(context).compose(result).setExpression(newIm).build();
+        }
+
+        // for Lambda_8
         if (expression instanceof InlinedMethod im) {
             Expression newIm = of(identifier, im.methodInfo(), result.getExpression(), context.getAnalyserContext());
             return new EvaluationResult.Builder(context).compose(result).setExpression(newIm).build();
