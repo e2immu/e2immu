@@ -30,10 +30,7 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -140,6 +137,15 @@ public class BinaryOperator extends BaseExpression implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
         return builder.build();
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult leftResult = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
+        EvaluationResult rightResult = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
+        Expression value = determineValueProtect(primitives, builder, leftResult, rightResult, context, ForwardEvaluationInfo.DEFAULT);
+        return builder.setExpression(value).build();
     }
 
     private Expression determineValueProtect(Primitives primitives,

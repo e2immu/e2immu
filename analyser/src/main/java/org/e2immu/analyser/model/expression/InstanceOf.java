@@ -30,6 +30,7 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 
@@ -139,6 +140,13 @@ public class InstanceOf extends BaseExpression implements Expression {
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reExpression = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
+        InstanceOf instanceOf = new InstanceOf(getIdentifier(), primitives, parameterizedType, reExpression.getExpression(), patternVariable);
+        return new EvaluationResult.Builder(context).compose(reExpression).setExpression(instanceOf).build();
     }
 
     @Override

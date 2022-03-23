@@ -47,6 +47,10 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
+    public static Expression forUnspecifiedCondition(Identifier identifier, Primitives primitives) {
+        return new Instance(identifier, primitives.booleanParameterizedType(),
+                EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
+    }
 
     public static Instance forInlinedMethod(Identifier identifier,
                                             ParameterizedType parameterizedType) {

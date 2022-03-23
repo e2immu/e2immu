@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
@@ -205,7 +206,10 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
-
+        if (condition instanceof NullConstant) {
+            builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
+            condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
+        }
         Expression conditionAfterState = context.evaluationContext().getConditionManager().evaluate(context, condition);
 
         boolean tooComplex = conditionAfterState.getComplexity() *

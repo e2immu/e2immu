@@ -209,6 +209,11 @@ public class Lambda extends BaseExpression implements Expression {
         return builder.build();
     }
 
+    @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        return new EvaluationResult.Builder(context).setExpression(this).build();
+    }
+
     private Expression withLocalAnalyser(ParameterizedType parameterizedType, MethodAnalysis methodAnalysis) {
         Expression result;
         if (methodInfo.hasReturnValue()) {

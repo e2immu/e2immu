@@ -119,6 +119,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return builder.build();
     }
 
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        EvaluationResult reScope = scope.reEvaluate(context, translation, forwardReEvaluationInfo);
+        MethodReference newMethodReference = new MethodReference(getIdentifier(), reScope.getExpression(), methodInfo, concreteReturnType);
+        return new EvaluationResult.Builder(context).compose(reScope).setExpression(newMethodReference).build();
+    }
+
     @Override
     public List<? extends Element> subElements() {
         return List.of(scope);

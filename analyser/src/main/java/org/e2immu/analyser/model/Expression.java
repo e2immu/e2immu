@@ -67,7 +67,9 @@ public interface Expression extends Element, Comparable<Expression> {
     /*
     used to compute the variables linking a field and its scope. main point: does not include condition in InlineConditional
      */
-    default List<Variable> variablesWithoutCondition() { return List.of(); }
+    default List<Variable> variablesWithoutCondition() {
+        return List.of();
+    }
 
     @NotNull
     @Override
@@ -155,8 +157,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     @NotNull
     default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        Expression inMap = translation.get(this);
-        return new EvaluationResult.Builder(context).setExpression(inMap == null ? this : inMap).build();
+        throw new UnsupportedOperationException("For " + getClass());
     }
 
     /**
