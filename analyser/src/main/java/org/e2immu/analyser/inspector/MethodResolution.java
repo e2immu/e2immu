@@ -53,7 +53,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false));
         }
 
-        public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
+        private final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
 
         public Set<MethodInfo> getOverrides() {
             return overrides.isSet() ? Set.copyOf(overrides.get()) : Set.of();
@@ -96,6 +96,12 @@ public record MethodResolution(Set<MethodInfo> overrides,
         }
 
         public final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
+
+        public void setOverrides(MethodInfo methodInfo, Set<MethodInfo> overrides) {
+            assert !overrides.contains(methodInfo);
+            this.overrides.set(overrides);
+            overrides.forEach(override -> override.addImplementation(methodInfo));
+        }
 
         // ***************
 

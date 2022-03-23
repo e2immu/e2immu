@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.*;
+import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
@@ -44,7 +45,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
-
+    private final AddOnceSet<MethodInfo> implementations = new AddOnceSet<>();
 
     // -- a bit of primitives info
 
@@ -378,5 +379,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean inConstruction() {
         return isConstructor || methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+    }
+
+    public void addImplementation(MethodInfo implementation) {
+        if (!implementations.contains(implementation)) implementations.add(implementation);
+    }
+
+    public boolean hasImplementations() {
+        return !implementations.isEmpty();
+    }
+
+    public Set<MethodInfo> getImplementations() {
+        return implementations.toImmutableSet();
     }
 }

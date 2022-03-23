@@ -633,7 +633,7 @@ public class ResolverImpl implements Resolver {
                     methodResolutionBuilder.isIgnoreMeBecauseOfPartOfCallCycle.set(iHelpBreakTheCycle);
 
                     computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
-                    methodResolutionBuilder.overrides.set(ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
+                    methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
                     computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsReached, false);
                     builders.put(methodInfo, methodResolutionBuilder);
