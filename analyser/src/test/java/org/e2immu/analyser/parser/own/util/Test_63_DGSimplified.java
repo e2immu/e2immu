@@ -236,7 +236,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         // TODO improve on errors
-        testClass("DGSimplified_0", 7, 3, new DebugConfiguration.Builder()
+        testClass("DGSimplified_0", 7, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -327,7 +327,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         // TODO too many errors
-        testClass("DGSimplified_1", 8, 3, new DebugConfiguration.Builder()
+        testClass("DGSimplified_1", 8, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

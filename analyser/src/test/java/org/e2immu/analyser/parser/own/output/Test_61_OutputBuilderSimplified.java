@@ -182,7 +182,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                             assertTrue(d.iteration() > 0);
                             // question 1: why does a.list appear while the evaluation is still <m:isEmpty> ?
                             // because a.list has been identified, but aspects of .isEmpty() have not been cleared yet
-                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                            assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         }
                     }
                 }

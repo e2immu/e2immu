@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.functional.testexample;
 
 
+import org.e2immu.annotation.E1Immutable;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,15 +36,19 @@ public class InlinedMethod_13 {
     }
 
     interface Expression {
+        // not implemented elsewhere, so inlining works
         default List<? extends Expression> subElements() {
             return List.of();
         }
 
+        // not implemented elsewhere, so inlining works
         default UpgradableBooleanMap<TypeInfo> typesReferenced() {
             return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
         }
     }
 
+    // this type is not a container, the implicit single argument constructor is linked to the map field which is modified
+    @E1Immutable
     record UpgradableBooleanMap<T>(Map<T, Boolean> map) {
 
         public UpgradableBooleanMap() {
@@ -105,8 +111,7 @@ public class InlinedMethod_13 {
     
     record MethodReference(MethodInfo methodInfo, Expression scope, Expression other) implements Expression {
 
-        @Override
-        public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        public UpgradableBooleanMap<TypeInfo> notTypesReferenced() {
             if (!methodInfo.name.startsWith("b")) return UpgradableBooleanMap.of(scope.typesReferenced());
             return UpgradableBooleanMap.of(other.typesReferenced(), scope.typesReferenced());
         }

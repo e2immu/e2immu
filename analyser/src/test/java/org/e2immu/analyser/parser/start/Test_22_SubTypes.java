@@ -285,7 +285,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("SubTypes_10".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    assertEquals("new External(){}", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<new:External>" : "new External(){}";
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
             if ("go".equals(d.methodInfo().name)) {
@@ -297,10 +298,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("external".equals(d.fieldInfo().name)) {
-                assertDv(d, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
-                assertEquals("", d.fieldAnalysis().valuesDelayed().toString());
+                String expected = d.iteration() == 0 ? "values:this.external@Field_external" : "";
+                assertEquals(expected, d.fieldAnalysis().valuesDelayed().toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -365,9 +367,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_12() throws IOException {
-        testClass("SubTypes_12", 1, 11,
-                new DebugConfiguration.Builder()
-                        .build(),
+        testClass("SubTypes_12", 1, 10,
+                new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }

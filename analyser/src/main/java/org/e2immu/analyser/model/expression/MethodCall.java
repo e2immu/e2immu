@@ -252,10 +252,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 reParamValues, forwardReEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams)
                 .compose(reObject, mv);
-        if (reObject.value() instanceof IsVariableExpression ve) {
-            EvaluationResult forwarded = ve.evaluate(context, ForwardEvaluationInfo.NOT_NULL);
-            builder.compose(forwarded);
-        }
+        /* important note: evaluating for not null here clears the ForwardReEvaluation data, which causes an
+          infinite loop in InlinedMethod_13; it is probably worthwhile implementing properly, though
+
+          if (reObject.value() instanceof IsVariableExpression ve) {
+              EvaluationResult forwarded = ve.evaluate(context, ForwardEvaluationInfo.NOT_NULL);
+              builder.compose(forwarded);
+          }
+         */
         return builder.setExpression(mv.value()).build();
     }
 
