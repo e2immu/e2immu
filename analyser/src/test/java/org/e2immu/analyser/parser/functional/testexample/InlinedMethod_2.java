@@ -12,22 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotModified;
 
-// expansion of constant
+public class InlinedMethod_2 {
+    private final int r;
 
-public class InlinedMethod_4 {
-
-    public final int i = 4;
-
-    public int sum(int j) {
-        return i + j;
+    public InlinedMethod_2(int rr) {
+        this.r = rr;
     }
 
-    @Constant("9")
-    public int expand1() {
-        return sum(5);
+    @NotModified
+    public int plus(int i) {
+        return i + r;
+    }
+
+    @Constant("2")
+    public int difference31() {
+        return plus(3) - plus(1);
+    }
+
+    @Constant("0")
+    public int difference11() {
+        return plus(1) - plus(1);
     }
 }

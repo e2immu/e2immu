@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
 import java.util.List;
 import java.util.Set;

@@ -12,26 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
 
-public record InlinedMethod_10(String[] input) {
+public class InlinedMethod_12 {
 
-    private static String find2(Stream<String> stream, String s, int mode) {
-        return mode < 1 ? find(stream, s) : stream.filter(ff -> ff.equals(s)).findAny().orElse(s);
+    private static boolean find(String... strings) {
+        return Arrays.stream(strings).anyMatch(s -> s.contains("magic"));
     }
 
-    private static String find(Stream<String> stream, String s) {
-        return s.length() < 2 ? find2(stream, s, s.length()) : stream.filter(f -> f.contains(s)).findFirst().orElse(null);
-    }
-
-    public String method(String t) {
-        return find2(Stream.of(t), t, t.length()).startsWith("b") ? find2(Arrays.stream(input), t, 0) : find(Arrays.stream(input), t);
-    }
-
-    public String method2(Stream<String> stream) {
-        return method(stream.filter(u -> u.startsWith("a")).findFirst().orElse("b"));
+    public static boolean method(String s1, String s2) {
+        return find(s1) && find(s1, s2);
     }
 }

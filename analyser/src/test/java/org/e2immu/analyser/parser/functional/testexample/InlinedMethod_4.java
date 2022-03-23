@@ -12,39 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
-
-// variable field
+package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.Constant;
 
-public class InlinedMethod_6 {
+// expansion of constant
 
-    static class VariableField {
-        private int i;
+public class InlinedMethod_4 {
 
-        public int getI() {
-            return i;
-        }
+    public final int i = 4;
 
-        public void setI(int i) {
-            this.i = i;
-        }
-
-        private int sum(int j) {
-            return i + j;
-        }
-
-        public int expandSum(int k) {
-            return k * sum(3); // sum should be expanded here
-        }
+    public int sum(int j) {
+        return i + j;
     }
 
-    // because it is a variable field, we do not link the field i to the parameter of setI (we *could*)
-    @Constant(absent = true)
-    public static int expand() {
-        VariableField variableField = new VariableField();
-        variableField.setI(3);
-        return variableField.getI(); // variable field expansion still allowed, same primary type
+    @Constant("9")
+    public int expand1() {
+        return sum(5);
     }
 }

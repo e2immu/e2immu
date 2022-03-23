@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start;
+package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -221,5 +222,48 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
+    }
+
+
+    @Test
+    public void test_12() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:find>&&<m:find>"
+                        : "Arrays.stream({s1}).anyMatch(s.contains(\"magic\"))&&Arrays.stream({s1,s2}).anyMatch(s.contains(\"magic\"))";
+                assertEquals(expected, d.evaluationResult().value().toString());
+            }
+        };
+        testClass("InlinedMethod_12", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("collector".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = "<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("supplier".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+
+        testClass("InlinedMethod_13", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

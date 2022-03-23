@@ -12,28 +12,42 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotModified;
 
-import java.util.Random;
+// expansion of constant
 
-public class InlinedMethod_3 {
+public class InlinedMethod_5 {
 
-    @NotModified
-    public static int plusRandom(int i) {
-        int r = new Random().nextInt();
-        return i + r;
+    public final int i;
+
+    public InlinedMethod_5(int p) {
+        i = p;
     }
 
-    @Constant(absent = true)
-    public static int difference31() {
-        return plusRandom(3) - plusRandom(1);
+    public int sum(int j) {
+        return i + j;
     }
 
-    @Constant(absent = true)
-    public static int difference11() {
-        return plusRandom(1) - plusRandom(1);
+    public int sum5() {
+        return sum(5);
+    }
+
+    @Constant("11")
+    public static int expand1() {
+        InlinedMethod_5 i5 = new InlinedMethod_5(6);
+        return i5.sum5();
+    }
+
+    @Constant("7")
+    public static int expand2() {
+        InlinedMethod_5 i5 = new InlinedMethod_5(5);
+        return i5.sum(2);
+    }
+
+    public static int expand3(int a, int b) {
+        InlinedMethod_5 il5 = new InlinedMethod_5(a);
+        return il5.sum(b);
     }
 }

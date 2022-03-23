@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start;
+package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
@@ -193,7 +193,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expected = switch (d.iteration()) {
                     case 0 -> "<m:get>+<m:get>";
                     case 1 -> "<simplification>";
-                    default -> "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                    default -> "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
                 };
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
@@ -201,7 +201,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:get>"
-                        : "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]";
+                        : "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -212,7 +212,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:method>"
-                        : "org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.start.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                        : "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }

@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
@@ -108,6 +110,16 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+            }
+            if ("of".equals(d.methodInfo().name) && n == 1) {
+                String expected = d.iteration() <= 2 ? "<m:of>"
+                        : "null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 3) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("[maps]", inlinedMethod.getVariablesOfExpression().toString());
+                    } else fail();
+                }
             }
             if ("put".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
