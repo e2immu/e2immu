@@ -580,7 +580,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
                         && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))
                         // see e.g. VariableInLoop_1: don't write now, there'll be an assignment in SAApply.apply soon
-                        && !(stateData.inEqualityAccordingToState(variableInfo.variable()))) {
+                        && (!variableInfo.variable().allowedToCreateVariableExpression() ||
+                        !(stateData.inEqualityAccordingToState(evaluationContext.makeVariableExpression(variableInfo))))) {
                     vic.copy(); //otherwise, variable not assigned, not read
                 }
             }

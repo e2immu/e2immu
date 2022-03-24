@@ -108,14 +108,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (lhsRhs.rhs() instanceof VariableExpression ve
                             && isPresent(ve.variable())
                             && !lhsRhs.lhs().isInstanceOf(IsVariableExpression.class) // do not assign to other variable!
-                            && !statementAnalysis.stateData().equalityAccordingToStateIsSet(ve.variable())) {
+                            && !statementAnalysis.stateData().equalityAccordingToStateIsSet(ve)) {
                         VariableInfoContainer vic = statementAnalysis.getVariable(ve.variable().fullyQualifiedName());
                         Expression value = lhsRhs.lhs();
                         assert value.isDone();
                         // we want to ensure that no values can be written unless the state is done
+                        // the following condition is mostly relevant for CyclicReferences_2,3,4
                         if (!vic.hasEvaluation() || vic.best(EVALUATION).isDelayed()) {
-                            LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve.variable(), value);
-                            statementAnalysis.stateData().equalityAccordingToStatePut(ve.variable(), value);
+                            LOGGER.debug("Caught equality on variable with 'instance' value {}: {}", ve, value);
+                            statementAnalysis.stateData().equalityAccordingToStatePut(ve, value);
                         }
                     }
                 }
@@ -750,29 +751,21 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      */
     @Override
     public Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
-        Expression value = variableInfo.getValue();
-        Variable v = variableInfo.variable();
-        boolean isInstance = value.isInstanceOf(Instance.class);
+        VariableExpression ve = makeVariableExpression(variableInfo);
 
-        Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(v);
+        Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(ve);
         if (valueFromState != null) {
             return valueFromState;
         }
 
         // variable fields
 
-        if (isInstance && !v.equals(myself) && v instanceof FieldReference fieldReference) {
-            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-            DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
-            VariableExpression.Suffix suffix;
-            if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
-                String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
-                suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
-            } else {
-                suffix = VariableExpression.NO_SUFFIX;
-            }
+        Expression value = variableInfo.getValue();
+        Variable v = variableInfo.variable();
+        boolean isInstance = value.isInstanceOf(Instance.class);
+        if (isInstance && !v.equals(myself) && v instanceof FieldReference) {
             // see Basics_4 for the combination of v==myself, yet VE is returned
-            return new VariableExpression(v, suffix);
+            return ve;
         }
         if (!v.equals(myself)) {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
@@ -780,8 +773,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
                 // variables in loop defined outside
                 if (isInstance) {
-                    VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
-                    return new VariableExpression(v, suffix);
+                    VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
+                    return new VariableExpression(v, suffix2);
                 }
                 // do not return a value when it has not yet been written to
                 if (!value.isDelayed()) {
@@ -790,8 +783,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     if (latestAssignment.compareTo(outside.statementIndex()) < 0
                             && statementIndex().startsWith(outside.statementIndex())) {
                         // has not yet been assigned in the loop, and we're in that loop
-                        VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
-                        return new VariableExpression(v, suffix);
+                        VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
+                        return new VariableExpression(v, suffix2);
                     }
                 }
             }
@@ -800,5 +793,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
         }
         return value;
+    }
+
+    public VariableExpression makeVariableExpression(VariableInfo variableInfo) {
+        VariableExpression.Suffix suffix;
+        if (variableInfo.variable() instanceof FieldReference fieldReference) {
+            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+            DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
+            if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
+                String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
+                suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
+            } else {
+                suffix = VariableExpression.NO_SUFFIX;
+            }
+        } else {
+            suffix = VariableExpression.NO_SUFFIX;
+        }
+        return new VariableExpression(variableInfo.variable(), suffix);
     }
 }

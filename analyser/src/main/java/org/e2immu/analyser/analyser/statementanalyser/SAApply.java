@@ -81,10 +81,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // the data is stored in the state data of statement analysis
         EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
         statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
-            EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(e.getKey());
-            if (cd != null && cd.isMarkedRead()) {
-                LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
-                builder.assignment(e.getKey(), e.getValue(), lv);
+            VariableExpression ve = e.getKey();
+            // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
+            // TODO is there an equivalent for loop variables?
+            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf) || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
+                EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(ve.variable());
+                if (cd != null && cd.isMarkedRead()) {
+                    LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
+                    builder.assignment(ve.variable(), e.getValue(), lv);
+                }
             }
         });
         EvaluationResult evaluationResult = builder.compose(evaluationResult1).build();

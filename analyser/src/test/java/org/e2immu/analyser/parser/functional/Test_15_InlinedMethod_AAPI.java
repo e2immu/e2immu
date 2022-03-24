@@ -104,7 +104,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "(<m:equals>||<m:equals>)&&(<m:equals>||<m:isLong>)";
                             case 1, 2 -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||<m:isLong>)";
-                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||(instance type boolean&&inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0).parameterizedType.s.startsWith(\"x\")||null==(instance type boolean&&inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0).parameterizedType.s)";
+                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||parameters.get(0).parameterizedType.s.startsWith(\"x\")||null==parameters.get(0).parameterizedType.s)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

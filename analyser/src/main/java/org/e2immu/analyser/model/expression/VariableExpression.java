@@ -137,7 +137,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         this.variable = variable;
         this.suffix = suffix;
         // a variable expression is never delayed; however, <out of scope> is possible (see Test_Util_06_DependencyGraph)
-        assert !(variable instanceof FieldReference fr) || fr.scope.isDone() || fr.anyScopeDelayedOutOfScope();
+        assert variable.allowedToCreateVariableExpression();
     }
 
     @Override
@@ -378,24 +378,16 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                                   EvaluationResult scopeResult,
                                   Expression currentValue) {
         if (scopeResult != null) {
-            CausesOfDelay scopeResultIsDelayed = scopeResult.getExpression().causesOfDelay();
-            InspectionProvider inspectionProvider = context.getAnalyserContext();
-            int initialStatementTime = context.evaluationContext().getInitialStatementTime();
-            if (currentValue instanceof VariableExpression ve
-                    && ve.variable() instanceof FieldReference fr
-                    && !fr.scope.equals(scopeResult.value())) {
-                if (!scopeResultIsDelayed.isDelayed()) {
-                    FieldReference newFieldRef = new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression());
-                    return new VariableExpression(newFieldRef, ve.suffix);
+            if (currentValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
+                CausesOfDelay scopeResultIsDelayed = scopeResult.getExpression().causesOfDelay();
+                int initialStatementTime = context.evaluationContext().getInitialStatementTime();
+                if (scopeResultIsDelayed.isDelayed() && !fr.scope.equals(scopeResult.value())) {
+                    return DelayedVariableExpression.forField(fr, initialStatementTime, scopeResultIsDelayed);
                 }
-                return DelayedVariableExpression.forField(fr, initialStatementTime, scopeResultIsDelayed);
             }
             if (currentValue instanceof DelayedVariableExpression ve
                     && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
-                if (!scopeResultIsDelayed.isDelayed()) {
-                    return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()),
-                            initialStatementTime, ve.causesOfDelay);
-                }
+                int initialStatementTime = context.evaluationContext().getInitialStatementTime();
                 return DelayedVariableExpression.forField(fr, initialStatementTime, ve.causesOfDelay);
             }
         }
@@ -487,7 +479,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 .getParameterAnalyses(constructorCall.constructor()).toList();
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
-            if(assigned != null) {
+            if (assigned != null) {
                 DV assignedOrLinked = assigned.get(fieldInfo);
                 if (LinkedVariables.isAssigned(assignedOrLinked)) {
                     return constructorCall.getParameterExpressions().get(i);

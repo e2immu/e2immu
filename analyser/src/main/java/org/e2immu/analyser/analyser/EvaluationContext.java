@@ -499,4 +499,8 @@ public interface EvaluationContext {
     }
 
     int getDepth();
+
+    default VariableExpression makeVariableExpression(VariableInfo variableInfo) {
+        throw new UnsupportedOperationException();
+    }
 }

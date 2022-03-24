@@ -263,7 +263,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("3.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C";
-                        case 1, 2 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
+                        case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -281,17 +281,17 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("node".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0, 1, 2 -> "<f:dependsOn>";
+                                case 0, 1 -> "<f:dependsOn>";
                                 default -> "nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("3.0.0".equals(d.statementId())) { // forEach() call
-                            String expected = d.iteration() <= 2 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                            String expected = d.iteration() <= 1 ? "<f:dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                             String delays = switch (d.iteration()) {
                                 case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn";
-                                case 1, 2 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
+                                case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
                                 default -> "";
                             };
                             assertEquals(delays, d.currentValue().causesOfDelay().toString());
@@ -299,7 +299,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     } else if ("nodeMap.get(t)".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0, 1, 2 -> "<f:nodeMap.get(t).dependsOn>";
+                                case 0, 1 -> "<f:nodeMap.get(t).dependsOn>";
                                 default -> "nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());

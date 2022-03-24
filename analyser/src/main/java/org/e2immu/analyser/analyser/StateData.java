@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
@@ -45,25 +46,25 @@ public class StateData {
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
     }
 
-    private final SetOnceMap<Variable, Expression> equalityAccordingToState = new SetOnceMap<>();
+    private final SetOnceMap<VariableExpression, Expression> equalityAccordingToState = new SetOnceMap<>();
 
-    public boolean equalityAccordingToStateIsSet(Variable variable) {
+    public boolean equalityAccordingToStateIsSet(VariableExpression variable) {
         return equalityAccordingToState.isSet(variable);
     }
 
-    public void equalityAccordingToStatePut(Variable variable, Expression lhs) {
+    public void equalityAccordingToStatePut(VariableExpression variable, Expression lhs) {
         equalityAccordingToState.put(variable, lhs);
     }
 
-    public Stream<Map.Entry<Variable, Expression>> equalityAccordingToStateStream() {
+    public Stream<Map.Entry<VariableExpression, Expression>> equalityAccordingToStateStream() {
         return equalityAccordingToState.stream();
     }
 
-    public Expression equalityAccordingToStateGetOrDefaultNull(Variable v) {
+    public Expression equalityAccordingToStateGetOrDefaultNull(VariableExpression v) {
         return equalityAccordingToState.getOrDefaultNull(v);
     }
 
-    public boolean inEqualityAccordingToState(Variable variable) {
+    public boolean inEqualityAccordingToState(VariableExpression variable) {
         return equalityAccordingToState.isSet(variable);
     }
 

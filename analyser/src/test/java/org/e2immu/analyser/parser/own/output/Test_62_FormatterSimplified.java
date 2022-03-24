@@ -114,7 +114,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 0 -> "!<instanceOf:Space>&&!<instanceOf:Guide>&&<m:length>>=1&&<v:end>><v:pos>&&<f:NEWLINE>!=<m:get>?<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):<vl:chars>";
                             case 1 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)!=<f:RELAXED_NONE>&&<m:length>>=1&&<vp:NONE:container@Class_ElementarySpace>!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1:0):instance type int:instance type int";
                             case 2 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&<m:length>>=1&&ElementarySpace.NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&ElementarySpace.RELAXED_NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?1:0):instance type int:instance type int";
-                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?nullable instance type Boolean?chars$8:list.get(pos)/*(Symbol)*/.symbol.length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0):instance type int";
+                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos$8)/*(Symbol)*/.symbol.length()>=1?nullable instance type Boolean?chars$8:list.get(pos$8)/*(Symbol)*/.symbol.length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&list.get(pos$8)/*(Symbol)*/.symbol.length()>=1?1:0):instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -132,7 +132,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         case 0 -> "CM{state=(<v:allowBreak>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(!<v:allowBreak>||!<v:wroteOnce>||<instanceOf:Guide>||<m:length><=0||-<v:chars>+maxChars-<m:length>>=(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0))&&(<v:wroteOnce>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(<instanceOf:Space>||!<m:apply>||!<instanceOf:Guide>||<v:chars>>=maxChars)&&(<instanceOf:Guide>||!<m:apply>||<m:length><=0||-1+<v:chars>-maxChars+<m:length>+(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)>=0)&&(<instanceOf:Space>||!<instanceOf:Guide>||-1-<v:chars>+maxChars>=0)&&(<v:pos>>=<v:end>||<f:NEWLINE>==<m:get>);parent=CM{}}";
                         case 1 -> "CM{state=[chars,end$8,<vp:NONE:container@Class_ElementarySpace>,<vp:NEWLINE:container@Record_Space>,<f:symbol.left().split>,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
                         case 2 -> "CM{state=[chars,end$8,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>,<f:symbol.left().split>,Split.NEVER,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
-                        default -> "CM{state=!(outputElement instanceof Guide guide)&&(instance type boolean||!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!instance type boolean||!wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left.split==Split.NEVER||-list.get(pos)/*(Symbol)*/.symbol.length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0))&&(!nullable instance type Boolean||wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left.split!=Split.NEVER)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||-1+list.get(pos)/*(Symbol)*/.symbol.length()+chars-maxChars+(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0)>=0)&&(pos>=end||list.get(pos)==Space.NEWLINE);parent=CM{}}";
+                        default -> "CM{state=!(outputElement instanceof Guide guide)&&(instance type boolean||!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!instance type boolean||!wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left().split==Split.NEVER||-list.get(pos)/*(Symbol)*/.symbol.length()-chars+maxChars>=(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0))&&(!nullable instance type Boolean||wroteOnce||list.get(pos)/*(Symbol)*/.symbol.length()<=0)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||list.get(pos)/*(Symbol)*/.left().split!=Split.NEVER)&&(!nullable instance type Boolean||list.get(pos)/*(Symbol)*/.symbol.length()<=0||-1+list.get(pos)/*(Symbol)*/.symbol.length()+chars-maxChars+(wroteOnce&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Guide)&&!(outputElement instanceof Space space)&&!(outputElement instanceof Space)&&end>pos&&lastOneWasSpace!=ElementarySpace.NONE&&lastOneWasSpace!=ElementarySpace.RELAXED_NONE&&list.get(pos)!=Space.NEWLINE&&list.get(pos)/*(Symbol)*/.symbol.length()>=1?1:0)>=0)&&(pos>=end||list.get(pos)==Space.NEWLINE);parent=CM{}}";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                     assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
@@ -279,14 +279,14 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("0".equals(d.statementId())) {
                     String expect = d.iteration() <= 2
-                            ? "<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
-                            "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
+                            ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
+                            : "(new Stack<GuideOnStack>()).peek().forwardInfo";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1, 2 -> "<null-check>&&9==<m:index>";
-                        default -> "null!=(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo&&9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
+                        default -> "null!=(new Stack<GuideOnStack>()).peek().forwardInfo&&9==fwdInfo.guide.index()";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
@@ -307,15 +307,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if ("fwdInfo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() <= 2
-                                ? "<f:(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo>" :
-                                "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
+                                ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
+                                : "(new Stack<GuideOnStack>()).peek().forwardInfo";
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
-                        String expected = d.iteration() <= 2
-                                ? "(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,fwdInfo:0"
-                                : "(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo:1,fwdInfo:0";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,fwdInfo:0",
+                                d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }

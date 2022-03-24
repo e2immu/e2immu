@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -459,4 +460,40 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:addAll>" : "instance type boolean";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("combine".equals(d.methodInfo().name)) {
+                if ("m".equals(d.variableName())) {
+                    String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
+                    assertTrue(Set.of("this", "other", "m").contains(fr.scope.toString()));
+                    if ("m".equals(fr.scope.toString())) {
+                        if ("3".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<mmc:messages>"
+                                    // FIXME why nullable?
+                                    : "nullable instance type Set<Message>/*this.size()>=other.messages.size()*/";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    }
+                }
+            }
+        };
+        testClass("VariableScope_7", 0, 9, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }

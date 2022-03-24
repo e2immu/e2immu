@@ -195,7 +195,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     // contrast to test_4 solved with refactoring of fieldAccess
     @Test
     public void test_5() throws IOException {
-        final String TRACE_RETURN = "\"/*\"+position.msg+\"*/\"";
+        final String TRACE_RETURN = "\"/*\"+this.position().msg+\"*/\"";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {

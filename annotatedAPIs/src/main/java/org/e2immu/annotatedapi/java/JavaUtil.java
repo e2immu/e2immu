@@ -401,7 +401,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @E2Container
+        @ERContainer
         <EE> java.util.Set<EE> of();
 
         default <F> int of$Transfer$Size(F e1) {

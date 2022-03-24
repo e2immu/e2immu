@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==o/*(org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4)*/.i)";
+    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==conditionalChecks.i)";
 
     public Test_02_ConditionalChecks() {
         super(false);
