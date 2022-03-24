@@ -115,7 +115,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "1==<m:size>"
-                            : "1==(inspectionProvider.getMethodInspection(this).b&&0!=(inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
+                            : "1==(inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -136,7 +136,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
             }
         };
-        testClass("InlinedMethod_8", 1, 5, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_8", 0, 5, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

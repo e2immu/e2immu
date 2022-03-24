@@ -141,7 +141,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                                 "Delay: " + d.currentValue().causesOfDelay().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "1+(b?<f:i>:<f:i>)" : "1+(b&&(b?p:0)<=9?p:0)";
+                        String expected = d.iteration() == 0 ? "1+(b?<f:i>:<f:i>)" : "1+(b?p:0)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -290,7 +290,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
                 String sortedValues = d.iteration() == 0 ? "[11 delays]"
-                        : "(b?p:0)<=9?1+(b&&(b?p:0)<=9?p:0):b?p:0,instance type int,instance type int,instance type int";
+                        : "(b?p:0)<=9?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }

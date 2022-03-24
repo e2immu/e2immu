@@ -301,25 +301,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
-        ConditionManager cm = context.evaluationContext().getConditionManager();
-        Expression evaluated;
-        if (!currentValue.isDelayed() && cm != null && !cm.isDelayed() && !cm.isEmpty()
-                && !currentValue.isInstanceOf(ConstantExpression.class) && !currentValue.isInstanceOf(IsVariableExpression.class)) {
-            ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyDoNotReevaluateVariableExpressionsDoNotComplain();
-            EvaluationResult er = currentValue.evaluate(context, fwd);
-            if (er.getExpression().isDone()) {
-                evaluated = er.getExpression();
-            } else {
-                evaluated = currentValue;
-            }
-            // resolve conditions, but do not keep errors/warnings (no builder.compose(er);) nor delays
-            // InstanceOf_11 - 0.0.1.0.4.0.2-E is the first example where this re-evaluation is necessary
-            // TrieSimplified_5 shows we need to remove the delays as well
-        } else {
-            evaluated = currentValue;
-        }
-
-        Expression adjustedScope = adjustScope(context, scopeResult, evaluated);
+        Expression adjustedScope = adjustScope(context, scopeResult, currentValue);
 
         builder.setExpression(adjustedScope);
 

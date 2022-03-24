@@ -53,7 +53,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
+                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -66,7 +66,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         assertEquals("<return value>", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:String>" : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
+                        String expected = d.iteration() == 0 ? "<s:String>" : "-2-i$2+n>=0?\"abc\":res2$2";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }

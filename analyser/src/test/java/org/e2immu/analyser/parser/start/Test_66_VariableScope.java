@@ -498,8 +498,21 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     @Test
     public void test_8() throws IOException {
-        testClass("VariableScope_8", 0, 0, new DebugConfiguration.Builder()
-
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("output".equals(d.methodInfo().name)) {
+                if ("4.0.1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<instanceOf:MethodCall>" : "object instanceof MethodCall";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("4.0.1.1.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<instanceOf:TypeExpression>" : "object instanceof TypeExpression";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        // FIXME does not catch the problem of MethodCall.output
+        testClass("VariableScope_8", 2, 9, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
 
     }

@@ -123,7 +123,7 @@ public class VariableScope_8 {
                     outputBuilder.add(methodCall.output(qualification, gg)); // recursive call
                     outputBuilder.add(gg.mid());
                     outputBuilder.add(Symbol.DOT);
-                } else if (object instanceof TypeExpression typeExpression) {
+                } else if (object instanceof TypeExpression typeExpression) { // 4.0.1.1.0
                 /*
                 we may or may not need to write the type here.
                 (we check methodInspection is set, because of debugOutput)

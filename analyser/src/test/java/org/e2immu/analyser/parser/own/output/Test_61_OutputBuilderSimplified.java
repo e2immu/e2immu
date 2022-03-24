@@ -258,8 +258,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() < 5 ? "<mmc:result>"
-                                : "countMid.get()>=1?instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7";
+                        String expected = d.iteration() < 5 ? "<mmc:result>" : "instance type OutputBuilderSimplified_7";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
@@ -411,8 +410,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                String expected = d.iteration() <= 4 ? "<m:apply>"
-                        : "Space.NONE==end?countMid.get()>=1?instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7:instance type OutputBuilderSimplified_7";
+                String expected = d.iteration() <= 4 ? "<m:apply>" : "result";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -580,8 +578,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // finisher!
-                String expected = d.iteration() < 3 ? "<m:apply>"
-                        : "Space.NONE==end?countMid.get()>=1?instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12:instance type OutputBuilderSimplified_12";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "result";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);

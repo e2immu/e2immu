@@ -623,7 +623,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String merge = switch (d.iteration()) {
                             case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                             case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                            default -> "strings.length>0?null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                            default -> "strings.length>0?null==node.map$0?new TrieNode<>():null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
                         };
                         assertEquals(merge, d.currentValue().toString());
                         assertEquals(d.iteration() >= 2, d.currentValue().isDone());
@@ -664,7 +664,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                         case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                        default -> "strings.length>0?null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                        default -> "strings.length>0?null==node.map$0?new TrieNode<>():null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
                     };
                     if ("2".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
@@ -678,7 +678,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String value = switch (d.iteration()) {
                             case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                             case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                            default -> "strings.length>0?null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                            default -> "strings.length>0?null==node.map$0?new TrieNode<>():null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
                         };
                         assertEquals(value, d.currentValue().toString());
                         if (d.iteration() >= 2) assertTrue(d.currentValue().isDone());

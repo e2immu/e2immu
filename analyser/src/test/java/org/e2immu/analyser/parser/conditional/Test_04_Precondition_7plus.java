@@ -54,7 +54,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 if ("0.0.07".equals(d.statementId())) {
                     String expected = d.iteration() == 0
                             ? "<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)"
-                            : "'L'==(!instance type boolean&&'['!=firstChar&&'['==firstChar$0.0.06&&'*'!=signature.charAt(0)?signature.charAt(1+firstCharPos$0.0.06):instance type char)";
+                            : "'L'==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }

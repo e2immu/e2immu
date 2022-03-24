@@ -188,10 +188,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                       // .addEvaluationResultVisitor(evaluationResultVisitor)
+                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                       // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

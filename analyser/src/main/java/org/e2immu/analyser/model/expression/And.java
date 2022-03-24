@@ -574,7 +574,7 @@ public class And extends ExpressionCanBeTooComplex {
             return Action.SKIP;
         }
 
-        // a instanceof A && !(a instanceof B)
+        // !(a instanceof A) && a instanceof B
         if (value instanceof InstanceOf i1 && prev instanceof Negation n && n.expression instanceof InstanceOf negI2 &&
                 negI2.expression().equals(i1.expression())) {
             if (negI2.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i1.parameterizedType())) {
@@ -586,7 +586,7 @@ public class And extends ExpressionCanBeTooComplex {
                 return Action.ADD;
             }
             // A unrelated to B, we drop the negation
-            return Action.SKIP;
+            return Action.REPLACE;
         }
         return null;
     }
