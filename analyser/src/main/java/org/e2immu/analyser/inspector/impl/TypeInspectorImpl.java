@@ -151,6 +151,16 @@ public class TypeInspectorImpl implements TypeInspector {
         }
         typeContext.addToContext(typeInfo);
 
+        /* even before parsing the record fields, we take a peek at the subtypes: the record fields can be of their type,
+          and we won't necessarily have a qualifier
+          See Record_0 vs Record_1
+         */
+        for (BodyDeclaration<?> bodyDeclaration : typeDeclaration.getMembers()) {
+            if (bodyDeclaration instanceof TypeDeclaration cid) {
+                prepareSubType(typeContext, dollarResolver, cid.getNameAsString());
+            }
+        }
+
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
             AnnotationExpression ae = AnnotationInspector.inspect(expressionContext, annotationExpr);
             builder.addAnnotation(ae);
@@ -414,10 +424,8 @@ public class TypeInspectorImpl implements TypeInspector {
         List<FieldDeclaration> fieldDeclarations = new LinkedList<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            if (bodyDeclaration instanceof TypeDeclaration cid) {
-                prepareSubType(expressionContext, dollarResolver, cid.getNameAsString());
-                typeDeclarations.add(cid);
-            } else if (bodyDeclaration instanceof CompactConstructorDeclaration) ++countCompactConstructors;
+            if (bodyDeclaration instanceof TypeDeclaration cid) typeDeclarations.add(cid);
+            else if (bodyDeclaration instanceof CompactConstructorDeclaration) ++countCompactConstructors;
             else if (bodyDeclaration instanceof ConstructorDeclaration) ++countNormalConstructors;
             else if (bodyDeclaration instanceof FieldDeclaration fd) fieldDeclarations.add(fd);
         }
@@ -631,12 +639,12 @@ public class TypeInspectorImpl implements TypeInspector {
         return builder.getMethodInfo();
     }
 
-    private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String
+    private void prepareSubType(TypeContext typeContext, DollarResolver dollarResolver, String
             nameAsString) {
-        DollarResolverResult res = subType(expressionContext.typeContext().typeMap(), dollarResolver, nameAsString);
-        expressionContext.typeContext().addToContext(res.subType());
+        DollarResolverResult res = subType(typeContext.typeMap(), dollarResolver, nameAsString);
+        typeContext.addToContext(res.subType());
         if (res.isDollarType()) { // dollar name
-            expressionContext.typeContext().addToContext(nameAsString, res.subType(), false);
+            typeContext.addToContext(nameAsString, res.subType(), false);
         }
     }
 
