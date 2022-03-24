@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -23,11 +24,29 @@ public class VariableScope_8 {
 
     }
 
+    enum Precedence {
+        P1, P2;
+
+        public boolean greaterThan(Precedence other) {
+            return ordinal() >= other.ordinal();
+        }
+    }
+
     enum Symbol implements OutputElement {
         LEFT_PARENTHESIS, RIGHT_PARENTHESIS, OPEN_CLOSE_PARENTHESIS, DOT, COMMA;
     }
 
     interface Expression {
+        default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
+            if (precedence.greaterThan(expression.precedence())) {
+                return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
+            }
+            return expression.output(qualification);
+        }
+
+        OutputBuilder output(Qualification qualification);
+
+        Precedence precedence();
     }
 
     interface GuideGenerator {
@@ -85,12 +104,35 @@ public class VariableScope_8 {
 
     record VariableExpression() implements Expression {
 
+        @Override
+        public OutputBuilder output(Qualification qualification) {
+            return new OutputBuilder();
+        }
+
+        @Override
+        public Precedence precedence() {
+            return Precedence.P1;
+        }
     }
 
     record TypeExpression(String name, TypeInfo typeInfo) implements Expression {
+
+        @Override
+        public OutputBuilder output(Qualification qualification) {
+            return new OutputBuilder();
+        }
+
+        @Override
+        public Precedence precedence() {
+            return Precedence.P2;
+        }
     }
 
     record OutputBuilder(List<OutputElement> outputElements) {
+        public OutputBuilder() {
+            this(new ArrayList<>());
+        }
+
         OutputBuilder add(OutputElement outputElement) {
             outputElements.add(outputElement);
             return this;
@@ -142,7 +184,7 @@ public class VariableScope_8 {
                     if (guideGenerator != null) start = true;
                 } else {
                     // next level is NOT a gg; if gg != null we're at the start of the chain
-                    //outputBuilder.add(outputInParenthesis(qualification, precedence(), object));
+                    outputBuilder.add(outputInParenthesis(qualification, precedence(), object));
                     if (guideGenerator != null) outputBuilder.add(guideGenerator.start());
                     outputBuilder.add(Symbol.DOT);
                 }
@@ -162,6 +204,16 @@ public class VariableScope_8 {
                 outputBuilder.add(gg.end());
             }
             return outputBuilder;
+        }
+
+        @Override
+        public OutputBuilder output(Qualification qualification) {
+            return output(qualification, GuideGenerator.defaultGuideGenerator());
+        }
+
+        @Override
+        public Precedence precedence() {
+            return null;
         }
     }
 }
