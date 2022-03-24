@@ -496,4 +496,12 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_8() throws IOException {
+        testClass("VariableScope_8", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+
+    }
+
 }
