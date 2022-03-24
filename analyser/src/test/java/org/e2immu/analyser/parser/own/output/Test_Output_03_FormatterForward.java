@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.own.output;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.CurrentExceeds;
 import org.e2immu.analyser.output.formatter.Forward;
@@ -31,10 +32,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Output_03_FormatterForward extends CommonTestRunner {
 
@@ -46,7 +47,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.right().split>:<f:NEVER>"
+                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:<m:right>.split>:<f:NEVER>"
                         : "outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.right().split:Split.NEVER";
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertEquals(d.iteration() == 0, d.evaluationResult().value().isDelayed());
@@ -54,18 +55,27 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
 
                 if (d.iteration() > 0) {
                     assertEquals(5, d.evaluationResult().changeData().size());
-                    // does not contain this list.get(...).left().split variable that is present in the condition
                     String scopes = d.evaluationResult().changeData().keySet().stream()
                             .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
                             .map(v -> ((FieldReference) v).scope.toString())
                             .sorted().collect(Collectors.joining(", "));
-                    assertEquals("symbol.left(), symbol.right()", scopes);
+                    assertEquals("list.get(pos$8)/*(Symbol)*/.left(), list.get(pos$8)/*(Symbol)*/.right()", scopes);
                 }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("symbol".equals(d.variableName())) {
+                assertNotEquals("8.0.4", d.statementId());
+                if ("8.0.3".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<v:outputElement>/*(Symbol)*/" : "list.get(pos$8)/*(Symbol)*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern p) {
+                        assertEquals("8.0.3.0.0", p.scope());
+                    } else fail();
+                }
+            }
             if ("split".equals(d.variableName())) {
-                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.left().split>:<vl:split>"
+                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:<m:left>.split>:<vl:split>"
                         : "outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.left().split:nullable instance type Split";
                 if ("8.0.3.0.0".equals(d.statementId()) || "8.0.3.0.5".equals(d.statementId())) {
                     String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "symbol.left().split";
@@ -81,19 +91,23 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof FieldReference fr && "split".equals(fr.fieldInfo.name)) {
-                if ("8.0.3".equals(d.statementId())) {
-                    if ("list.get(pos$8)/*(Symbol)*/".equals(fr.scope.toString())) {
-
-                    } else fail("Scope " + fr.scope + "; should definitely not be symbol");
+                if ("8.0.4".equals(d.statementId())) {
+                    assertTrue(Set.of("<m:right>", "<m:left>", "<v:outputElement>/*(Space)*/",
+                                    "list.get(pos$8)/*(Symbol)*/.left()",
+                                    "list.get(pos$8)/*(Symbol)*/.right()",
+                                    "list.get(pos$8)/*(Space)*/").contains(fr.scope.toString()),
+                            "Scope " + fr.scope + "; should definitely not be symbol.left() or symbol.right()");
                 }
                 if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
                     if ("list.get(pos$8)/*(Symbol)*/.left()".equals(fr.scope.toString())) {
-                        String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.left().split>:nullable instance type Split" : "nullable instance type Split";
+                        String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.left().split>:nullable instance type Split"
+                                : "nullable instance type Split";
                         assertEquals(expected, d.currentValue().toString());
                     } else if ("list.get(pos$8)/*(Symbol)*/.right()".equals(fr.scope.toString())) {
-                        String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.right().split>:nullable instance type Split" : "nullable instance type Split";
+                        String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:symbol.right().split>:nullable instance type Split"
+                                : "nullable instance type Split";
                         assertEquals(expected, d.currentValue().toString());
-                    } else fail("Scope " + fr.scope);
+                    }
                 }
             }
         };
@@ -107,7 +121,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                         CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                5, 21, new DebugConfiguration.Builder()
+                6, 21, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -181,7 +181,7 @@ public class Test_45_Project extends CommonTestRunner {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 String linked = switch (d.iteration()) {
                     case 0, 1, 2 -> "";
-                    default -> "entry.getValue().updated:2,previousRead:0,this.kvStore:3";
+                    default -> "(nullable instance type Entry<String,Container>).getValue().updated:2,previousRead:0,this.kvStore:3";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }

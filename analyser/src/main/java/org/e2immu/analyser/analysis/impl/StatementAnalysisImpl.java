@@ -853,11 +853,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                 List<VariableInfoContainer> toMerge,
                                 List<VariableInfoContainer> toIgnore,
                                 Set<Variable> toRemove,
-                                Map<Variable, Expression> bestValueForToRemove,
+                                TranslationMapImpl.Builder bestValueForToRemove,
                                 Map<Variable, Variable> renames,
                                 TranslationMapImpl.Builder translationMap) {
         public PrepareMerge(InspectionProvider inspectionProvider) {
-            this(inspectionProvider, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new HashMap<>(),
+            this(inspectionProvider, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new TranslationMapImpl.Builder(),
                     new HashMap<>(), new TranslationMapImpl.Builder());
         }
 
@@ -867,9 +867,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
         // we remove the non-renamed
         private void computeRenames() {
+            TranslationMap renameMap = bestValueForToRemove.build();
             toMerge.removeIf(vic -> {
                 Variable variable = vic.current().variable();
-                Variable renamed = renameVariable(variable);
+                Variable renamed = renameVariable(variable, renameMap);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
                     translationMap.addVariableExpression(variable, VariableExpression.of(renamed));
@@ -883,17 +884,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             });
         }
 
-        private Variable renameVariable(Variable variable) {
-            IsVariableExpression ive;
-            if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis() &&
-                    ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
-                if (toRemove.contains(ive.variable())) {
-                    Expression newValue = bestValueForToRemove.get(ive.variable());
-                    return new FieldReference(inspectionProvider, fr.fieldInfo, newValue);
+        private Variable renameVariable(Variable variable, TranslationMap translationMap) {
+            if (variable instanceof FieldReference fr && fr.scope != null) {
+                Expression newScope = fr.scope.translate(inspectionProvider, translationMap);
+                if (newScope != fr.scope) {
+                    return new FieldReference(inspectionProvider, fr.fieldInfo, newScope);
                 }
-                Variable renamed = renameVariable(ive.variable());
-                if (renamed == ive.variable()) return fr; // keep the same
-                return new FieldReference(inspectionProvider, fr.fieldInfo, VariableExpression.of(renamed));
             }
             return variable;
         }
@@ -1048,7 +1044,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
             Expression bestValue = expression.translate(evaluationContext.getAnalyserContext(), instances);
-            prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
+            prepareMerge.bestValueForToRemove.addVariableExpression(toRemove, bestValue);
             prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
             prepareMerge.translationMap.put(expression, bestValue);
         }
@@ -2197,7 +2193,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         if (count > 10) {
             LOGGER.error("Delay map:");
             applyCausesOfDelay.forEach((k, v) -> LOGGER.error("{}: {}", k, v));
-          //  throw new NoProgressException("Interrupting at statement " + index + " in method " + methodAnalysis.getMethodInfo().fullyQualifiedName);
+            //  throw new NoProgressException("Interrupting at statement " + index + " in method " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
         // new d
         return count <= 2;
