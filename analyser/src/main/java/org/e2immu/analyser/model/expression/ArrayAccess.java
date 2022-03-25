@@ -72,6 +72,11 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        if (property == Property.NOT_NULL_EXPRESSION) {
+            DV nneArray = context.evaluationContext().getProperty(expression, Property.NOT_NULL_EXPRESSION, duringEvaluation, false);
+            if (nneArray.isDelayed()) return nneArray.causesOfDelay();
+            return MultiLevel.composeOneLevelLessNotNull(nneArray);
+        }
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 
@@ -106,7 +111,6 @@ public class ArrayAccess extends BaseExpression implements Expression {
         EvaluationResult array = expression.evaluate(context, forwardEvaluationInfo.notNullKeepAssignment());
         EvaluationResult indexValue = index.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(array, indexValue);
-
 
         Expression arrayValue = array.value();
         if (arrayValue instanceof ArrayInitializer initializer && indexValue.value() instanceof Numeric in) {

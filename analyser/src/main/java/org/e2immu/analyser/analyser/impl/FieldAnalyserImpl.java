@@ -41,6 +41,7 @@ import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
 import org.e2immu.support.Either;
@@ -148,7 +149,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     @Override
     public String fullyQualifiedAnalyserName() {
-        return "FA "+fieldInfo.fullyQualifiedName;
+        return "FA " + fieldInfo.fullyQualifiedName;
     }
 
     @Override
@@ -481,11 +482,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         // there is at least one assignment value which is not safe
-        DV bestOverContext = myMethodsAndConstructors.stream()
+        Stream<DV> containerStream = myMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::isRead)
-                .map(vi -> vi.getProperty(Property.CONTEXT_CONTAINER))
-                .reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
+                .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
+        DV bestOverContext = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
         if (bestOverContext.isDelayed()) {
             LOGGER.debug("Delay @Container on {}, waiting for context container", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
@@ -578,7 +579,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             filter = Set.of();
         }
 
-        DV bestOverContext = allMethodsAndConstructors(true)
+        Stream<DV> cnnStream = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods || m.getMethodInfo().inConstruction())
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(vi -> {
@@ -592,8 +593,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         return false;
                     });
                 })
-                .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
-                .reduce(MultiLevel.NULLABLE_DV, DV::max);
+                .map(vi -> vi.getProperty(CONTEXT_NOT_NULL));
+        DV bestOverContext = StreamUtil.reduceWithCancel(cnnStream, MultiLevel.NULLABLE_DV, DV::max, DV::isDelayed);
         if (bestOverContext.isDelayed()) {
             LOGGER.debug("Delay @NotNull on {}, waiting for CNN; filter {}", fqn, filter);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
@@ -807,11 +808,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
         // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
         if (MultiLevel.isBefore(worstOverValues)) {
-            DV bestOverContext = myMethodsAndConstructors.stream()
+            Stream<DV> cImmStream = myMethodsAndConstructors.stream()
                     .filter(m -> m.getMethodInfo().inConstruction())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                    .map(vi -> vi.getProperty(Property.CONTEXT_IMMUTABLE))
-                    .reduce(MultiLevel.MUTABLE_DV, DV::max);
+                    .map(vi -> vi.getProperty(CONTEXT_IMMUTABLE));
+            DV bestOverContext = StreamUtil.reduceWithCancel(cImmStream, MultiLevel.MUTABLE_DV, DV::max, DV::isDelayed);
             if (bestOverContext.isDelayed()) {
                 LOGGER.debug("Delay @Immutable on {}, waiting for context immutable", fqn);
                 fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, bestOverContext);
@@ -880,8 +881,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // check exposed via return values of methods
         CausesOfDelay delayLinkedVariables = filterForExposure(myMethodsAndConstructors.stream())
                 .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (delayLinkedVariables.isDelayed()) {
+                .filter(CausesOfDelay::isDelayed).findFirst().orElse(null);
+        if (delayLinkedVariables != null) {
             LOGGER.debug("Exposure computation on {} delayed by links: {}", fqn, delayLinkedVariables);
             return delayLinkedVariables;
         }
@@ -1334,9 +1335,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
                         .filter(VariableInfo::isAssigned)
                         .map(vi -> vi.getLinkedVariables().causesOfDelay()))
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (causesOfDelay.isDelayed()) {
+                .filter(DV::isDelayed)
+                .findFirst().orElse(null);
+        if (causesOfDelay != null) {
             LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo.fullyQualifiedName());
+            // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
             fieldAnalysis.setLinkedVariables(LinkedVariables.delayedEmpty(causesOfDelay));
             return causesOfDelay.causesOfDelay();
         }
@@ -1468,9 +1471,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
-        }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        }).filter(CausesOfDelay::isDelayed).findFirst().orElse(null);
 
-        if (contextModifications.isDone()) {
+        if (contextModifications == null) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             LOGGER.debug("Mark field {} as @NotModified", fqn);
             return DONE;
@@ -1496,8 +1499,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay eventualDelay = myMethodsAndConstructors.stream()
                 .filter(ma -> !ma.getMethodInfo().inConstruction())
                 .map(ma -> ma.getMethodAnalysis().eventualStatus())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (eventualDelay.isDelayed()) {
+                .filter(CausesOfDelay::isDelayed)
+                .findFirst().orElse(null);
+        if (eventualDelay != null) {
+            // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
             fieldAnalysis.setProperty(BEFORE_MARK, eventualDelay.causesOfDelay());
             return eventualDelay.causesOfDelay();
         }

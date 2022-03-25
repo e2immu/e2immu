@@ -123,8 +123,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

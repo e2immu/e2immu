@@ -237,12 +237,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         // TODO improve on errors
         testClass("DGSimplified_0", 7, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

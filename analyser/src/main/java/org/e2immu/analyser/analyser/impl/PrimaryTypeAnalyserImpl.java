@@ -311,6 +311,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         patternMatcher.startNewIteration();
         AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration, closure));
+        LOGGER.info("At end of PTA analysis, done {} of {} components",
+                analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
+                analyserComponents.getStatuses().size());
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
         return analyserResultBuilder.build();
     }

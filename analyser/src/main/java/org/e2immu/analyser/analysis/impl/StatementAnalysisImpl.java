@@ -1035,6 +1035,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     // NOTE: Instance is based on identifier and type
 
                     outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
+                    // the following rule works fine for VS_10, but may be too limited
+                    // TODO should we loop over all VDOL's, add them to the translation map?
                     if (isVariableInLoopDefinedOutside(best.getValue())) {
                         afterFiltering.put(toRemove, outOfScopeValue);
                     } else {
@@ -1159,7 +1161,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         IsVariableExpression ive;
         if ((ive = value.asInstanceOf(VariableExpression.class)) != null) {
             VariableInfoContainer vic = findOrNull(ive.variable());
-            return vic != null && index.equals( vic.variableNature().getStatementIndexOfBlockVariable());
+            return vic != null && index.equals(vic.variableNature().getStatementIndexOfBlockVariable());
         }
         return false;
     }

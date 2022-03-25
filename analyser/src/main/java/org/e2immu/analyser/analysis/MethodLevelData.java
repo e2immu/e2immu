@@ -149,12 +149,14 @@ public class MethodLevelData {
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
                 .map(vi -> vi.getLinkedVariables().causesOfDelay().merge(
                         vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay()))
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (delayed.isDelayed()) {
+                .filter(CausesOfDelay::isDelayed)
+                .findFirst().orElse(null);
+        // IMPORTANT! only the first delay is passed on, not all delays are computed
+        if (delayed != null) {
             linksHaveBeenEstablished.setVariable(delayed);
             return delayed;
         }
-        linksHaveBeenEstablished.setFinal(delayed);
+        linksHaveBeenEstablished.setFinal(CausesOfDelay.EMPTY);
         return DONE;
     }
 }
