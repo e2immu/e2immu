@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -185,4 +186,10 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         }
         return null;
     }
+/*
+    default Stream<MethodAnalyser> parallelMethodAnalyserStream() {
+        return methodAnalyserStream();
+    }
+
+ */
 }

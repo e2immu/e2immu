@@ -881,8 +881,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // check exposed via return values of methods
         CausesOfDelay delayLinkedVariables = filterForExposure(myMethodsAndConstructors.stream())
                 .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished())
-                .filter(CausesOfDelay::isDelayed).findFirst().orElse(null);
-        if (delayLinkedVariables != null) {
+                .filter(CausesOfDelay::isDelayed)
+                .findFirst().orElse(CausesOfDelay.EMPTY);
+        if (delayLinkedVariables.isDelayed()) {
             LOGGER.debug("Exposure computation on {} delayed by links: {}", fqn, delayLinkedVariables);
             return delayLinkedVariables;
         }
@@ -1471,9 +1472,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
-        }).filter(CausesOfDelay::isDelayed).findFirst().orElse(null);
+        }).filter(CausesOfDelay::isDelayed).findFirst().orElse(CausesOfDelay.EMPTY);
 
-        if (contextModifications == null) {
+        if (contextModifications.isDone()) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             LOGGER.debug("Mark field {} as @NotModified", fqn);
             return DONE;
@@ -1500,8 +1501,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .filter(ma -> !ma.getMethodInfo().inConstruction())
                 .map(ma -> ma.getMethodAnalysis().eventualStatus())
                 .filter(CausesOfDelay::isDelayed)
-                .findFirst().orElse(null);
-        if (eventualDelay != null) {
+                .findFirst().orElse(CausesOfDelay.EMPTY);
+        if (eventualDelay.isDelayed()) {
             // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
             fieldAnalysis.setProperty(BEFORE_MARK, eventualDelay.causesOfDelay());
             return eventualDelay.causesOfDelay();

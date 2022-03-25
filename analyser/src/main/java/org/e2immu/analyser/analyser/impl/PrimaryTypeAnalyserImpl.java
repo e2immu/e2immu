@@ -378,7 +378,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public Stream<MethodAnalyser> methodAnalyserStream() {
         return methodAnalysers.values().stream();
     }
-
+/*
+    @Override
+    public Stream<MethodAnalyser> parallelMethodAnalyserStream() {
+        return methodAnalysers.values().stream();
+    }
+*/
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);

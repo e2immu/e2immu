@@ -42,7 +42,8 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public LinkedVariables(Map<Variable, DV> variables) {
         this(variables, variables.values().stream()
                 .map(DV::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
+                .filter(CausesOfDelay::isDelayed)
+                .findFirst().orElse(CausesOfDelay.EMPTY));
     }
 
     public LinkedVariables(Map<Variable, DV> variables, CausesOfDelay otherCausesOfDelay) {
@@ -51,8 +52,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV);
         CausesOfDelay causesOfDelay = variables.values().stream()
                 .map(DV::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        this.causesOfDelay = causesOfDelay.merge(otherCausesOfDelay);
+                .filter(CausesOfDelay::isDelayed)
+                .findFirst().orElse(CausesOfDelay.EMPTY);
+        // IMPORTANT: only one delay is kept, in the fastest possible way
+        this.causesOfDelay = causesOfDelay.isDelayed() ? causesOfDelay: otherCausesOfDelay;
     }
 
     public static LinkedVariables delayedEmpty(CausesOfDelay causes) {

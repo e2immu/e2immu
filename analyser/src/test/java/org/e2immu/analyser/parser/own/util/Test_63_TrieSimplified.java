@@ -941,12 +941,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_5", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
