@@ -625,6 +625,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
                         eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
                 translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
+                // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
+                // see VariableScope_10
+                if (variable.allowedToCreateVariableExpression()) {
+                    translationMap.put(new VariableExpression(variable), delayed);
+                }
             }
         }
     }

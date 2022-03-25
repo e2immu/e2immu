@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -543,4 +544,137 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     }
 
+    @Test
+    public void test_9() throws IOException {
+        testClass("VariableScope_9", 2, 13, new DebugConfiguration.Builder()
+
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>"
+                            : "vdol.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop";
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<null-check>&&this!=(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<f:<out of scope:vdol:1>.previousVariableNature>:<vl:vn>)";
+                        case 1, 2, 3 -> "<null-check>&&this!=(<m:startsWith>&&vn$1 instanceof VariableDefinedOutsideLoop?<f:<out of scope:vdol:1>.previousVariableNature>:nullable instance type VariableScope_10)";
+                        default -> "this!=(instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?instance type VariableDefinedOutsideLoop.previousVariableNature:nullable instance type VariableScope_10)&&(instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(vn$1 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
+                    };
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("vn".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("this", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        String eval = d.iteration() == 0 ? "<vl:vn>" : "nullable instance type VariableScope_10";
+                        assertEquals(eval, d.variableInfoContainer().best(Stage.EVALUATION).getValue().toString());
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        String merge = switch (d.iteration()) {
+                            case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<f:<out of scope:vdol:1>.previousVariableNature>:<vl:vn>";
+                            case 1, 2, 3 -> "<m:startsWith>&&vn$1 instanceof VariableDefinedOutsideLoop?<f:<out of scope:vdol:1>.previousVariableNature>:nullable instance type VariableScope_10";
+                            default -> "instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?instance type VariableDefinedOutsideLoop.previousVariableNature:nullable instance type VariableScope_10";
+                        };
+                        assertEquals(merge, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        String eval = switch (d.iteration()) {
+                            case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<f:<out of scope:vdol:1>.previousVariableNature>:<vl:vn>";
+                            case 1,2,3 -> "<m:startsWith>&&vn$1 instanceof VariableDefinedOutsideLoop?<f:<out of scope:vdol:1>.previousVariableNature>:nullable instance type VariableScope_10";
+                            default -> "instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?instance type VariableDefinedOutsideLoop.previousVariableNature:nullable instance type VariableScope_10";
+                        };
+                        assertEquals(eval, d.variableInfoContainer().best(Stage.EVALUATION).getValue().toString());
+                    }
+                }
+                if ("vdol".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
+                        assertFalse(d.variableInfoContainer().hasMerge());
+
+                        // initial
+                        VariableInfo viInit = d.variableInfoContainer().getPreviousOrInitial();
+                        assertEquals("<not yet assigned>", viInit.getValue().toString());
+
+                        // eval
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
+                            case 1 -> "<vp:vn:cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
+                            case 2, 3 -> "<vp:vn:cm@Parameter_index>/*(VariableDefinedOutsideLoop)*/";
+                            default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    // variable should not exist further than 1...
+                    assertTrue(d.statementId().compareTo("2") < 0);
+                }
+                if (d.variable() instanceof FieldReference fr && "statementIndex".equals(fr.fieldInfo.name)) {
+                    if (d.iteration() <= 3) {
+                        assertEquals("vdol", fr.scope.toString());
+                    } else {
+                        assertTrue(Set.of("vdol", "instance type VariableDefinedOutsideLoop").contains(fr.scope.toString()));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:statementIndex>" : "nullable instance type String";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "previousVariableNature".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        if ("<out of scope:vdol:1>".equals(fr.scope.toString())) {
+                            assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.OutOfScopeVariable,
+                                    "is " + d.variableInfoContainer().variableNature().getClass());
+                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        } else if ("instance type VariableDefinedOutsideLoop".equals(fr.scope.toString())) {
+                            assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
+                                    "is " + d.variableInfoContainer().variableNature().getClass());
+                            assertTrue(d.iteration() >= 4);
+                            assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        } else fail();
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("instance type VariableDefinedOutsideLoop", fr.scope.toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;parent=CM{}}";
+                        case 1, 2, 3 -> "CM{state=!<m:startsWith>||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
+                        default -> "CM{state=!instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
+                    };
+                    assertEquals(expected, d.conditionManagerForNextStatement().toString());
+                }
+            }
+        };
+        testClass("VariableScope_10", 0, 3, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
 }

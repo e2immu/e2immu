@@ -1035,7 +1035,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     // NOTE: Instance is based on identifier and type
 
                     outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
-                    afterFiltering.put(toRemove, best.getValue());
+                    if (isVariableInLoopDefinedOutside(best.getValue())) {
+                        afterFiltering.put(toRemove, outOfScopeValue);
+                    } else {
+                        afterFiltering.put(toRemove, best.getValue());
+                    }
                 }
                 outOfScopeBuilder.addVariableExpression(best.variable(), outOfScopeValue);
 
@@ -1149,6 +1153,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay);
+    }
+
+    private boolean isVariableInLoopDefinedOutside(Expression value) {
+        IsVariableExpression ive;
+        if ((ive = value.asInstanceOf(VariableExpression.class)) != null) {
+            VariableInfoContainer vic = findOrNull(ive.variable());
+            return vic != null && index.equals( vic.variableNature().getStatementIndexOfBlockVariable());
+        }
+        return false;
     }
 
     /**
