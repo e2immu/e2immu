@@ -15,10 +15,9 @@
 
 package org.e2immu.analyser.parser.independence;
 
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,10 +39,19 @@ public class Test_Independent extends CommonTestRunner {
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
-    
+
     @Test
     public void test_3() throws IOException {
         testClass("Independent_3", 0, 0, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("Independent_4", 0, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 }
