@@ -53,6 +53,10 @@ public final class Or extends ExpressionCanBeTooComplex {
         this(identifier, primitives, List.of());
     }
 
+    public static Expression or(Identifier identifier, EvaluationResult context, Expression... values) {
+        return new Or(identifier, context.getPrimitives()).append(context, values);
+    }
+
     public static Expression or(EvaluationResult context, Expression... values) {
         Identifier id = Identifier.joined("or", Arrays.stream(values).map(Expression::getIdentifier).toList());
         return new Or(id, context.getPrimitives()).append(context, values);
@@ -312,4 +316,10 @@ public final class Or extends ExpressionCanBeTooComplex {
         return expressions;
     }
 
+    @Override
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        boolean anyMatch = expressions.stream().anyMatch(e -> !e.equals(e.removeAllReturnValueParts(primitives)));
+        if (anyMatch) return new BooleanConstant(primitives, false);
+        return this;
+    }
 }

@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /*
@@ -98,6 +99,12 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     }
 
     @Override
+    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
+        Expression translated = translation.getOrDefault(this, this);
+        return new EvaluationResult.Builder(context).setExpression(translated).build();
+    }
+
+    @Override
     public int order() {
         return ExpressionComparator.ORDER_NO_VALUE;
     }
@@ -130,5 +137,4 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
     public LinkedVariables linkedVariables(EvaluationResult context) {
         return linkedVariables;
     }
-
 }

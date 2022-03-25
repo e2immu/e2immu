@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
@@ -315,12 +316,15 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression removeAllReturnValueParts() {
-        boolean removeTrue = ifTrue.isReturnValue();
-        boolean removeFalse = ifFalse.isReturnValue();
-        if (removeTrue && removeFalse) return ifTrue; // nothing we can do
-        if (removeTrue) return ifFalse;
-        if (removeFalse) return ifTrue;
-        return this;
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        Expression c = condition.removeAllReturnValueParts(primitives);
+        Expression t = ifTrue.removeAllReturnValueParts(primitives);
+        Expression f = ifFalse.removeAllReturnValueParts(primitives);
+        if (c == null) return null;
+        if (t == null) return f;
+        if (f == null) return t;
+        if (c.isBoolValueTrue()) return t;
+        if (c.isBoolValueFalse()) return f;
+        return new InlineConditional(identifier, inspectionProvider, c, t, f);
     }
 }

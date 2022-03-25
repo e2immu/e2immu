@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
@@ -1054,4 +1055,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return !methodInspection.isStatic() && objectIsImplicit;
     }
 
+    @Override
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        Expression removedFromObject = object.removeAllReturnValueParts(primitives);
+        boolean inParameter = parameterExpressions.stream().anyMatch(e -> !e.equals(e.removeAllReturnValueParts(primitives)));
+        if (removedFromObject == null || inParameter) {
+            return returnType().isBooleanOrBoxedBoolean() ? new BooleanConstant(primitives, true) : null;
+        }
+        return this;
+    }
 }

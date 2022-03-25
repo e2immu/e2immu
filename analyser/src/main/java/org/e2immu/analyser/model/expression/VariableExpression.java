@@ -259,6 +259,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             Expression newScope = er.getExpression();
             if (!newScope.equals(fr.scope)) {
                 FieldReference newFr = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, newScope);
+                if (newScope.isDelayed() && !(newScope instanceof DelayedVariableOutOfScope)) {
+                    DelayedVariableExpression dve = DelayedVariableExpression.forField(newFr, fr.statementTime(), newScope.causesOfDelay());
+                    return builder.setExpression(dve).markRead(newFr).build();
+                }
                 VariableExpression ve = new VariableExpression(newFr);
                 EvaluationResult er2 = ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
                 if (er2.causesOfDelay().isDone()) return builder.compose(er2).build();

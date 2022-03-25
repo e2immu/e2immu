@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
@@ -181,9 +182,11 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean isBooleanConstant();
 
-    @NotNull
-    default Expression removeAllReturnValueParts() {
-        throw new UnsupportedOperationException("Implement! " + getClass());
+    /*
+    important: returns null on non-boolean expressions containing a return value part
+     */
+    default Expression removeAllReturnValueParts(Primitives primitives) {
+        return this;
     }
 
     // such as /*this.contains(s)&&AnnotatedAPI.isKnown(true)&&1==this.size()*/

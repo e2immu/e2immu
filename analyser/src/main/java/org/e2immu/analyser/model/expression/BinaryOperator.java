@@ -265,6 +265,13 @@ public class BinaryOperator extends BaseExpression implements Expression {
             return StringConcat.stringConcat(identifier, context, l, r);
         }
 
+        if(operator == primitives.andOperatorBool()) {
+            return And.and(identifier, context, l, r);
+        }
+        if(operator == primitives.orOperatorBool()) {
+            return Or.or(identifier, context, l, r);
+        }
+
         // more obscure operators
 
         if (operator == primitives.xorOperatorBool()) {
@@ -564,17 +571,6 @@ public class BinaryOperator extends BaseExpression implements Expression {
         String otherVarStr = otherVariables.stream().map(vv -> vv.fullyQualifiedName())
                 .sorted().collect(Collectors.joining(","));
         return myVarStr.compareTo(otherVarStr);
-    }
-
-    @Override
-    public Expression removeAllReturnValueParts() {
-        boolean removeLhs = lhs.isReturnValue();
-        boolean removeRhs = rhs.isReturnValue();
-        if (removeLhs && removeRhs) return lhs; // nothing we can do
-        if (removeLhs) return rhs;
-        if (removeRhs) return lhs;
-        return new BinaryOperator(identifier, primitives, lhs.removeAllReturnValueParts(),
-                operator, rhs.removeAllReturnValueParts(), precedence);
     }
 
     @Override

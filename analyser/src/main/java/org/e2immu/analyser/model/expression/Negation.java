@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -155,9 +156,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public Expression removeAllReturnValueParts() {
-        if (expression.isReturnValue()) return expression;
-        return new Negation(identifier, operator, expression.removeAllReturnValueParts());
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        Expression value = expression.removeAllReturnValueParts(primitives);
+        if (value == null) {
+            if (expression.returnType().isBooleanOrBoxedBoolean()) {
+                return new BooleanConstant(primitives, false);
+            }
+            return null; // numeric
+        }
+        return new Negation(identifier, operator, value);
     }
 
     @Override

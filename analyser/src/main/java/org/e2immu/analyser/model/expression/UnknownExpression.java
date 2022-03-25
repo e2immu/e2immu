@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
@@ -183,5 +184,11 @@ public class UnknownExpression extends BaseExpression implements Expression {
     @Override
     public boolean isNotYetAssigned() {
         return true;
+    }
+
+    @Override
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        if(isReturnValue()) return null;
+        return this;
     }
 }

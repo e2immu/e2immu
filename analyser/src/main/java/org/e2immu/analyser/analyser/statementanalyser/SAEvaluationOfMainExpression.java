@@ -290,7 +290,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         VariableInfo vi = sharedState.previous().findOrThrow(returnVariable);
         if (!vi.getValue().isReturnValue() && !vi.getValue().isDelayed()) {
             // remove all return_value parts
-            Expression newValue = vi.getValue().removeAllReturnValueParts();
+            Expression newValue = vi.getValue().removeAllReturnValueParts(statementAnalysis.primitives());
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
                     new VariableExpression(returnVariable), newValue);

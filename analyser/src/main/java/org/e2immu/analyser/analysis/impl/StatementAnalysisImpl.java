@@ -1011,7 +1011,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         PrepareMerge prepareMerge = mergeActions(evaluationContext.getAnalyserContext(),
                 lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
-        TranslationMapImpl.Builder instanceBuilder = new TranslationMapImpl.Builder();
+        TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
         for (Variable toRemove : prepareMerge.toRemove) {
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
@@ -1021,25 +1021,27 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
-                Expression bestValue;
+                Expression outOfScopeValue;
                 Properties bestProperties = best.valueProperties();
                 if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
                     CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
-                    bestValue = new DelayedVariableOutOfScope(identifier,
+                    outOfScopeValue = new DelayedVariableOutOfScope(identifier,
                             toRemove.parameterizedType(), best.getLinkedVariables(), causes);
+                    afterFiltering.put(toRemove, outOfScopeValue);
                 } else {
                     // at the moment, there may be references to other variables to be removed inside the best.getValue()
                     // they will be replaced soon in applyTranslations()
                     // on the other hand, we will already avoid self-references!
                     // NOTE: Instance is based on identifier and type
 
-                    bestValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
+                    outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
+                    afterFiltering.put(toRemove, best.getValue());
                 }
-                instanceBuilder.addVariableExpression(best.variable(), bestValue);
-                afterFiltering.put(toRemove, best.getValue());
+                outOfScopeBuilder.addVariableExpression(best.variable(), outOfScopeValue);
+
             } // else: See e.g. Loops_3: block not executed
         }
-        TranslationMap instances = instanceBuilder.build();
+        TranslationMap instances = outOfScopeBuilder.build();
         for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();

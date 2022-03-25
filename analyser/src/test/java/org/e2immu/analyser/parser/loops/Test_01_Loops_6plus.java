@@ -560,7 +560,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:<vp:Container:initial@Field_read>.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:<out of scope:container:1.0.1>.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
                             default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -588,8 +588,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("org.e2immu.analyser.parser.loops.testexample.Loops_18.Container.read#<out of scope:container:1.0.1>".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&!<m:contains>?0==<f:read>?<f:read>:<f:read>:<f:read>";
-                            case 1 -> "<loopIsNotEmptyCondition>&&!<m:contains>?0==<f:read>?<f:read>:<f:read>:instance type int";
+                            case 0 -> "<f:read>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())?instance type int:<f:read>";
                             default -> "instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());

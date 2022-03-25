@@ -92,7 +92,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
             }
             if (d.variable() instanceof FieldReference fr && "split".equals(fr.fieldInfo.name)) {
                 if ("8.0.4".equals(d.statementId())) {
-                    assertTrue(Set.of("<m:right>", "<m:left>", "<v:outputElement>/*(Space)*/",
+                    assertTrue(Set.of("<m:right>", "<m:left>", "<out of scope:space:8.0.4>",
                                     "list.get(pos$8)/*(Symbol)*/.left()",
                                     "list.get(pos$8)/*(Symbol)*/.right()",
                                     "list.get(pos$8)/*(Space)*/").contains(fr.scope.toString()),

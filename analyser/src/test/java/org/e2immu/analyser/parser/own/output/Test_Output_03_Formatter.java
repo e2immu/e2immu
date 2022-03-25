@@ -22,7 +22,6 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.output.formatter.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -73,8 +72,8 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 if ("7".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<vl:writeNewLine>";
-                        case 1, 2 -> "!(end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
-                        case 3 -> "!(end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        case 1, 2 -> "!(end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        case 3 -> "!(end$5>pos$5?(<f:<out of scope:newLineDouble:5>.writeNewLine>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                         default -> "!(end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -89,9 +88,9 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 if ("writeNewLine".equals(d.variableName())) {
                     if ("5".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:(<null-check>?<f:<null-check>||<null-check>||!<null-check>?<f:NOT_END>:<s:NewLineDouble>.writeNewLine>:<s:boolean>)&&!<null-check>:<vl:writeNewLine>";
-                            case 1, 2 -> "end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
-                            case 3 -> "end$5>pos$5?(<f:null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo&&null!=(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>)?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine>||null!=nullable instance type ForwardInfo||null==(null==<out of scope:guide:5.0.6.1.0>?nullable instance type Guide:<s:Guide>))&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:(<null-check>?<f:<out of scope:newLineDouble:5>.writeNewLine>:<s:boolean>)&&!<null-check>:<vl:writeNewLine>";
+                            case 1, 2 -> "end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            case 3 -> "end$5>pos$5?(<f:<out of scope:newLineDouble:5>.writeNewLine>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                             default -> "end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -121,24 +120,28 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "writer".equals(fr.fieldInfo.name)) {
                     if ("tab".equals(fr.scope.toString())) {
                         if ("0".equals(d.statementId())) {
-                            String expected = d.iteration() < 2 ? "<f:writer>" : "nullable instance type Writer";
-                            assertEquals(expected, d.currentValue().toString());
+                            fail();
                         }
                         if ("0.0.3".equals(d.statementId())) {
                             String expected = d.iteration() < 2 ? "<f:writer>" : "nullable instance type Writer";
                             assertEquals(expected, d.currentValue().toString());
                         }
-                    } else if ("<m:pop>".equals(fr.scope.toString())) {
-                        assertEquals("0", d.statementId());
-                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.DelayedScope);
-                        assertTrue(d.iteration() < 2);
                     } else if ("tabs.peek()".equals(fr.scope.toString())) {
                         if ("0.0.3".equals(d.statementId())) {
                             assertEquals("nullable instance type Writer", d.currentValue().toString());
                         }
                     } else if ("nullable instance type Tab".equals(fr.scope.toString())) {
-                        if ("0.0.3".equals(d.statementId())) {
+                        if ("0".equals(d.statementId())) {
                             assertEquals("nullable instance type Writer", d.currentValue().toString());
+                        }
+                    } else if ("<out of scope:tab:0>".equals(fr.scope.toString())) {
+                        if ("0".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<f:writer>";
+                                case 1 -> "tabs.isEmpty()?nullable instance type Writer:<f:writer>";
+                                default -> "nullable instance type Writer";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
                         }
                     } else fail("scope " + fr.scope);
                 }
@@ -157,7 +160,6 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
-                String delay = "initial:tab.writer@Method_pop_0.0.3-C";
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);

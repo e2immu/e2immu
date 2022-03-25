@@ -20,10 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -37,7 +34,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_Util_07_Trie extends CommonTestRunner {
 
@@ -68,7 +66,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                             case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                            default -> "strings.length>0?null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                            default -> "strings.length>0?null==node.map$0?new TrieNode<>():null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -89,7 +87,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                         case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                        default -> "strings.length>0?null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                        default -> "strings.length>0?null==node.map$0?new TrieNode<>():null==node.map$0.get(instance type String)?new TrieNode<>():node.map$0.get(instance type String):nullable instance type TrieNode<T>";
                     };
                     if ("3".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
@@ -172,11 +170,11 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             int params = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
                 String expected = d.iteration() <= 1 ? "<m:goTo>"
-                        : "upToPosition>instance type int&&null==node.map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i])?null:upToPosition>instance type int&&(instance type int>=upToPosition||null!=node.map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]))?node.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]):nullable instance type TrieNode<T>";
+                        : "upToPosition>instance type int&&null==node.map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i])?null:upToPosition>instance type int?null==node.map$0?node$1:node.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]):nullable instance type TrieNode<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("i, node, strings, upToPosition",
+                        assertEquals("i, node, node$1, strings, upToPosition",
                                 inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
@@ -188,10 +186,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
                 new DebugConfiguration.Builder()
-                       // .addEvaluationResultVisitor(evaluationResultVisitor)
-                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                       // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

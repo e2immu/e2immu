@@ -217,13 +217,13 @@ public class Sum extends BinaryOperator {
     }
 
     @Override
-    public Expression removeAllReturnValueParts() {
-        boolean removeLhs = lhs.isReturnValue();
-        boolean removeRhs = rhs.isReturnValue();
-        if (removeLhs && removeRhs) return lhs; // nothing we can do
-        if (removeLhs) return rhs;
-        if (removeRhs) return lhs;
-        return new Sum(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        Expression l = lhs.removeAllReturnValueParts(primitives);
+        Expression r = rhs.removeAllReturnValueParts(primitives);
+        if (l == null && r == null) return new IntConstant(primitives, 0);
+        if (l == null) return r;
+        if (r == null) return l;
+        return new Sum(identifier, primitives, l, r);
     }
 
     // recursive method

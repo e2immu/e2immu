@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -94,8 +95,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
-                        // IMPROVE this could be more elegant c?i+(c?i+i:0)
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?(<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>)+<m:nextInt>:<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>"
+                        String expect = d.iteration() == 0
+                                ? "<loopIsNotEmptyCondition>?<out of scope:j:1>+<m:nextInt>:<out of scope:j:1>"
                                 : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:instance type int):instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -429,11 +430,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("instance type PerPackage".equals(fr.scope.toString())) {
                             String expected = "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
                             assertEquals(expected, d.currentValue().toString());
-                        } else if ("<m:computeIfAbsent>".equals(fr.scope.toString())) {
+                        } else if ("<out of scope:perPackage:1>".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>&&!<m:equals>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
                                 case 1 -> "!myPackage.equals(typeInfo.packageName)&&null!=typeInfo.packageName?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
-                                default -> fail();
+                                default -> "instance type boolean";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else {
@@ -510,7 +511,33 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_8", 2, 9, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("output".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "typeInfo".equals(fr.fieldInfo.name)) {
+                    if ("4".equals(d.statementId())) {
+                        if (d.iteration() <= 4) {
+                            assertEquals("<out of scope:typeExpression:4.0.1.1.0>", fr.scope.toString());
+                        } else {
+                            Set<String> scopes = Set.of("<out of scope:typeExpression:4.0.1.1.0>", "object/*(TypeExpression)*/");
+                            assertTrue(scopes.contains(fr.scope.toString()), "Was " + fr.scope);
+                        }
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("4".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<out of scope:typeExpression:4.0.1.1.0>.typeInfo:-1,qualification:-1,this.object:-1,this:0";
+                            case 1, 2 -> "<out of scope:typeExpression:4.0.1.1.0>.typeInfo:-1,this.object:-1,this:0";
+                            case 3 -> "this.object:-1,this:0";
+                            default -> "this:0";
+                        };
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
+        testClass("VariableScope_8", 2, 13, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
 

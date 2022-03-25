@@ -350,4 +350,13 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     public ParameterizedType booleanParameterizedType() {
         return booleanParameterizedType;
     }
+
+    @Override
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        Expression removed = expression.removeAllReturnValueParts(primitives);
+        if (removed == null) {
+            return new BooleanConstant(primitives, true);
+        }
+        return new GreaterThanZero(identifier, primitives.booleanParameterizedType(), removed, allowEquals);
+    }
 }

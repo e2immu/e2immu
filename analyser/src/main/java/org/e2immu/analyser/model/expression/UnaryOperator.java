@@ -205,10 +205,4 @@ public class UnaryOperator extends BaseExpression implements Expression {
         return DelayFactory.createDelay(context.evaluationContext().getLocation(duringEvaluation?Stage.EVALUATION: Stage.MERGE),
                 CauseOfDelay.Cause.VALUE);
     }
-
-    @Override
-    public Expression removeAllReturnValueParts() {
-        if (expression.isReturnValue()) return expression;
-        return new UnaryOperator(identifier, operator, expression.removeAllReturnValueParts(), precedence);
-    }
 }

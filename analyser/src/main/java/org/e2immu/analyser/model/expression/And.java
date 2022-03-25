@@ -60,11 +60,15 @@ public class And extends ExpressionCanBeTooComplex {
 
     public static Expression and(EvaluationResult context, Expression... values) {
         Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        Expression expression = new And(id, context.getPrimitives()).append(context, values);
+        return and(id, context, values);
+    }
+
+    public static Expression and(Identifier identifier, EvaluationResult context, Expression... values) {
+        Expression expression = new And(identifier, context.getPrimitives()).append(context, values);
         if (expression.isDone()) {
             CausesOfDelay causes = Arrays.stream(values).map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (causes.isDelayed()) {
-                return DelayedExpression.forSimplification(id, context.getPrimitives().booleanParameterizedType(), causes);
+                return DelayedExpression.forSimplification(identifier, context.getPrimitives().booleanParameterizedType(), causes);
             }
         }
         return expression;
@@ -754,5 +758,16 @@ public class And extends ExpressionCanBeTooComplex {
                 .filter(e -> e.variables(true).contains(variable))
                 .toArray(Expression[]::new);
         return And.and(evaluationContext, filtered);
+    }
+
+    @Override
+    public Expression removeAllReturnValueParts(Primitives primitives) {
+        List<Expression> filtered = this.expressions.stream()
+                .map(e -> e.removeAllReturnValueParts(primitives))
+                .filter(Objects::nonNull)
+                .toList();
+        if (filtered.size() == 1) return filtered.get(0);
+        if (filtered.size() == 0) return new BooleanConstant(primitives, true);
+        return new And(primitives, filtered);
     }
 }

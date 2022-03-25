@@ -374,8 +374,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
+            LinkedVariables lv = evaluationContext.evaluationContext().linkedVariables(variable);
+            LinkedVariables changed = lv == null ? LinkedVariables.EMPTY: lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
-                    evaluationContext.evaluationContext().linkedVariables(variable).changeAllToDelay(merged), merged);
+                   changed, merged);
         }
         return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,
                 VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
