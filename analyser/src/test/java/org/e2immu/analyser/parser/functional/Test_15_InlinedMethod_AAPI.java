@@ -150,7 +150,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("find".equals(d.methodInfo().name)) {
                 // the visualisation is f.contains(s) "because" (we should improve on this) this is an inlined method, with f as parameter
                 String expected = d.iteration() <= 1 ? "<m:find>"
-                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
+                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
@@ -168,7 +168,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
     public void test_11() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("variables".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:variables>" : "this.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList())";
+                String expected = d.iteration() <= 1 ? "<m:variables>" : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -186,41 +186,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
             if ("compare".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 2 ? "<m:compare>"
-                        : "e1.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
+                        : "/*inline compare*/e1.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 3) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("e1,e2", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
-                        if (inlinedMethod.expression() instanceof MethodCall mc1) {
-                            assertEquals(1, mc1.parameterExpressions.size());
-                            if (mc1.parameterExpressions.get(0) instanceof MethodCall mc2) {
-                                if (mc2.object instanceof MethodCall mc3) {
-                                    assertEquals("sorted", mc3.methodInfo.name);
-                                    if (mc3.object instanceof MethodCall mc4) {
-                                        assertEquals("map", mc4.methodInfo.name);
-                                        if (mc4.object instanceof MethodCall mc5) {
-                                            assertEquals("stream", mc5.methodInfo.name);
-                                            if (mc5.object instanceof MethodCall mc6) {
-                                                assertEquals("collect", mc6.methodInfo.name);
-                                                if (mc6.object instanceof MethodCall mc7) {
-                                                    assertEquals("flatMap", mc7.methodInfo.name);
-                                                    assertEquals(1, mc7.parameterExpressions.size());
-                                                    if (mc7.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
-                                                        assertEquals("e", inlinedMethod2.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
-                                                    } else fail();
-                                                } else fail();
-                                            } else fail();
-                                        } else fail();
-                                    } else fail();
-                                } else fail();
-                            } else fail();
-                        } else fail();
-                    }
-                }
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -230,7 +201,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:find>&&<m:find>"
-                        : "Arrays.stream({s1}).anyMatch(s.contains(\"magic\"))&&Arrays.stream({s1,s2}).anyMatch(s.contains(\"magic\"))";
+                        : "Arrays.stream({s1}).anyMatch(/*inline test*/s.contains(\"magic\"))&&Arrays.stream({s1,s2}).anyMatch(/*inline test*/s.contains(\"magic\"))";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
@@ -283,9 +254,9 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
 
         testClass("InlinedMethod_13", 0, 6, new DebugConfiguration.Builder()
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -316,8 +287,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_14", 0, 7, new DebugConfiguration.Builder()
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

@@ -145,7 +145,7 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
         Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
         assert Collections.disjoint(inlining, top);
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, top);
+                complainInlineConditional, SetUtil.immutableUnion(inlining, top));
     }
 
     private Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {

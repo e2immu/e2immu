@@ -148,6 +148,15 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        boolean allParametersCovered = variablesOfExpression.stream().map(VariableExpression::variable)
+                .filter(variable -> variable instanceof ParameterInfo).allMatch(context.evaluationContext()::isPresent);
+        boolean haveParameters = variablesOfExpression.stream().anyMatch(ve -> ve.variable() instanceof ParameterInfo);
+        if (!allParametersCovered && haveParameters) {
+            // do not evaluate further
+            return new EvaluationResult.Builder(context).setExpression(this).build();
+        }
+
+        // the following 2 lines are there to protect against infinite recursion (closure depth is counted)
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         return expression.evaluate(closureContext, forwardEvaluationInfo);
