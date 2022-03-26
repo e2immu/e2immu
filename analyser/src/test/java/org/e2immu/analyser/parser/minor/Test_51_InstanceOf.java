@@ -532,7 +532,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
                             case 0, 1 -> "<out of scope:ne:2>.expression:0,expression:-1,x:0";
-                            default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
+                            default -> "expression/*(Negation)*/.expression:0,expression:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
@@ -651,7 +651,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = switch (d.iteration()) {
                             case 0 -> "evaluationContext:-1,return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
                             case 1, 2, 3, 4 -> "return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
-                            default -> "return method:0,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:3,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs:3,v:3,x:3";
+                            default -> "expression/*(Sum)*/.lhs/*(Negation)*/.expression:3,expression/*(Sum)*/.lhs:3,return method:0,v:3,x:3";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -721,7 +721,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = switch (d.iteration()) {
                             case 0 -> "evaluationContext:-1,return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
                             case 1, 2, 3, 4 -> "return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
-                            default -> "return method:3,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:0,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs:1,v:0,x:0";
+                            default -> "expression/*(Sum)*/.lhs/*(Negation)*/.expression:0,expression/*(Sum)*/.lhs:1,return method:3,v:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

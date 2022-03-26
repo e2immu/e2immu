@@ -121,6 +121,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
+    public String minimalOutput() {
+        return scope.minimalOutput() + "." + simpleName();
+    }
+
+    @Override
     public String nameInLinkedAnnotation() {
         return fieldInfo.owner.simpleName + "." + fieldInfo.name;
     }
@@ -132,12 +137,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        if (scope == null) {
-            // static!
-            return new OutputBuilder().add(new QualifiedName(fieldInfo.name,
-                    fieldInfo.owner.typeName(qualification.qualifierRequired(fieldInfo.owner)),
-                    qualification.qualifierRequired(this) ? YES : NO_FIELD));
-        }
         if (scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
             ThisName thisName = new ThisName(thisVar.writeSuper,
                     thisVar.typeInfo.typeName(qualification.qualifierRequired(thisVar.typeInfo)),

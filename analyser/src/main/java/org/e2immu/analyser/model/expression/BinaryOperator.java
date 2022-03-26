@@ -340,6 +340,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
                 operator == primitives.equalsOperatorObject() ||
                 operator == primitives.notEqualsOperatorObject() ||
                 operator == primitives.notEqualsOperatorInt() ||
+                operator == primitives.plusOperatorString() ||
                 operator == primitives.plusOperatorString();
     }
 

@@ -85,7 +85,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() <= 1 ? "<m:getEffectivelyFinal>" : "/*inline getEffectivelyFinal*/this.effectivelyFinal";
+                String expectValue = d.iteration() <= 1 ? "<m:getEffectivelyFinal>" : "/*inline getEffectivelyFinal*/effectivelyFinal";
                 assertEquals(expectValue, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }

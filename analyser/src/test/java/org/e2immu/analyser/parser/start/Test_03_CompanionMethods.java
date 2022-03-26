@@ -358,7 +358,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         Block block = companion.methodInspection.get().getMethodBody();
         ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
         Expression expression = returnStatement.expression;
-        assertEquals("!(new java.util.HashSet<>(strings)/*this.size()==strings.size()*/).contains(\"a\")",
+        assertEquals("!(new HashSet<>(strings)/*this.size()==strings.size()*/).contains(\"a\")",
                 expression.toString());
         // See Precondition_4 for a similar example with precondition
     }

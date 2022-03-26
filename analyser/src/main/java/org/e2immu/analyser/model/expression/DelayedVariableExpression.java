@@ -205,7 +205,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        if (variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
             ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                     forwardEvaluationInfo.copyModificationEnsureNotNull();
@@ -230,7 +230,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
         if (expression != null && expression.isDelayed()) return expression;
-        if (variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr) {
             Expression scope = fr.scope.translate(inspectionProvider, translationMap);
             if (scope != fr.scope) {
                 FieldReference newRef = new FieldReference(inspectionProvider, fr.fieldInfo, scope);
@@ -260,7 +260,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         Expression result;
         if (found.isPresent()) {
             result = found.get().getValue();
-        } else if (variable instanceof FieldReference fr && fr.scope != null) {
+        } else if (variable instanceof FieldReference fr) {
             EvaluationResult reEval = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo); // recurse
             Expression replaceScope = reEval.getExpression();
             if (!replaceScope.equals(fr.scope)) {
@@ -282,7 +282,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
         }
         return List.of(variable);
@@ -290,7 +290,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public List<Variable> variablesWithoutCondition() {
-        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+        if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
         }
         return List.of(variable);

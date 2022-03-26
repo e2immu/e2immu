@@ -936,7 +936,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
      */
     private DV connectedToMyTypeHierarchy(FieldReference fr) {
         if (fr.scopeIsThis()) return DV.TRUE_DV;
-        if (fr.scope == null) return DV.TRUE_DV;
         IsVariableExpression ive;
         if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null) {
             if (methodInfo.typeInfo.isMyself(ive.returnType(), analyserContext)) return DV.TRUE_DV;

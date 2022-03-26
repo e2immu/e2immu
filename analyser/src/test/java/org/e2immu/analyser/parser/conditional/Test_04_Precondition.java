@@ -34,8 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
-import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Precondition extends CommonTestRunner {
@@ -69,6 +68,19 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 assertEquals("null==e1&&null==e2", d.evaluationResult().value().toString());
             }
+            if ("useEither3".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                assertEquals("f1+f2", d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("useEither3".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "f1".equals(pi.name)) {
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -77,6 +89,12 @@ public class Test_04_Precondition extends CommonTestRunner {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
                 assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
                 assertEquals("/*inline either*/e1+e2", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
+            }
+            if ("useEither3".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
         };
 
@@ -87,6 +105,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -408,7 +427,7 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
-            case 0,1 -> "<null-check>&&ii>=0";
+            case 0, 1 -> "<null-check>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }

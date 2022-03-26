@@ -115,9 +115,7 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
             } else if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
                 if (ve.variable() instanceof FieldReference fr) {
                     collect(result, fr.fieldInfo);
-                    if (fr.scope != null) {
-                        collect(result, fr.scope);
-                    }
+                    collect(result, fr.scope);
                 }
                 collect(result, ve.variable().parameterizedType());
             } else if (e instanceof TypeExpression te) {

@@ -103,16 +103,16 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline get*/i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("i*i$1", srv.toString());
+                assertEquals("/*inline method*/i*i$1", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
-         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -192,14 +192,14 @@ public class Test_57_Lambda extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if ("0".equals(d.statementId())) {
                         String expectedLv = d.iteration() == 0
-                                ? "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:0"
-                                : "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:0,x.k:1";
+                                ? "l:0,new X(x.k).k:0"
+                                : "l:0,new X(x.k).k:0,x.k:1";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectedLv = d.iteration() == 0
-                                ? "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:-1,return get:0"
-                                : "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:0,return get:0,x.k:1";
+                                ? "l:0,new X(x.k).k:-1,return get:0"
+                                : "l:0,new X(x.k).k:0,return get:0,x.k:1";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -209,8 +209,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String lv = d.iteration() == 0
-                                ? "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:0,return get:0"
-                                : "l:0,new org.e2immu.analyser.parser.functional.testexample.Lambda_4.X(x.k).k:0,return get:0,x.k:1";
+                                ? "l:0,new X(x.k).k:0,return get:0"
+                                : "l:0,new X(x.k).k:0,return get:0,x.k:1";
                         assertEquals(lv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

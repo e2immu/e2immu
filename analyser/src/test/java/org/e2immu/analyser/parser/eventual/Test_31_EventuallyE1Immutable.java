@@ -140,7 +140,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<c:boolean>&&!<null-check>";
                         case 1 -> "!<s:boolean>&&!<null-check>";
-                        default -> "null==this.string";
+                        default -> "null==string";
                     };
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());

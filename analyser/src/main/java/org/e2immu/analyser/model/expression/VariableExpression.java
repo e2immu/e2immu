@@ -206,7 +206,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (translated3 != null) {
             return translated3;
         }
-        if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
+        if (variable instanceof FieldReference fieldReference) {
             Expression translatedScope = fieldReference.scope.translate(inspectionProvider, translationMap);
             if (translatedScope != fieldReference.scope) {
                 FieldReference fr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, translatedScope);
@@ -265,7 +265,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             return builder.setExpression(inMap).build();
         }
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        if (variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr) {
             EvaluationResult er = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo);
             Expression newScope = er.getExpression();
             if (!newScope.equals(fr.scope)) {
@@ -305,7 +305,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             return builder.setExpression(this).build();
         }
         EvaluationResult scopeResult;
-        if (variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
             ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                     forwardEvaluationInfo.copyModificationEnsureNotNull();
@@ -408,7 +408,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(fr.scope.variables(true), List.of(variable));
         }
         return List.of(variable);
@@ -416,7 +416,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public List<Variable> variablesWithoutCondition() {
-        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+        if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(fr.scope.variablesWithoutCondition(), List.of(variable));
         }
         return List.of(variable);
@@ -444,7 +444,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public List<? extends Element> subElements() {
-        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+        if (variable instanceof FieldReference fr && !fr.scopeIsThis()) {
             return List.of(fr.scope);
         }
         return List.of();

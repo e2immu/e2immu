@@ -30,7 +30,7 @@ public class VariableCause implements CauseOfDelay {
         this.variable = variable;
         this.location = location;
         this.cause = cause;
-        this.withoutStatementIdentifier = cause.label + ":" + variable.simpleName() + "@" + location.delayStringWithoutStatementIdentifier();
+        this.withoutStatementIdentifier = cause.label + ":" + variable.minimalOutput() + "@" + location.delayStringWithoutStatementIdentifier();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class VariableCause implements CauseOfDelay {
 
     @Override
     public String toString() {
-        return cause.label + ":" + variable.simpleName() + "@" + location.toDelayString();
+        return cause.label + ":" + variable.minimalOutput() + "@" + location.toDelayString();
     }
 
     @Override

@@ -238,7 +238,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:UTC>" : "nullable instance type ZoneOffset";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("java.time.ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }

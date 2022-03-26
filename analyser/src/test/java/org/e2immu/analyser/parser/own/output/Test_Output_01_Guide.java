@@ -32,9 +32,8 @@ public class Test_Output_01_Guide extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        // 1 sensible warning for @NotNull
         testSupportAndUtilClasses(List.of(FormattingOptions.class, Guide.class),
-                0, 1, new DebugConfiguration.Builder()
+                0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 

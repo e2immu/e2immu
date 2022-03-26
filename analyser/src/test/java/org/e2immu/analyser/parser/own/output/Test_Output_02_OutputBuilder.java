@@ -63,7 +63,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, Space.class, TypeName.class),
-                4, 6, new DebugConfiguration.Builder()
+                4, 4, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());

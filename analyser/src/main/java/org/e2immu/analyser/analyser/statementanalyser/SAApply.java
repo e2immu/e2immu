@@ -458,9 +458,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private boolean variableUnknown(Variable variable) {
         if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) return true;
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr
-                && fr.scope != null
-                && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             return variableUnknown(ive.variable());
         }
         return false;

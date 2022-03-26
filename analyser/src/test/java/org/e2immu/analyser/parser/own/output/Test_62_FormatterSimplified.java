@@ -312,7 +312,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
-                        assertEquals("(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo:0,fwdInfo:0",
+                        assertEquals("(new Stack<GuideOnStack>()).peek().forwardInfo:0,fwdInfo:0",
                                 d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

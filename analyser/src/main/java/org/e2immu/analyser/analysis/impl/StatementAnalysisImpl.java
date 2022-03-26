@@ -512,9 +512,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
         // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr
-                && fr.scope != null
-                && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
@@ -636,7 +634,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable())) return false;
         Variable variable = vic.current().variable();
         IsVariableExpression ive;
-        if (variable instanceof FieldReference fr && fr.scope != null && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+        if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
@@ -885,7 +883,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         private Variable renameVariable(Variable variable, TranslationMap translationMap) {
-            if (variable instanceof FieldReference fr && fr.scope != null) {
+            if (variable instanceof FieldReference fr) {
                 Expression newScope = fr.scope.translate(inspectionProvider, translationMap);
                 if (newScope != fr.scope) {
                     return new FieldReference(inspectionProvider, fr.fieldInfo, newScope);

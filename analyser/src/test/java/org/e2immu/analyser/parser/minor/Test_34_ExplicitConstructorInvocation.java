@@ -128,9 +128,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     if (fr.scopeIsThis()) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "\".\"+simpleName+<f:enclosingType.fullyQualifiedName>";
+                                case 0, 2 -> "<f:enclosingType.fullyQualifiedName>+\".\"+simpleName";
                                 case 1 -> "<wrapped:fullyQualifiedName>";
-                                default -> "\".\"+simpleName+enclosingType.fullyQualifiedName";
+                                default -> "enclosingType.fullyQualifiedName+\".\"+simpleName";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else fail("?" + d.statementId());
@@ -141,7 +141,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("fullyQualifiedName".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:fullyQualifiedName>" :
-                        "[instance type String,instance type String,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName,\"\".equals(packageName)?simpleName:\".\"+packageName+simpleName]";
+                        "[instance type String,instance type String,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };

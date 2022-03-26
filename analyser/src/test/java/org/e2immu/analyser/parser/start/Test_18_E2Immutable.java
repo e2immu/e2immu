@@ -450,7 +450,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     // no linked variables
                     assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
-                    assertEquals("return method:0,this.sub.string:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return method:0,sub.string:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

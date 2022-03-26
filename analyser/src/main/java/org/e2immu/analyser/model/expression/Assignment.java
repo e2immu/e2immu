@@ -413,7 +413,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (owner == currentType) { // in the same type
             // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
             if (isStatic) {
-                return fieldReference.scope != null && !(fieldReference.scope instanceof TypeExpression);
+                return !(fieldReference.scope instanceof TypeExpression);
             }
             return !fieldReference.scopeIsThis();
         }
