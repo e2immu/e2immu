@@ -70,7 +70,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String expectLv = d.iteration() == 0 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -81,7 +81,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
 
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<p:other>" :
+                        String expectValue = d.iteration() <= 1 ? "<p:other>" :
                                 "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
@@ -97,7 +97,6 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<p:other>";
-                            case 2 -> "null==other.t?nullable instance type Basics_21<T>/*@Identity*/:<p:other>";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -139,8 +138,8 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
         };
 

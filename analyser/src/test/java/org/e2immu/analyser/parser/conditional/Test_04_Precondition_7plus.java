@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -328,12 +325,47 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "priority".equals(fr.fieldInfo.name)) {
+                    if ("Cause.TYPE_ANALYSIS".equals(fr.scope.toString())) {
+                        String expected = d.iteration() <= 4 ? "<f:Cause.TYPE_ANALYSIS.priority>"
+                                : "instance type int";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expected = switch (d.iteration()) {
+                    case 0, 1 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 2 -> "Precondition[expression=1==<f:<vp:TYPE_ANALYSIS:cm@Parameter_name;initial@Field_priority>.priority>, causes=[]]";
+                    case 3 -> "Precondition[expression=1==<f:Cause.TYPE_ANALYSIS.priority>, causes=[]]";
+                    default -> "Precondition[expression=true, causes=[]]";
+                };
+                assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("containsCauseOfDelay".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[escape]]";
+                    case 1 -> "Precondition[expression=<m:highPriority>, causes=[escape]]";
+                    default -> "Precondition[expression=1==cause.priority, causes=[escape]]";
+                };
+                assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
+            }
+        };
         testClass("Precondition_10", 0, 1,
                 new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
-                        .setForceAlphabeticAnalysisInPrimaryType(true)
                         .build());
     }
 

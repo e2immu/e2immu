@@ -53,9 +53,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnce".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
-                String expectE1 = d.iteration() <= 2 ? "{}" : "{t=null==t}";
+                String expectE1 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
                 assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                String expectE2 = d.iteration() <= 2 ? "{}" : "{t=null==t}";
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
@@ -270,7 +270,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() > 3) {
+                if (d.iteration() >= 3) {
                     assertTrue(eventual.mark());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());
@@ -304,7 +304,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() > 3) {
+                if (d.iteration() >= 3) {
                     assertTrue(eventual.after());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());
@@ -315,14 +315,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 String expectedPc = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
                     case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    case 2 -> "Precondition[expression=<null-check>||null==other.t, causes=[]]";
                     default -> "Precondition[expression=null==t, causes=[methodCall:set]]";
                 };
                 assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
 
                 String expected = switch (d.iteration()) {
                     case 0, 1 -> "<precondition>&&<precondition>";
-                    case 2 -> "<null-check>||null==other.t";
                     default -> "null==t||null==other.t";
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
@@ -331,7 +329,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() >= 4) {
+                if (d.iteration() >= 3) {
                     assertTrue(eventual.mark());
                 } else {
                     assertTrue(eventual.causesOfDelay().isDelayed());

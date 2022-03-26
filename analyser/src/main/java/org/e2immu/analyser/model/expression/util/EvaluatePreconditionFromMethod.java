@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
@@ -60,17 +61,19 @@ public class EvaluatePreconditionFromMethod {
 
         // there is a precondition, and we have a list of values... let's see what we can learn
         // the precondition is using parameter info's as variables so we'll have to substitute
-        Map<Expression, Expression> translationMap = translationMap(context.getAnalyserContext(),
+        TranslationMap translationMap = translationMap(context.getAnalyserContext(),
                 methodInfo, parameterValues, scopeObject);
-        CausesOfDelay translationDelays = translationMap.values().stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if(translationDelays.isDelayed()) {
-            return Precondition.forDelayed(identifierOfMethodCall, translationDelays, context.getPrimitives());
-        }
+
         Expression reEvaluated;
         if (!translationMap.isEmpty()) {
-            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT);
-            reEvaluated = eRreEvaluated.value();
-            builder.composeIgnoreExpression(eRreEvaluated);
+            Expression translated = precondition.expression().translate(context.getAnalyserContext(), translationMap);
+            if(translated != precondition.expression()) {
+                EvaluationResult eRreEvaluated = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+                reEvaluated = eRreEvaluated.value();
+                builder.composeIgnoreExpression(eRreEvaluated);
+            } else {
+                reEvaluated = precondition.expression();
+            }
         } else {
             reEvaluated = precondition.expression();
         }
@@ -104,11 +107,11 @@ public class EvaluatePreconditionFromMethod {
         return Precondition.empty(context.getPrimitives());
     }
 
-    private static Map<Expression, Expression> translationMap(InspectionProvider inspectionProvider,
+    private static TranslationMap translationMap(InspectionProvider inspectionProvider,
                                                               MethodInfo methodInfo,
                                                               List<Expression> parameters,
                                                               Expression scope) {
-        Map<Expression, Expression> builder = new HashMap<>();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         List<ParameterInfo> methodParameters = methodInfo.methodInspection.get().getParameters();
         int i = 0;
         for (Expression parameterValue : parameters) {
@@ -130,6 +133,6 @@ public class EvaluatePreconditionFromMethod {
                 }
             }
         }
-        return Map.copyOf(builder);
+        return builder.build();
     }
 }
