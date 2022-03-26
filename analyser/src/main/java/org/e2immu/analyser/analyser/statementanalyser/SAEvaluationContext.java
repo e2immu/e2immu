@@ -36,7 +36,6 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -647,20 +646,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public Expression acceptAndTranslatePrecondition(Identifier identifier, Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
-        Map<Expression, Expression> translationMap = new HashMap<>();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         precondition.visit(e -> {
             if (e instanceof VariableExpression ve && ve.isDependentOnStatementTime()) {
-                translationMap.put(ve, new VariableExpression(ve.variable()));
+                builder.put(ve, new VariableExpression(ve.variable()));
             }
         });
-        Expression translated;
-        if (translationMap.isEmpty()) {
-            translated = precondition;
-        } else {
-            // we need an evaluation context that simply translates, but does not interpret stuff
-            EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
-            translated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), translationMap, ForwardReEvaluationInfo.DEFAULT).getExpression();
-        }
+        TranslationMap translationMap = builder.build();
+        Expression translated = precondition.translate(getAnalyserContext(), translationMap);
         List<Variable> variables = translated.variables(false);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
             DV modified = variables.stream()

@@ -20,9 +20,11 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
@@ -79,10 +81,12 @@ public class AssignmentIncompatibleWithPrecondition {
                             Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
                                     .individualStateInfo(context, ve.variable());
                             if (!state.isBoolValueTrue()) {
-                                Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
+                                TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(ve.variable()), new VariableExpression(variable)).build();
+                                Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                 EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
-                                Expression stateInTermsOfField = state.reEvaluate(neutralContext, map, ForwardReEvaluationInfo.DEFAULT).getExpression();
+                                ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+                                Expression stateInTermsOfField = translated.evaluate(neutralContext, fwd).getExpression();
                                 return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
                             }
                         }
@@ -144,8 +148,10 @@ public class AssignmentIncompatibleWithPrecondition {
                                                    Variable variable,
                                                    Expression value,
                                                    Expression precondition) {
-        Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
-        Expression reEvaluated = precondition.reEvaluate(EvaluationResult.from(evaluationContext), map, ForwardReEvaluationInfo.DEFAULT).getExpression();
+        TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(variable), value).build();
+        Expression translated = precondition.translate(evaluationContext.getAnalyserContext(), translationMap);
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        Expression reEvaluated = translated.evaluate(EvaluationResult.from(evaluationContext), fwd).getExpression();
         // false ~ incompatible with precondition
         if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
         return null;
