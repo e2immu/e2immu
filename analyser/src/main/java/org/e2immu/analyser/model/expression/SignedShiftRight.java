@@ -16,26 +16,15 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Map;
-
 public class SignedShiftRight extends BinaryOperator {
 
     private SignedShiftRight(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
         super(identifier, primitives, lhs, primitives.signedRightShiftOperatorInt(), rhs, Precedence.SHIFT);
-    }
-
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
-        return builder.setExpression(SignedShiftRight.shiftRight(identifier,
-                context, reLhs.value(), reRhs.value())).build();
     }
 
     public static Expression shiftRight(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

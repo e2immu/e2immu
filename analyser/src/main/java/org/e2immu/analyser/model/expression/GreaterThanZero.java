@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -53,16 +52,6 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         GreaterThanZero that = (GreaterThanZero) o;
         if (allowEquals != that.allowEquals) return false;
         return expression.equals(that.expression);
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reValue = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reValue);
-        Expression gt0 = GreaterThanZero.greater(context,
-                reValue.getExpression(), new IntConstant(context.getPrimitives(), 0),
-                allowEquals);
-        return builder.setExpression(gt0).build();
     }
 
     @Override

@@ -26,7 +26,6 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @E2Container
@@ -101,14 +100,6 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public Precedence precedence() {
         return Precedence.ARRAY_ACCESS;
-    }
-
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult er = scope.reEvaluate(context, translation, forwardReEvaluationInfo);
-        Expression newArrayLength = new ArrayLength(primitives, er.getExpression());
-        return new EvaluationResult.Builder(context).compose(er).setExpression(newArrayLength).build();
     }
 
     @Override

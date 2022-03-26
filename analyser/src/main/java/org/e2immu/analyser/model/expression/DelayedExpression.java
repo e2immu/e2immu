@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
@@ -247,11 +246,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(context).setExpression(this).build();
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
         return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 

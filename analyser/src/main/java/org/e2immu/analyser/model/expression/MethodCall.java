@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -22,6 +21,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -34,11 +34,13 @@ import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
@@ -238,30 +240,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             outputBuilder.add(gg.end());
         }
         return outputBuilder;
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        EvaluationResult reObject = object.reEvaluate(context, translation, forwardReEvaluationInfo);
-        List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        DV modified = context.getAnalyserContext()
-                .getMethodAnalysis(methodInfo).getProperty(Property.MODIFIED_METHOD);
-        EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
-                context.getAnalyserContext().getMethodAnalysis(methodInfo),
-                objectIsImplicit, reObject.value(), concreteReturnType,
-                reParamValues, ForwardEvaluationInfo.DEFAULT); // FIXME
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams)
-                .compose(reObject, mv);
-        /* important note: evaluating for not null here clears the ForwardReEvaluation data, which causes an
-          infinite loop in InlinedMethod_13; it is probably worthwhile implementing properly, though
-
-          if (reObject.value() instanceof IsVariableExpression ve) {
-              EvaluationResult forwarded = ve.evaluate(context, ForwardEvaluationInfo.NOT_NULL);
-              builder.compose(forwarded);
-          }
-         */
-        return builder.setExpression(mv.value()).build();
     }
 
     @Override
@@ -760,7 +738,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                       Filter.FilterResult<MethodCall> filterResult,
                                                       Expression instanceState,
                                                       List<Expression> parameterValues) {
-        Map<Expression, Expression> translationMap = new HashMap<>();
+        TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
         if (filterResult != null) {
             Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
             if (preAspectVariableValue != null) {
@@ -775,8 +753,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
 
         Expression companionValue = companionAnalysis.getValue();
+        Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());
         EvaluationResult child = context.child(instanceState, true);
-        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap, ForwardReEvaluationInfo.DEFAULT);
+        EvaluationResult companionValueTranslationResult = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();
     }

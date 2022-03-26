@@ -28,7 +28,6 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -69,17 +68,6 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         this.multiExpression = multiExpression;
         this.commonType = commonType;
         this.inspectionProvider = inspectionProvider;
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reClauseERs = multiExpression.stream()
-                .map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        return new EvaluationResult.Builder(context)
-                .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(), reValues, commonType))
-                .build();
     }
 
     @Override

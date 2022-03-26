@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.output.formatter;
 
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.FormattingOptions;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputElement;
+import org.e2immu.analyser.output.Space;
 
 import java.util.List;
 import java.util.Stack;

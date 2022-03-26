@@ -29,7 +29,6 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -155,11 +154,6 @@ public interface Expression extends Element, Comparable<Expression> {
     boolean isBoolValueTrue();
 
     boolean isBoolValueFalse();
-
-    @NotNull
-    default EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        throw new UnsupportedOperationException("For " + getClass());
-    }
 
     /**
      * Tests the value first, and only if true, visit deeper.

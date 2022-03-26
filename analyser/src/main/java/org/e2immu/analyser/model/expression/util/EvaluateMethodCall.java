@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Primitives;
@@ -87,9 +88,7 @@ public class EvaluateMethodCall {
             TranslationMap translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
             Expression translated = inlineValue.translate(analyserContext, translationMap);
-            EvaluationResult er = translated.evaluate(context, forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional());
-            LOGGER.warn("INLINE_FI {} -> {}", parameters, er.getExpression());
-            return er;
+            return translated.evaluate(context, forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional());
         }
 
         if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -189,7 +188,6 @@ public class EvaluateMethodCall {
                     Expression translated = iv.translate(analyserContext, translationMap);
                     ForwardEvaluationInfo forward = forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional();
                     EvaluationResult reSrv = translated.evaluate(context, forward);
-                    LOGGER.warn("INLINE {} -> {}", parameters, reSrv.getExpression());
                     return builder.compose(reSrv).setExpression(reSrv.value()).build();
                 }
                 if (srv.isConstant()) {
@@ -317,17 +315,18 @@ public class EvaluateMethodCall {
         }
         CompanionAnalysis companionAnalysis = optValue.get().getValue();
         Expression companionValue = companionAnalysis.getValue();
-        Map<Expression, Expression> translationMap = new HashMap<>();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         // parameters of companionAnalysis look like: aspect (if present) | main method parameters | retVal
         // the aspect has been replaced+taken care of by the CompanionAnalyser
         // we must put a replacement in the translation map for each of the parameters
         // we do not bother with the retVal (which is of type VariableValue(ReturnVariable))
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
-                .forEach(pair -> translationMap.put(pair.k, pair.v));
+                .forEach(pair -> builder.put(pair.k, pair.v));
+        Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationResult child = context.child(state, true);
-        Expression resultingValue = companionValue.reEvaluate(child, translationMap, ForwardReEvaluationInfo.DEFAULT).value();
+        Expression resultingValue = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (methodInfo.returnType().typeInfo.isBoolean()) {
@@ -361,7 +360,7 @@ public class EvaluateMethodCall {
         if (!context.evaluationContext().hasState(objectValue)) return null;
         Expression state = context.evaluationContext().state(objectValue);
 
-        Map<Expression, Expression> translationMap = new HashMap<>();
+        TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
         methodAnalysis.getCompanionAnalyses().entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
                 .forEach(e -> {
@@ -384,7 +383,8 @@ public class EvaluateMethodCall {
                 });
 
         if (translationMap.isEmpty()) return null;
-        Expression newState = state.reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT).value();
+        Expression translated = state.translate(context.getAnalyserContext(), translationMap.build());
+        Expression newState = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT).value();
 
         DV notNull = MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
         return PropertyWrapper.addState(methodCall, newState, Map.of(NOT_NULL_EXPRESSION, notNull));

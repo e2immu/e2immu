@@ -695,18 +695,6 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult
-                                               context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reClauseERs = expressions.stream()
-                .map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        return new EvaluationResult.Builder(context)
-                .compose(reClauseERs)
-                .setExpression(And.and(context, reClauses))
-                .build();
-    }
-
-    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));

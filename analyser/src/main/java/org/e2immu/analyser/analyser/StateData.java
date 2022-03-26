@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;

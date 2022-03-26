@@ -25,7 +25,10 @@ import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -90,32 +93,6 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public Precedence precedence() {
         return Precedence.TERNARY; // TODO verify this is correct
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        EvaluationResult reEvaluatedSelector = selector.reEvaluate(context, translation, forwardReEvaluationInfo);
-        builder.compose(reEvaluatedSelector);
-        List<Expression> newExpressionList = new ArrayList<>(expressions.size());
-
-        List<SwitchEntry> newSwitchEntries = new ArrayList<>(switchEntries.size());
-        for (SwitchEntry se : switchEntries) {
-            if (se instanceof SwitchEntry.StatementsEntry statementsEntry && statementsEntry.structure.statements().size() == 1
-                    && statementsEntry.structure.statements().get(0) instanceof ExpressionAsStatement eas) {
-                EvaluationResult re = eas.expression.reEvaluate(context, translation, forwardReEvaluationInfo);
-                builder.compose(re);
-                Expression reEvaluated = re.getExpression();
-                newExpressionList.add(reEvaluated);
-                Statement statement = new ExpressionAsStatement(se.identifier, reEvaluated, false);
-                SwitchEntry newSe = new SwitchEntry.StatementsEntry(se.identifier, context.getPrimitives(), reEvaluatedSelector.getExpression(), se.labels, List.of(statement));
-                newSwitchEntries.add(newSe);
-            }
-        }
-        MultiExpression newExpressions = new MultiExpression(newExpressionList.toArray(Expression[]::new));
-        SwitchExpression se = new SwitchExpression(identifier, reEvaluatedSelector.getExpression(), newSwitchEntries, returnType, newExpressions);
-        builder.setExpression(se);
-        return builder.build();
     }
 
     @Override

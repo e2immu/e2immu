@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -28,10 +31,8 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /*
 A final field can have been initialised with multiple different values; in some situations
@@ -52,17 +53,6 @@ public class MultiValue extends BaseExpression implements Expression {
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        Expression[] reValues = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        MultiExpression reMulti = new MultiExpression(reValues);
-        return new EvaluationResult.Builder(context)
-                .compose(reClauseERs)
-                .setExpression(new MultiValue(identifier, context.getAnalyserContext(), reMulti, commonType))
-                .build();
     }
 
     @Override

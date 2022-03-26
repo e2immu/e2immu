@@ -36,7 +36,6 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -359,22 +358,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public List<? extends Element> subElements() {
         return parameterExpressions;
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        Expression expression;
-        CausesOfDelay causesOfDelay = reParamValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (causesOfDelay.isDelayed()) {
-            expression = createDelayedValue(identifier, context, causesOfDelay);
-        } else {
-            expression = new ConstructorCall(identifier, constructor, parameterizedType,
-                    diamond, reParamValues, anonymousClass, arrayInitializer);
-        }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams);
-        return builder.setExpression(expression).build();
     }
 
     @Override

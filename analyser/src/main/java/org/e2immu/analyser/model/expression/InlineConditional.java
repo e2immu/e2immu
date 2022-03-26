@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -97,19 +96,6 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (tc == condition && tt == ifTrue && tf == ifFalse) return this;
         return new InlineConditional(identifier, this.inspectionProvider, tc, tt, tf);
     }
-
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reCondition = condition.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reTrue = ifTrue.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reFalse = ifFalse.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reCondition, reTrue, reFalse);
-        EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
-                context, reCondition.value(), reTrue.value(), reFalse.value(), false);
-        return builder.setExpression(res.value()).build();
-    }
-
 
     @Override
     public int internalCompareTo(Expression v) {

@@ -16,15 +16,12 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.Map;
 
 public class ShiftLeft extends BinaryOperator {
 
@@ -38,13 +35,6 @@ public class ShiftLeft extends BinaryOperator {
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if(tl == lhs && tr == rhs) return this;
         return new ShiftLeft(identifier, primitives, tl, tr);
-    }
-
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
-        return builder.setExpression(ShiftLeft.shiftLeft(identifier, context, reLhs.value(), reRhs.value())).build();
     }
 
     public static Expression shiftLeft(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {

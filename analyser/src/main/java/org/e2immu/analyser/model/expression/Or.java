@@ -253,19 +253,6 @@ public final class Or extends ExpressionCanBeTooComplex {
         return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream()).collect(Collectors.toList());
     }
 
-    // no implementation of the filters
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reClauseERs = expressions.stream()
-                .map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo))
-                .collect(Collectors.toList());
-        Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        Identifier id = Identifier.joined("and", Arrays.stream(reClauses).map(Expression::getIdentifier).toList());
-        Expression or = new Or(id, primitives).append(context, reClauses);
-        return new EvaluationResult.Builder(context).compose(reClauseERs).setExpression(or).build();
-    }
-
     @Override
     public CausesOfDelay causesOfDelay() {
         return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);

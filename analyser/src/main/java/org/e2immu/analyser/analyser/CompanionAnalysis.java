@@ -15,12 +15,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public interface CompanionAnalysis {
 
@@ -48,16 +45,4 @@ public interface CompanionAnalysis {
      * @return a list of parameters, never null.
      */
     List<Expression> getParameterValues();
-
-    /**
-     * Re-evaluate the companion method with concrete parameters and object
-     *
-     * @param context the evaluation context
-     * @return a re-evaluated Value
-     */
-    default Expression reEvaluate(EvaluationResult context, List<Expression> parameterValues) {
-        Map<Expression, Expression> translationMap = new HashMap<>();
-        ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return getValue().reEvaluate(context, Map.copyOf(translationMap), ForwardReEvaluationInfo.DEFAULT).value();
-    }
 }

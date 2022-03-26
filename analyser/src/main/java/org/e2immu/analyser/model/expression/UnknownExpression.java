@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -23,7 +26,6 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -130,11 +132,6 @@ public class UnknownExpression extends BaseExpression implements Expression {
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         return translationMap.translateExpression(this);
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        return new EvaluationResult.Builder(context).setExpression(this).build();
     }
 
     @Override

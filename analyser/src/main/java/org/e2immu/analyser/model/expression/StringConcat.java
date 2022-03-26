@@ -16,15 +16,12 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardReEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.Map;
 
 public class StringConcat extends BinaryOperator {
 
@@ -85,13 +82,6 @@ public class StringConcat extends BinaryOperator {
         if (l == null) return r;
         if (r == null) return l;
         return new StringConcat(identifier, primitives, l, r);
-    }
-
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
-        return builder.setExpression(stringConcat(identifier, context, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
     @Override

@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
@@ -27,7 +30,6 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -118,14 +120,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         builder.compose(scopeResult);
         builder.setExpression(this);
         return builder.build();
-    }
-
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reScope = scope.reEvaluate(context, translation, forwardReEvaluationInfo);
-        MethodReference newMethodReference = new MethodReference(getIdentifier(), reScope.getExpression(), methodInfo, concreteReturnType);
-        return new EvaluationResult.Builder(context).compose(reScope).setExpression(newMethodReference).build();
     }
 
     @Override

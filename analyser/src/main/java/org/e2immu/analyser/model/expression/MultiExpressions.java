@@ -27,10 +27,8 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /*
 Multiple expressions to be evaluated, yet only the last one determines type, properties, etc.
@@ -49,17 +47,6 @@ public class MultiExpressions extends BaseExpression implements Expression {
         assert multiExpression.expressions().length > 0;
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(context, translation, forwardReEvaluationInfo)).collect(Collectors.toList());
-        Expression[] reValues = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
-        MultiExpression reMulti = new MultiExpression(reValues);
-        return new EvaluationResult.Builder(context)
-                .compose(reClauseERs)
-                .setExpression(new MultiExpressions(identifier, context.getAnalyserContext(), reMulti))
-                .build();
     }
 
     @Override

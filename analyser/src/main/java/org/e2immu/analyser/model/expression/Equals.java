@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
@@ -24,7 +27,6 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public class Equals extends BinaryOperator {
@@ -43,14 +45,6 @@ public class Equals extends BinaryOperator {
         Expression tr = rhs.translate(inspectionProvider, translationMap);
         if (tl == lhs && tr == rhs) return this;
         return new Equals(identifier, primitives, tl, tr);
-    }
-
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reLhs = lhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult reRhs = rhs.reEvaluate(context, translation, forwardReEvaluationInfo);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reLhs, reRhs);
-        return builder.setExpression(Equals.equals(context, reLhs.value(), reRhs.value())).build();
     }
 
     public static Expression equals(EvaluationResult context, Expression l, Expression r) {

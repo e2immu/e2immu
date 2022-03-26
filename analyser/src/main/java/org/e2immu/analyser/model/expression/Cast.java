@@ -61,13 +61,6 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        EvaluationResult reExpression = expression.reEvaluate(context, translation, forwardReEvaluationInfo);
-        Cast cast = new Cast(reExpression.getExpression(), parameterizedType);
-        return new EvaluationResult.Builder(context).compose(reExpression).setExpression(cast).build();
-    }
-
-    @Override
     public int order() {
         return 0;
     }

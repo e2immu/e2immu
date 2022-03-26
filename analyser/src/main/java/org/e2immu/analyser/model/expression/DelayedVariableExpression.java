@@ -30,7 +30,6 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
@@ -249,30 +248,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             return new DelayedVariableExpression(msg, newDv, statementTime, causesOfDelay);
         }
         return this;
-    }
-
-    // special treatment because of == equality
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        Optional<Map.Entry<Expression, Expression>> found = translation.entrySet().stream()
-                .filter(e -> e.getKey() instanceof VariableExpression ve && ve.variable().equals(variable))
-                .findFirst();
-        Expression result;
-        if (found.isPresent()) {
-            result = found.get().getValue();
-        } else if (variable instanceof FieldReference fr) {
-            EvaluationResult reEval = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo); // recurse
-            Expression replaceScope = reEval.getExpression();
-            if (!replaceScope.equals(fr.scope)) {
-                FieldReference newRef = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, replaceScope);
-                result = new DelayedVariableExpression(msg, newRef, statementTime, causesOfDelay);
-            } else {
-                result = this;
-            }
-        } else {
-            result = this;
-        }
-        return new EvaluationResult.Builder(context).setExpression(result).build();
     }
 
     @Override

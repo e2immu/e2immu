@@ -238,66 +238,6 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return typeInfo != null && typeInfo.isNumeric();
     }
 
-    /*
-    the purpose of having this extra "markRead" here (as compared to the default implementation in Expression),
-    is to ensure that fields exist when they are encountered -- reEvaluate is called from the single return value of
-    method; if this one returns a field, that field has to be made available to the next iteration; see Enum_3 statement 0 in
-    posInList
-
-    Full evaluation causes a lot of trouble with improper delays because we have no decent ForwardEvaluationInfo
-     */
-    @Override
-    public EvaluationResult reEvaluate(EvaluationResult context, Map<Expression, Expression> translation, ForwardReEvaluationInfo forwardReEvaluationInfo) {
-        Expression inMap = translation.get(this);
-        if (inMap != null) {
-            VariableExpression ve;
-            if ((ve = inMap.asInstanceOf(VariableExpression.class)) != null) {
-                return ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-            }
-            DelayedVariableExpression dve;
-            EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-            if ((dve = inMap.asInstanceOf(DelayedVariableExpression.class)) != null) {
-                // causes problems with local copies (Loops_19)
-                //   return dve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                builder.markRead(dve.variable());
-                return builder.setExpression(dve).build();
-            }
-            return builder.setExpression(inMap).build();
-        }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        if (variable instanceof FieldReference fr) {
-            EvaluationResult er = fr.scope.reEvaluate(context, translation, forwardReEvaluationInfo);
-            Expression newScope = er.getExpression();
-            if (!newScope.equals(fr.scope)) {
-                FieldReference newFr = new FieldReference(context.getAnalyserContext(), fr.fieldInfo, newScope);
-                if (newScope.isDelayed() && !(newScope instanceof DelayedVariableOutOfScope)) {
-                    DelayedVariableExpression dve = DelayedVariableExpression.forField(newFr, fr.statementTime(), newScope.causesOfDelay());
-                    return builder.setExpression(dve).markRead(newFr).build();
-                }
-                VariableExpression ve = new VariableExpression(newFr);
-                EvaluationResult er2 = ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-                if (er2.causesOfDelay().isDone()) return builder.compose(er2).build();
-                return builder.setExpression(ve).markRead(newFr).build();
-            }
-        }
-        if (variable instanceof DependentVariable dv) {
-            EvaluationResult arrayEr = dv.expressionOrArrayVariable.isLeft()
-                    ? dv.expressionOrArrayVariable.getLeft().value().reEvaluate(context, translation, forwardReEvaluationInfo)
-                    : new VariableExpression(dv.expressionOrArrayVariable.getRight()).reEvaluate(context, translation, forwardReEvaluationInfo);
-            EvaluationResult indexEr = dv.expressionOrIndexVariable.isLeft()
-                    ? dv.expressionOrIndexVariable.getLeft().value().reEvaluate(context, translation, forwardReEvaluationInfo)
-                    : new VariableExpression(dv.expressionOrIndexVariable.getRight()).reEvaluate(context, translation, forwardReEvaluationInfo);
-            Expression newArrayExpression = arrayEr.getExpression();
-            Expression newIndexExpression = indexEr.getExpression();
-            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), newArrayExpression, newIndexExpression, dv.parameterizedType, dv.statementIndex);
-            VariableExpression ve = new VariableExpression(newDv);
-            EvaluationResult er2 = ve.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-            if (er2.causesOfDelay().isDone()) return builder.compose(er2).build();
-            return builder.setExpression(ve).markRead(newDv).build();
-        }
-        return builder.setExpression(new VariableExpression(variable)).markRead(variable).build();
-    }
-
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
