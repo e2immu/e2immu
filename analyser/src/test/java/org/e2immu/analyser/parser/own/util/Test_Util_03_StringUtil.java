@@ -87,7 +87,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("n<=1000?i<=99?\"0\"+Integer.toString(i):Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=10?Integer.toString(i):<return value>",
+                assertEquals("/*inline pad*/n<=1000?i<=99?\"0\"+Integer.toString(i):Integer.toString(i):n<=100?i<=9?\"0\"+Integer.toString(i):Integer.toString(i):n<=10?Integer.toString(i):<return value>",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

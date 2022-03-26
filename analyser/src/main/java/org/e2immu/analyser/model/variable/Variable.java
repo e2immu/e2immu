@@ -64,10 +64,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     @NotNull
     String fullyQualifiedName();
 
-    default String debug() {
-        return simpleName();
-    }
-
     boolean isStatic();
 
     default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {

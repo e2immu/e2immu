@@ -189,9 +189,9 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     @Override
     public OutputBuilder output(Qualification qualification) {
         if (qualification == Qualification.FULLY_QUALIFIED_NAME) {
-            return new OutputBuilder().add(new Text(fqn, fqn));
+            return new OutputBuilder().add(new Text(fqn));
         }
-        return new OutputBuilder().add(new Text(msg, msg));
+        return new OutputBuilder().add(new Text(msg));
     }
 
     @Override
@@ -215,7 +215,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
         DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (cnn.gt(MultiLevel.NULLABLE_DV)) {
-            builder.variableOccursInNotNullContext(variable, this, cnn);
+            builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.complainInlineConditional());
         }
         return builder.setExpression(this).build();
     }

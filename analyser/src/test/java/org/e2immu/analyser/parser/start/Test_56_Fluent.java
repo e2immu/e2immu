@@ -153,7 +153,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 String expect = d.iteration() <= 4 ? "<m:copyOf>"
-                        : "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(instance type Builder.value)";
+                        : "/*inline copyOf*/instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(instance type Builder.value)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 

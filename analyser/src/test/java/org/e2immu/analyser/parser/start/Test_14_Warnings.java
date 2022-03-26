@@ -421,18 +421,18 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
 
                 // method
-                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline methodMustNotBeStatic3*/this", d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic4>"
-                        : "Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()";
+                        : "/*inline methodMustNotBeStatic4*/Stream.of(input).map(/*inline apply*/null==s?\"null\":s+\"something\"+t).findAny().get()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic5>" : "this";
+                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic5>" : "/*inline methodMustNotBeStatic5*/this";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);

@@ -166,7 +166,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method1*/" + RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -345,7 +345,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ? O_I_DELAYED : "instance type int";
-                        assertEquals(expectValue, d.currentValue().debugOutput());
+                        assertEquals(expectValue, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if (RETURN5.equals(d.variableName())) {
@@ -354,7 +354,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                             case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<f:conditionalChecks.i>)";
                             default -> RETURN_VALUE;
                         };
-                        assertEquals(expectValue, d.currentValue().debugOutput());
+                        assertEquals(expectValue, d.currentValue().toString());
                         mustSeeIteration(d, 2);
                     }
                 }
@@ -417,7 +417,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||this.i==<f:conditionalChecks.i>)";
                         default -> RETURN_VALUE;
                     };
-                    assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
+                    assertEquals(expectValueString, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
 
                     if (d.iteration() == 0) {

@@ -103,8 +103,8 @@ public class Test_01_Loops_1 extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 DV execution = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("true", d.condition().debugOutput());
-                    assertEquals("true", d.absoluteState().debugOutput());
+                    assertEquals("true", d.condition().toString());
+                    assertEquals("true", d.absoluteState().toString());
                     assertEquals(ALWAYS, execution);
                 }
                 if ("2.0.1.0.0".equals(d.statementId())) {
@@ -117,13 +117,13 @@ public class Test_01_Loops_1 extends CommonTestRunner {
 
                     // both are NO_VALUE in the first iteration, because we're showing the stateData
                     // and not the local condition manager
-                    assertEquals("true", d.condition().debugOutput());
+                    assertEquals("true", d.condition().toString());
                     String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-2-i$2+n>=0";
                     assertEquals(expectState, d.absoluteState().toString());
                     assertEquals(d.iteration() == 0, d.conditionManagerForNextStatement().isDelayed());
                 }
                 if ("2.0.2".equals(d.statementId())) { // res2 = "abc"
-                    assertEquals("true", d.condition().debugOutput());
+                    assertEquals("true", d.condition().toString());
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
 
                     String expectState = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-2-i$2+n>=0";

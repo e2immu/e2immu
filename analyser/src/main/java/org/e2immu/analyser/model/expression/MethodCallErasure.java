@@ -48,7 +48,7 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", toString()));
+        return new OutputBuilder().add(new Text(toString()));
     }
 
     @Override

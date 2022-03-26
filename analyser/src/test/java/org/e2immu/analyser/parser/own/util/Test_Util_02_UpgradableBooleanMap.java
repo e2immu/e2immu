@@ -113,7 +113,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
                 String expected = d.iteration() <= 2 ? "<m:of>"
-                        : "null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
+                        : "/*inline of*/null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

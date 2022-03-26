@@ -66,7 +66,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
-                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                assertEquals("/*inline setContainsValueHelper*/Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
@@ -75,7 +75,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
                 assertDv(d, 0, DV.FALSE_DV, MODIFIED_METHOD);
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(Stage.MERGE));
 
-                assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
+                assertEquals("/*inline test1*/Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());

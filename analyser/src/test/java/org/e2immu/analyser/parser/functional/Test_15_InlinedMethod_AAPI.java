@@ -54,16 +54,16 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("i+r", inlinedMethod.toString());
+                    assertEquals("/*inline plusRandom*/i+r", inlinedMethod.toString());
                 } else {
                     fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("2+instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference31*/2+instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference11*/instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -122,11 +122,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isLong".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:isLong>" : "s.startsWith(\"x\")||null==s";
+                String expected = d.iteration() == 0 ? "<m:isLong>" : "/*inline isLong*/s.startsWith(\"x\")||null==s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("getParameters".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:getParameters>" : "b$0?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
+                String expected = d.iteration() == 0 ? "<m:getParameters>" : "/*inline getParameters*/b$0?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -136,7 +136,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
             }
         };
-        testClass("InlinedMethod_8", 0, 5, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_8", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -150,7 +150,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("find".equals(d.methodInfo().name)) {
                 // the visualisation is f.contains(s) "because" (we should improve on this) this is an inlined method, with f as parameter
                 String expected = d.iteration() <= 1 ? "<m:find>"
-                        : "s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(ff.equals(s)).findAny().orElse(s):stream.filter(f.contains(s)).findFirst().orElse(null)";
+                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
@@ -159,7 +159,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_10", 0, 4, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
@@ -282,7 +282,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
 
-        testClass("InlinedMethod_13", 0, 7, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_13", 0, 6, new DebugConfiguration.Builder()
           //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
            //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
            //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -315,7 +315,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("[new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,map]", d.fieldAnalysis().getValue().toString());
             }
         };
-        testClass("InlinedMethod_14", 0, 8, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_14", 0, 7, new DebugConfiguration.Builder()
               //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
              //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()

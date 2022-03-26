@@ -58,7 +58,7 @@ public final class LambdaExpressionErasures extends BaseExpression implements Er
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", "<" + this + ">"));
+        return new OutputBuilder().add(new Text("<" + this + ">"));
     }
 
     @Override

@@ -146,7 +146,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        testClass("FormatterSimplified_2", 4, 8, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_2", 4, 7, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -398,7 +398,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() <= 2 ? "<m:apply>" : "list.get(forwardInfo.pos) instanceof Guide";
+                String expected = d.iteration() <= 2 ? "<m:apply>" : "/*inline apply*/list.get(forwardInfo.pos) instanceof Guide";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

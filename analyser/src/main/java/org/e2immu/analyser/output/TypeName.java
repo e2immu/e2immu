@@ -40,11 +40,6 @@ public record TypeName(String simpleName,
     }
 
     @Override
-    public String debug() {
-        return fullyQualifiedName;
-    }
-
-    @Override
     public int length(FormattingOptions options) {
         return minimal().length();
     }

@@ -240,7 +240,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {
-            String expect = d.iteration() == 0 ? "<m:immutable>" : COPY_OF_TMP;
+            String expect = d.iteration() == 0 ? "<m:immutable>" : "/*inline immutable*/" + COPY_OF_TMP;
             assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
             assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);

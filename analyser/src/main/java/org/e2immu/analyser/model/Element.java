@@ -89,11 +89,6 @@ public interface Element {
         return output(Qualification.EMPTY).toString();
     }
 
-    @NotNull
-    default String debugOutput() {
-        return output(Qualification.EMPTY).debug();
-    }
-
     default TypeInfo definesType() {
         return null;
     }

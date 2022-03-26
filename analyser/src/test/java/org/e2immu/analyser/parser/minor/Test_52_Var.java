@@ -93,7 +93,7 @@ public class Test_52_Var extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("apply", inlinedMethod.methodInfo().name);
-                    assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("/*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                 } else fail();
 
                 // @NotNull on parameter of apply
@@ -101,14 +101,14 @@ public class Test_52_Var extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("repeater".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:repeater>" : "x.repeat(i)";
+                String expect = d.iteration() == 0 ? "<m:repeater>" : "/*inline repeater*//*inline apply*/x.repeat(i)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("repeater", inlinedMethod.methodInfo().name);
                         if (inlinedMethod.expression() instanceof InlinedMethod inlinedMethod2) {
                             assertEquals("apply", inlinedMethod2.methodInfo().name);
-                            assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                            assertEquals("/*inline repeater*//*inline apply*/x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                             assertFalse(inlinedMethod.containsVariableFields());
                             assertEquals(2, inlinedMethod.variables(true).size());
                             assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));

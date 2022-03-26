@@ -76,6 +76,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(name)) {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
                 assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
+                assertEquals("/*inline either*/e1+e2", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

@@ -65,7 +65,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("i+r", inlinedMethod.toString());
+                    assertEquals("/*inline plus*/i+r", inlinedMethod.toString());
                     assertEquals("i, r, this", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                 } else fail();
             }
@@ -106,21 +106,21 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("sum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum>" : "i+j";
+                String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 }
             }
             if ("sum5".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum5>" : "5+i";
+                String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/5+i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 }
             }
             if ("expand3".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:expand3>" : "a+b";
+                String expect = d.iteration() <= 1 ? "<m:expand3>" : "/*inline expand3*/a+b";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
@@ -137,7 +137,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_6() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("sum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum>" : "i$0+j";
+                String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i$0+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -146,7 +146,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 }
             }
             if ("expandSum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:expandSum>" : "3*k+k*i";
+                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+k*i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
 
@@ -159,12 +159,12 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                     assertEquals("variableField.i", inlinedMethod.expression().toString());
                 } else fail();
 
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "variableField.i";
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField.i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

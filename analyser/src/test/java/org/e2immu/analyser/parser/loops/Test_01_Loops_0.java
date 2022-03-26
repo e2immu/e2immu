@@ -46,7 +46,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("2".equals(d.statementId())) {
-                assertEquals("true", d.evaluationResult().value().debugOutput());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
             if ("2.0.1".equals(d.statementId())) {
                 // NOTE: is i$2, and not i$2+1 because the operation is i++, not ++i

@@ -75,8 +75,8 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 if ("1.0.3.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "(new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&<null-check>&&<m:isEmpty>?new String[](0):<m:split>";
-                        case 1 -> "(new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&<m:isEmpty>&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(!f.isDirectory())?new String[](0):<m:split>";
-                        default -> "(new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&dirRelativeToBase.getPath().isEmpty()&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(!f.isDirectory())?new String[](0):((new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&!dirRelativeToBase.getPath().isEmpty()&&dirRelativeToBase.getPath().startsWith(\"/\")&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(!f.isDirectory())?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
+                        case 1 -> "(new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&<m:isEmpty>&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(/*inline accept*/!f.isDirectory())?new String[](0):<m:split>";
+                        default -> "(new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&dirRelativeToBase.getPath().isEmpty()&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(/*inline accept*/!f.isDirectory())?new String[](0):((new File(baseDirectory,dirRelativeToBase.getPath())).isDirectory()&&!dirRelativeToBase.getPath().isEmpty()&&dirRelativeToBase.getPath().startsWith(\"/\")&&null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(/*inline accept*/!f.isDirectory())?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -185,7 +185,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                4, 5, new DebugConfiguration.Builder()
+                5, 5, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

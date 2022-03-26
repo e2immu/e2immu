@@ -161,7 +161,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         if ("f1".equals(d.fieldInfo().name)) {
             assertEquals(TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
 
-            assertEquals("p0", d.fieldAnalysis().getValue().debugOutput());
+            assertEquals("p0", d.fieldAnalysis().getValue().toString());
             assertEquals("p0:1", d.fieldAnalysis().getLinkedVariables().toString());
 
             assertEquals(FALSE_DV, d.fieldAnalysis().getProperty(MODIFIED_OUTSIDE_METHOD));

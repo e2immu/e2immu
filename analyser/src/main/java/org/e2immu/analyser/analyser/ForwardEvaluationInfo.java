@@ -14,16 +14,15 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.SetUtil;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean doNotReevaluateVariableExpressions,
@@ -138,12 +137,20 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
     }
 
     public boolean allowInline(MethodInfo methodInfo) {
-        return !inlining.contains(methodInfo);
+        Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+        return Collections.disjoint(inlining, top);
     }
 
     public ForwardEvaluationInfo addMethod(MethodInfo methodInfo) {
-        Set<MethodInfo> set = SetUtil.immutableUnion(inlining, Set.of(methodInfo));
+        Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+        assert Collections.disjoint(inlining, top);
         return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, set);
+                complainInlineConditional, top);
+    }
+
+    private Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {
+        MethodResolution methodResolution = methodInfo.methodResolution.get();
+        if (methodResolution.overrides().isEmpty()) return Set.of(methodInfo);
+        return methodResolution.overrides().stream().flatMap(mi -> topOfOverloadingHierarchy(mi).stream()).collect(Collectors.toUnmodifiableSet());
     }
 }

@@ -107,7 +107,7 @@ public class Test_10_Identity extends CommonTestRunner {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if (d.iteration() > 1) {
                 if ("idem".equals(d.methodInfo().name)) {
-                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("/*inline idem*/s", d.methodAnalysis().getSingleReturnValue().toString());
                     assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                             methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
@@ -161,7 +161,7 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
-                String expect = d.iteration() == 0 ? "<m:idem>" : "s";
+                String expect = d.iteration() == 0 ? "<m:idem>" : "/*inline idem*/s";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -171,7 +171,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
 
-                String expect = d.iteration() == 0 ? "<m:idem2>" : "s/*@NotNull*/";
+                String expect = d.iteration() == 0 ? "<m:idem2>" : "/*inline idem2*/s/*@NotNull*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -206,7 +206,7 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:idem3>" : "s";
+                String expected = d.iteration() <= 1 ? "<m:idem3>" : "/*inline idem3*/s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

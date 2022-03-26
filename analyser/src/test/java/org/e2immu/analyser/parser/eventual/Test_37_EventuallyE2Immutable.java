@@ -98,7 +98,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getT".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:getT>" : "t$0";
+                String expected = d.iteration() <= 1 ? "<m:getT>" : "/*inline getT*/t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

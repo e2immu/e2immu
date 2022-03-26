@@ -93,7 +93,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     @Override
     public OutputBuilder output(Qualification qualification) {
         String msg = msg();
-        return new OutputBuilder().add(new Text(msg, msg));
+        return new OutputBuilder().add(new Text(msg));
     }
 
     @Override

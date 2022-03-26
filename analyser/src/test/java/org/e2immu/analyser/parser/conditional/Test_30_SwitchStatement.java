@@ -96,7 +96,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_3() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("b", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/b", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

@@ -142,7 +142,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:add>" : "root";
+                String expected = d.iteration() <= 2 ? "<m:add>" : "/*inline add*/root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }

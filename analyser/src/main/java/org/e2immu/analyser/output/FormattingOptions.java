@@ -23,7 +23,6 @@ public record FormattingOptions(int lengthOfLine,
                                 int spacesInTab,
                                 int tabsForLineSplit,
                                 boolean binaryOperatorsAtEndOfLine,
-                                boolean debug,
                                 boolean compact,
                                 boolean allFieldsRequireThis,
                                 boolean allStaticFieldsRequireType) {
@@ -37,7 +36,6 @@ public record FormattingOptions(int lengthOfLine,
         private int spacesInTab;
         private int tabsForLineSplit;
         private boolean binaryOperatorsAtEndOfLine;
-        private boolean debug;
         private boolean compact;
         private boolean allFieldsRequireThis;
         private boolean allStaticFieldsRequireType;
@@ -54,7 +52,6 @@ public record FormattingOptions(int lengthOfLine,
             this.spacesInTab = options.spacesInTab;
             this.tabsForLineSplit = options.tabsForLineSplit;
             this.binaryOperatorsAtEndOfLine = options.binaryOperatorsAtEndOfLine;
-            this.debug = options.debug;
         }
 
         public Builder setLengthOfLine(int lengthOfLine) {
@@ -74,11 +71,6 @@ public record FormattingOptions(int lengthOfLine,
 
         public Builder setBinaryOperatorsAtEndOfLine(boolean binaryOperatorsAtEndOfLine) {
             this.binaryOperatorsAtEndOfLine = binaryOperatorsAtEndOfLine;
-            return this;
-        }
-
-        public Builder setDebug(boolean debug) {
-            this.debug = debug;
             return this;
         }
 
@@ -103,7 +95,7 @@ public record FormattingOptions(int lengthOfLine,
 
         @NotModified
         public FormattingOptions build() {
-            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug, compact,
+            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, compact,
                     allFieldsRequireThis, allStaticFieldsRequireType);
         }
     }

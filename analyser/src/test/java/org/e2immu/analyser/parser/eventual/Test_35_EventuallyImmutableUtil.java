@@ -53,7 +53,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_0_1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isSet".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:isSet>" : "isSet$0";
+                String expect = d.iteration() == 0 ? "<m:isSet>" : "/*inline isSet*/isSet$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -65,7 +65,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 }
             }
             if ("isReady".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:isReady>" : "flipSwitch.isSet()";
+                String expect = d.iteration() == 0 ? "<m:isReady>" : "/*inline isReady*/flipSwitch.isSet()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -174,7 +174,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     public void test_5() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() == 0 ? "<m:isReady>" : "bool.isSet()&&string.isSet()";
+                String expected2 = d.iteration() == 0 ? "<m:isReady>" : "/*inline isReady*/bool.isSet()&&string.isSet()";
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -185,19 +185,19 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 }
             }
             if ("isTReady".equals(d.methodInfo().name)) {
-                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
+                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "/*inline isTReady*/s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             final String expected12 = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 3 ? "<m:isReady1>" : expected12;
+                String expected1 = d.iteration() <= 3 ? "<m:isReady1>" : "/*inline isReady1*/" + expected12;
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("isReady2".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : expected12;
+                String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : "/*inline isReady2*/" + expected12;
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }

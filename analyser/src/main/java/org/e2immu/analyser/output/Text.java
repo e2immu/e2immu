@@ -19,13 +19,11 @@ import org.e2immu.analyser.model.expression.Numeric;
 import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.StringUtil;
 
-public record Text(String text, String debug) implements OutputElement {
+public record Text(String text) implements OutputElement {
 
-    public Text(String text) {
-        this(text, text);
+    public Text {
         assert text != null && !text.isBlank();
     }
-
 
     public static String formatNumber(double d, Class<? extends Numeric> clazz) {
         if (IntUtil.isMathematicalInteger(d)) {
@@ -43,18 +41,13 @@ public record Text(String text, String debug) implements OutputElement {
     }
 
     @Override
-    public String debug() {
-        return debug;
-    }
-
-    @Override
     public int length(FormattingOptions options) {
-        return options.debug() ? debug.length() : text.length();
+        return text.length();
     }
 
     @Override
     public String write(FormattingOptions options) {
-        return options.debug() ? debug : text;
+        return text;
     }
 
     @Override

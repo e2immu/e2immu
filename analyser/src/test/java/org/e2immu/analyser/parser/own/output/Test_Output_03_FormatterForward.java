@@ -121,7 +121,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                         CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                6, 21, new DebugConfiguration.Builder()
+                5, 22, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

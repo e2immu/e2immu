@@ -537,7 +537,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_8", 2, 13, new DebugConfiguration.Builder()
+        testClass("VariableScope_8", 3, 14, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
@@ -667,7 +667,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_10", 0, 3, new DebugConfiguration.Builder()
+        testClass("VariableScope_10", 0, 2, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)

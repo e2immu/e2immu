@@ -81,7 +81,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() <= 2 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
@@ -145,7 +145,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() <= 2 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
@@ -154,7 +154,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("trace".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:trace>" : "\"/*\"+position.msg+\"*/\"";
+                String expected = d.iteration() <= 2 ? "<m:trace>" : "/*inline trace*/\"/*\"+position.msg+\"*/\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -213,7 +213,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 2 ? "<m:trace>" : TRACE_RETURN;
+                String expect = d.iteration() <= 2 ? "<m:trace>" : "/*inline trace*/" + TRACE_RETURN;
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("position".equals(d.methodInfo().name)) {

@@ -529,7 +529,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
             }
-            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
+            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.minimalOutput());
             if (value.isDelayed()) {
                 IsVariableExpression ive;
                 boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs

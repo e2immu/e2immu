@@ -237,7 +237,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         } else {
             text = msg;
         }
-        return new OutputBuilder().add(new Text(text, text));
+        return new OutputBuilder().add(new Text(text));
     }
 
     @Override

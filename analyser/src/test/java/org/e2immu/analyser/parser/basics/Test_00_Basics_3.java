@@ -74,7 +74,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
                     String expect = d.iteration() == 0 ? "<null-check>" : "true";
-                    assertEquals(expect, d.evaluationResult().value().debugOutput());
+                    assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
@@ -161,7 +161,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("\"xyz\"", d.currentValue().debugOutput());
+                        assertEquals("\"xyz\"", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
 
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
@@ -169,7 +169,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                     if ("0.1.0".equals(d.statementId())) {
-                        assertEquals("\"abc\"", d.currentValue().debugOutput());
+                        assertEquals("\"abc\"", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
 
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());

@@ -169,12 +169,12 @@ public class Test_Util_07_Trie extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int params = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
-                String expected = d.iteration() <= 1 ? "<m:goTo>"
-                        : "upToPosition>instance type int&&null==node.map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i])?null:upToPosition>instance type int?null==node.map$0?node$1:node.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[i]):nullable instance type TrieNode<T>";
+                String expected = d.iteration() <= 2 ? "<m:goTo>"
+                        : "/*inline goTo*/upToPosition>instance type int&&null==node.map$1.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[instance type int])?null:upToPosition>instance type int?null==node.map$0?node$1:node.map$0.get(org.e2immu.analyser.util.Trie.goTo(java.lang.String[],int):0:strings[instance type int]):nullable instance type TrieNode<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) {
+                if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("i, node, node$1, strings, upToPosition",
+                        assertEquals("node, node$1, strings, upToPosition",
                                 inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
@@ -184,7 +184,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 1, 0,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

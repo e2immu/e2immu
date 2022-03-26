@@ -126,12 +126,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() <= 1 ? "<m:get>" : "t$0";
+                String expect = d.iteration() <= 1 ? "<m:get>" : "/*inline get*/t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
+                String expect = d.iteration() <= 1 ? "<m:isSet>" : "/*inline isSet*/null!=t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

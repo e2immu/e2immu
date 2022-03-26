@@ -202,7 +202,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_10() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("merge".equals(d.methodInfo().name) && "UnknownExpression".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expected = d.iteration() == 0 ? "<m:merge>" : "new UnknownExpression(v||condition.other())";
+                String expected = d.iteration() == 0 ? "<m:merge>" : "/*inline merge*/new UnknownExpression(v||condition.other())";
                 // broken by Cause.SINGLE_RETURN_VALUE
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);

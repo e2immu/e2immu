@@ -116,7 +116,7 @@ public class Test_46_Singleton extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("multiply".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 2 ? "<m:multiply>" : "k*i";
+                String expect = d.iteration() <= 2 ? "<m:multiply>" : "/*inline multiply*/k*i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

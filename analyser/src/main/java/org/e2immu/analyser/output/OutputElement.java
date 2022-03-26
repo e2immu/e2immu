@@ -23,16 +23,6 @@ public interface OutputElement {
     @NotNull
     String minimal();
 
-    default String debug() {
-        return minimal();
-    }
-
-    default String trace() {
-        return debug();
-    }
-
-    // formatter system
-
     default int length(FormattingOptions options) { return write(options).length(); }
 
     @NotModified

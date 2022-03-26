@@ -130,10 +130,6 @@ public class OutputBuilder implements Comparable<OutputBuilder> {
         return list.stream().map(OutputElement::minimal).collect(Collectors.joining());
     }
 
-    public String debug() {
-        return list.stream().map(OutputElement::debug).collect(Collectors.joining());
-    }
-
     // used for sorting annotations
     public OutputElement get(int i) {
         return list.get(i);

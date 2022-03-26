@@ -162,7 +162,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public String toString() {
         if (this == EMPTY) return "";
         return variables.entrySet().stream()
-                .map(e -> e.getKey().debug() + ":" + e.getValue().value())
+                .map(e -> e.getKey().simpleName() + ":" + e.getValue().value())
                 .sorted()
                 .collect(Collectors.joining(","));
 

@@ -290,7 +290,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
-                assertEquals("s.toUpperCase()", // no transfer of length, we have no info on s
+                assertEquals("/*inline someMinorMethod*/s.toUpperCase()", // no transfer of length, we have no info on s
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));

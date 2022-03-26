@@ -37,7 +37,7 @@ public class Test_Output_03_FormatterLookahead extends CommonTestRunner {
                         CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                6, 28, new DebugConfiguration.Builder()
+                5, 29, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

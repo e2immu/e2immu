@@ -289,7 +289,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     default -> "Precondition[expression=null!=t, causes=[escape]]";
                 };
                 assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
-                String expectedSrv = d.iteration() <= 1 ? "<m:get>" : "t$0";
+                String expectedSrv = d.iteration() <= 1 ? "<m:get>" : "/*inline get*/t$0";
                 assertEquals(expectedSrv, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -350,7 +350,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected,
                         d.methodAnalysis().getPreconditionForEventual().toString());
-                String srv = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
+                String srv = d.iteration() <= 1 ? "<m:isSet>" : "/*inline isSet*/null!=t$0";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
@@ -366,7 +366,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefault".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expected = d.iteration() <= 1 ? "<m:getOrDefault>" : "null==t$0?alternative/*@NotNull*/:t$0";
+                String expected = d.iteration() <= 1 ? "<m:getOrDefault>" : "/*inline getOrDefault*/null==t$0?alternative/*@NotNull*/:t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 // because not @Final, we get NOT_INVOLVED
@@ -377,7 +377,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
 
                 // this should simply be t?
-                String expected = d.iteration() <= 1 ? "<m:getOrDefaultNull>" : "t$0";
+                String expected = d.iteration() <= 1 ? "<m:getOrDefaultNull>" : "/*inline getOrDefaultNull*/t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);

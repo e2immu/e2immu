@@ -272,23 +272,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             append(false, evaluationResult);
         }
 
-        public Builder composeCopyStoredValues(EvaluationResult evaluationResult) {
-            append(false, evaluationResult);
-            if (evaluationResult.storedValues != null && !evaluationResult.storedValues.isEmpty()) {
-                if (storedExpressions == null) {
-                    storedExpressions = new ArrayList<>(evaluationResult.storedValues);
-                } else {
-                    storedExpressions.addAll(evaluationResult.storedValues);
-                }
-            }
-            return this;
-        }
-
-        public Builder clearPrecondition() {
-            precondition = null;
-            return this;
-        }
-
         private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
             if (!ignoreExpression && evaluationResult.value != null) {
                 setExpression(evaluationResult.value);
@@ -362,7 +345,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * @param value           the variable's value. This can be a variable expression again (redirect).
          * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
          */
-        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired) {
+        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, boolean complain) {
             assert evaluationContext != null;
             assert value != null;
             if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
@@ -379,7 +362,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
-            if (contextNotNull.equals(MultiLevel.NULLABLE_DV)) {
+            if (contextNotNull.equals(MultiLevel.NULLABLE_DV) && complain) {
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, DV.TRUE_DV); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
@@ -559,7 +542,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         parameters and fields use EXT_CONTAINER to raise errors; they do not wait for a valid value property.
          */
-        public void variableOccursInContainerContext(Variable variable, DV containerRequired) {
+        public void variableOccursInContainerContext(Variable variable, DV containerRequired, boolean complain) {
             assert evaluationContext != null;
 
             if (containerRequired.isDelayed()) {
@@ -573,7 +556,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof FieldReference || variable instanceof ParameterInfo) {
                 // will come back later
                 DV external = getPropertyFromInitial(variable, Property.EXTERNAL_CONTAINER);
-                if (external.equals(MultiLevel.NOT_CONTAINER_DV)) {
+                if (external.equals(MultiLevel.NOT_CONTAINER_DV) && complain) {
                     Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                     messages.add(message);
                 }
@@ -588,8 +571,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (container.equals(MultiLevel.CONTAINER_DV)) {
                 return;
             }
-            Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
-            messages.add(message);
+            if(complain) {
+                Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+                messages.add(message);
+            }
             setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
 

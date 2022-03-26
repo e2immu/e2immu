@@ -58,11 +58,6 @@ public enum Space implements OutputElement {
         return minimal.write();
     }
 
-    @Override
-    public String debug() {
-        return minimal.write();
-    }
-
     public ElementarySpace elementarySpace(FormattingOptions options) {
         return options.compact() ? minimal : nice;
     }

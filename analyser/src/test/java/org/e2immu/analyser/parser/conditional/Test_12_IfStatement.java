@@ -140,15 +140,15 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
+                assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
+                assertEquals("/*inline get2*/null==map.get(label2)?defaultValue2:map.get(label2)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -161,7 +161,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
 
     @Test
-    public void test5() throws IOException {
+    public void test_5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
@@ -211,15 +211,15 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
+                assertEquals("/*inline get1*/null==map.get(label1)?defaultValue1:map.get(label1)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
+                assertEquals("/*inline get2*/null==map.get(label2)?defaultValue2:map.get(label2)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
+                assertEquals("/*inline get3*/null==map.get(label3)?defaultValue3:map.get(label3)",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -256,7 +256,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -271,7 +271,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
     public void test_8() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -356,7 +356,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
         };
-        testClass("IfStatement_9", 6, 3, new DebugConfiguration.Builder()
+        testClass("IfStatement_9", 6, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

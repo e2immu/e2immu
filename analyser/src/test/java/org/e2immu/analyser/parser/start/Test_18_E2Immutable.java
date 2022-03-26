@@ -122,7 +122,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                             case 1 -> "<wrapped:level2>";
                             default -> "2+parent2Param.level2";
                         };
-                        assertEquals(expectValue, d.currentValue().debugOutput());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
 
@@ -289,7 +289,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 // method not null
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 
-                String expect = d.iteration() <= 1 ? "<m:getStrings4>" : "strings4";
+                String expect = d.iteration() <= 1 ? "<m:getStrings4>" : "/*inline getStrings4*/strings4";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
@@ -401,7 +401,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
             if ("getI".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() == 0 ? "<m:getI>" : "i$0";
+                String expect = d.iteration() == 0 ? "<m:getI>" : "/*inline getI*/i$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

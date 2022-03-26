@@ -126,13 +126,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
-    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated == expression) return this;
-        return of(identifier, methodInfo, translated, fr -> containsVariableFields);
-    }
-
-    @Override
     public boolean isNumeric() {
         return expression.isNumeric();
     }
@@ -144,8 +137,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", "/* inline " + methodInfo.name + " */"))
-                .add(expression.output(qualification));
+        String msg = "/*inline " + methodInfo.name + "*/";
+        return new OutputBuilder().add(new Text(msg)).add(expression.output(qualification));
     }
 
     @Override
@@ -155,9 +148,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-      //  if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
-     //       return new EvaluationResult.Builder(context).setExpression(this).build();
-     //   }
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         return expression.evaluate(closureContext, forwardEvaluationInfo);
@@ -184,6 +174,14 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return MethodReference.notNull(context, methodInfo);
         }
         return context.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(property);
+    }
+
+
+    @Override
+    public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        if (translated == expression) return this;
+        return of(identifier, methodInfo, translated, fr -> containsVariableFields);
     }
 
     @Override
@@ -266,10 +264,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
      variablesOfExpression have been properly filtered already!
      */
     public TranslationMap translationMap(EvaluationResult evaluationContext,
-                                                      List<Expression> parameters,
-                                                      Expression scope,
-                                                      TypeInfo typeOfTranslation,
-                                                      Identifier identifierOfMethodCall) {
+                                         List<Expression> parameters,
+                                         Expression scope,
+                                         TypeInfo typeOfTranslation,
+                                         Identifier identifierOfMethodCall) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         for (VariableExpression variableExpression : variablesOfExpression) {
@@ -376,9 +374,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
         CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
             LinkedVariables lv = evaluationContext.evaluationContext().linkedVariables(variable);
-            LinkedVariables changed = lv == null ? LinkedVariables.EMPTY: lv.changeAllToDelay(merged);
+            LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
-                   changed, merged);
+                    changed, merged);
         }
         return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,
                 VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);

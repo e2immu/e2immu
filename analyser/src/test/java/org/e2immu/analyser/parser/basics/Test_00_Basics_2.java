@@ -179,11 +179,11 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertTrue(d.haveMarkRead(THIS));
 
                 EvaluationResult.ChangeData expressionChange = d.findValueChange(STRING_FIELD);
-                assertEquals("string", expressionChange.value().debugOutput());
+                assertEquals("string", expressionChange.value().toString());
 
                 EvaluationResult.ChangeData cd = d.findValueChange(STRING_FIELD);
                 assertEquals("string:0", cd.linkedVariables().toString());
-                assertEquals("string", d.evaluationResult().value().debugOutput());
+                assertEquals("string", d.evaluationResult().value().toString());
             }
             if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
                 assertTrue(d.haveMarkRead(STRING_FIELD));

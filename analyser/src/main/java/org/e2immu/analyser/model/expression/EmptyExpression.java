@@ -59,7 +59,7 @@ public final class EmptyExpression extends BaseExpression implements Expression 
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(msg, msg));
+        return new OutputBuilder().add(new Text(msg));
     }
 
     @Override

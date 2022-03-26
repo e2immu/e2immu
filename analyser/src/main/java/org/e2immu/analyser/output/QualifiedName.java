@@ -36,16 +36,8 @@ public record QualifiedName(String name, Qualifier qualifier, Required qualifier
     }
 
     @Override
-    public String debug() {
-        if (qualifier != null) {
-            return qualifier.debug() + "." + name;
-        }
-        return name;
-    }
-
-    @Override
     public int length(FormattingOptions options) {
-        return options.debug() ? debug().length() : minimal().length();
+        return minimal().length();
     }
 
     @Override

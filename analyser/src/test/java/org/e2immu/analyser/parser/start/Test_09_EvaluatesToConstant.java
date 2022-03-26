@@ -243,7 +243,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
             assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-            assertEquals("null==a?\"x\":a", d.methodAnalysis().getSingleReturnValue().toString());
+            assertEquals("/*inline someMethod*/null==a?\"x\":a", d.methodAnalysis().getSingleReturnValue().toString());
 
             assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);

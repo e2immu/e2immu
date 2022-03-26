@@ -125,7 +125,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                String expected = "\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)";
+                String expected = "/*inline methodB*/\"a\".equals(paramB)?CyclicReferences_2.methodA(paramB):\"b\".equals(paramB)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);

@@ -144,7 +144,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() <= 2 ? "<m:iterativelyParseTypes>" : "new IterativeParsing()";
+                String expected = d.iteration() <= 2 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/new IterativeParsing()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {

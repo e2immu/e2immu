@@ -86,7 +86,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() <= 2 ? "<m:values>" : "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -313,7 +313,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 3, DV.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:values>" : "{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
+                String expected = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

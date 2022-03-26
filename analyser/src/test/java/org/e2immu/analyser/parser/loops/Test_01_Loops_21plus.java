@@ -110,7 +110,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("2.0.1".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "cm:AV$[j]@Method_method_2.0.1.0.2-E;cm:array@Method_method_2.0.1.0.2-E;cm:inner@Method_method_2.0.1.0.2-E;cm:outer@Method_method_2.0.1.0.2-E;initial@Class_Loops_21" : "";
+                String expected = d.iteration() == 0 ? "cm:array@Method_method_2.0.1.0.2-E;initial@Class_Loops_21" : "";
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 if (d.iteration() >= 2) {
                     assertTrue(d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
@@ -123,8 +123,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

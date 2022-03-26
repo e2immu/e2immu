@@ -121,12 +121,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public String debug() {
-        if (scope == null) return simpleName();
-        return scope.debugOutput() + "." + simpleName();
-    }
-
-    @Override
     public String nameInLinkedAnnotation() {
         return fieldInfo.owner.simpleName + "." + fieldInfo.name;
     }

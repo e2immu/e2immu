@@ -63,7 +63,7 @@ public class Test_05_Final extends CommonTestRunner {
             if ("setS4".equals(d.methodInfo().name)) {
                 if (S4.equals(d.variableName())) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
-                    assertEquals("s4", d.currentValue().debugOutput());
+                    assertEquals("s4", d.currentValue().toString());
                     assertEquals("s4:0,this.s4:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {

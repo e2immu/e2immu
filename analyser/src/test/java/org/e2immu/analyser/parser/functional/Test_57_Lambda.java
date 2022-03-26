@@ -130,7 +130,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:$1>" : "x.k";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "/*inline get*/x.k";
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
                             if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
@@ -146,7 +146,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -229,7 +229,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
@@ -244,13 +244,13 @@ public class Test_57_Lambda extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                String expected = d.iteration() == 0 ? "<m:method>" : "a*a+b*-b+a*b+a*-b";
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*//*inline apply*/a*a+b*-b+a*b+a*-b";
                 assertEquals(expected, e.toString());
                 if (d.iteration() > 0) assertTrue(e instanceof InlinedMethod);
             }
             if ("direct".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("a*a+b*-b+a*b+a*-b", e.toString());
+                assertEquals("/*inline direct*/a*a+b*-b+a*b+a*-b", e.toString());
                 assertTrue(e instanceof InlinedMethod);
             }
         };
@@ -265,14 +265,14 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
-                    assertEquals("a*a+a*b+a*-i+b*-i", e.toString());
+                    assertEquals("/*inline method*//*inline apply*/a*a+a*b+a*-i+b*-i", e.toString());
                     assertTrue(e instanceof InlinedMethod);
                 }
             }
             if ("direct".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
-                    assertEquals("a*a+a*b+a*-i+b*-i", e.toString());
+                    assertEquals("/*inline direct*/a*a+a*b+a*-i+b*-i", e.toString());
                     assertTrue(e instanceof InlinedMethod);
                 }
             }
@@ -293,24 +293,26 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "<m:get>" : "inner.i";
+                    // IMPROVE should be inner.i (see translation in InlinedMethod)
+                    String expect = d.iteration() == 0 ? "<m:get>" : "inner.i.get()";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline get*/i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("inner.i*inner.i$1", srv.toString());
+                // IMPROVE should be inner.i*inner.i$1
+                assertEquals("/*inline method*/inner.i.get()*inner.i$1", srv.toString());
             }
         };
 
         testClass("Lambda_8", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

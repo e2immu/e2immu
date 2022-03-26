@@ -146,7 +146,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
                 } else {
                     if (evaluatedDependentVariable.hasArrayVariable()) {
                         builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable(), arrayExpression,
-                                MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                                MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo.complainInlineConditional());
                     }
                     Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
                     builder.setExpression(currentValue);
@@ -158,7 +158,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
         IsVariableExpression ve;
         if (notNullRequired.gt(MultiLevel.NULLABLE_DV) &&
                 (ve = builder.getExpression().asInstanceOf(IsVariableExpression.class)) != null) {
-            builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
+            builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired,
+                    forwardEvaluationInfo.complainInlineConditional());
         }
         return builder.build();
     }

@@ -342,7 +342,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
+        builder.variableOccursInNotNullContext(variable, adjustedScope, notNull, forwardEvaluationInfo.complainInlineConditional());
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         builder.markContextModified(variable, modified);
@@ -354,7 +354,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
-        builder.variableOccursInContainerContext(variable, contextContainer);
+        builder.variableOccursInContainerContext(variable, contextContainer, forwardEvaluationInfo.complainInlineConditional());
 
         DV contextImmutable = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(Property.NEXT_CONTEXT_IMMUTABLE);

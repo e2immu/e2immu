@@ -143,7 +143,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                         default -> "null==this.string";
                     };
                     assertEquals(expected,
-                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().debugOutput());
+                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
             }
             // the situation precondition-wise should be the same in setString2, but then without the delays
@@ -160,7 +160,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                     String expected = d.iteration() == 0 ? "<precondition>" : "true";
                     assertEquals(expected,
-                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().debugOutput());
+                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
             }
         };

@@ -194,7 +194,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("getBase".equals(d.methodInfo().name)) {
                 // Stream is mutable; is it linked?
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                String expect = d.iteration() == 0 ? "<m:getBase>" : "base.stream()";
+                String expect = d.iteration() == 0 ? "<m:getBase>" : "/*inline getBase*/base.stream()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
@@ -651,7 +651,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = switch (d.iteration()) {
                             case 0 -> "evaluationContext:-1,return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
                             case 1, 2, 3, 4 -> "return method:0,sum:-1,this.expression:-1,v:-1,x:-1";
-                            default -> "return method:0,sum:3,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:3,this.expression.lhs:3,this.expression.rhs:3,this.expression:3,v:3,x:3";
+                            default -> "return method:0,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:3,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs:3,v:3,x:3";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -661,7 +661,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "lhs".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("expression", fr.scope.toString());
+                        assertEquals("expression/*(Sum)*/", fr.scope.toString());
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2 -> "<f:lhs>";
                             default -> "nullable instance type Expression"; // OK!
@@ -671,7 +671,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                     }
                     if ("0.0.1.0.0".equals(d.statementId())) {
-                        assertEquals("expression", fr.scope.toString());
+                        assertEquals("expression/*(Sum)*/", fr.scope.toString());
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2 -> "<f:lhs>";
                             default -> "nullable instance type Expression";
@@ -685,7 +685,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2, 3, 4 -> "<m:nonNumericPartOfLhs>";
-                            default -> "expression.lhs"; // OK!
+                            default -> "expression/*(Sum)*/.lhs"; // OK!
                         };
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -698,7 +698,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.4.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2, 3, 4 -> "<m:nonNumericPartOfLhs>/*(Negation)*/";
-                            default -> "expression.lhs/*(Negation)*/";
+                            default -> "expression/*(Sum)*/.lhs/*(Negation)*/";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -707,7 +707,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.4.0.2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2, 3, 4 -> "<m:numericPartOfLhs>";
-                            default -> "expression.lhs.equals(expression.rhs)?3.0:null";
+                            default -> "expression/*(Sum)*/.lhs.equals(expression/*(Sum)*/.rhs)?3.0:null";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -721,7 +721,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = switch (d.iteration()) {
                             case 0 -> "evaluationContext:-1,return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
                             case 1, 2, 3, 4 -> "return method:-1,sum:-1,this.expression:-1,v:-1,x:0";
-                            default -> "return method:3,sum:2,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:0,this.expression.lhs:1,this.expression.rhs:2,this.expression:2,v:0,x:0";
+                            default -> "return method:3,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:0,this.expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Sum)*/.lhs:1,v:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -796,8 +796,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = switch (d.iteration()) {
                             case 0 -> "evaluationContext:-1,return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
                             case 1, 2, 3, 4 -> "return method:-1,sum:-1,this.expression:0,v:-1,x:-1";
-                            case 5, 6 -> "return method:3,sum:0,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:2,this.expression.lhs:2,this.expression.rhs:2,this.expression:0,v:2,x:2";
-                            default -> "sum:0,this.expression.lhs/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_11.Negation)*/.expression:2,this.expression.lhs:2,this.expression.rhs:2,this.expression:0,v:2,x:2";
+                            default -> "sum:0,this.expression:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -828,12 +827,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() <= 4 ? "<instanceOf:Sum>&&!<null-check>"
-                            : "expression.lhs.equals(expression.rhs)&&expression instanceof Sum";
+                            : "expression/*(Sum)*/.lhs.equals(expression/*(Sum)*/.rhs)&&expression instanceof Sum";
                     assertEquals(expected, d.localConditionManager().absoluteState(d.context()).toString());
                 }
                 if ("0.0.1.0.4.0.2".equals(d.statementId())) {
                     String expected = d.iteration() <= 4 ? "<instanceOf:Negation>&&<instanceOf:Sum>&&!<null-check>" :
-                            "expression.lhs.equals(expression.rhs)&&expression.lhs instanceof Negation&&expression instanceof Sum&&null!=v";
+                            "expression/*(Sum)*/.lhs.equals(expression/*(Sum)*/.rhs)&&expression/*(Sum)*/.lhs instanceof Negation&&expression instanceof Sum";
                     assertEquals(expected, d.localConditionManager().absoluteState(d.context()).toString());
                 }
             }
@@ -910,7 +909,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_12() throws IOException {
-        testClass("InstanceOf_12", 0, 2, new DebugConfiguration.Builder().build());
+        testClass("InstanceOf_12", 0, 1, new DebugConfiguration.Builder().build());
     }
 
     @Test
@@ -954,10 +953,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<instanceOf:InstanceOf>?<m:of>:<simplification>&&!<instanceOf:InstanceOf>?<m:toList>:<simplification>&&!<simplification>&&!<instanceOf:InstanceOf>?<m:toList>:<m:toList>";
-                        case 1, 2 -> "expression instanceof InstanceOf?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator?<m:toList>:expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(FindInstanceOfPatterns.find(e).stream()).toList()";
-                        case 3 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):<m:isUnaryNot>&&expression instanceof UnaryOperator?<m:toList>:expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(FindInstanceOfPatterns.find(e).stream()).toList()";
-                        case 4 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):<m:isUnaryNot>&&expression instanceof UnaryOperator?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(FindInstanceOfPatterns.find(e).stream()).toList()";
-                        default -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(FindInstanceOfPatterns.find(e).stream()).toList()";
+                        case 1, 2 -> "expression instanceof InstanceOf?<m:of>:<m:isUnaryNot>&&expression instanceof UnaryOperator?<m:toList>:expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(/*inline apply*/FindInstanceOfPatterns.find(e).stream()).toList()";
+                        case 3 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):<m:isUnaryNot>&&expression instanceof UnaryOperator?<m:toList>:expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?<m:toList>:(nullable instance type List<Expression>).stream().flatMap(/*inline apply*/FindInstanceOfPatterns.find(e).stream()).toList()";
+                        case 4 -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):<m:isUnaryNot>&&expression instanceof UnaryOperator?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&(!<m:isUnaryNot>||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(/*inline apply*/FindInstanceOfPatterns.find(e).stream()).toList()";
+                        default -> "expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):expression/*(UnaryOperator)*/.operator.isUnaryNot()&&expression instanceof UnaryOperator?FindInstanceOfPatterns.find(expression/*(UnaryOperator)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof Negation&&(!expression/*(UnaryOperator)*/.operator.isUnaryNot()||!(expression instanceof UnaryOperator))?FindInstanceOfPatterns.find(expression/*(Negation)*/.expression).stream().map(new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():(nullable instance type List<Expression>).stream().flatMap(/*inline apply*/FindInstanceOfPatterns.find(e).stream()).toList()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -1026,7 +1025,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("InstanceOf_16", 0, 9, new DebugConfiguration.Builder()
+        testClass("InstanceOf_16", 0, 8, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

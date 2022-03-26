@@ -74,7 +74,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         case 0 -> "!<vl:writeNewLine>";
                         case 1, 2 -> "!(end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                         case 3 -> "!(end$5>pos$5?(<f:<out of scope:newLineDouble:5>.writeNewLine>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
-                        default -> "!(end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
+                        default -> "!(end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble((nullable instance type Guide).endWithNewLine(),instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble((nullable instance type Guide).startWithNewLine(),false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
@@ -91,7 +91,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:(<null-check>?<s:boolean>:<s:boolean>)&&!<null-check>:<vl:writeNewLine>";
                             case 1, 2 -> "end$5>pos$5?(<s:boolean>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                             case 3 -> "end$5>pos$5?(<f:<out of scope:newLineDouble:5>.writeNewLine>||null!=nullable instance type ForwardInfo||null==<out of scope:guide:5.0.6.1.0>)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
-                            default -> "end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble(instance type boolean,instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble(instance type boolean,false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
+                            default -> "end$5>pos$5?(null!=nullable instance type Guide&&null==nullable instance type ForwardInfo&&null!=nullable instance type ForwardInfo?nullable instance type Position==Position.END?new NewLineDouble((nullable instance type Guide).endWithNewLine(),instance type boolean,false,true):nullable instance type Position!=Position.END&&nullable instance type Position==Position.START?new NewLineDouble((nullable instance type Guide).startWithNewLine(),false,false,false):new NewLineDouble(true,instance type boolean,true,false):Formatter.NOT_END.writeNewLine||null==nullable instance type Guide||null!=nullable instance type ForwardInfo)&&(null!=nullable instance type ForwardInfo||null!=nullable instance type ForwardInfo):instance type boolean";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals(d.iteration() >= 4, d.currentValue().isDone());
@@ -175,7 +175,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() == 0 ? "<m:writer>" : "tabs.isEmpty()?writer:tabs.peek().writer$0";
+                String expected = d.iteration() == 0 ? "<m:writer>" : "/*inline writer*/tabs.isEmpty()?writer:tabs.peek().writer$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -188,7 +188,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                15, 48, new DebugConfiguration.Builder()
+                14, 49, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

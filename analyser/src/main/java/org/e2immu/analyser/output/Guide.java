@@ -106,16 +106,6 @@ public record Guide(int index, Position position,
     }
 
     @Override
-    public String debug() {
-        return "";
-    }
-
-    @Override
-    public String trace() {
-        return "/*" + position.msg() + index + "*/";
-    }
-
-    @Override
     public int length(FormattingOptions options) {
         return 0;
     }

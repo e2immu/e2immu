@@ -60,7 +60,7 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", "<constructor call erasure, type " + formalType + ">"));
+        return new OutputBuilder().add(new Text("<constructor call erasure, type " + formalType + ">"));
     }
 
     @Override

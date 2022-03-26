@@ -82,11 +82,6 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     }
 
     @Override
-    public String debug() {
-        return left.debug() + symbol + right.debug();
-    }
-
-    @Override
     public int length(FormattingOptions options) {
         return left.length(options) + symbol.length() + right().length(options);
     }

@@ -310,7 +310,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private Candidate noCandidatesError(ErrorInfo errorInfo, Map<Integer, Expression> evaluatedExpressions) {
         LOGGER.error("Evaluated expressions for {} at {}: ", errorInfo.methodName, errorInfo.position);
         evaluatedExpressions.forEach((i, expr) ->
-                LOGGER.error("  {} = {}", i, (expr == null ? null : expr.debugOutput())));
+                LOGGER.error("  {} = {}", i, (expr == null ? null : expr.minimalOutput())));
         LOGGER.error("No candidate found for {} in type {} at position {}", errorInfo.methodName,
                 errorInfo.type.detailedString(typeContext), errorInfo.position);
         return null;
