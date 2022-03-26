@@ -352,28 +352,33 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-        Map<Expression, Expression> translation = new HashMap<>();
+        TranslationMapImpl.Builder translationMapBuilder = new TranslationMapImpl.Builder();
         if (result != null && n > 0) {
             int i = 0;
             List<Expression> storedValues = n == 1 ? List.of(result.value()) : result.storedValues();
             for (Expression parameterExpression : storedValues) {
                 ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
-                translation.put(new VariableExpression(parameterInfo), parameterExpression);
+                translationMapBuilder.put(new VariableExpression(parameterInfo), parameterExpression);
                 i++;
             }
         }
         List<Expression> assignments = new ArrayList<>();
+        TranslationMap translationMap = translationMapBuilder.build();
         for (FieldInfo fieldInfo : methodInfo().typeInfo.visibleFields(analyserContext)) {
             if (!fieldInfo.isStatic(analyserContext)) {
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
-                        EvaluationResult translated = variableInfo.getValue()
-                                .reEvaluate(EvaluationResult.from(sharedState.evaluationContext()), translation, ForwardReEvaluationInfo.DEFAULT);
+                        Expression start= variableInfo.getValue();
+                        Expression translated = start.translate(analyserContext, translationMap);
+                        EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
+                        EvaluationResult er = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
+                        Expression end = er.value();
+                        LOGGER.warn("ECITRANS {} -> {}", start, end);
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
-                                translated.value(), null, null, false);
-                        builder.compose(translated);
+                                end, null, null, false);
+                        builder.compose(er);
                         assignments.add(assignment);
                     }
                 }

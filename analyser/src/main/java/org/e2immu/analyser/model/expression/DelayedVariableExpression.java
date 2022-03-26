@@ -229,6 +229,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
         if (expression != null && expression.isDelayed()) return expression;
+        if(variable instanceof FieldReference fr && fr.scope != null) {
+            Expression scope = fr.scope.translate(inspectionProvider, translationMap);
+            if(scope != fr.scope) {
+                FieldReference newRef = new FieldReference(inspectionProvider, fr.fieldInfo, scope);
+                return new DelayedVariableExpression(msg, newRef, statementTime, causesOfDelay);
+            }
+        }
+        // TODO implement DependentVariable translation on expressions
         return this;
     }
 
