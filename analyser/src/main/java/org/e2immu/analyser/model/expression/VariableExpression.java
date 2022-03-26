@@ -213,6 +213,17 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 return VariableExpression.of(fr, suffix);
             }
         }
+        if (variable instanceof DependentVariable dv) {
+            Expression originalArray = dv.expressionOrArrayVariable.isLeft()
+                    ? dv.expressionOrArrayVariable.getLeft().value() : new VariableExpression(dv.expressionOrArrayVariable.getRight());
+            Expression translatedArray = originalArray.translate(inspectionProvider, translationMap);
+            Expression originalIndex = dv.expressionOrIndexVariable.isLeft()
+                    ? dv.expressionOrIndexVariable.getLeft().value() : new VariableExpression(dv.expressionOrIndexVariable.getRight());
+            Expression translatedIndex = originalIndex.translate(inspectionProvider, translationMap);
+            if (translatedArray == originalArray && translatedIndex == originalIndex) return this;
+            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray, translatedIndex, dv.parameterizedType, dv.statementIndex);
+            return new VariableExpression(newDv);
+        }
         return this;
     }
 

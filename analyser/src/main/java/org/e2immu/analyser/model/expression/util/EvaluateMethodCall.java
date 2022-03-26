@@ -56,7 +56,7 @@ public class EvaluateMethodCall {
                                         Expression objectValue,
                                         ParameterizedType concreteReturnType,
                                         List<Expression> parameters,
-                                        ForwardReEvaluationInfo forwardReEvaluationInfo) {
+                                        ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
         if (recursiveCall) {
@@ -84,9 +84,12 @@ public class EvaluateMethodCall {
                 inlineValue.canBeApplied(context)) {
             // IMPROVE scopeOfObjectValue may need expanding: there can be other scopes of the InlineMethod? Lambda_8?
             Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
-            Map<Expression, Expression> translationMap = inlineValue.translationMap(context,
+            TranslationMap translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
-            return inlineValue.reEvaluate(context, translationMap, ForwardReEvaluationInfo.DEFAULT);
+            Expression translated = inlineValue.translate(analyserContext, translationMap);
+            EvaluationResult er = translated.evaluate(context, forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional());
+            LOGGER.warn("INLINE_FI {} -> {}", parameters, er.getExpression());
+            return er;
         }
 
         if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -180,11 +183,13 @@ public class EvaluateMethodCall {
 
                 InlinedMethod iv;
                 if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
-                        forwardReEvaluationInfo.allowInline(methodInfo)) {
-                    Map<Expression, Expression> translationMap = iv.translationMap(context,
-                            parameters, objectValue, context.getCurrentType(), identifier);
-                    ForwardReEvaluationInfo forward = forwardReEvaluationInfo.addMethod(methodInfo);
-                    EvaluationResult reSrv = iv.reEvaluate(context, translationMap, forward);
+                        forwardEvaluationInfo.allowInline(methodInfo)) {
+                    TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
+                            context.getCurrentType(), identifier);
+                    Expression translated = iv.translate(analyserContext, translationMap);
+                    ForwardEvaluationInfo forward = forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional();
+                    EvaluationResult reSrv = translated.evaluate(context, forward);
+                    LOGGER.warn("INLINE {} -> {}", parameters, reSrv.getExpression());
                     return builder.compose(reSrv).setExpression(reSrv.value()).build();
                 }
                 if (srv.isConstant()) {

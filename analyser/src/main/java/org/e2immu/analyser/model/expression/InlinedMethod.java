@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -154,9 +155,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
-            return new EvaluationResult.Builder(context).setExpression(this).build();
-        }
+      //  if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
+     //       return new EvaluationResult.Builder(context).setExpression(this).build();
+     //   }
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         return expression.evaluate(closureContext, forwardEvaluationInfo);
@@ -264,12 +265,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
      variablesOfExpression have been properly filtered already!
      */
-    public Map<Expression, Expression> translationMap(EvaluationResult evaluationContext,
+    public TranslationMap translationMap(EvaluationResult evaluationContext,
                                                       List<Expression> parameters,
                                                       Expression scope,
                                                       TypeInfo typeOfTranslation,
                                                       Identifier identifierOfMethodCall) {
-        Map<Expression, Expression> builder = new HashMap<>();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         for (VariableExpression variableExpression : variablesOfExpression) {
             Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext);
@@ -279,7 +280,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 builder.put(variableExpression, toMap);
             } // possibly a field need not replacing
         }
-        return Map.copyOf(builder);
+        return builder.build();
     }
 
     private Expression replace(VariableExpression variableExpression,

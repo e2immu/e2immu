@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -229,14 +230,24 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
         if (expression != null && expression.isDelayed()) return expression;
-        if(variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr && fr.scope != null) {
             Expression scope = fr.scope.translate(inspectionProvider, translationMap);
-            if(scope != fr.scope) {
+            if (scope != fr.scope) {
                 FieldReference newRef = new FieldReference(inspectionProvider, fr.fieldInfo, scope);
                 return new DelayedVariableExpression(msg, newRef, statementTime, causesOfDelay);
             }
         }
-        // TODO implement DependentVariable translation on expressions
+        if (variable instanceof DependentVariable dv) {
+            Expression originalArray = dv.expressionOrArrayVariable.isLeft()
+                    ? dv.expressionOrArrayVariable.getLeft().value() : new VariableExpression(dv.expressionOrArrayVariable.getRight());
+            Expression translatedArray = originalArray.translate(inspectionProvider, translationMap);
+            Expression originalIndex = dv.expressionOrIndexVariable.isLeft()
+                    ? dv.expressionOrIndexVariable.getLeft().value() : new VariableExpression(dv.expressionOrIndexVariable.getRight());
+            Expression translatedIndex = originalIndex.translate(inspectionProvider, translationMap);
+            if (translatedArray == originalArray && translatedIndex == originalIndex) return this;
+            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray, translatedIndex, dv.parameterizedType, dv.statementIndex);
+            return new DelayedVariableExpression(msg, newDv, statementTime, causesOfDelay);
+        }
         return this;
     }
 

@@ -250,7 +250,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                 context.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
-                reParamValues, forwardReEvaluationInfo);
+                reParamValues, ForwardEvaluationInfo.DEFAULT); // FIXME
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(reParams)
                 .compose(reObject, mv);
         /* important note: evaluating for not null here clears the ForwardReEvaluation data, which causes an
@@ -324,7 +324,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Property.CONTEXT_MODIFIED, modified,
                 Property.CONTEXT_IMMUTABLE, immutableData.required,
                 Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
-                forwardEvaluationInfo.assignmentTarget(), true));
+                forwardEvaluationInfo.assignmentTarget(), true, forwardEvaluationInfo.inlining()));
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -395,7 +395,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
-                    ForwardReEvaluationInfo.DEFAULT);
+                    forwardEvaluationInfo);
             builder.compose(mv);
             if (mv.value() == objectValue && modifiedInstance != null) {
                 result = modifiedInstance;

@@ -164,7 +164,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -182,7 +182,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass(List.of("InlinedMethod_6", "InlinedMethod_7"), 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -218,8 +218,8 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_9", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

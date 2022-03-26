@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -103,7 +104,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
             scopeForward = new ForwardEvaluationInfo(map, false, true,
-                    forwardEvaluationInfo.assignmentTarget(), true);
+                    forwardEvaluationInfo.assignmentTarget(), true, forwardEvaluationInfo.inlining());
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {

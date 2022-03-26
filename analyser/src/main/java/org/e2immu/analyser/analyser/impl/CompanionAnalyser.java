@@ -220,5 +220,10 @@ public class CompanionAnalyser {
         public Expression state(Expression expression) {
             return expression.state();
         }
+
+        @Override
+        public DV getProperty(Variable variable, Property property) {
+            return analyserContext.getProperty(variable.parameterizedType(), property, true);
+        }
     }
 }
