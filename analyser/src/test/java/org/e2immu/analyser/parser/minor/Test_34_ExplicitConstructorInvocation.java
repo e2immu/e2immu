@@ -15,9 +15,12 @@
 
 package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -25,6 +28,8 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -217,5 +222,54 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
+    }
+
+    // problem when forcing alphabetic analysis; works perfectly fine if we can do things in good order
+    @Test
+    public void test_11() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("BaseExpression".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("<eci>", d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("BaseExpression".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr) {
+                    if (d.iteration() == 0) {
+                        assertEquals("complexity", fr.fieldInfo.name);
+                    } else {
+                        assertTrue(Set.of("complexity", "identifier").contains(fr.fieldInfo.name));
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("BaseExpression".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                FieldInfo identifier = d.methodInfo().typeInfo.typeInspection.get().parentClass().typeInfo.getFieldByName("identifier", true);
+                List<VariableInfo> viList = d.methodAnalysis().getFieldAsVariable(identifier);
+                assertEquals(d.iteration() == 0 ? 0 : 1, viList.size());
+            }
+            if ("BinaryOperator".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+            }
+            if ("BitwiseAnd".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
+            }
+            if ("ElementImpl".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+            }
+        };
+        testClass("ExplicitConstructorInvocation_11", 0, 3, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
     }
 }

@@ -362,25 +362,29 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             for (Expression parameterExpression : storedValues) {
                 ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
                 translationMapBuilder.put(new VariableExpression(parameterInfo), parameterExpression);
+                translationMapBuilder.addVariableExpression(parameterInfo, parameterExpression);
                 i++;
             }
         }
         List<Expression> assignments = new ArrayList<>();
         TranslationMap translationMap = translationMapBuilder.build();
-        for (FieldInfo fieldInfo : methodInfo().typeInfo.visibleFields(analyserContext)) {
+        List<FieldInfo> visibleFields = methodInfo().typeInfo.visibleFields(analyserContext);
+        for (FieldInfo fieldInfo : visibleFields) {
             if (!fieldInfo.isStatic(analyserContext)) {
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
-                        Expression start= variableInfo.getValue();
+                        Expression start = variableInfo.getValue();
+                        FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                         Expression translated = start.translate(analyserContext, translationMap);
                         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
                         EvaluationResult er = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
                         Expression end = er.value();
+                        builder.compose(er);
+
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
-                                new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
+                                new VariableExpression(fr),
                                 end, null, null, false);
-                        builder.compose(er);
                         assignments.add(assignment);
                     }
                 }

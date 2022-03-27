@@ -274,7 +274,7 @@ public class Assignment extends BaseExpression implements Expression {
             but that needs comparing against the current value
              */
             IsVariableExpression ive;
-            if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget)) {
+            if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget) && value.isDone()) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
             e2 = handleNormalAssignment(context, fwd, valueResult.value(), newVariableTarget, builder);
