@@ -148,12 +148,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
     public void test_10() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
-                // the visualisation is f.contains(s) "because" (we should improve on this) this is an inlined method, with f as parameter
-                String expected = d.iteration() <= 1 ? "<m:find>"
-                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
-                if (d.iteration() >= 2) {
+                // cycles!!
+                String expected = d.iteration() == 0 ? "<m:find>" : "/*inline find*/nullable instance type String";
+                if (d.iteration() >= 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        assertTrue(inlinedMethod.getVariablesOfExpression().isEmpty());
                     }
                 }
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());

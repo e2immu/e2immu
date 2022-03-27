@@ -83,7 +83,6 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(context)) {
-            // IMPROVE scopeOfObjectValue may need expanding: there can be other scopes of the InlineMethod? Lambda_8?
             Expression scopeOfObjectValue = new VariableExpression(context.evaluationContext().currentThis());
             TranslationMap translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier);
@@ -175,11 +174,15 @@ public class EvaluateMethodCall {
             return builder.setExpression(nameInEnum).build();
         }
 
-        if (methodAnalysis.isComputed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
+        if (methodAnalysis.isComputed()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv.isDone()) {
-                // if this method was identity?
-
+            if (srv.isDelayed()) {
+                LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
+                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
+                        srv.causesOfDelay());
+            }
+            boolean ignoreMeBecauseOfPartOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+            if (!ignoreMeBecauseOfPartOfCallCycle) {
                 InlinedMethod iv;
                 if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
                         forwardEvaluationInfo.allowInline(methodInfo)) {
@@ -193,11 +196,6 @@ public class EvaluateMethodCall {
                 if (srv.isConstant()) {
                     return builder.setExpression(srv).build();
                 }
-            } else {
-                // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
-                LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
-                        srv.causesOfDelay());
             }
         }
 
