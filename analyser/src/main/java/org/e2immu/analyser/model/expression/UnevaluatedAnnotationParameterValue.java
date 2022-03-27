@@ -27,6 +27,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /*
 This is a marker for the Resolver to replace this by a properly resolved VariableExpression.
@@ -105,4 +106,8 @@ public final class UnevaluatedAnnotationParameterValue extends BaseExpression im
                 "expression=" + expression + ']';
     }
 
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
+    }
 }

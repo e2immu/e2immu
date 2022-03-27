@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -120,4 +121,8 @@ public final class LambdaExpressionErasures extends BaseExpression implements Er
         return Objects.hash(counts, location);
     }
 
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
+    }
 }

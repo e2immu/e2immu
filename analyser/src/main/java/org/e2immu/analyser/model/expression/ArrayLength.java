@@ -27,6 +27,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public class ArrayLength extends BaseExpression implements Expression {
@@ -80,6 +81,13 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(scope);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            scope.visit(predicate);
+        }
     }
 
     @Override

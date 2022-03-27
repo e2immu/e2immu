@@ -53,7 +53,6 @@ public class Independent_4 {
             return null;
         }
 
-
         default Stream<MethodAnalyser> methodAnalyserStream() {
             return null;
         }

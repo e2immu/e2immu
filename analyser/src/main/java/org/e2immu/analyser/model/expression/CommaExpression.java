@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class CommaExpression extends BaseExpression implements Expression {
 
@@ -47,6 +48,13 @@ public class CommaExpression extends BaseExpression implements Expression {
     @Override
     public OutputBuilder output(Qualification qualification) {
         return expressions.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA));
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            expressions.forEach(e -> e.visit(predicate));
+        }
     }
 
     @Override

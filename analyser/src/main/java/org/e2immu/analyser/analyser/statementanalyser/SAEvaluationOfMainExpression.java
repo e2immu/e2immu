@@ -376,7 +376,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
                         EvaluationResult er = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
                         Expression end = er.value();
-                        LOGGER.warn("ECITRANS {} -> {}", start, end);
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(new FieldReference(analyserContext, fieldInfo)),

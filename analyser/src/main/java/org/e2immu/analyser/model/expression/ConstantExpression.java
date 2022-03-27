@@ -25,6 +25,8 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.function.Predicate;
+
 public interface ConstantExpression<T> extends Expression {
 
     @Override
@@ -116,5 +118,10 @@ public interface ConstantExpression<T> extends Expression {
     @Override
     default boolean cannotHaveState() {
         return true;
+    }
+
+    @Override
+    default void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 }

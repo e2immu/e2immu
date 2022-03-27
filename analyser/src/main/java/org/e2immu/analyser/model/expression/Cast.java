@@ -70,7 +70,7 @@ public class Cast extends BaseExpression implements Expression {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
 
         if (parameterizedType.equals(er.getExpression().returnType())) return er;
-        Expression result = PropertyWrapper.propertyWrapper(expression, Map.of(), parameterizedType);
+        Expression result = PropertyWrapper.propertyWrapper(er.getExpression(), Map.of(), parameterizedType);
 
         return new EvaluationResult.Builder(context).compose(er).setExpression(result).build();
     }

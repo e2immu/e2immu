@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
@@ -37,6 +38,11 @@ public final class ContractMark extends BaseExpression implements Expression {
     public ContractMark(Set<FieldInfo> fields) {
         super(Identifier.constant(ContractMark.class));
         this.fields = fields;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

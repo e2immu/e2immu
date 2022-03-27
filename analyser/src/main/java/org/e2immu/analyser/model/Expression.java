@@ -160,9 +160,7 @@ public interface Expression extends Element, Comparable<Expression> {
      *
      * @param predicate return true if the search is to be continued deeper
      */
-    default void visit(Predicate<Expression> predicate) {
-        predicate.test(this);
-    }
+    void visit(Predicate<Expression> predicate);
 
     @NotNull
     default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {

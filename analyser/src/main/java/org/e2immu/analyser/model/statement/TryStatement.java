@@ -32,6 +32,7 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.LimitedStatementAnalysis.startOfBlock;
@@ -150,6 +151,11 @@ public class TryStatement extends StatementWithStructure {
 
         @Override
         public int order() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void visit(Predicate<Expression> predicate) {
             throw new UnsupportedOperationException();
         }
     }

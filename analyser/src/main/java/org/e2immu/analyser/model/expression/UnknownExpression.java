@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Contains "some value".
@@ -74,6 +75,11 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     public static Expression forExplicitConstructorInvocation() {
         return new UnknownExpression(Identifier.constant("__eci__"), ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "eci");
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     @Override

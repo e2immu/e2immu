@@ -268,7 +268,8 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         EvaluationResult er = expression.evaluate(context, forwardEvaluationInfo);
         Expression expression;
         if (er.value() instanceof Numeric numeric) {
-            expression = new BooleanConstant(context.getPrimitives(), numeric.doubleValue() == 0);
+            expression = new BooleanConstant(context.getPrimitives(),
+                    allowEquals ? numeric.doubleValue() >= 0 : numeric.doubleValue() > 0);
         } else {
             expression = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
         }

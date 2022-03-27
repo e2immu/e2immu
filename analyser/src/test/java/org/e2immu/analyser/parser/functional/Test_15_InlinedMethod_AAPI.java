@@ -31,6 +31,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -290,5 +291,77 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_15() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("immutableConcat".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:immutableConcat>"
+                        : "/*inline immutableConcat*/List.copyOf(instance type boolean&&lists.length>0?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("[lists]", inlinedMethod.getVariablesOfExpression().toString());
+                    } else fail();
+                }
+            }
+            if ("concatImmutable".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:concatImmutable>"
+                        : "/*inline concatImmutable*/list2.isEmpty()?list1:list1.isEmpty()&&!list2.isEmpty()?list2:List.copyOf(instance type boolean&&!list1.isEmpty()&&!list2.isEmpty()?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("InlinedMethod_15", 0, 2, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("findTypeName".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:findTypeName>"
+                        : "/*inline findTypeName*/strings.stream().filter(/*inline test*/e.contains(\"x\")).findFirst().orElseThrow()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() > 0) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("strings, this", inlinedMethod.getVariablesOfExpression().stream().map(Objects::toString).sorted().collect(Collectors.joining(", ")));
+                    } else fail();
+                }
+            }
+            if ("test".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("/*inline test*/e.contains(\"x\")", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+        testClass("InlinedMethod_16", 0, 1, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_17() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("findTypeName".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:findTypeName>"
+                        : "/*inline findTypeName*/expressions.stream().filter(/*inline test*/e instanceof TypeName&&null!=e).findFirst().orElseThrow()/*(TypeName)*/";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("expressions, this", inlinedMethod.getVariablesOfExpression().stream().map(Objects::toString).sorted().collect(Collectors.joining(", ")));
+                    } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
+            }
+            if ("test".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("/*inline test*/e instanceof TypeName&&null!=e", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+        testClass("InlinedMethod_17", 0, 3, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 }

@@ -30,6 +30,7 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
@@ -112,6 +113,11 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public static Expression forMerge(Variable variable, CausesOfDelay causes) {
         String msg = "<merge:" + variable.simpleName() + ">";
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     /*

@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class Lambda extends BaseExpression implements Expression {
@@ -130,6 +131,14 @@ public class Lambda extends BaseExpression implements Expression {
         Statement statement = block.structure.statements().get(0);
         if (!(statement instanceof ReturnStatement returnStatement)) return null;
         return returnStatement.expression;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            Expression single = singleExpression();
+            if (single != null) single.visit(predicate);
+        }
     }
 
     // this is a functional interface

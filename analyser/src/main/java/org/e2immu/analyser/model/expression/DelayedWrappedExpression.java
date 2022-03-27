@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /*
 Purpose: when facing an infinite loop in determining the values of a field, in special cases an InlineConditional
@@ -73,6 +74,11 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     @Override
     public boolean isNumeric() {
         return expression.isNumeric();
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     @Override

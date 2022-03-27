@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public final class EmptyExpression extends BaseExpression implements Expression {
@@ -101,4 +102,8 @@ public final class EmptyExpression extends BaseExpression implements Expression 
         return Objects.hash(msg);
     }
 
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
+    }
 }

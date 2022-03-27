@@ -30,6 +30,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -48,6 +49,13 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (o == null || getClass() != o.getClass()) return false;
         MethodReference that = (MethodReference) o;
         return scope.equals(that.scope) && methodInfo.equals(that.methodInfo);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            scope.visit(predicate);
+        }
     }
 
     @Override

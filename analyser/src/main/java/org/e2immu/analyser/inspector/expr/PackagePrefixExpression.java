@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 final class PackagePrefixExpression extends BaseExpression implements Expression {
     private final PackagePrefix packagePrefix;
@@ -79,4 +80,8 @@ final class PackagePrefixExpression extends BaseExpression implements Expression
                 "packagePrefix=" + packagePrefix + ']';
     }
 
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
+    }
 }

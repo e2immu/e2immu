@@ -15,9 +15,13 @@
 
 package org.e2immu.analyser.parser.independence;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -48,7 +52,23 @@ public class Test_Independent extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("Independent_4", 0, 0, new DebugConfiguration.Builder()
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("methodAnalyserStream".equals(d.methodInfo().name)) {
+                if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

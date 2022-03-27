@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 @E2Immutable
 public final class ConstructorCallErasure extends BaseExpression implements ErasureExpression {
@@ -36,6 +37,11 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
     public ConstructorCallErasure(ParameterizedType formalType) {
         super(Identifier.constant(formalType));
         this.formalType = formalType;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

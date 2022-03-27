@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
@@ -220,6 +221,11 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     @Override
     public String toString() {
         return msg;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     @Override

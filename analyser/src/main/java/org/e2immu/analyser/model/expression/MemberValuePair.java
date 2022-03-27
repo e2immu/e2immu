@@ -29,6 +29,7 @@ import org.e2immu.support.EventuallyFinal;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public final class MemberValuePair extends BaseExpression implements Expression {
@@ -63,6 +64,11 @@ public final class MemberValuePair extends BaseExpression implements Expression 
         MemberValuePair that = (MemberValuePair) o;
         return name.equals(that.name) &&
                 value.equals(that.value);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

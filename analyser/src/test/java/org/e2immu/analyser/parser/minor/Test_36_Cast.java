@@ -79,15 +79,11 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() <= 1 ? "return incrementedT:-1,this.t:0" : "this.t:0";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expected = d.iteration() == 0
-                        ? "<vp:t:cnn:this.t@Method_getTAsString_0-C>/*(String)*/"
-                        : "t/*(String)*/";
+                String expected = d.iteration() == 0 ? "<f:t>/*(String)*/" : "t/*(String)*/";
                 assertEquals(expected, d.currentValue().toString());
                 if (d.iteration() > 0) {
                     assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
@@ -96,7 +92,7 @@ public class Test_36_Cast extends CommonTestRunner {
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = switch (d.iteration()) {
-                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0-C>/*(Counter)*/";
+                    case 0 -> "<f:t>/*(Counter)*/";
                     case 1 -> "<vp:t:final@Field_i>/*(Counter)*/";
                     default -> "t/*(Counter)*/";
                 };

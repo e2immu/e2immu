@@ -26,6 +26,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public class ArrayAccess extends BaseExpression implements Expression {
@@ -55,6 +56,14 @@ public class ArrayAccess extends BaseExpression implements Expression {
     @Override
     public int hashCode() {
         return Objects.hash(expression, index);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+            index.visit(predicate);
+        }
     }
 
     @Override

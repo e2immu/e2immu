@@ -575,11 +575,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression valueBeforeInlining = value;
         if (methodInfo.hasImplementations()) {
+            // see Independent_4; can we improve here?
             LOGGER.debug("Method has implementations, returning vanilla result: {}", methodInfo.fullyQualifiedName);
             ParameterizedType formalType = methodInfo.returnType();
             DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
             DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
-            assert  MultiLevel.independentConsistentWithImmutable(independent, immutable) :
+            assert MultiLevel.independentConsistentWithImmutable(independent, immutable) :
                     "formal independent value inconsistent with formal immutable value for method "
                             + methodInfo.fullyQualifiedName + ": independent " + independent + ", immutable " + immutable;
             DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
@@ -592,6 +593,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     IDENTITY, IDENTITY.falseDv,
                     IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
             value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
+            methodAnalysis.setProperty(IMMUTABLE, immutable);
+            methodAnalysis.setProperty(INDEPENDENT, independent);
+            methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
+            methodAnalysis.setProperty(CONTAINER, container);
         } else if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (methodInfo.partOfCallCycle() && modified.isDelayed()) {
@@ -647,7 +652,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
         }
         DV notNull = notNullExpression.max(externalNotNull).max(contextNotNull);
-        methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
+        if (!methodAnalysis.properties.isDone(NOT_NULL_EXPRESSION)) {
+            methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
+        }
 
         boolean valueIsConstantField;
         VariableExpression ve;

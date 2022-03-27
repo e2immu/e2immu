@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 @E2Immutable
 public final class MethodCallErasure extends BaseExpression implements ErasureExpression {
@@ -108,4 +109,8 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
         return Objects.hash(returnTypes, methodName);
     }
 
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        throw new UnsupportedOperationException();
+    }
 }

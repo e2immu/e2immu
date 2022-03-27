@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @E2Container
 public class TypeExpression extends BaseExpression implements Expression {
@@ -66,6 +67,11 @@ public class TypeExpression extends BaseExpression implements Expression {
     @Override
     public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(parameterizedType.output(qualification, false, diamond));
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /*
 differs from DelayedExpression in equality; this one is based on identifier.
@@ -55,6 +56,11 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
         assert causesOfDelay.isDelayed();
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
     }
 
     @Override
