@@ -110,6 +110,23 @@ public class EvaluateMethodCall {
             }
         }
 
+       /*
+         if the condition contains a boolean method call expression, such as "this.contains("a")", an we are not
+         in companion expression mode, then evaluating this.contains("a") will result in TRUE.
+         In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
+         Examples: BasicCompanionMethods_5 for the negative scenario; CyclicReferences_3 for the positive one
+        */
+        if (modified.valueIsFalse() && !forwardEvaluationInfo.inCompanionExpression() && methodInfo.returnType().isBoolean()) {
+            Expression condition = context.evaluationContext().getConditionManager().condition();
+            if (methodCall.equals(condition) || condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+                return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(context.getPrimitives(), true)).build();
+            }
+            if (condition instanceof Negation n && methodCall.equals(n.expression) ||
+                    condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+                return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(context.getPrimitives(), false)).build();
+            }
+        }
+
         // static eval: Integer.toString(3)
         Expression knownStaticEvaluation = computeStaticEvaluation(methodInfo, parameters);
         if (knownStaticEvaluation != null) {
@@ -174,28 +191,25 @@ public class EvaluateMethodCall {
             return builder.setExpression(nameInEnum).build();
         }
 
-        if (methodAnalysis.isComputed()) {
+        if (methodAnalysis.isComputed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
                 return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
                         srv.causesOfDelay());
             }
-            boolean ignoreMeBecauseOfPartOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            if (!ignoreMeBecauseOfPartOfCallCycle) {
-                InlinedMethod iv;
-                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
-                        forwardEvaluationInfo.allowInline(methodInfo)) {
-                    TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
-                            context.getCurrentType(), identifier);
-                    Expression translated = iv.translate(analyserContext, translationMap);
-                    ForwardEvaluationInfo forward = forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional();
-                    EvaluationResult reSrv = translated.evaluate(context, forward);
-                    return builder.compose(reSrv).setExpression(reSrv.value()).build();
-                }
-                if (srv.isConstant()) {
-                    return builder.setExpression(srv).build();
-                }
+            InlinedMethod iv;
+            if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
+                    forwardEvaluationInfo.allowInline(methodInfo)) {
+                TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
+                        context.getCurrentType(), identifier);
+                Expression translated = iv.translate(analyserContext, translationMap);
+                ForwardEvaluationInfo forward = forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional();
+                EvaluationResult reSrv = translated.evaluate(context, forward);
+                return builder.compose(reSrv).setExpression(reSrv.value()).build();
+            }
+            if (srv.isConstant()) {
+                return builder.setExpression(srv).build();
             }
         }
 
@@ -331,7 +345,8 @@ public class EvaluateMethodCall {
         Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationResult child = context.child(state, true);
-        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain()
+                .copyInCompanionExpression();
         Expression resultingValue = translated.evaluate(child, fwd).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
@@ -390,7 +405,8 @@ public class EvaluateMethodCall {
 
         if (translationMap.isEmpty()) return null;
         Expression translated = state.translate(context.getAnalyserContext(), translationMap.build());
-        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain()
+                .copyInCompanionExpression();
         Expression newState = translated.evaluate(context, fwd).value();
 
         DV notNull = MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(methodAnalysis.getProperty(NOT_NULL_EXPRESSION));

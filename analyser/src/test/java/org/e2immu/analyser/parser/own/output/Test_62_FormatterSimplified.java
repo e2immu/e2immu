@@ -114,7 +114,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 0 -> "!<instanceOf:Space>&&!<instanceOf:Guide>&&<m:length>>=1&&<v:end>><v:pos>&&<f:NEWLINE>!=<m:get>?<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):<vl:chars>";
                             case 1 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)!=<f:RELAXED_NONE>&&<m:length>>=1&&<vp:NONE:container@Class_ElementarySpace>!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1:0):instance type int:instance type int";
                             case 2 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&<m:length>>=1&&ElementarySpace.NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&ElementarySpace.RELAXED_NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?1:0):instance type int:instance type int";
-                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()>=1?nullable instance type Boolean?chars$8:(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()+chars$8+(!nullable instance type Boolean&&wroteOnce$8&&!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&lastOneWasSpace$8!=ElementarySpace.NONE&&lastOneWasSpace$8!=ElementarySpace.RELAXED_NONE&&list.get(pos$8)!=Space.NEWLINE&&(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()>=1?1:0):instance type int";
+                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()>=1?nullable instance type Boolean?chars$8:(([end$8,lastOneWasSpace,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,Space.NEWLINE,list.get(pos$8)/*(Symbol)*/.symbol,list,outputElement,pos$8,wroteOnce$8,instance type boolean])?1:0)+(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()+chars$8:instance type int";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -146,7 +146,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        testClass("FormatterSimplified_2", 4, 7, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_2", 4, 5, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -163,12 +163,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("4.0.0.0.0".equals(d.statementId())) {
-                String expect = d.iteration() <= 2 ? "<m:combine>" : "lastOneWasSpace";
+                String expect = d.iteration() <= 2 ? "<m:combine>"
+                        : "outputElement instanceof Symbol symbol&&null==lastOneWasSpace&&end$4>pos$4&&list.get(pos$4)!=Space.NEWLINE?null:lastOneWasSpace";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
 
-        testClass("FormatterSimplified_4", 2, 3, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_4", 2, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }

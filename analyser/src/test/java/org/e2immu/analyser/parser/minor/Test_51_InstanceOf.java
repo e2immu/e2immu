@@ -707,7 +707,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.4.0.2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1, 2, 3, 4 -> "<m:numericPartOfLhs>";
-                            default -> "expression/*(Sum)*/.lhs.equals(expression/*(Sum)*/.rhs)?3.0:null";
+                            default -> "expression/*(Sum)*/.lhs.equals(expression/*(Sum)*/.rhs)&&expression instanceof Sum?3.0:null";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }

@@ -156,7 +156,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return new EvaluationResult.Builder(context).setExpression(this).build();
         }
 
-        // the following 2 lines are there to protect against infinite recursion (closure depth is counted)
         EvaluationContext closure = new EvaluationContextImpl(context.evaluationContext());
         EvaluationResult closureContext = context.copy(closure);
         return expression.evaluate(closureContext, forwardEvaluationInfo);
@@ -406,7 +405,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         protected EvaluationContextImpl(EvaluationContext evaluationContext) {
             super(evaluationContext.getDepth() + 1, evaluationContext.getIteration(),
-                    ConditionManager.initialConditionManager(evaluationContext.getPrimitives()), null);
+                    evaluationContext.getConditionManager(), null);
             this.evaluationContext = evaluationContext;
         }
 

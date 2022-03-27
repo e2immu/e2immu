@@ -302,7 +302,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Property.CONTEXT_MODIFIED, modified,
                 Property.CONTEXT_IMMUTABLE, immutableData.required,
                 Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
-                forwardEvaluationInfo.assignmentTarget(), forwardEvaluationInfo.complainInlineConditional(), forwardEvaluationInfo.inlining()));
+                forwardEvaluationInfo.assignmentTarget(), forwardEvaluationInfo.complainInlineConditional(),
+                forwardEvaluationInfo.inCompanionExpression(),
+                forwardEvaluationInfo.inlining()));
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -779,7 +781,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression companionValue = companionAnalysis.getValue();
         Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());
         EvaluationResult child = context.child(instanceState, true);
-        EvaluationResult companionValueTranslationResult = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain()
+                .copyInCompanionExpression();
+        EvaluationResult companionValueTranslationResult = translated.evaluate(child, fwd);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();
     }

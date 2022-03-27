@@ -57,10 +57,11 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:from>"
+                    // FIXME because of CyclicReferences_3, we delay... but in this case we really should not
+                    String expected = d.iteration() == 0 ? "<m:from>"
                             : "Precondition_7.from(typeContext,findType,signature.substring(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("normalType".equals(d.methodInfo().name)) {
@@ -200,10 +201,10 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_7", 6, 11,
                 new DebugConfiguration.Builder()
-                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 

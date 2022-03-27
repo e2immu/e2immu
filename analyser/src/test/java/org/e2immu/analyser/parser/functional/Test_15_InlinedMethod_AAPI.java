@@ -149,13 +149,13 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
                 // cycles!!
-                String expected = d.iteration() == 0 ? "<m:find>" : "/*inline find*/nullable instance type String";
-                if (d.iteration() >= 1) {
+                String expected = d.iteration() <= 1 ? "<m:find>" : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertTrue(inlinedMethod.getVariablesOfExpression().isEmpty());
+                        assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
                     }
                 }
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlinedMethod_10", 0, 4, new DebugConfiguration.Builder()
