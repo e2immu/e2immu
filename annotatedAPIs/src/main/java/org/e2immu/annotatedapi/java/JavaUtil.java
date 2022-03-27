@@ -28,16 +28,24 @@ public class JavaUtil extends AnnotatedAPI {
     // it is important that these helper methods are 'public', because the shallow
     // method analyser only considers public methods
 
-    public static boolean setAddModificationHelper(int i, int j, boolean containsE) {
+    /**
+     *
+     * @param i the "post" value
+     * @param j the "pre" value, null when it is not known
+     * @param containsE a placeholder for the actual clause
+     * @return an expression indicating the new state
+     */
+    public static boolean setAddModificationHelper(int i, Integer j, boolean containsE) {
         return isFact(containsE) ? (containsE ? i == j : i == j + 1) :
-                isKnown(true) ? i == j + 1 : i >= j && i <= j + 1;
+                isKnown(true) ? (j == null ? i >= 1 : i == j + 1) : (j == null ? i >= 1 : i >= j && i <= j + 1);
     }
 
     public static boolean setAddValueHelper(int size, boolean containsE, boolean retVal) {
         return isFact(containsE) ? !containsE : (isKnown(true) || size == 0 || retVal);
     }
 
-    public static boolean setRemoveModificationHelper(int i, int j, boolean containsE) {
+    // TODO j == null situation
+    public static boolean setRemoveModificationHelper(int i, Integer j, boolean containsE) {
         return isFact(containsE) ? (containsE ? i == j - 1 : i == j) :
                 isKnown(true) ? i == j : i >= j - 1 && i <= j;
     }
@@ -67,7 +75,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean hasNext();
 
         @Modified
-        // implicitly @Independent1
+            // implicitly @Independent1
         T next();
 
         @Modified
@@ -117,7 +125,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean isEmpty();
 
         @NotNull1
-        // implicitly @Dependent
+            // implicitly @Dependent
         java.util.Iterator<E> iterator();
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
@@ -126,7 +134,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         void forEach(@Independent1 @NotNull1 Consumer<? super E> action);
 
-        default boolean remove$Modification$Size(int i, int j) {
+        default boolean remove$Modification$Size(int i, Integer j) {
             return i <= j && i >= j - 1;
         }
 
@@ -141,7 +149,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         boolean remove(@NotNull @Independent Object object);
 
-        default boolean removeAll$Modification$Size(int i, int j, java.util.Collection<?> c) {
+        default boolean removeAll$Modification$Size(int i, Integer j, java.util.Collection<?> c) {
             return i >= j - c.size() && i <= j;
         }
 
@@ -155,7 +163,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         boolean removeIf(Predicate<? super E> filter);
 
-        default boolean retainAll$Modification$Size(int i, int j, java.util.Collection<?> c) {
+        default boolean retainAll$Modification$Size(int i, Integer j, java.util.Collection<?> c) {
             return i <= c.size() && i <= j;
         }
 
@@ -216,8 +224,8 @@ public class JavaUtil extends AnnotatedAPI {
     @Container
     interface List$<E> {
 
-        default boolean add$Modification$Size(int i, int j, E e) {
-            return i == j + 1;
+        default boolean add$Modification$Size(int i, Integer j, E e) {
+            return j == null ? i > 0 : i == j + 1;
         }
 
         // this is not in line with the JDK, but we will block null keys!
@@ -232,7 +240,7 @@ public class JavaUtil extends AnnotatedAPI {
         // @Modified inherited; we're not (yet) inheriting companion methods
         boolean add(E e); // @Independent1, @NotNull inherited
 
-        default boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) {
+        default boolean addAll$Modification$Size(int i, Integer j, java.util.Collection<? extends E> c) {
             return i == j + c.size();
         }
 
@@ -262,7 +270,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull
-        // @Independent1 by default
+            // @Independent1 by default
         E get(int index);
 
         default int of$Transfer$Size() {
@@ -283,7 +291,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @E2Container
-        @Independent1 // links to parameters, because of() is a static method
+        @Independent1
+            // links to parameters, because of() is a static method
         <F> java.util.List<F> of(@NotNull F e1);
 
         default <F> int of$Transfer$Size(F f1, F f2) {
@@ -346,7 +355,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
         // type context IMPROVE not really trivial to sort out
-        default boolean add$Modification$Size(int i, int j, E e) {
+        default boolean add$Modification$Size(int i, Integer j, E e) {
             return JavaUtil.setAddModificationHelper(i, j, contains(e));
         }
 
@@ -428,7 +437,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent1
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
-        default boolean remove$Modification$Size(int i, int j, Object o) {
+        default boolean remove$Modification$Size(int i, Integer j, Object o) {
             return JavaUtil.setRemoveModificationHelper(i, j, contains(o));
         }
 
@@ -509,10 +518,14 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        E pop() { return null; }
+        E pop() {
+            return null;
+        }
 
         @Modified
-        E push(E item) { return null; }
+        E push(E item) {
+            return null;
+        }
     }
 
     @Container
@@ -766,7 +779,9 @@ public class JavaUtil extends AnnotatedAPI {
         // Entry does not support modification!
         // returns null when the map is empty TODO add correct companions
         @E2Container
-        Map.Entry<K, V> firstEntry() { return null; }
+        Map.Entry<K, V> firstEntry() {
+            return null;
+        }
     }
 
     interface AbstractCollection$<E> {

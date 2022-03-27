@@ -72,16 +72,6 @@ public class EvaluateInlineConditional {
             return compute(evaluationContext, negatedCondition.expression, ifFalse, ifTrue, complain);
         }
 
-        // isFact needs to be caught as soon as, because we're ONLY looking in the condition
-        // must be checked before edgeCases (which may change the Value into an AndValue)
-        // and after negation checking (so that !isFact works as well)
-        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
-            Expression isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
-            if (isFact != null) return builder.setExpression(isFact).build();
-            Expression isKnown = isKnown(evaluationContext, condition, ifTrue, ifFalse);
-            if (isKnown != null) return builder.setExpression(isKnown).build();
-        }
-
         Expression edgeCase = edgeCases(evaluationContext, condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setExpression(edgeCase).build();
 
@@ -273,37 +263,4 @@ public class EvaluateInlineConditional {
         }
         return null;
     }
-
-    // isFact(contains(e)) will check if "contains(e)" is part of the current instance's state
-    // it will bypass ConditionalValue and return ifTrue or ifFalse accordingly
-    // note that we don't need to check for !isFact() because the inversion has already taken place
-    private static Expression isFact(EvaluationResult evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (condition instanceof MethodCall methodValue &&
-                TypeInfo.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
-            return inState(evaluationContext, methodValue.parameterExpressions.get(0)) ? ifTrue : ifFalse;
-        }
-        return null;
-    }
-
-    private static boolean inState(EvaluationResult context, Expression expression) {
-        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
-        Expression absoluteState = context.evaluationContext().getConditionManager().absoluteState(context);
-        Filter.FilterResult<Expression> res = filter.filter(absoluteState, new Filter.ExactValue(filter.getDefaultRest(), expression));
-        return !res.accepted().isEmpty();
-    }
-
-    // whilst isKnown is also caught at the level of MethodCall, we grab it here to avoid warnings for
-    // constant evaluation
-    private static Expression isKnown(EvaluationResult evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (condition instanceof MethodCall methodValue &&
-                TypeInfo.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
-                methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
-            VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
-            Expression knownValue = new MethodCall(object, methodValue.methodInfo, methodValue.parameterExpressions);
-            return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
-        }
-        return null;
-    }
-
-
 }

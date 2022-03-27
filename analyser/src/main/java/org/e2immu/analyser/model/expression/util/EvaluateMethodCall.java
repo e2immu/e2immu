@@ -91,18 +91,18 @@ public class EvaluateMethodCall {
             return translated.evaluate(context, forwardEvaluationInfo.addMethod(methodInfo).copyDoNotComplainInlineConditional());
         }
 
-        if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
-                !analyserContext.inAnnotatedAPIAnalysis() &&
+        if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName) && !analyserContext.inAnnotatedAPIAnalysis()) {
+            Expression parameter = parameters.get(0);
+            boolean inState = inState(context, parameter);
+            return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(primitives, inState)).build();
+        }
+
+        if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) && !analyserContext.inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression clause = new MethodCall(identifier, objectValue, methodInfo,
                     List.of(new BooleanConstant(primitives, true)));
             if (boolValue.constant()) {
-                Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
-                // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
-                Expression absoluteState = context.evaluationContext().getConditionManager().absoluteState(context);
-                Filter.FilterResult<Expression> res = filter.filter(absoluteState,
-                        new Filter.ExactValue(filter.getDefaultRest(), clause));
-                boolean isKnown = !res.accepted().isEmpty();
+                boolean isKnown = inState(context, clause);
                 Expression result = new BooleanConstant(primitives, isKnown);
                 return builder.setExpression(result).build();
             } else {
@@ -224,6 +224,13 @@ public class EvaluateMethodCall {
         return builder.setExpression(methodValue).build();
     }
 
+    private static boolean inState(EvaluationResult context, Expression expression) {
+        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
+        Expression absoluteState = context.evaluationContext().getConditionManager().absoluteState(context);
+        Filter.FilterResult<Expression> res = filter.filter(absoluteState, new Filter.ExactValue(filter.getDefaultRest(), expression));
+        return !res.accepted().isEmpty();
+    }
+
     private EvaluationResult delay(EvaluationResult.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
@@ -326,7 +333,8 @@ public class EvaluateMethodCall {
         Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationResult child = context.child(state, true);
-        Expression resultingValue = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT).value();
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        Expression resultingValue = translated.evaluate(child, fwd).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (methodInfo.returnType().typeInfo.isBoolean()) {
@@ -384,7 +392,8 @@ public class EvaluateMethodCall {
 
         if (translationMap.isEmpty()) return null;
         Expression translated = state.translate(context.getAnalyserContext(), translationMap.build());
-        Expression newState = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT).value();
+        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        Expression newState = translated.evaluate(context, fwd).value();
 
         DV notNull = MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
         return PropertyWrapper.addState(methodCall, newState, Map.of(NOT_NULL_EXPRESSION, notNull));

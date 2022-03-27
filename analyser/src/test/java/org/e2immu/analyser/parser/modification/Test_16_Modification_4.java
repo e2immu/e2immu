@@ -77,7 +77,8 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    String expect = d.iteration() == 0 ? "<mmc:local4>" : "instance type Set<String>";
+                    String expect = d.iteration() == 0 ? "<mmc:local4>"
+                            : "instance type Set<String>/*this.contains(v)&&this.size()>=1*/";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }

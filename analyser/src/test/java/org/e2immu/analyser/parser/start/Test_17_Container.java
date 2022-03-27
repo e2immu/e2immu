@@ -38,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_17_Container extends CommonTestRunner {
 
-    public static final String VALUE_OF_P = "nullable instance type Set<String>/*@Identity*/";
-
     public Test_17_Container() {
         super(true);
     }
@@ -72,7 +70,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().isReadInThisStatement());
 
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                        assertEquals(VALUE_OF_P, d.currentValue().toString());
+                        assertEquals("nullable instance type Set<String>/*@Identity*/", d.currentValue().toString());
 
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -81,7 +79,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        assertEquals(VALUE_OF_P, d.currentValue().toString());
+                        assertEquals("nullable instance type Set<String>/*@Identity*/", d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -103,7 +101,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mmc:s>" : VALUE_OF_P;
+                        String expected = d.iteration() == 0 ? "<mmc:s>" : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

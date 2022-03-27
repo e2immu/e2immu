@@ -118,7 +118,7 @@ public class CompanionAnalyser {
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                ParameterizedType returnType = aspectMethod.returnType();
+                ParameterizedType returnType = parameterInfo.parameterizedType; // instead of aspectMethod.returnType(); make sure they agree bar nullable
                 // the value that we store is the same as that for the post-variable (see previous if-statement)
                 Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
                 MethodCall methodValue = new MethodCall(Identifier.generate("companion call"), scope, aspectMethod, List.of());
@@ -223,6 +223,10 @@ public class CompanionAnalyser {
 
         @Override
         public DV getProperty(Variable variable, Property property) {
+            if (property == Property.NOT_NULL_EXPRESSION && variable instanceof PreAspectVariable pre) {
+                ParameterizedType type = pre.parameterizedType();
+                return type.isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
+            }
             return analyserContext.getProperty(variable.parameterizedType(), property, true);
         }
     }

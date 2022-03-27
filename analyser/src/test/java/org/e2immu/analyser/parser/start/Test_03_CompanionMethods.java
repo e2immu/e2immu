@@ -287,7 +287,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setAddModificationHelper".equals(d.methodInfo().name)) {
-                assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1==i-j:AnnotatedAPI.isKnown(true)?1==i-j:1-i+j>=0&&i>=j",
+                assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1==i-j:AnnotatedAPI.isKnown(true)?null==j?i>=1:1==i-j:null==j?i>=1:1-i+j>=0&&i>=j",
                         d.evaluationResult().value().toString());
             }
         };
@@ -302,6 +302,10 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                             d.currentValue().toString(), "statement " + d.statementId());
                 }
                 if ("07".equals(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&this.contains(\"b\")&&AnnotatedAPI.isKnown(true)&&2==this.size()*/",
+                            d.currentValue().toString());
+                }
+                if ("11".equals(d.statementId())) {
                     assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&this.contains(\"b\")&&AnnotatedAPI.isKnown(true)&&2==this.size()*/",
                             d.currentValue().toString());
                 }

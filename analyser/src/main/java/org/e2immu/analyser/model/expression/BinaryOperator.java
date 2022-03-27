@@ -161,6 +161,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
                                       ForwardEvaluationInfo forwardEvaluationInfo) {
         Expression l = left.value();
         Expression r = right.value();
+        assert l != null;
+        assert r != null;
 
         if (operator == primitives.equalsOperatorObject()) {
             if (l.equals(r)) {

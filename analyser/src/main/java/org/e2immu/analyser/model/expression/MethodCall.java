@@ -732,6 +732,33 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         });
         return result.get();
     }
+    /*
+
+    Examples
+    Modification_0; set1.add(v)
+    instanceState: "true"
+
+    companionValue:
+    AnnotatedAPI.isFact(this.contains(e))?this.contains(e)?this.size()==pre:1==this.size()-pre:AnnotatedAPI.isKnown(true)?1==this.size()-pre:1-this.size()+pre>=0&&this.size()>=pre
+
+    translated:
+    AnnotatedAPI.isFact(this.contains(v))?this.contains(v)?this.size()==0:1==this.size()-0:AnnotatedAPI.isKnown(true)?1==this.size()-0:this.size()>=1
+    --false:true when in instanceState ---   ....                                          -false: true when in state---   ...    -- : this.size()>=1
+
+    result:
+    this.size>=1
+
+    -----------
+    BasicCompanionMethods_5, statement 01; set.add("a")
+    instanceState: AnnotatedAPI.isKnown(true)&&0==this.size()   -> there's a new, empty set
+
+    companionValue:
+    AnnotatedAPI.isFact(this.contains(e))?this.contains(e)?this.size()==pre:1==this.size()-pre:AnnotatedAPI.isKnown(true)?1==this.size()-pre:this.size()>=1
+
+    translated:
+    AnnotatedAPI.isFact(this.contains("a"))?this.contains("a")?this.size()==0:1==this.size()-0:AnnotatedAPI.isKnown(true)?1==this.size()-0:this.size()>=1
+    --false: this.contains("a") not in state --- ... :--- true --- ? 1==this.size() : ----
+     */
 
     private static Expression translateCompanionValue(EvaluationResult context,
                                                       CompanionAnalysis companionAnalysis,
@@ -742,11 +769,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (filterResult != null) {
             Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
             if (preAspectVariableValue != null) {
-                translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
-                        .findFirst()
-                        // it is possible that no pre- information can be found... that's OK as long as it isn't used
-                        // the empty expression will travel all the way
-                        .orElse(EmptyExpression.EMPTY_EXPRESSION));
+                Expression pre = filterResult.accepted().values().stream().findFirst().orElse(NullConstant.NULL_CONSTANT);
+                translationMap.put(preAspectVariableValue, pre);
             }
         }
         // parameters
@@ -755,7 +779,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression companionValue = companionAnalysis.getValue();
         Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());
         EvaluationResult child = context.child(instanceState, true);
-        EvaluationResult companionValueTranslationResult = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT);
+        EvaluationResult companionValueTranslationResult = translated.evaluate(child, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();
     }
