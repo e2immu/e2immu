@@ -28,7 +28,7 @@ public class BasicCompanionMethods_11 {
             if (set.add(s)) { // should NOT raise a warning
                 System.out.println("Hello! s was added");
 
-                assert set.contains(s); // should not raise a warning
+                assert set.contains(s); // should raise a warning
             }
         };
     }

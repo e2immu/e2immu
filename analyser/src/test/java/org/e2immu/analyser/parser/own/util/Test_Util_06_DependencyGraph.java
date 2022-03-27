@@ -28,7 +28,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, 2,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, 2,
                 new DebugConfiguration.Builder().build());
     }
 

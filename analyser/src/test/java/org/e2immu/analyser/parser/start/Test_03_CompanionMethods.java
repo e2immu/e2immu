@@ -520,13 +520,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        // without state!
-                        assertEquals("instance type HashSet<String>", d.currentValue().toString());
+                        // with state, but the state based on pre == null (>=1, rather than == 1)
+                        assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", d.currentValue().toString());
                     }
                 }
             }
         };
-        testClass("BasicCompanionMethods_11", 0, 0, new DebugConfiguration.Builder()
+        testClass("BasicCompanionMethods_11", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
