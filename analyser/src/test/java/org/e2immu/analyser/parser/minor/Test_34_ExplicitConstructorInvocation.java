@@ -272,4 +272,42 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         .setForceAlphabeticAnalysisInPrimaryType(true)
                         .build());
     }
+
+
+    // yet another order, again problematic
+    // eval order is 1,3,4,5
+    @Test
+    public void test_12() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("X5_BaseExpression".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+            }
+            if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+            }
+            if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+            }
+            if ("X1_ElementImpl".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
+            }
+        };
+        testClass("ExplicitConstructorInvocation_12", 0, 3, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        testClass("ExplicitConstructorInvocation_13", 0, 0, new DebugConfiguration.Builder()
+                .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
 }

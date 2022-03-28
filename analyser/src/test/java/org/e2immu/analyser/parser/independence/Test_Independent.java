@@ -55,8 +55,8 @@ public class Test_Independent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                    assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };

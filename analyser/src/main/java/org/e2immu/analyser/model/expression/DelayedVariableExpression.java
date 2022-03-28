@@ -234,7 +234,15 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
-        if (expression != null && expression.isDelayed()) return expression;
+        if (expression != null) {
+            // we do our best to take the replacement variable, if we can reach it. needed for parameter replacements in ECI
+            // we'd rather not replace a DVE with a VE
+            IsVariableExpression ive;
+            if (expression.isDone() && (ive = expression.asInstanceOf(IsVariableExpression.class)) != null) {
+                return new DelayedVariableExpression(msg, ive.variable(), statementTime, causesOfDelay);
+            }
+            return expression;
+        }
         if (variable instanceof FieldReference fr) {
             Expression scope = fr.scope.translate(inspectionProvider, translationMap);
             if (scope != fr.scope) {

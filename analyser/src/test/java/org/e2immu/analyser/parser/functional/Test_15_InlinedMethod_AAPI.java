@@ -286,7 +286,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("[new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,map]", d.fieldAnalysis().getValue().toString());
             }
         };
-        testClass("InlinedMethod_14", 0, 7, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_14", 0, 6, new DebugConfiguration.Builder()
                 //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()

@@ -530,7 +530,30 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return DONE;
             }
             LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.minimalOutput());
-            if (value.isDelayed()) {
+            if (methodInfo.hasImplementations()) {
+                // see Independent_4; can we improve here?
+                LOGGER.debug("Method has implementations, returning vanilla result: {}", methodInfo.fullyQualifiedName);
+                ParameterizedType formalType = methodInfo.returnType();
+                DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
+                DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
+                assert MultiLevel.independentConsistentWithImmutable(independent, immutable) :
+                        "formal independent value inconsistent with formal immutable value for method "
+                                + methodInfo.fullyQualifiedName + ": independent " + independent + ", immutable " + immutable;
+                DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
+                notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
+                Properties properties = Properties.ofWritable(Map.of(
+                        IMMUTABLE, immutable,
+                        INDEPENDENT, independent,
+                        NOT_NULL_EXPRESSION, notNullExpression,
+                        CONTAINER, container,
+                        IDENTITY, IDENTITY.falseDv,
+                        IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
+                value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
+                methodAnalysis.setProperty(IMMUTABLE, immutable);
+                methodAnalysis.setProperty(INDEPENDENT, independent);
+                methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
+                methodAnalysis.setProperty(CONTAINER, container);
+            } else if (value.isDelayed()) {
                 IsVariableExpression ive;
                 boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs
                         && (((ive = rs.expression.asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This
@@ -574,30 +597,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // try to compute the dynamic immutable status of value
 
         Expression valueBeforeInlining = value;
-        if (methodInfo.hasImplementations()) {
-            // see Independent_4; can we improve here?
-            LOGGER.debug("Method has implementations, returning vanilla result: {}", methodInfo.fullyQualifiedName);
-            ParameterizedType formalType = methodInfo.returnType();
-            DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
-            DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
-            assert MultiLevel.independentConsistentWithImmutable(independent, immutable) :
-                    "formal independent value inconsistent with formal immutable value for method "
-                            + methodInfo.fullyQualifiedName + ": independent " + independent + ", immutable " + immutable;
-            DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
-            notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
-            Properties properties = Properties.ofWritable(Map.of(
-                    IMMUTABLE, immutable,
-                    INDEPENDENT, independent,
-                    NOT_NULL_EXPRESSION, notNullExpression,
-                    CONTAINER, container,
-                    IDENTITY, IDENTITY.falseDv,
-                    IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-            value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
-            methodAnalysis.setProperty(IMMUTABLE, immutable);
-            methodAnalysis.setProperty(INDEPENDENT, independent);
-            methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
-            methodAnalysis.setProperty(CONTAINER, container);
-        } else if (!value.isConstant()) {
+        if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (methodInfo.partOfCallCycle() && modified.isDelayed()) {
                 modified = methodAnalysis.getProperty(TEMP_MODIFIED_METHOD);
