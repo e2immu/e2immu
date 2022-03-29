@@ -222,7 +222,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         this.myStaticBlocks = List.copyOf(myStaticBlocks);
     }
 
-    // FIXME should this also have an "enclosed in"?
+    // IMPROVE should this also have an "enclosed in"?
     private Stream<MethodAnalyser> otherStaticBlocks() {
         TypeInfo primaryType = myTypeAnalyser.getPrimaryType();
         TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
@@ -331,7 +331,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 makeVariableAccessReport(initialiserValue, sharedState.closure());
                 LOGGER.debug("Set initialiser of field {} to {}", fqn, evaluationResult.value());
                 if (evaluationResult.causesOfDelay().isDelayed()) {
-                    return evaluationResult.causesOfDelay();
+                    return evaluationResult.causesOfDelay(); //DELAY EXIT POINT
                 }
                 return DONE;
             }
@@ -415,7 +415,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         assert fieldAnalysis.isTransparentType().isDelayed();
         CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().hiddenContentTypeStatus();
         if (causes.isDelayed()) {
-            return causes;
+            return causes; //DELAY EXIT POINT
         }
         boolean transparent = myTypeAnalyser.getTypeAnalysis().getTransparentTypes().contains(fieldInfo.type);
         fieldAnalysis.setTransparentType(DV.fromBoolDv(transparent));
@@ -452,13 +452,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (formal.isDelayed()) {
             LOGGER.debug("Delaying @Container of field {}, waiting for @Container of formal type", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, formal);
-            return AnalysisStatus.of(formal);
+            return AnalysisStatus.of(formal); //DELAY EXIT POINT
         }
 
         if (fieldAnalysis.valuesStatus().isDelayed()) {
             LOGGER.debug("Delaying @Container on field {}, waiting for values", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, fieldAnalysis.valuesStatus());
-            return fieldAnalysis.valuesStatus();
+            return fieldAnalysis.valuesStatus(); //DELAY EXIT POINT
         }
         DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
         boolean otherValues = false;
@@ -473,7 +473,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (safeMinimum.isDelayed() && safeMinimum != DV.MIN_INT_DV) {
             LOGGER.debug("Delaying @Container on field {}, waiting for container on values", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
-            return AnalysisStatus.of(safeMinimum);
+            return AnalysisStatus.of(safeMinimum); //DELAY EXIT POINT
         }
         if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
             LOGGER.debug("Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
@@ -490,12 +490,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (bestOverContext.isDelayed()) {
             LOGGER.debug("Delay @Container on {}, waiting for context container", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
-            return AnalysisStatus.of(bestOverContext);
+            return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT--REDUCE WITH CANCEL
         }
 
         LOGGER.debug("@Container on field {}: value of best over context: {}", fqn, bestOverContext);
         fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
-        return AnalysisStatus.of(bestOverContext);
+        return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT
     }
 
     private DV safeContainer(ValueAndPropertyProxy proxy) {
@@ -535,7 +535,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (isFinal.isDelayed()) {
             LOGGER.debug("Delaying @NotNull on {} until we know about @Final", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, isFinal);
-            return isFinal.causesOfDelay();
+            return isFinal.causesOfDelay(); //DELAY EXIT POINT
         }
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             LOGGER.debug("Field {} cannot be @NotNull: it be assigned to from outside this primary type", fqn);
@@ -546,7 +546,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (fieldAnalysis.valuesStatus().isDelayed()) {
             LOGGER.debug("Delay @NotNull until all values are known");
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, fieldAnalysis.valuesStatus());
-            return fieldAnalysis.valuesStatus();
+            return fieldAnalysis.valuesStatus(); //DELAY EXIT POINT
         }
         assert fieldAnalysis.getValues().size() > 0;
 
@@ -598,7 +598,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (bestOverContext.isDelayed()) {
             LOGGER.debug("Delay @NotNull on {}, waiting for CNN; filter {}", fqn, filter);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
-            return bestOverContext.causesOfDelay();
+            return bestOverContext.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
         }
         // the null constant places a hard limit on things, as does e.g. a string constant "abc"
         DV constantNotNull = constantNotNullOverValues();
@@ -606,7 +606,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         DV finalNotNullValue = worstOverValues.max(bestOverContext).min(constantNotNull);
         fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, finalNotNullValue);
-        return AnalysisStatus.of(finalNotNullValue.causesOfDelay());
+        return AnalysisStatus.of(finalNotNullValue.causesOfDelay()); //DELAY EXIT POINT
     }
 
     private DV constantNotNullOverValues() {
@@ -687,7 +687,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 return DONE;
             } else if (effectivelyFinal.isDelayed()) {
                 LOGGER.debug("Not yet ready to decide on non-private non-final");
-                return effectivelyFinal.causesOfDelay();
+                return effectivelyFinal.causesOfDelay(); //DELAY EXIT POINT
             }
         }
         // not for me
@@ -720,7 +720,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (immutable.isDelayed()) {
             LOGGER.debug("Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(Property.INDEPENDENT, immutable);
-            return immutable.causesOfDelay();
+            return immutable.causesOfDelay(); //DELAY EXIT POINT
         }
         int immutableLevel = MultiLevel.level(immutable);
         if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
@@ -735,7 +735,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             LOGGER.debug("Field {} independent delayed: wait for type independence of {}",
                     fieldInfo.fullyQualifiedName(), fieldInfo.type);
             fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
-            return staticallyIndependent.causesOfDelay();
+            return staticallyIndependent.causesOfDelay(); //DELAY EXIT POINT
         }
         fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
         return DONE;
@@ -755,7 +755,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (isFinal.isDelayed()) {
             LOGGER.debug("Delaying @Immutable on {} until we know about @Final", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, isFinal);
-            return isFinal.causesOfDelay();
+            return isFinal.causesOfDelay(); //DELAY EXIT POINT
         }
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             LOGGER.debug("Field {} cannot be immutable: it is not @Final," +
@@ -777,7 +777,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying @Immutable of field {}, non-parameter values not yet known", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, valuesStatus);
-            return valuesStatus;
+            return valuesStatus; //DELAY EXIT POINT
         }
         CausesOfDelay allLinksStatus = fieldAnalysis.allLinksHaveBeenEstablished();
         if (allLinksStatus.isDelayed() && isFinal.valueIsFalse()) {
@@ -790,7 +790,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             } else {
                 LOGGER.debug("Delaying @Immutable of field {}, not all links have been established", fqn);
                 fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, allLinksStatus);
-                return allLinksStatus;
+                return allLinksStatus; //DELAY EXIT POINT
             }
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
@@ -802,7 +802,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (worstOverValues.isDelayed()) {
             LOGGER.debug("Delay @Immutable on {}, waiting for values in proxies: {}", fqn, worstOverValues);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, worstOverValues);
-            return worstOverValues.causesOfDelay();
+            return worstOverValues.causesOfDelay(); //DELAY EXIT POINT
         }
 
         // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
@@ -816,7 +816,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (bestOverContext.isDelayed()) {
                 LOGGER.debug("Delay @Immutable on {}, waiting for context immutable", fqn);
                 fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, bestOverContext);
-                return bestOverContext.causesOfDelay();
+                return bestOverContext.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
             }
             finalImmutable = bestOverContext.max(worstOverValues);
         } else {
@@ -839,7 +839,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             LOGGER.debug("Delay @Immutable on {}, waiting for exposure to decide on @BeforeMark", fqn);
             // still, we're already marking
             fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, correctedImmutable2);
-            return correctedImmutable2.causesOfDelay();
+            return correctedImmutable2.causesOfDelay(); //DELAY EXIT POINT
         }
         LOGGER.debug("Set immutable on field {} to value {}", fqn, correctedImmutable2);
         fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable2);
@@ -976,7 +976,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         if (viIsDelayed) {
                             LOGGER.debug("Delay consistent value for field {} because of {} in {}",
                                     fqn, expression, methodInfo.fullyQualifiedName);
-                            delays = delays.merge(causesOfDelay);
+                            delays = delays.merge(causesOfDelay); //DELAY EXIT POINT
                         }
                     }
                 }
@@ -1003,7 +1003,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     }
                     latestBlock = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo
                             (vi.getValue(), vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
-                    delays = delays.merge(vi.getValue().causesOfDelay());
+                    delays = delays.merge(vi.getValue().causesOfDelay()); //DELAY EXIT POINT
                 }
             }
         }
@@ -1044,7 +1044,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                             case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
-                            case CONTAINER -> MultiLevel.CONTAINER_DV; // FIXME this should be diverted to the type
+                            case CONTAINER -> MultiLevel.CONTAINER_DV; // TODO this should be diverted to the type?
                             default -> throw new UnsupportedOperationException("? who wants to know " + property);
                         };
                     }
@@ -1133,7 +1133,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // order does not matter for this class, but is handy for testing
         values.sort(ValueAndPropertyProxy.COMPARATOR);
         fieldAnalysis.setValues(values, delays);
-        return AnalysisStatus.of(delays);
+        return AnalysisStatus.of(delays); //DELAY EXIT POINT
     }
 
     private boolean properlyDefinedAnonymousType(Expression expression) {
@@ -1160,7 +1160,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field " + fqn);
             fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, valuesStatus);
-            return valuesStatus;
+            return valuesStatus; //DELAY EXIT POINT
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
         DV res = values.stream().map(proxy -> proxy.getProperty(IGNORE_MODIFICATIONS)).reduce(DV.MIN_INT_DV, DV::max);
@@ -1195,7 +1195,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setValue(DelayedExpression.forInitialFieldValue(fieldInfo,
                     fieldAnalysis.getLinkedVariables(),
                     fieldAnalysis.valuesStatus()));
-            return valuesStatus;
+            return valuesStatus; //DELAY EXIT POINT
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
 
@@ -1219,7 +1219,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
                 if (immutable.isDelayed() && !fieldOfOwnType) {
                     LOGGER.debug("Waiting with effectively final value  until decision on immutable for {}", fqn);
-                    return immutable.causesOfDelay();
+                    return immutable.causesOfDelay(); //DELAY EXIT POINT
                 }
                 // the fact that any level 2+ eventually immutable field's initialiser gets downgraded is maybe a little
                 // too strong -- it may in fact never change its state. But what's the point in that?
@@ -1250,7 +1250,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         if (effectivelyFinalValue.isDelayed()) {
             LOGGER.debug("Delaying final value of field {}", fieldInfo.fullyQualifiedName());
-            return effectivelyFinalValue.causesOfDelay();
+            return effectivelyFinalValue.causesOfDelay(); //DELAY EXIT POINT
         }
 
         // check constant, but before we set the effectively final value
@@ -1266,7 +1266,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         Expression value = fieldAnalysis.getValue();
         if (value.isDelayed()) {
             LOGGER.debug("Delaying @Constant, effectively final value not yet set");
-            return value.causesOfDelay();
+            return value.causesOfDelay(); //DELAY EXIT POINT
         }
 
         if (value.isEmpty()) {
@@ -1278,9 +1278,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed() && !fieldOfOwnType) {
-            LOGGER.debug("Waiting with @Constant until decision on @E2Immutable for {}",
-                    fqn);
-            return immutable.causesOfDelay();
+            LOGGER.debug("Waiting with @Constant until decision on @E2Immutable for {}", fqn);
+            return immutable.causesOfDelay(); //DELAY EXIT POINT
         }
 
         DV recursivelyConstant;
@@ -1288,9 +1287,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             recursivelyConstant = DV.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {
-            LOGGER.debug("Delaying @Constant because of recursively constant computation on value {} of {}",
-                    fqn, value);
-            return recursivelyConstant.causesOfDelay();
+            LOGGER.debug("Delaying @Constant because of recursively constant computation on value {} of {}", fqn, value);
+            return recursivelyConstant.causesOfDelay(); //DELAY EXIT POINT
         }
 
         if (recursivelyConstant.valueIsTrue()) {
@@ -1342,7 +1340,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo.fullyQualifiedName());
             // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
             fieldAnalysis.setLinkedVariables(LinkedVariables.delayedEmpty(causesOfDelay));
-            return causesOfDelay.causesOfDelay();
+            return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
         }
 
         Map<Variable, DV> map = allMethodsAndConstructors(true)
@@ -1451,7 +1449,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (ignoreModifications.isDelayed()) {
             LOGGER.debug("Delaying @Modified because of delayed @IgnoreModifications, field {}", fqn);
             fieldAnalysis.setProperty(MODIFIED_OUTSIDE_METHOD, ignoreModifications.causesOfDelay());
-            return AnalysisStatus.of(ignoreModifications.causesOfDelay());
+            return AnalysisStatus.of(ignoreModifications.causesOfDelay()); //DELAY EXIT POINT
         }
         Stream<MethodAnalyser> stream = methodsForModification();
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
@@ -1481,7 +1479,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contextModifications);
         LOGGER.debug("Field @Modified delayed because of {}", contextModifications);
-        return contextModifications;
+        return contextModifications; //DELAY EXIT POINT
     }
 
 
@@ -1490,7 +1488,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV immutable = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) {
             fieldAnalysis.setProperty(BEFORE_MARK, immutable.causesOfDelay());
-            return immutable.causesOfDelay();
+            return immutable.causesOfDelay(); //DELAY EXIT POINT
         }
         if (MultiLevel.effective(immutable) != MultiLevel.Effective.EVENTUAL) {
             LOGGER.debug("Field {} cannot be @BeforeMark: it is not eventual", fqn);
@@ -1505,7 +1503,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (eventualDelay.isDelayed()) {
             // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
             fieldAnalysis.setProperty(BEFORE_MARK, eventualDelay.causesOfDelay());
-            return eventualDelay.causesOfDelay();
+            return eventualDelay.causesOfDelay(); //DELAY EXIT POINT
         }
         boolean exposed;
         if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
@@ -1514,7 +1512,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             DV exposedViaMethods = exposureViaMethods();
             if (exposedViaMethods.isDelayed()) {
                 fieldAnalysis.setProperty(BEFORE_MARK, exposedViaMethods.causesOfDelay());
-                return exposedViaMethods.causesOfDelay();
+                return exposedViaMethods.causesOfDelay(); //DELAY EXIT POINT
             }
             exposed = exposedViaMethods.valueIsTrue();
         }

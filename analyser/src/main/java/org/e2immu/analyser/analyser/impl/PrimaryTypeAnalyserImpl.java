@@ -256,8 +256,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             LOGGER.debug("\n******\nStarting iteration {} of the primary type analyser on {}\n******",
                     iteration, name);
 
+            analyserComponents.resetDelayHistogram();
+
             AnalyserResult analyserResult = analyse(iteration, null);
             iteration++;
+
+            dumpDelayHistogram(analyserComponents.getDelayHistogram());
 
             if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
                 LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
@@ -281,6 +285,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
             throw new NoProgressException("No progress after " + iteration + " iterations for primary type(s) " + name);
         }
+    }
+
+    private static void dumpDelayHistogram(Map<WithInspectionAndAnalysis, Integer> delayHistogram) {
+        LOGGER.info("Delay histogram:\n{}",
+                delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue())
+                        .limit(20)
+                        .map(e -> e.getValue() + ": " + e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName())
+                        .collect(Collectors.joining("\n")));
     }
 
     private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
@@ -378,12 +390,13 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public Stream<MethodAnalyser> methodAnalyserStream() {
         return methodAnalysers.values().stream();
     }
-/*
-    @Override
-    public Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-        return methodAnalysers.values().stream();
-    }
-*/
+
+    /*
+        @Override
+        public Stream<MethodAnalyser> parallelMethodAnalyserStream() {
+            return methodAnalysers.values().stream();
+        }
+    */
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);

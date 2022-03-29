@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.config.AnalyserProgram;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
@@ -31,16 +32,26 @@ public class AnalyserComponents<T, S> {
     private final LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
     private final boolean limitCausesOfDelay;
+    private final Map<WithInspectionAndAnalysis, Integer> delayHistogram;
 
     private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
         this.limitCausesOfDelay = limitCausesOfDelay;
+        if (limitCausesOfDelay) {
+            delayHistogram = new HashMap<>();
+        } else {
+            delayHistogram = null;
+        }
     }
 
     public AnalysisStatus getStatus(String t) {
         return getStatusesAsMap().get(t);
+    }
+
+    public void resetDelayHistogram() {
+        if (delayHistogram != null) delayHistogram.clear();
     }
 
     public static class Builder<T, S> {
@@ -102,10 +113,13 @@ public class AnalyserComponents<T, S> {
                     }
                     break; // out of the for loop!
                 }
+                if (afterExec.isDelayed() && delayHistogram != null) {
+                    afterExec.causesOfDelay().causesStream().forEach(c -> delayHistogram.merge(c.location().getInfo(), 1, Integer::sum));
+                }
                 state[i] = afterExec;
                 if (afterExec != RUN_AGAIN) {
                     assert afterExec.isDelayed() || afterExec == DONE;
-                    combined =  combined.combine(afterExec, limitCausesOfDelay);
+                    combined = combined.combine(afterExec, limitCausesOfDelay);
                 }
             }
             i++;
@@ -135,5 +149,9 @@ public class AnalyserComponents<T, S> {
             res.add(new Pair<>(t, state[i++]));
         }
         return res;
+    }
+
+    public Map<WithInspectionAndAnalysis, Integer> getDelayHistogram() {
+        return delayHistogram;
     }
 }

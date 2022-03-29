@@ -361,13 +361,23 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_10", 0, 1,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());
     }
 
+    @Test
+    public void test_11() throws IOException {
+        testClass("Precondition_11", 0, 1,
+                new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
 }
