@@ -118,8 +118,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-       // return variableInfo.getProperty(property);
-        //return causesOfDelay;
+        assert !(expression instanceof VariableExpression);
         return expression.getProperty(context, property, duringEvaluation);
     }
 

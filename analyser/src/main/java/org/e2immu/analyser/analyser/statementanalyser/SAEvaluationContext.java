@@ -295,13 +295,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                                     boolean ignoreStateInConditionManager) {
 
         if (value instanceof IsVariableExpression ve) {
-            Variable variable = ve.variable();
-            // read what's in the property map (all values should be there) at initial or current level
-            Properties properties = getVariableProperties(variable, toCompute, duringEvaluation);
-            DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
-            DV updated = nneForVariable(duringEvaluation, variable, nne, value.causesOfDelay());
-            properties.overwrite(NOT_NULL_EXPRESSION, updated);
-            return properties;
+            return getPropertiesOfVariableExpression(value, toCompute, duringEvaluation, ve);
+        }
+        if (value instanceof DelayedWrappedExpression dwe && dwe.getExpression() instanceof VariableExpression ve) {
+            return getPropertiesOfVariableExpression(value, toCompute, duringEvaluation, ve);
         }
 
         // this one is more difficult to vectorize
@@ -316,6 +313,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
             properties.put(property, dv);
         }
+        return properties;
+    }
+
+    private Properties getPropertiesOfVariableExpression(Expression value, List<Property> toCompute, boolean duringEvaluation, IsVariableExpression ve) {
+        Variable variable = ve.variable();
+        // read what's in the property map (all values should be there) at initial or current level
+        Properties properties = getVariableProperties(variable, toCompute, duringEvaluation);
+        DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
+        DV updated = nneForVariable(duringEvaluation, variable, nne, value.causesOfDelay());
+        properties.overwrite(NOT_NULL_EXPRESSION, updated);
         return properties;
     }
 
