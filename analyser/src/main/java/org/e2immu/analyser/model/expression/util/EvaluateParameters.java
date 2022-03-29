@@ -15,12 +15,15 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
@@ -104,11 +107,21 @@ public class EvaluateParameters {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                 throw e;
             }
+            List<Variable> vars = parameterExpression.variables(true);
+            boolean self = vars.stream().anyMatch(v -> {
+                if (v instanceof FieldReference fr && fr.fieldInfo.owner == methodInfo.typeInfo) {
+                    FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+                    return fieldAnalysis.getLinkedVariables().isDone() &&
+                            fieldAnalysis.getLinkedVariables().contains(parameterInfo);
+                }
+                return false;
+            });
 
-            doContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
-            doContextModified(methodInfo, recursiveOrPartOfCallCycle, map, scopeIsContainer);
+            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle || self;
+            doContextContainer(methodInfo, recursivePartOfCallSelf, map);
+            doContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-            if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
+            if (contextNotNull.isDelayed() && recursivePartOfCallSelf) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
             }
 

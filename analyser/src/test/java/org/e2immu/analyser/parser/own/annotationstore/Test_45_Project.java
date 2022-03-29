@@ -96,7 +96,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {

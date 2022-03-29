@@ -303,7 +303,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_13() throws IOException {
-        testClass("ExplicitConstructorInvocation_13", 0, 0, new DebugConfiguration.Builder()
+        testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
                 .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
