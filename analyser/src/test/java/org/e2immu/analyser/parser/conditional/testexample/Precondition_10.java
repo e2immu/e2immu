@@ -117,7 +117,7 @@ public interface Precondition_10 {
             }
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(pt -> defaultImmutable(pt, true))
+                        .map(pt -> defaultImmutable(pt, true)) // FIXME add parameter here, and there is no delay loop
                         .map(v -> v.containsCauseOfDelay(Cause.TYPE_ANALYSIS) ? MUTABLE_DV : v)
                         .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;

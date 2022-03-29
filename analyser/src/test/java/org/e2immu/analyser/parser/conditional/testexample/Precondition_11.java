@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser.conditional.testexample;
 
 
-import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -143,9 +142,7 @@ public class Precondition_11 {
         }
     }
 
-    @NotModified(contract = true)
-    private static boolean recursivelyCollectTerms(@NotModified(contract = true) @NotNull(contract = true) Expression expression,
-                                                   @NotModified(contract = true) @NotNull(contract = true)  List<Term> terms) {
+    private static boolean recursivelyCollectTerms(@NotNull(contract = true) Expression expression, List<Term> terms) {
         OneVariable oneVariableRhs;
         if (expression instanceof Product product &&
                 product.lhs instanceof ConstantExpression<?> ce
@@ -184,7 +181,7 @@ public class Precondition_11 {
         return null;
     }
 
-    record MethodCall(Expression object, Variable variable) implements Expression, OneVariable  {
+    record MethodCall(Expression object, Variable variable) implements Expression, OneVariable {
     }
 
     record LinearInequalityInOneVariable(double a,

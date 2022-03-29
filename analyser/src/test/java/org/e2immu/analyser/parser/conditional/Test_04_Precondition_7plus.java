@@ -359,11 +359,11 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
-        testClass("Precondition_10", 0, 1,
+        testClass("Precondition_10", 0, 16,
                 new DebugConfiguration.Builder()
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -372,7 +372,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
-        testClass("Precondition_11", 0, 1,
+        testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder()

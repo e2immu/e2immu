@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
@@ -29,10 +30,37 @@ import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
  */
 public class AnalyserComponents<T, S> {
 
+    public static class Info {
+        private int cnt;
+        private final Map<CauseOfDelay.Cause, Integer> causes = new HashMap<>();
+
+        public Info() {
+        }
+
+        public Info(CauseOfDelay c) {
+            add(c);
+        }
+
+        public int getCnt() {
+            return cnt;
+        }
+
+        @Override
+        public String toString() {
+            return cnt + " =  " + causes.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue()).map(e -> e.getKey().label + "=" + e.getValue()).collect(Collectors.joining(", "));
+        }
+
+        private Info add(CauseOfDelay c) {
+            cnt++;
+            causes.merge(c.cause(), 1, Integer::sum);
+            return this;
+        }
+    }
+
     private final LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
     private final boolean limitCausesOfDelay;
-    private final Map<WithInspectionAndAnalysis, Integer> delayHistogram;
+    private final Map<WithInspectionAndAnalysis, Info> delayHistogram;
 
     private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
         this.suppliers = suppliers;
@@ -114,7 +142,8 @@ public class AnalyserComponents<T, S> {
                     break; // out of the for loop!
                 }
                 if (afterExec.isDelayed() && delayHistogram != null) {
-                    afterExec.causesOfDelay().causesStream().forEach(c -> delayHistogram.merge(c.location().getInfo(), 1, Integer::sum));
+                    afterExec.causesOfDelay().causesStream().forEach(c ->
+                            delayHistogram.merge(c.location().getInfo(), new Info(c), (i1, i2) -> i1.add(c)));
                 }
                 state[i] = afterExec;
                 if (afterExec != RUN_AGAIN) {
@@ -151,7 +180,7 @@ public class AnalyserComponents<T, S> {
         return res;
     }
 
-    public Map<WithInspectionAndAnalysis, Integer> getDelayHistogram() {
+    public Map<WithInspectionAndAnalysis, Info> getDelayHistogram() {
         return delayHistogram;
     }
 }

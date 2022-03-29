@@ -287,11 +287,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         }
     }
 
-    private static void dumpDelayHistogram(Map<WithInspectionAndAnalysis, Integer> delayHistogram) {
+    private static void dumpDelayHistogram(Map<WithInspectionAndAnalysis, AnalyserComponents.Info> delayHistogram) {
         LOGGER.info("Delay histogram:\n{}",
-                delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue())
+                delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
-                        .map(e -> e.getValue() + ": " + e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName())
+                        .map(e -> e.getValue().getCnt() + ": " + e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName() + ": " + e.getValue())
                         .collect(Collectors.joining("\n")));
     }
 
