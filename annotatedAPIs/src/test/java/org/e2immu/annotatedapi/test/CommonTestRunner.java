@@ -23,8 +23,7 @@ import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.resolver.SortedType;
-import org.junit.jupiter.api.BeforeAll;
+import org.e2immu.analyser.resolver.SortedTypes;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -59,12 +58,13 @@ public abstract class CommonTestRunner {
 
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run().sourceSortedTypes();
-        for (SortedType sortedType : types) {
-            OutputBuilder outputBuilder = sortedType.primaryType().output();
+        SortedTypes types = parser.run().sourceSortedTypes();
+        types.primaryTypeStream().forEach(primaryType -> {
+            OutputBuilder outputBuilder = primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
-        }
+        });
+
         assertFalse(types.isEmpty());
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
         assertEquals(errorsToExpect, (int) parser.getMessages()

@@ -95,7 +95,11 @@ public record MethodResolution(Set<MethodInfo> overrides,
             return allowsInterrupts.getOrDefault(true);
         }
 
-        public final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
+        private final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
+
+        public void setIgnoreMeBecauseOfPartOfCallCycle(boolean value) {
+            isIgnoreMeBecauseOfPartOfCallCycle.set(value);
+        }
 
         public void setOverrides(MethodInfo methodInfo, Set<MethodInfo> overrides) {
             assert !overrides.contains(methodInfo);

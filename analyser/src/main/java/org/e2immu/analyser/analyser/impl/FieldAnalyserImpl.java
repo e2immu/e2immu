@@ -40,7 +40,8 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
+import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.StreamUtil;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
@@ -371,10 +372,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
                 if (fieldInitialiser.anonymousTypeCreated() != null) {
                     // the resolver has caught all variants into the SAM
-
+                    // we'll use the default analyser generator here
                     SortedType sortedType = fieldInitialiser.anonymousTypeCreated().typeResolution.get().sortedType();
+                    ListOfSortedTypes listOfSortedTypes = new ListOfSortedTypes(List.of(sortedType));
                     PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
-                            List.of(sortedType),
+                            listOfSortedTypes,
                             analyserContext.getConfiguration(),
                             analyserContext.getPrimitives(),
                             Either.left(analyserContext.getPatternMatcher()),

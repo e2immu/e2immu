@@ -370,6 +370,42 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         .build());
     }
 
+    static final String CALL_CYCLE = "anyMatch,apply,apply,bestTypeInfo,containsCauseOfDelay,defaultImmutable,defaultImmutable,getPriority,getProperty,getTypeAnalysisNullWhenAbsent,highPriority,immutableCanBeIncreasedByTypeParameters,isAtLeastE2Immutable,isDelayed,isDone,isEmpty,map,max,min,reduce,stream,sumImmutableLevels,test,valueIsTrue";
+
+    // without the NOT_INVOLVED, making a call cycle of 3 instead of 2
+    @Test
+    public void test_10_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int numParams = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("defaultImmutable".equals(d.methodInfo().name)) {
+                if (numParams == 2) {
+                    assertTrue(d.methodInfo().partOfCallCycle());
+                    assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                } else if (numParams == 3) {
+                    assertTrue(d.methodInfo().partOfCallCycle());
+                    assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                } else fail();
+            }
+            if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                assertTrue(d.methodInfo().partOfCallCycle());
+                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+            }
+        };
+        testClass("Precondition_10_2", 0, 16,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
     @Test
     public void test_11() throws IOException {
         testClass("Precondition_11", 0, 16,

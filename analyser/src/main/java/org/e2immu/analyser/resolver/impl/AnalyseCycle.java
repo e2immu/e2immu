@@ -15,7 +15,6 @@
 package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.DependencyGraph;
 
 import java.util.*;
@@ -30,7 +29,7 @@ public class AnalyseCycle {
      */
     public static boolean analyseCycle(MethodInfo methodInfo,
                                        Set<MethodInfo> methodsReached,
-                                       DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+                                       DependencyGraph<MethodInfo> methodGraph) {
         if (!methodsReached.contains(methodInfo) || methodsReached.size() == 1) return false;
         List<MethodInfo> sorted = new ArrayList<>(methodsReached);
         sorted.sort(Comparator.comparing(m -> m.fullyQualifiedName));
@@ -38,13 +37,13 @@ public class AnalyseCycle {
         return neededToBreakCycle.contains(methodInfo);
     }
 
-    private static Set<MethodInfo> computeNeededToBreakCycle(List<MethodInfo> sorted, DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    private static Set<MethodInfo> computeNeededToBreakCycle(List<MethodInfo> sorted, DependencyGraph<MethodInfo> methodGraph) {
         Set<MethodInfo> toRemove = new HashSet<>();
         for (MethodInfo remove : sorted) {
             toRemove.add(remove);
             if (toRemove.size() == sorted.size() - 1) break; // what remains are recursions
             // we'll try to remove me. If the rest has no cycles, then stop. Otherwise, continue.
-            DependencyGraph<WithInspectionAndAnalysis> newGraph = methodGraph.copyRemove(w -> w instanceof MethodInfo && w != remove);
+            DependencyGraph<MethodInfo> newGraph = methodGraph.copyRemove(w -> w != remove);
             AtomicBoolean haveCycle = new AtomicBoolean();
             newGraph.sorted(w -> haveCycle.set(true), null, null);
             if (!haveCycle.get()) break;

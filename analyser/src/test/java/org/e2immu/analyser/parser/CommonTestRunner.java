@@ -21,7 +21,7 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.SortedTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,19 +153,19 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run().sourceSortedTypes();
+        SortedTypes types = parser.run().sourceSortedTypes();
 
         if (!mustSee.isEmpty()) {
             mustSee.forEach((label, iteration) -> LOGGER.error("MustSee: {} has only reached iteration {}", label, iteration));
             assertEquals(0, mustSee.size());
         }
 
-        for (SortedType sortedType : types) {
-            OutputBuilder outputBuilder = sortedType.primaryType().output();
+        types.primaryTypeStream().forEach(primaryType -> {
+            OutputBuilder outputBuilder = primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
-            //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
-        }
+        });
+
         assertFalse(types.isEmpty());
         List<Message> messages = parser.getMessages().toList();
         List<Message> filteredMessages;

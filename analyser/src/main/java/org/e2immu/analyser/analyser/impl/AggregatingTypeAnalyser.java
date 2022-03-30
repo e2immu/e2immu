@@ -41,9 +41,9 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
-    AggregatingTypeAnalyser(TypeInfo typeInfo,
-                            TypeInfo primaryType,
-                            AnalyserContext analyserContextInput) {
+    public AggregatingTypeAnalyser(TypeInfo typeInfo,
+                                   TypeInfo primaryType,
+                                   AnalyserContext analyserContextInput) {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.AGGREGATED);
 
         // IMPROVE but we have not thought yet about how to deal with eventual immutability and sealed types

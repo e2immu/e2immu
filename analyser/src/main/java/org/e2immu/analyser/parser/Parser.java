@@ -25,8 +25,10 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.SortedTypes;
+import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
+import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.support.Either;
@@ -72,13 +74,13 @@ public class Parser {
         Input.preload(input.globalTypeContext(), getByteCodeInspector(), input.classPath(), packageName);
     }
 
-    public record RunResult(List<SortedType> annotatedAPISortedTypes,
-                            List<SortedType> sourceSortedTypes,
+    public record RunResult(SortedTypes annotatedAPISortedTypes,
+                            SortedTypes sourceSortedTypes,
                             TypeMap typeMap) {
 
-        public Set<TypeInfo> allTypes() {
-            return Stream.concat(annotatedAPISortedTypes.stream(), sourceSortedTypes.stream())
-                    .map(SortedType::primaryType).collect(Collectors.toSet());
+        public Set<TypeInfo> allPrimaryTypes() {
+            return Stream.concat(annotatedAPISortedTypes.primaryTypeStream(), sourceSortedTypes.primaryTypeStream())
+                    .collect(Collectors.toSet());
         }
 
     }
@@ -92,16 +94,16 @@ public class Parser {
 
         // we start the inspection and resolution of AnnotatedAPIs (Java parser, but with $ classes)
         Collection<URL> annotatedAPIs = input.annotatedAPIs().values();
-        List<SortedType> sortedAnnotatedAPITypes;
+        SortedTypes sortedAnnotatedAPITypes;
         if (annotatedAPIs.isEmpty()) {
-            sortedAnnotatedAPITypes = List.of();
+            sortedAnnotatedAPITypes = SortedTypes.EMPTY;
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
                     configuration.annotatedAPIConfiguration().reportWarnings(), true);
         }
 
         // and the inspection and resolution of Java sources (Java parser)
-        List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
+        SortedTypes resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
 
         TypeMap typeMap;
 
@@ -128,9 +130,9 @@ public class Parser {
         return input.globalTypeContext().typeMap;
     }
 
-    public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
-                                              boolean reportWarnings,
-                                              boolean shallowResolver) {
+    public SortedTypes inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
+                                         boolean reportWarnings,
+                                         boolean shallowResolver) {
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver);
 
@@ -154,10 +156,10 @@ public class Parser {
                     e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
         }
-        List<SortedType> sortedPrimaryTypes = resolver.resolve(expressionContexts);
+        SortedTypes sortedTypes = resolver.resolve(expressionContexts);
         messages.addAll(resolver.getMessageStream()
                 .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings));
-        return sortedPrimaryTypes;
+        return sortedTypes;
     }
 
     private class InspectWithJavaParserImpl implements InspectWithJavaParser {
@@ -211,39 +213,21 @@ public class Parser {
         }
     }
 
-    private void runPrimaryTypeAnalyser(TypeMap typeMap, AnalyserContext shallowContext, List<SortedType> sortedPrimaryTypes) {
+    private void runPrimaryTypeAnalyser(TypeMap typeMap, AnalyserContext shallowContext, SortedTypes sortedTypes) {
         for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
             typeMapVisitor.visit(typeMap);
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Analysing primary types:\n{}", sortedPrimaryTypes.stream()
-                    .map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
+            LOGGER.debug("Analysing primary types:\n{}", sortedTypes);
         }
-        List<List<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
-        for (List<SortedType> sortedTypeCycle : groupByCycles) {
-            analyseSortedTypeCycle(sortedTypeCycle, shallowContext);
+
+        for (TypeCycle typeCycle : sortedTypes.typeCycles()) {
+            analyseSortedTypeCycle(typeCycle, shallowContext);
         }
     }
 
-    private List<List<SortedType>> groupByCycles(List<SortedType> sortedPrimaryTypes) {
-        List<List<SortedType>> cycles = new LinkedList<>();
-        Set<TypeInfo> seen = new HashSet<>();
-        for (SortedType sortedType : sortedPrimaryTypes) {
-            if (!seen.contains(sortedType.primaryType())) {
-                Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies();
-                List<SortedType> cycle =
-                        circularDependencies.isEmpty() ? List.of(sortedType) : circularDependencies.stream()
-                                .sorted(Comparator.comparing(TypeInfo::fullyQualifiedName))
-                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList();
-                cycles.add(cycle);
-                seen.addAll(circularDependencies);
-            }
-        }
-        return cycles;
-    }
-
-    private void analyseSortedTypeCycle(List<SortedType> sortedTypes, AnalyserContext analyserContext) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, sortedTypes, configuration,
+    private void analyseSortedTypeCycle(TypeCycle typeCycle, AnalyserContext analyserContext) {
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
                 getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
         try {
@@ -275,17 +259,17 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private AnalyserContext runShallowAnalyser(TypeMap typeMap, List<SortedType> annotatedAPITypes, List<SortedType> sourceTypes) {
+    private AnalyserContext runShallowAnalyser(TypeMap typeMap, SortedTypes annotatedAPITypes, SortedTypes sourceTypes) {
 
         // the following block of code ensures that primary types of the annotated APIs
         // are processed in the correct order
 
         List<TypeInfo> types = new LinkedList<>();
-        annotatedAPITypes.forEach(st -> types.add(st.primaryType()));
+        annotatedAPITypes.primaryTypeStream().forEach(types::add);
         assert checkOnDuplicates(types);
 
         Set<TypeInfo> alreadyAdded = new HashSet<>(types);
-        sourceTypes.forEach(st -> alreadyAdded.add(st.primaryType()));
+        sourceTypes.primaryTypeStream().forEach(alreadyAdded::add);
 
         // all byte-code inspected types and AnnotatedAPI, excluding source types
         typeMap.visit(new String[0], (s, list) -> {

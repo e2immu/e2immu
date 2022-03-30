@@ -21,11 +21,10 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.SortedTypes;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,8 +67,8 @@ public class TestAnnotationXmlWriter {
                 .setAnnotatedAPIConfiguration(annotatedAPI.build())
                 .build();
         configuration.initializeLoggers();
-        List<SortedType> res = new Parser(configuration).run().annotatedAPISortedTypes();
-        Set<TypeInfo> types = res.stream().map(SortedType::primaryType).collect(Collectors.toSet());
+        SortedTypes res = new Parser(configuration).run().annotatedAPISortedTypes();
+        Set<TypeInfo> types = res.primaryTypeStream().collect(Collectors.toSet());
         AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), types);
     }
 }

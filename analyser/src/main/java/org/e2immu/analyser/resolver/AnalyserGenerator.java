@@ -14,27 +14,30 @@
 
 package org.e2immu.analyser.resolver;
 
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * Main usage: defined types, where the order of methods, fields and sub-types is important for the analysis phase.
- * <p>
- * This type is also used for sub-resolvers. In that case, the TypeInfo object is not a primary type, but either
- * a locally declared type, an anonymous type, a lambda, ...
- */
-public record SortedType(TypeInfo primaryType,
-                         List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
-    public SortedType(TypeInfo primaryType, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
-        this.primaryType = Objects.requireNonNull(primaryType);
-        this.methodsFieldsSubTypes = Objects.requireNonNull(methodsFieldsSubTypes);
-    }
 
-    @Override
-    public String toString() {
-        return primaryType.fullyQualifiedName + ": " + methodsFieldsSubTypes;
-    }
+public interface AnalyserGenerator {
+
+    String getName();
+
+    List<Analyser> getAnalysers();
+
+    Map<FieldInfo, FieldAnalyser> getFieldAnalysers();
+
+    Map<MethodInfo, MethodAnalyser> getMethodAnalysers();
+
+    Map<TypeInfo, TypeAnalyser> getTypeAnalysers();
+
+    Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers();
+
+    Set<TypeInfo> getPrimaryTypes();
 }

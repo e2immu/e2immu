@@ -17,8 +17,6 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -27,8 +25,8 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.resolver.AnalyserGenerator;
+import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
@@ -73,7 +71,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent,
-                                   List<SortedType> sortedTypes,
+                                   TypeCycle typeCycle,
                                    Configuration configuration,
                                    Primitives primitives,
                                    Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
@@ -85,97 +83,16 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.patternMatcher = patternMatcherOrTypeContext.isLeft() ? patternMatcherOrTypeContext.getLeft() :
                 configuration.analyserConfiguration().newPatternMatcher(patternMatcherOrTypeContext.getRight(), this);
         this.primitives = primitives;
-        name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
-        primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
 
-        // do the types first, so we can pass on a TypeAnalysis objects
-        Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
-        sortedTypes.forEach(sortedType ->
-                sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-                    if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
-                        TypeAnalyser typeAnalyser;
-                        if (typeInfo.isAggregated()) {
-                            typeAnalyser = new AggregatingTypeAnalyser(typeInfo, sortedType.primaryType(), this);
-                        } else {
-                            typeAnalyser = new ComputingTypeAnalyser(typeInfo, sortedType.primaryType(), this);
-                        }
-                        typeAnalysersBuilder.put(typeInfo, typeAnalyser);
-                    }
-                }));
-        typeAnalysers = Map.copyOf(typeAnalysersBuilder);
-
-        // then methods
-        // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
-        // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
-        Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
-        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
-        sortedTypes.forEach(sortedType -> {
-            List<WithInspectionAndAnalysis> analyses = sortedType.methodsFieldsSubTypes();
-            analyses.forEach(analysis -> {
-                if (analysis instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
-                    TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
-                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalyser.getTypeAnalysis(),
-                            false, true, this);
-                    for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                        parameterAnalysersBuilder.put(parameterAnalyser.getParameterInfo(), parameterAnalyser);
-                    }
-                    methodAnalysersBuilder.put(methodInfo, methodAnalyser);
-                    // finalizers are done early, before the first assignments
-                    if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                        ((TypeAnalysisImpl.Builder) typeAnalyser.getTypeAnalysis())
-                                .setProperty(Property.FINALIZER, DV.TRUE_DV);
-                    }
-                }
-            });
-        });
-
-        parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
-        methodAnalysers = Map.copyOf(methodAnalysersBuilder);
-
-        // finally, we deal with fields, and wire everything together
-        Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();
-        List<Analyser> allAnalysers = sortedTypes.stream().flatMap(sortedType ->
-                sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
-                    Analyser analyser;
-                    if (mfs instanceof FieldInfo fieldInfo) {
-                        if (!fieldInfo.fieldAnalysis.isSet()) {
-                            TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
-                            analyser = new FieldAnalyserImpl(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis,
-                                    this);
-                            fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
-                        } else {
-                            analyser = null;
-                            LOGGER.debug("Ignoring field {}, already has analysis", fieldInfo.fullyQualifiedName());
-                        }
-                    } else if (mfs instanceof MethodInfo) {
-                        analyser = methodAnalysers.get(mfs);
-                    } else if (mfs instanceof TypeInfo) {
-                        analyser = typeAnalysers.get(mfs);
-                    } else {
-                        throw new UnsupportedOperationException("have " + mfs);
-                    }
-                    return analyser == null ? Stream.empty() : Stream.of(analyser);
-                })).toList();
-        fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
-
-        List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
-        List<FieldAnalyser> fieldAnalysersInOrder = new ArrayList<>(fieldAnalysers.size());
-        List<TypeAnalyser> typeAnalysersInOrder = new ArrayList<>(typeAnalysers.size());
-        allAnalysers.forEach(analyser -> {
-            if (analyser instanceof MethodAnalyser ma) methodAnalysersInOrder.add(ma);
-            else if (analyser instanceof TypeAnalyser ta) typeAnalysersInOrder.add(ta);
-            else if (analyser instanceof FieldAnalyser fa) fieldAnalysersInOrder.add(fa);
-            else throw new UnsupportedOperationException();
-        });
-
-        boolean forceAlphabeticAnalysis = configuration.analyserConfiguration().forceAlphabeticAnalysisInPrimaryType();
-        if (forceAlphabeticAnalysis) {
-            methodAnalysersInOrder.sort(Comparator.comparing(ma -> ma.getMethodInfo().fullyQualifiedName));
-            typeAnalysersInOrder.sort(Comparator.comparing(ta -> ta.getTypeInfo().fullyQualifiedName));
-            fieldAnalysersInOrder.sort(Comparator.comparing(fa -> fa.getFieldInfo().fullyQualifiedName));
-        }
-        analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
-        assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
+        AnalyserGenerator analyserGenerator = typeCycle
+                .createAnalyserGeneratorAndGenerateAnalysers(configuration, this);
+        this.name = analyserGenerator.getName();
+        this.analysers = analyserGenerator.getAnalysers();
+        this.primaryTypes = analyserGenerator.getPrimaryTypes();
+        this.methodAnalysers = analyserGenerator.getMethodAnalysers();
+        this.fieldAnalysers = analyserGenerator.getFieldAnalysers();
+        this.parameterAnalysers = analyserGenerator.getParameterAnalysers();
+        this.typeAnalysers = analyserGenerator.getTypeAnalysers();
 
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);

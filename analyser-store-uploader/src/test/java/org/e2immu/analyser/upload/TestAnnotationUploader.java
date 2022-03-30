@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.upload;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
@@ -28,7 +27,7 @@ import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
@@ -75,11 +74,12 @@ public class TestAnnotationUploader {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         Parser.RunResult runResult = parser.run();
-        for (SortedType sortedType : runResult.sourceSortedTypes()) {
-            OutputBuilder outputBuilder = sortedType.primaryType().output();
+
+        runResult.sourceSortedTypes().primaryTypeStream().forEach(primaryType -> {
+            OutputBuilder outputBuilder = primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
-        }
+        });
 
         TypeContext typeContext = parser.getTypeContext();
 

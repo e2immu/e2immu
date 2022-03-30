@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.program;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.Formatter;
@@ -25,15 +24,12 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.VisitorTestSupport;
-import org.e2immu.analyser.resolver.SortedType;
-import org.junit.jupiter.api.BeforeAll;
+import org.e2immu.analyser.resolver.SortedTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +47,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                     DebugConfiguration debugConfiguration) throws IOException {
         AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
         builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
-        builder.addReadAnnotatedAPIPackages("org.e2immu.annotatedapi.java", "org.e2immu.annotatedapi.log" );
+        builder.addReadAnnotatedAPIPackages("org.e2immu.annotatedapi.java", "org.e2immu.annotatedapi.log");
         return testClass(List.of(className), List.of(), errorsToExpect, warningsToExpect, debugConfiguration,
                 new AnalyserConfiguration.Builder().setAnalyserProgram(analyserProgram).build(),
                 builder.build());
@@ -91,7 +87,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run().sourceSortedTypes();
+        SortedTypes types = parser.run().sourceSortedTypes();
 
         if (!mustSee.isEmpty()) {
             mustSee.forEach((label, iteration) ->
@@ -99,12 +95,12 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
             assertEquals(0, mustSee.size());
         }
 
-        for (SortedType sortedType : types) {
-            OutputBuilder outputBuilder = sortedType.primaryType().output();
+        types.primaryTypeStream().forEach(primaryType -> {
+            OutputBuilder outputBuilder = primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
-            //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
-        }
+        });
+
         assertFalse(types.isEmpty());
         List<Message> messages = parser.getMessages().toList();
         messages.stream()

@@ -31,7 +31,8 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
+import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.annotation.Container;
 import org.e2immu.support.Either;
 import org.e2immu.support.FlipSwitch;
@@ -526,8 +527,10 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .filter(typeInfo -> typeInfo.typeResolution.get().sortedType() != null)
                     .map(typeInfo -> {
                         SortedType sortedType = typeInfo.typeResolution.get().sortedType();
+                        // we'll use the default analyser generator here
+                        ListOfSortedTypes listOfSortedTypes = new ListOfSortedTypes(List.of(sortedType));
                         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
-                                List.of(sortedType),
+                                listOfSortedTypes,
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 Either.left(analyserContext.getPatternMatcher()),

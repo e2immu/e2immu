@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.resolver.impl.SortedType;
 
 import java.util.Arrays;
 import java.util.List;

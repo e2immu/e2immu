@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
@@ -37,12 +38,12 @@ public interface Resolver extends ExpressionContext.ResolverRecursion {
 
     @Modified
     @NotNull1
-    List<SortedType> resolve(Map<TypeInfo, ExpressionContext> inspectedTypes);
+    SortedTypes resolve(Map<TypeInfo, ExpressionContext> inspectedTypes);
 
 
     @Modified
     @NotNull1
-    default List<SortedType> resolve(InspectionProvider inspectionProvider,
+    default SortedTypes resolve(InspectionProvider inspectionProvider,
                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                      boolean shallowResolver,
                                      Map<TypeInfo, ExpressionContext> inspectedTypes) {

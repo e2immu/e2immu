@@ -17,7 +17,8 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 import java.util.List;
 
-public interface Precondition_10 {
+// variant on _10, where there is a call cycle of 3 (see comment ~ line 123)
+public interface Precondition_10_2 {
     record TypeInfo(String name) {
     }
 
@@ -117,7 +118,7 @@ public interface Precondition_10 {
             }
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(pt -> defaultImmutable(pt, true, NOT_INVOLVED_DV)) // HERE is the difference
+                        .map(pt -> defaultImmutable(pt, true)) // add parameter here, and there is no delay loop
                         .map(v -> v.containsCauseOfDelay(Cause.TYPE_ANALYSIS) ? MUTABLE_DV : v)
                         .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;

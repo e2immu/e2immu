@@ -28,7 +28,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.upload.AnnotationUploader;
 import org.e2immu.analyser.usage.CollectUsages;
 import org.slf4j.Logger;
@@ -87,28 +86,28 @@ public class RunAnalyser implements Runnable {
                 messages.addAll(parser.getMessages());
 
                 if (LOGGER.isDebugEnabled()) {
-                    for (SortedType sortedType : runResult.sourceSortedTypes()) {
-                        OutputBuilder outputBuilder = sortedType.primaryType().output();
+                    runResult.sourceSortedTypes().primaryTypeStream().forEach(primaryType -> {
+                        OutputBuilder outputBuilder = primaryType.output();
                         Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
-                        LOGGER.debug("Annotated Java for {}:\n{}\n", sortedType.primaryType().fullyQualifiedName,
+                        LOGGER.debug("Annotated Java for {}:\n{}\n", primaryType.fullyQualifiedName,
                                 formatter.write(outputBuilder));
-                    }
+                    });
                 }
-                Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
-                        configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
+                Set<TypeInfo> allPrimaryTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
+                        configuration.uploadConfiguration().upload() ? runResult.allPrimaryTypes() : Set.of();
 
                 if (configuration.annotationXmlConfiguration().writeAnnotationXml()) {
                     LOGGER.info("Write AnnotationXML");
-                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
+                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allPrimaryTypes);
                 }
                 if (configuration.uploadConfiguration().upload()) {
                     AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration());
-                    Map<String, String> map = annotationUploader.createMap(allTypes, messages.getMessageStream());
+                    Map<String, String> map = annotationUploader.createMap(allPrimaryTypes, messages.getMessageStream());
                     annotationUploader.writeMap(map);
                 }
                 if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
                     Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
-                            .stream().map(SortedType::primaryType).collect(Collectors.toSet());
+                            .primaryTypeStream().collect(Collectors.toSet());
                     LOGGER.debug("Writing annotated API files for usage of {} Java sources",
                             sourceTypes.size());
                     CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
