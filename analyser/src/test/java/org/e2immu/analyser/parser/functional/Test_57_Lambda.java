@@ -111,8 +111,8 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -311,8 +311,8 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
 
         testClass("Lambda_8", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

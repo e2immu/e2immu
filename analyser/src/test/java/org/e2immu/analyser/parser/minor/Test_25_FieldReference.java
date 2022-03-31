@@ -96,10 +96,10 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

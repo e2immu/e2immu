@@ -121,9 +121,9 @@ public class Test_46_Singleton extends CommonTestRunner {
             }
         };
         testClass("Singleton_2", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

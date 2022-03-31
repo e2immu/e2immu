@@ -203,7 +203,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
         testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

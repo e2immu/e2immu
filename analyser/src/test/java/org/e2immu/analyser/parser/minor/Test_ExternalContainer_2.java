@@ -86,9 +86,9 @@ public class Test_ExternalContainer_2 extends CommonTestRunner {
             }
         };
         testClass("ExternalContainer_2", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+        //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+        //        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

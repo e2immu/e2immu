@@ -203,6 +203,7 @@ public record ConditionManager(Expression condition,
 
     public Expression evaluate(EvaluationResult context, Expression value, boolean negate) {
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
+        if(value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
         Expression absoluteState = absoluteState(context);
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();

@@ -189,7 +189,7 @@ public class InstanceOf extends BaseExpression implements Expression {
 
         // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
         Expression notNull = Negation.negate(context,
-                Equals.equals(identifier, context, expression, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
+                Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
         InstanceOf newInstanceOf = new InstanceOf(identifier,
                 primitives, parameterizedType, evaluationResult.getExpression(), null);
         return builder

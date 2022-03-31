@@ -175,11 +175,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_1", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -228,9 +228,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_2", 0, 0, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
@@ -359,9 +359,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_4", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -606,7 +606,54 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     // continuation of _3
     @Test
     public void test_11() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("error2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1 -> "<m:isNotYetSet>";
+                        case 2 -> "<null-check>";
+                        default -> "null==other.t$0";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1, 2 -> "<m:setT>";
+                        default -> "<no return value>";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("error2".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1 -> "<m:isNotYetSet>";
+                        case 2 -> "<null-check>";
+                        default -> "null==other.t$0";
+                    };
+                    assertEquals(expected, d.condition().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getT".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:getT>" : "/*inline getT*/t$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                String pc = d.iteration() <= 1 ? "Precondition[expression=!<null-check>, causes=[escape]]"
+                        : "Precondition[expression=null!=t, causes=[escape]]";
+                assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
+            }
+            if ("isNotYetSet".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:isNotYetSet>" : "/*inline isNotYetSet*/null==t$0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
         testClass("EventuallyE2Immutable_11", 2, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

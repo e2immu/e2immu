@@ -469,7 +469,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable);
+            if (variable instanceof ParameterInfo pi && pi.owner == methodInfo) {
+                return new VariableExpression(variable);
+            }
+            Expression expression = evaluationContext.currentValue(variable, forwardEvaluationInfo);
+            return expression;
         }
 
         @Override

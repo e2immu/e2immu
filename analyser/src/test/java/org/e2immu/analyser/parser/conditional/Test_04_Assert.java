@@ -68,8 +68,8 @@ public class Test_04_Assert extends CommonTestRunner {
             }
         };
         testClass("Assert_0", 0, 3, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 

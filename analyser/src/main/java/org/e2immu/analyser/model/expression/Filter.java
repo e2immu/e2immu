@@ -234,7 +234,7 @@ public class Filter {
         // @NotModified method returning a boolean
         if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
-            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) return null;
+            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) return null;
             // none of the arguments to the call can be a parameter
             if (mc.parameterExpressions.stream().flatMap(e -> e.variables(true).stream())
                     .anyMatch(arg -> arg instanceof ParameterInfo)) {
@@ -272,7 +272,7 @@ public class Filter {
         Expression v;
         if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
-            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) return null;
+            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) return null;
             v = mc.object;
         } else {
             v = value;

@@ -263,9 +263,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 3, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -293,7 +293,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 3, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

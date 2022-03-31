@@ -74,9 +74,9 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(FlipSwitch.class), 0, 0,
                 new DebugConfiguration.Builder()
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

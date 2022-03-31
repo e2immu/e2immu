@@ -128,8 +128,8 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_5", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -164,7 +164,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -61,6 +61,7 @@ public interface ConstantExpression<T> extends Expression {
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case MODIFIED_METHOD:
+            case TEMP_MODIFIED_METHOD:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
                 return property.falseDv;

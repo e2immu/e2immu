@@ -222,7 +222,7 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result;
         if (methodInfo.hasReturnValue()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
-            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
             DV nneParam;
             if (methodAnalysis.getParameterAnalyses().isEmpty()) {
                 // supplier

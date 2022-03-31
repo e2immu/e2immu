@@ -225,13 +225,13 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -341,11 +341,11 @@ public class Test_26_Enum extends CommonTestRunner {
 
         // expect an "always true" warning on the assert statement
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

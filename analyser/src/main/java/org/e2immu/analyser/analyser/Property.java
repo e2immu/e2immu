@@ -120,7 +120,7 @@ public enum Property {
      */
     MODIFIED_METHOD("@Modified method", CauseOfDelay.Cause.MODIFIED_METHOD),
     TEMP_MODIFIED_METHOD("@Modified method, temp", CauseOfDelay.Cause.TEMP_MM),
-
+    MODIFIED_METHOD_ALT_TEMP("@Modified method, possibly temp", CauseOfDelay.Cause.MODIFIED_METHOD),
     /*
     @Dependent, @Independent, @Dependent1, @Dependent2
 

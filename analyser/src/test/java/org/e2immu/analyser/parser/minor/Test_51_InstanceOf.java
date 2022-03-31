@@ -898,11 +898,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-                    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+               //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+               //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

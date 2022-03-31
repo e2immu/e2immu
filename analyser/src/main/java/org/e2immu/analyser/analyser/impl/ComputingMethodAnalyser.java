@@ -45,7 +45,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -598,10 +597,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
-            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-            if (methodInfo.methodResolution.get().partOfCallCycle() && modified.isDelayed()) {
-                modified = methodAnalysis.getProperty(TEMP_MODIFIED_METHOD);
-            }
+            DV modified = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 Expression delayedExpression = delayedSrv(modified.causesOfDelay(), false);
@@ -813,9 +809,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (!isCycle) return DONE;
 
         DV modified = methodAnalysis.getProperty(Property.TEMP_MODIFIED_METHOD);
-        TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
+        TypeAnalysisImpl.Builder ptBuilder = methodInfo.typeInfo.isPrimaryType() ? (TypeAnalysisImpl.Builder) typeAnalysis
+                : (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(methodInfo.typeInfo.primaryType());
         Set<MethodInfo> cycle = methodInfo.methodResolution.get().callCycle();
-        TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
+        TypeAnalysisImpl.CycleInfo cycleInfo = ptBuilder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
 
         // we decide for the group
         if (modified.valueIsTrue()) {

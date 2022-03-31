@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
+
     public Test_15_InlinedMethod_AAPI() {
         super(true);
     }
@@ -138,10 +139,10 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_8", 0, 3, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
@@ -165,10 +166,49 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 .build());
     }
 
+    // a bit twisted, since compareTo is called from compare but with very different parameter types
+    public static final String CALL_CYCLE = "apply, compare, compareTo, variables";
+
     @Test
     public void test_11() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("e.variables().stream()", d.evaluationResult().value().toString());
+                assertTrue(d.evaluationResult().causesOfDelay().isDone());
+            }
             if ("variables".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:collect>"
+                        : "this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
+                assertEquals(expected, d.evaluationResult().value().toString());
+                String delays = switch (d.iteration()) {
+                    case 0 -> "srv@Method_apply";
+                    case 1 -> "initial@Field_name;srv@Method_apply";
+                    default -> "";
+                };
+                assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("apply, subElements, variables",
+                        d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, "mm@Method_apply", 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD_ALT_TEMP);
+
+                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/e.variables().stream()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("variables".equals(d.methodInfo().name)) {
+                assertEquals("apply, subElements, variables",
+                        d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+                // verified that the e.variables() call in apply is evaluated as recursive
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+
                 String expected = d.iteration() <= 1 ? "<m:variables>" : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
@@ -189,10 +229,22 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 String expected = d.iteration() <= 2 ? "<m:compare>"
                         : "/*inline compare*/e1.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+
+                assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+
+                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+            }
+            if ("compareTo".equals(d.methodInfo().name)) {
+                assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+
+                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

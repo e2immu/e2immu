@@ -107,7 +107,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
         if (contextContainer.equals(MultiLevel.NOT_CONTAINER_DV)) {
             MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
-            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
             Map<Property, DV> map = Map.of(
                     Property.CONTEXT_MODIFIED, modified,

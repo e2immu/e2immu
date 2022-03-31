@@ -34,7 +34,10 @@ import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
@@ -205,7 +208,8 @@ public class CompanionAnalyser {
                             DelayFactory.createDelay(
                                     new VariableCause(variable, getLocation(Stage.INITIAL),
                                             CauseOfDelay.Cause.REMAP_PARAMETER)));
-                return Objects.requireNonNull(remapping.get(parameterInfo.name));
+                Expression remapped = remapping.get(parameterInfo.name);
+                if(remapped != null) return remapped;
             }
             return new VariableExpression(variable);
         }

@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Precondition_7plus extends CommonTestRunner {
 
+    public static final String STMT_4 = "expression instanceof MethodCall&&null!=expression&&(!(product.lhs instanceof ConstantExpression<?>)||expression instanceof MethodCall&&null!=expression||expression instanceof MethodCall&&null!=expression&&null==product.lhs||expression instanceof MethodCall&&null!=expression&&null==product.rhs||expression instanceof MethodCall&&null!=expression&&null==product.rhs/*(MethodCall)*/)";
+
     public Test_04_Precondition_7plus() {
         super(true);
     }
@@ -219,12 +221,12 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, cycleInfo.nonModified.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", ")));
             }
         };
-        testClass("Precondition_7", 6, 13,
+        testClass("Precondition_7", 7, 13,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 
@@ -429,8 +431,66 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("expression instanceof Sum", d.evaluationResult().value().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product";
+                        case 1 -> "<null-check>&&product.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=product.lhs";
+                        default -> "product.lhs instanceof ConstantExpression<?>&&product.rhs instanceof MethodCall&&expression instanceof Product&&null!=product.lhs&&null!=product.rhs&&null!=product.rhs/*(MethodCall)*/";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+                if ("4".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0, 1 -> "<null-check>";
+                        default -> STMT_4;
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
+                if ("4".equals(d.statementId())) {
+                    String expected = d.iteration() <= 1 ? "<null-check>" : STMT_4;
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
+                    if ("3".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:expression>" : "instance type Expression/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:expression>" : "instance type Expression/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("extractOneVariable".equals(d.methodInfo().name)) {
+                String expected = d.iteration() <= 1 ? "<m:extractOneVariable>"
+                        : "/*inline extractOneVariable*/expression instanceof MethodCall&&null!=expression?expression/*(MethodCall)*/:null";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
         testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

@@ -92,7 +92,7 @@ public class MethodCallIncompatibleWithPrecondition {
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall && !builder.translateMethod(methodCall.methodInfo)) {
                 MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
-                if (methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) {
+                if (methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) {
                     // non-modifying method; from all overrides, choose the one that does not have an override
                     // IMPROVE there could be multiple, but then, how do we choose?
                     methodCall.methodInfo.methodResolution.get().overrides().stream()

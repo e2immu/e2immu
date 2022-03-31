@@ -644,11 +644,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 1, 2 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 1, 2,3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
 
@@ -656,7 +656,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
 
         testClass("Loops_19", 0, 3, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

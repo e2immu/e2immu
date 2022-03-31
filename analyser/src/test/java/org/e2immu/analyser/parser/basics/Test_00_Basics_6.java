@@ -349,13 +349,13 @@ public class Test_00_Basics_6 extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
         TypeInfo b6 = typeContext.getFullyQualified(Basics_6.class);
         MethodInfo test5 = b6.findUniqueMethod("test5", 0);

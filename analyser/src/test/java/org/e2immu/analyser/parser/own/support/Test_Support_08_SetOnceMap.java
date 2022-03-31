@@ -205,11 +205,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 1,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+               //         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+               //         .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               //         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               //         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build());
     }
 

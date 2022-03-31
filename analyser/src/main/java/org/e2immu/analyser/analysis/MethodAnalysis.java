@@ -99,7 +99,14 @@ public interface MethodAnalysis extends Analysis {
 
     default DV getMethodProperty(Property property) {
         return switch (property) {
-            case CONTAINER, IMMUTABLE, IMMUTABLE_BREAK, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
+            case MODIFIED_METHOD_ALT_TEMP -> {
+                DV mm = getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_METHOD);
+                if (mm.isDelayed() && getMethodInfo().methodResolution.get().partOfCallCycle()) {
+                    yield getPropertyFromMapDelayWhenAbsent(Property.TEMP_MODIFIED_METHOD);
+                }
+                yield mm;
+            }
+            case CONTAINER, IMMUTABLE, IMMUTABLE_BREAK, NOT_NULL_EXPRESSION, TEMP_MODIFIED_METHOD, MODIFIED_METHOD,
                     FLUENT, IDENTITY, IGNORE_MODIFICATIONS, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
             case FINALIZER -> getPropertyFromMapNeverDelay(property);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);

@@ -142,17 +142,18 @@ public class Precondition_11 {
         }
     }
 
+    // important: leave the @NotNull contract here for testing; causes/d error
     private static boolean recursivelyCollectTerms(@NotNull(contract = true) Expression expression, List<Term> terms) {
+        if (expression instanceof Sum sum) {
+            if (!recursivelyCollectTerms(sum.lhs, terms)) return false;
+            return recursivelyCollectTerms(sum.rhs, terms);
+        }
         OneVariable oneVariableRhs;
         if (expression instanceof Product product &&
                 product.lhs instanceof ConstantExpression<?> ce
                 && ((oneVariableRhs = extractOneVariable(product.rhs)) != null)) {
             terms.add(new Term(extractDouble((Number) ce.getValue()), oneVariableRhs));
             return true;
-        }
-        if (expression instanceof Sum sum) {
-            if (!recursivelyCollectTerms(sum.lhs, terms)) return false;
-            return recursivelyCollectTerms(sum.rhs, terms);
         }
         OneVariable oneVariable;
         if ((oneVariable = extractOneVariable(expression)) != null) {
@@ -172,10 +173,11 @@ public class Precondition_11 {
         return false;
     }
 
+    // code has been simplified to detect bug more easily
     private static OneVariable extractOneVariable(Expression expression) {
         VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve.variable();
-        if (expression instanceof MethodCall mc && mc.object.isInstanceOf(VariableExpression.class)) {
+      //  if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve.variable();
+        if (expression instanceof MethodCall mc) {
             return mc;
         }
         return null;

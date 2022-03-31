@@ -256,28 +256,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        boolean breakCallCycleDelay;
-        boolean recursiveCall;
-        boolean partOfCallCycle;
-
-        MethodAnalyser currentMethod = context.getCurrentMethod();
-        if (currentMethod != null) {
-            // internal circular dependency (as opposed to one outside the primary type)
-            partOfCallCycle = methodInfo.methodResolution.get().partOfCallCycle();
-            breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
-        } else {
-            breakCallCycleDelay = false;
-            recursiveCall = false;
-            partOfCallCycle = false;
-        }
+        boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
 
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
-        DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        if (partOfCallCycle && modifiedMethod.isDelayed()) {
-            modifiedMethod = methodAnalysis.getMethodProperty(Property.TEMP_MODIFIED_METHOD);
-        }
+        DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
+
         DV modified = recursiveCall || breakCallCycleDelay ? DV.FALSE_DV : modifiedMethod;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -812,7 +797,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(method);
-        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
         if (modified.valueIsTrue() && context.evaluationContext().cannotBeModified(objectValue).valueIsTrue()) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
