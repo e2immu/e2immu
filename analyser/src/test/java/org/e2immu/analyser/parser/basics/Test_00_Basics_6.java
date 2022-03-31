@@ -294,6 +294,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
+                assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
 
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -304,6 +305,9 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+            }
+            if("test3".equals(d.methodInfo().name)) {
+                assertEquals("someMinorMethod", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
             }
         };
 

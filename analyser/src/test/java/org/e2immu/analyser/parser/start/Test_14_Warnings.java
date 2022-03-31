@@ -239,9 +239,9 @@ public class Test_14_Warnings extends CommonTestRunner {
 
             TypeInfo myself = typeMap.get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
-            assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().partOfConstruction());
+            assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().callStatus());
             MethodInfo method1 = myself.findUniqueMethod("method1", 1);
-            assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction());
+            assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().callStatus());
         };
 
         testClass("Warnings_1", 5, 2, new DebugConfiguration.Builder()

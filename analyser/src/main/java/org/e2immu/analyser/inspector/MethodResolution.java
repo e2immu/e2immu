@@ -18,16 +18,31 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.support.SetOnce;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /*
 allowsInterrupts == increases statement time
  */
 public record MethodResolution(Set<MethodInfo> overrides,
                                Set<MethodInfo> methodsOfOwnClassReached,
-                               CallStatus partOfConstruction,
+                               CallStatus callStatus,
                                boolean staticMethodCallsOnly,
                                boolean allowsInterrupts,
+                               Set<MethodInfo> callCycle,
                                boolean ignoreMeBecauseOfPartOfCallCycle) {
+
+    // useful for debugging
+    public String methodsOfOwnClassReachedSorted() {
+        return methodsOfOwnClassReached.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", "));
+    }
+
+    public boolean partOfCallCycle() {
+        return !callCycle.isEmpty();
+    }
+
+    public String callCycleSorted() {
+        return callCycle.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", "));
+    }
 
     public enum CallStatus {
         PART_OF_CONSTRUCTION,
@@ -50,10 +65,16 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     getPartOfConstruction(),
                     isStaticMethodCallsOnly(),
                     isAllowsInterrupts(),
+                    callCycle.getOrDefault(Set.of()),
                     isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false));
         }
 
         private final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
+        private final SetOnce<Set<MethodInfo>> callCycle = new SetOnce<>();
+
+        public void setCallCycle(Set<MethodInfo> set) {
+            callCycle.set(set);
+        }
 
         public Set<MethodInfo> getOverrides() {
             return overrides.isSet() ? Set.copyOf(overrides.get()) : Set.of();
@@ -95,7 +116,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
             return allowsInterrupts.getOrDefault(true);
         }
 
-        private final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
+        private final SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
 
         public void setIgnoreMeBecauseOfPartOfCallCycle(boolean value) {
             isIgnoreMeBecauseOfPartOfCallCycle.set(value);

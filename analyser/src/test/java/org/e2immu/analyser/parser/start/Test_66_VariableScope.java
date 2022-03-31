@@ -516,7 +516,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("output".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "typeInfo".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        if (d.iteration() <= 4) {
+                        if (d.iteration() < 4) {
                             assertEquals("<out of scope:typeExpression:4.0.1.1.0>", fr.scope.toString());
                         } else {
                             Set<String> scopes = Set.of("<out of scope:typeExpression:4.0.1.1.0>", "object/*(TypeExpression)*/");
@@ -537,7 +537,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_8", 3, 15, new DebugConfiguration.Builder()
+        testClass("VariableScope_8", 4, 15, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());

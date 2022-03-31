@@ -168,23 +168,24 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
             if ("methodC".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 String expected = d.iteration() == 0 ? "<m:methodC>" : "/*inline methodC*/\"a\".equals(paramC)||\"b\".equals(paramC)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodD".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
             if ("methodE".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
             if ("methodF".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 String expected = "/*inline methodF*/\"a\".equals(paramF)?CyclicReferences_3.methodC(paramF):\"b\".equals(paramF)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

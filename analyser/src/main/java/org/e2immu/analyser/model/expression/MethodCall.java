@@ -263,7 +263,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalyser currentMethod = context.getCurrentMethod();
         if (currentMethod != null) {
             // internal circular dependency (as opposed to one outside the primary type)
-            partOfCallCycle = methodInfo.partOfCallCycle();
+            partOfCallCycle = methodInfo.methodResolution.get().partOfCallCycle();
             breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         } else {

@@ -746,4 +746,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
                 requiresQualifier);
     }
 
+    public TypeInfo firstStaticEnclosingType(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        if (inspection.isStatic()) return this;
+        assert !isPrimaryType();
+        return packageNameOrEnclosingType.getRight().firstStaticEnclosingType(inspectionProvider);
+    }
 }

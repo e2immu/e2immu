@@ -128,7 +128,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("putAll".equals(d.methodInfo().name)) {
-                assertEquals("put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                assertEquals("accept,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }

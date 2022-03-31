@@ -599,7 +599,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-            if (methodInfo.partOfCallCycle() && modified.isDelayed()) {
+            if (methodInfo.methodResolution.get().partOfCallCycle() && modified.isDelayed()) {
                 modified = methodAnalysis.getProperty(TEMP_MODIFIED_METHOD);
             }
             if (modified.isDelayed()) {
@@ -809,12 +809,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     Similar code exists in EvaluateParameters.
      */
     private AnalysisStatus computeModifiedInternalCycles() {
-        boolean isCycle = methodInfo.partOfCallCycle();
+        boolean isCycle = methodInfo.methodResolution.get().partOfCallCycle();
         if (!isCycle) return DONE;
 
         DV modified = methodAnalysis.getProperty(Property.TEMP_MODIFIED_METHOD);
         TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
-        Set<MethodInfo> cycle = computeMyCycle();
+        Set<MethodInfo> cycle = methodInfo.methodResolution.get().callCycle();
         TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
 
         // we decide for the group
@@ -852,13 +852,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return modified.causesOfDelay();
     }
 
-    private Set<MethodInfo> computeMyCycle() {
-        return methodInfo.methodResolution.get().methodsOfOwnClassReached().stream()
-                .filter(MethodInfo::partOfCallCycle).collect(Collectors.toUnmodifiableSet());
-    }
-
     private AnalysisStatus computeModified() {
-        boolean isCycle = methodInfo.partOfCallCycle();
+        boolean isCycle = methodInfo.methodResolution.get().partOfCallCycle();
         Property property = isCycle ? Property.TEMP_MODIFIED_METHOD : Property.MODIFIED_METHOD;
 
         if (methodAnalysis.getProperty(property).isDone()) return DONE;

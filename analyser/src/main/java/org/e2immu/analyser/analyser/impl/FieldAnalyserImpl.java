@@ -1389,7 +1389,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
             Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
-                            m.getMethodInfo().methodResolution.get().partOfConstruction().accessibleFromTheOutside())
+                            m.getMethodInfo().methodResolution.get().callStatus().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .noneMatch(VariableInfo::isAssigned);
         }

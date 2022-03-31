@@ -275,11 +275,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return !methodInspection.get().getMethodBody().isEmpty();
     }
 
-    public boolean partOfCallCycle() {
-        Set<MethodInfo> reached = methodResolution.get("Method " + fullyQualifiedName).methodsOfOwnClassReached();
-        return reached.size() > 1 && reached.contains(this);
-    }
-
     public boolean isCompanionMethod() {
         return CompanionMethodName.extract(name) != null;
     }
@@ -378,7 +373,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean inConstruction() {
-        return isConstructor || methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        return isConstructor || methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     public void addImplementation(MethodInfo implementation) {

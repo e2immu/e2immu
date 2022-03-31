@@ -593,6 +593,7 @@ public class ResolverImpl implements Resolver {
         }
 
         void visit(Element element) {
+            AtomicBoolean created = new AtomicBoolean();
             element.visit(e -> {
                 VariableExpression ve;
                 ConstructorCall constructorCall;
@@ -625,9 +626,14 @@ public class ResolverImpl implements Resolver {
                     }
                     if (caller != null) {
                         methodCallGraph.addNode(caller, List.of(methodInfo));
+                        methodCallGraph.addNode(methodInfo, List.of());
+                        created.set(true);
                     }
                 }
             });
+            if (caller != null && !created.get()) {
+                methodCallGraph.addNode(caller, List.of());
+            }
         }
     }
 
@@ -649,39 +655,89 @@ public class ResolverImpl implements Resolver {
         }
     }
 
+    /*
+    this method will be called twice, once for the AnnotatedAPI cycle, then for the source code.
+    The method call graph in the first case will be rather sparse, it should be pretty dense in the second one.
+    Important to note is that there is an overlap, as methods in the source will call methods in the AnnotatedAPI list.
+    Because they're shallow, they cannot cause cycles.
+     */
 
     private void methodResolution() {
         // iterate twice, because we have partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
+        Set<MethodInfo> inCycle = new HashSet<>();
+
         methodCallGraph.visit((methodInfo, toList) -> {
             try {
-                Set<MethodInfo> methodsReached = methodCallGraph.dependenciesWithoutStartingPoint(methodInfo);
+                if (!methodInfo.methodResolution.isSet()) {
+                    Set<MethodInfo> methodsReached = methodCallGraph.dependenciesWithoutStartingPoint(methodInfo);
 
-                MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
-                methodResolutionBuilder.setMethodsOfOwnClassReached(methodsReached);
-                boolean iHelpBreakTheCycle = AnalyseCycle.analyseCycle(methodInfo, methodsReached, methodCallGraph);
-                methodResolutionBuilder.setIgnoreMeBecauseOfPartOfCallCycle(iHelpBreakTheCycle);
+                    MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
+                    builders.put(methodInfo, methodResolutionBuilder);
 
-                computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
-                methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
+                    TypeInfo staticEnclosingType = methodInfo.typeInfo.firstStaticEnclosingType(inspectionProvider);
+                    Set<MethodInfo> methodsOfOwnClassReached = methodsReached.stream()
+                            .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
+                            .collect(Collectors.toUnmodifiableSet());
+                    methodResolutionBuilder.setMethodsOfOwnClassReached(methodsOfOwnClassReached);
 
-                computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsReached, false);
-                builders.put(methodInfo, methodResolutionBuilder);
+                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
+                    methodResolutionBuilder.setOverrides(methodInfo, ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
+                    computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsOfOwnClassReached, false);
+                } // otherwise: already processed during AnnotatedAPI
             } catch (RuntimeException e) {
                 LOGGER.error("Caught runtime exception while filling {} to {} ", methodInfo.fullyQualifiedName, toList);
                 throw e;
             }
         });
-        methodCallGraph.visit((methodInfo, toList) -> {
-            MethodResolution.Builder builder = builders.get(methodInfo);
-            builder.partOfConstruction.set(computeCallStatus(builders, methodInfo));
 
-            // two pass, since we have no order
-            Set<MethodInfo> methodsReached = builder.getMethodsOfOwnClassReached();
-            computeAllowsInterrupt(builder, builders, methodInfo, methodsReached, true);
-            methodInfo.methodResolution.set(builder.build());
+        methodCallGraph.sorted(methodInfo -> {
+            MethodResolution.Builder builder = builders.get(methodInfo);
+            try {
+                if (inCycle.add(methodInfo)) {
+                    assert builder != null : "method " + methodInfo + " is in a cycle, and was processed in the AnnotatedAPI cycle?";
+                    Set<MethodInfo> dependencies = methodCallGraph.dependencies(methodInfo);
+                    Set<MethodInfo> rawMethodsInCycle = methodCallGraph.removeAsManyAsPossible(dependencies);
+                    Set<MethodInfo> methodsInCycleExcludingMyself = rawMethodsInCycle.stream()
+                            .filter(m -> !inCycle.contains(m) && m != methodInfo)
+                            .collect(Collectors.toUnmodifiableSet());
+                    Set<MethodInfo> methodInCycleIncludingMyself = Stream.concat(Stream.of(methodInfo),
+                            methodsInCycleExcludingMyself.stream()).collect(Collectors.toUnmodifiableSet());
+                    for (MethodInfo other : methodsInCycleExcludingMyself) {
+                        inCycle.add(other);
+                        MethodResolution.Builder b = builders.get(other);
+                        assert b != null : "method " + other + " is in a cycle, and was processed in the AnnotatedAPI cycle?";
+                        b.setIgnoreMeBecauseOfPartOfCallCycle(false);
+                        b.setCallCycle(methodInCycleIncludingMyself);
+                    }
+                    builder.setIgnoreMeBecauseOfPartOfCallCycle(true);
+                    builder.setCallCycle(methodInCycleIncludingMyself);
+                }
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Caught exception: {} for method {}", ise, methodInfo.fullyQualifiedName);
+                throw ise;
+            }
+        }, null, Comparator.comparing(MethodInfo::fullyQualifiedName));
+
+        methodCallGraph.visit((methodInfo, toList) -> {
+            if (!methodInfo.methodResolution.isSet()) {
+                MethodResolution.Builder builder = builders.get(methodInfo);
+                try {
+                    MethodResolution.CallStatus callStatus = computeCallStatus(builders, methodInfo);
+                    builder.partOfConstruction.set(callStatus);
+                    // two pass, since we have no order
+                    Set<MethodInfo> methodsReached = builder.getMethodsOfOwnClassReached();
+                    computeAllowsInterrupt(builder, builders, methodInfo, methodsReached, true);
+                    methodInfo.methodResolution.set(builder.build());
+
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Caught exception: {} for method {}", ise, methodInfo.fullyQualifiedName);
+                    throw ise;
+                }
+            } // otherwise: already processed during AnnotatedAPI
         });
+
     }
 
     private void computeAllowsInterrupt(MethodResolution.Builder methodResolutionBuilder,
@@ -707,7 +763,7 @@ public class ResolverImpl implements Resolver {
             allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate(inspectionProvider) ||
                     methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
                     builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
-            delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate(inspectionProvider) &&
+            delays = !doNotDelay && methodsReached.stream().anyMatch(reached -> reached.isPrivate(inspectionProvider) &&
                     builders.containsKey(reached) &&
                     !builders.get(reached).allowsInterrupts.isSet());
             if (!allowsInterrupt) {
@@ -732,17 +788,19 @@ public class ResolverImpl implements Resolver {
             } else {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
                 Block block = methodInspection.getMethodBody();
-                block.visit(element -> {
-                    if (element instanceof MethodCall methodCall) {
-                        MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
-                        boolean callOnThis = !callInspection.isStatic() &&
-                                (methodCall.object == null ||
-                                        methodCall.object instanceof VariableExpression ve
-                                                && ve.variable() instanceof This thisVar
-                                                && thisVar.typeInfo == methodInfo.typeInfo);
-                        if (callOnThis) atLeastOneCallOnThis.set(true);
-                    }
-                });
+                if (block != null) {
+                    block.visit(element -> {
+                        if (element instanceof MethodCall methodCall) {
+                            MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
+                            boolean callOnThis = !callInspection.isStatic() &&
+                                    (methodCall.object == null ||
+                                            methodCall.object instanceof VariableExpression ve
+                                                    && ve.variable() instanceof This thisVar
+                                                    && thisVar.typeInfo == methodInfo.typeInfo);
+                            if (callOnThis) atLeastOneCallOnThis.set(true);
+                        }
+                    });
+                }
                 boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
                 LOGGER.debug("Method {} is not static, does it have no calls on <this> scope? {}",
                         methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
@@ -815,7 +873,7 @@ public class ResolverImpl implements Resolver {
         if (methodInfo.isConstructor) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
-        if (!methodInfo.isPrivate()) {
+        if (!methodInfo.isPrivate(inspectionProvider)) {
             return MethodResolution.CallStatus.NON_PRIVATE;
         }
         if (isCalledFromNonPrivateMethod(builders, methodInfo)) {

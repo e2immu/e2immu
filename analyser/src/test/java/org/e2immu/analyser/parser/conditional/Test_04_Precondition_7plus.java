@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -134,9 +135,11 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             // iterativelyParseTypes, normalType, from are in this order of processing
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -149,8 +152,9 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -161,25 +165,26 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertDv(d.p(5), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("from".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().partOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
-                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 5, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("primitive".equals(d.methodInfo().name)) {
-                assertFalse(d.methodInfo().partOfCallCycle());
+                assertFalse(methodResolution.partOfCallCycle());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("getPrimitives".equals(d.methodInfo().name)) {
-                assertFalse(d.methodInfo().partOfCallCycle());
+                assertFalse(methodResolution.partOfCallCycle());
             }
             if ("charParameterizedType".equals(d.methodInfo().name)) {
-                assertFalse(d.methodInfo().partOfCallCycle());
+                assertFalse(methodResolution.partOfCallCycle());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -361,40 +366,41 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_10", 0, 16,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                 //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());
     }
 
-    static final String CALL_CYCLE = "anyMatch,apply,apply,bestTypeInfo,containsCauseOfDelay,defaultImmutable,defaultImmutable,getPriority,getProperty,getTypeAnalysisNullWhenAbsent,highPriority,immutableCanBeIncreasedByTypeParameters,isAtLeastE2Immutable,isDelayed,isDone,isEmpty,map,max,min,reduce,stream,sumImmutableLevels,test,valueIsTrue";
+    static final String CALL_CYCLE = "apply,apply,defaultImmutable,defaultImmutable,getTypeAnalysisNullWhenAbsent,highPriority,isAtLeastE2Immutable,sumImmutableLevels";
 
     // without the NOT_INVOLVED, making a call cycle of 3 instead of 2
     @Test
     public void test_10_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int numParams = d.methodInfo().methodInspection.get().getParameters().size();
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
             if ("defaultImmutable".equals(d.methodInfo().name)) {
                 if (numParams == 2) {
-                    assertTrue(d.methodInfo().partOfCallCycle());
-                    assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
-                    assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                    assertTrue(methodResolution.partOfCallCycle());
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(CALL_CYCLE, methodResolution
                             .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
                 } else if (numParams == 3) {
-                    assertTrue(d.methodInfo().partOfCallCycle());
-                    assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
-                    assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                    assertTrue(methodResolution.partOfCallCycle());
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(CALL_CYCLE, methodResolution
                             .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
                 } else fail();
             }
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get()
+                assertEquals(CALL_CYCLE, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
-                assertTrue(d.methodInfo().partOfCallCycle());
-                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.partOfCallCycle());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
         };
         testClass("Precondition_10_2", 0, 16,
