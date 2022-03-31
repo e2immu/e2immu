@@ -58,17 +58,16 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    // FIXME because of CyclicReferences_3, we delay... but in this case we really should not
-                    String expected = d.iteration() == 0 ? "<m:from>"
-                            : "Precondition_7.from(typeContext,findType,signature.substring(0))";
+                    String expected = d.iteration() <= 3 ? "<m:from>"
+                            : "('['==('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?signature.substring(0).charAt(1+('['==instance type char&&'['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char&&'['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(switch(instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}.typeInfo,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):([signature,instance type boolean])?([signature,instance type boolean])&&instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.substring(0).indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(0).substring(1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.substring(0).indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.substring(0).charAt(0)?WildCard.EXTENDS:'-'==signature.substring(0).charAt(0)?WildCard.SUPER:WildCard.NONE),signature.substring(0).indexOf(';')+1,false):([signature,instance type boolean])&&instance type boolean?([signature,instance type boolean])?null:new Result(nullable instance type ParameterizedType,instance type int+1,instance type boolean):([signature,instance type boolean])&&instance type boolean&&!instance type boolean&&'*'==signature.substring(0).charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(switch(instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 4, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 // call to iterativelyParseTypes
                 if ("06.0.5.0.3.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 3, d.status().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.status().isDelayed());
                 }
             }
         };
@@ -81,11 +80,11 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07".equals(d.statementId())) {
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         // is used for the first time in this method in 0.0.07.0.0
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("wildCard".equals(d.variableName())) {
@@ -104,31 +103,41 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         assertEquals(expected, eval.getValue().toString());
                         assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
 
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         String expected2 = switch (d.iteration()) {
                             case 0 -> "<vl:wildCard>";
                             case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
-                            case 2, 3, 4 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
+                            case 2 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
                             default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                         };
                         assertEquals(expected2, d.currentValue().toString());
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("0.0.07.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ParameterInfo pi && "typeContext".equals(pi.name)) {
-                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if (d.variable() instanceof ParameterInfo pi && "signature".equals(pi.name)) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("arrays".equals(d.variableName())) {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("firstCharPos".equals(d.variableName())) {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("primitivePt".equals(d.variableName())) {
+                    if ("0.0.09".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:ParameterizedType>";
+                            case 1 -> "<m:primitive>";
+                            default -> "switch(instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -140,28 +149,28 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(3), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() <= 2 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/new IterativeParsing()";
+                String expected = d.iteration() <= 4 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/new IterativeParsing()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(4), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(4), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(5), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("from".equals(d.methodInfo().name)) {
@@ -170,15 +179,21 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 5, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() <= 2 ? "<m:from>"
+                        : "/*inline from*/('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(switch(instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}.typeInfo,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):'T'==('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)&&('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)<=0?signature.charAt(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int)):instance type char)?(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,signature,instance type boolean])?(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,signature,instance type boolean])&&instance type boolean&&!instance type boolean&&'*'!=signature.charAt(0)&&'['!=('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?null:new Result(nullable instance type ParameterizedType,instance type int+1,instance type boolean):(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,signature,instance type boolean])&&'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(switch(instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("primitive".equals(d.methodInfo().name)) {
                 assertFalse(methodResolution.partOfCallCycle());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() <= 1 ? "<m:primitive>"
+                        : "/*inline primitive*/switch(firstChar){'B'->primitives.byteParameterizedType();'C'->primitives.charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("getPrimitives".equals(d.methodInfo().name)) {
                 assertFalse(methodResolution.partOfCallCycle());
@@ -189,22 +204,22 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Precondition_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) d.typeAnalysis();
                 assertEquals(1, builder.nonModifiedCountForMethodCallCycle.size());
                 Set<MethodInfo> methodsInCycle = builder.nonModifiedCountForMethodCallCycle.stream().map(Map.Entry::getKey).findFirst().orElseThrow();
                 assertEquals(3, methodsInCycle.size());
                 TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.stream().map(Map.Entry::getValue).findFirst().orElseThrow();
                 String expected = switch (d.iteration()) {
-                    case 0 -> "";
-                    case 1 -> "iterativelyParseTypes";
-                    case 2, 3, 4 -> "iterativelyParseTypes, normalType";
+                    case 0, 1 -> "";
+                    case 2 -> "normalType";
+                    case 3 -> "from, normalType";
                     default -> "from, iterativelyParseTypes, normalType";
                 };
                 assertEquals(expected, cycleInfo.nonModified.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", ")));
             }
         };
-        testClass("Precondition_7", 6, 11,
+        testClass("Precondition_7", 6, 13,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -366,9 +381,9 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_10", 0, 16,
                 new DebugConfiguration.Builder()
-                 //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

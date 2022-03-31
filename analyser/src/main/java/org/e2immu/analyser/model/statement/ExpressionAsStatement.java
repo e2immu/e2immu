@@ -59,8 +59,10 @@ public class ExpressionAsStatement extends StatementWithExpression {
     @Override
     public Statement translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression tex = translationMap.translateExpression(expression);
-        if (tex == expression) return this;
-        return new ExpressionAsStatement(identifier, tex);
+        if (tex != expression) return new ExpressionAsStatement(identifier, tex);
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        if (translated != expression) return new ExpressionAsStatement(identifier, translated);
+        return this;
     }
 
     @Override
