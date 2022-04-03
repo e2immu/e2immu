@@ -489,9 +489,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
         @Override
         public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve) {
-                return getProperty(ve.variable(), property);
+                return getVariableProperty(ve.variable(), property, duringEvaluation);
             }
             return evaluationContext.getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
+        }
+
+        private DV getVariableProperty(Variable variable, Property property, boolean duringEvaluation) {
+            if (duringEvaluation) {
+                return getPropertyFromPreviousOrInitial(variable, property);
+            }
+            return getProperty(variable, property);
         }
 
         @Override

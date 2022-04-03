@@ -187,11 +187,21 @@ public class InstanceOf extends BaseExpression implements Expression {
             return builder.setExpression(this).build(); // no clue, too deep
         }
 
-        // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
-        Expression notNull = Negation.negate(context,
-                Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
         InstanceOf newInstanceOf = new InstanceOf(identifier,
                 primitives, parameterizedType, evaluationResult.getExpression(), null);
+
+        // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
+        DV evalNotNull = context.evaluationContext().isNotNull0(value, false, forwardEvaluationInfo);
+        if (evalNotNull.valueIsTrue()) {
+            return builder.setExpression(newInstanceOf).build();
+        }
+        Expression notNull;
+        if (evalNotNull.valueIsFalse()) {
+            notNull = Negation.negate(context,
+                    Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
+        } else {
+            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, evalNotNull.causesOfDelay());
+        }
         return builder
                 .setExpression(And.and(context, newInstanceOf, notNull))
                 .build();

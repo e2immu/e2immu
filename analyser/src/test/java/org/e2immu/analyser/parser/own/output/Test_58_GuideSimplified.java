@@ -222,8 +222,8 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         };
 
         testClass("GuideSimplified_5", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //.addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //.addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

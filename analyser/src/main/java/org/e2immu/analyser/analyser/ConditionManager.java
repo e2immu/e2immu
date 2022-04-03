@@ -229,7 +229,11 @@ public record ConditionManager(Expression condition,
             return new BooleanConstant(context.getPrimitives(), true);
         }
         // return the result without precondition
-        return reallyNegate ? Or.or(context, negated, value) : And.and(context, negated, value);
+        Expression result = reallyNegate ? Or.or(context, negated, value) : And.and(context, negated, value);
+        if(result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
+            return value;
+        }
+        return result;
     }
 
 

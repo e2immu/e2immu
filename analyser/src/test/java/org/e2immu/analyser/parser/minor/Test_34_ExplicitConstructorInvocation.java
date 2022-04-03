@@ -133,7 +133,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     if (fr.scopeIsThis()) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0, 2 -> "<f:enclosingType.fullyQualifiedName>+\".\"+simpleName";
+                                case 0 -> "<f:enclosingType.fullyQualifiedName>+\".\"+simpleName";
                                 case 1 -> "<wrapped:fullyQualifiedName>";
                                 default -> "enclosingType.fullyQualifiedName+\".\"+simpleName";
                             };
