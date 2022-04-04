@@ -300,5 +300,11 @@ public interface VariableNature {
             this.iteration = iteration;
         }
     }
+
+
+    record ScopeVariable() implements VariableNature {
+
+
+    }
 }
 

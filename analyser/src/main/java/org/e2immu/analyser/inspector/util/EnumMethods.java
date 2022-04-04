@@ -85,7 +85,7 @@ public class EnumMethods {
 
         var arrayInitializer = new ArrayInitializer(Identifier.generate("enum array init"), typeContext,
                 enumFields.stream().map(fieldInfo -> (Expression)
-                                new VariableExpression(new FieldReference(typeContext, fieldInfo, null)))
+                                new VariableExpression(new FieldReference(typeContext, fieldInfo)))
                         .toList(),
                 enumType.asParameterizedType(typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);

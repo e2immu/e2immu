@@ -258,8 +258,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.value()));
         if (allValuesIdentical) return valueProperties();
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
-                .allMatch(cav -> specialEquals(evaluationContext.getVariableValue(variable, reduced.get(0).variableInfo()),
-                        evaluationContext.getVariableValue(variable, cav.variableInfo())));
+                .allMatch(cav -> specialEquals(reduced.get(0).variableInfo(), cav.variableInfo()));
         if (allReducedIdentical) return valueProperties(reduced.get(0).variableInfo());
 
         EvaluationResult context = EvaluationResult.from(evaluationContext);
@@ -321,7 +320,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     we cannot have an idea yet if the result is equals (certainly when effectively final) or not (possibly
     when variable, with different statement times).
      */
-    private static boolean specialEquals(Expression e1, Expression e2) {
+    private boolean specialEquals(VariableInfo vi1,  VariableInfo vi2) {
+        Expression e1 = vi1.getValue();
+        Expression e2 = vi2.getValue();
         if (e1 instanceof DelayedVariableExpression dve1 && e2 instanceof DelayedVariableExpression dve2 &&
                 dve1.variable().equals(dve2.variable())) {
             return true;

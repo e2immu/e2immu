@@ -105,7 +105,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        Expression accordingToState = d.context().evaluationContext().getVariableValue(d.variable(), d.variableInfo());
+                        Expression accordingToState = d.context().evaluationContext().getVariableValue(d.variable(), null, d.variableInfo());
                         String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect2, accordingToState.toString());
                     }

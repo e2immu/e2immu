@@ -577,9 +577,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (vic.hasEvaluation()
                         // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
                         && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))
-                        // see e.g. VariableInLoop_1: don't write now, there'll be an assignment in SAApply.apply soon
-                        && (!variableInfo.variable().allowedToCreateVariableExpression() ||
-                        !(stateData.inEqualityAccordingToState(evaluationContext.makeVariableExpression(variableInfo))))) {
+                    // see e.g. VariableInLoop_1: don't write now, there'll be an assignment in SAApply.apply soon
+                    //  && / TODO implement !variableInfo.variable().allowedToCreateVariableExpression() ||
+                    // TODO  !(stateData.inEqualityAccordingToState(evaluationContext.makeVariableExpression(variableInfo))))) {
+                ) {
                     vic.copy(); //otherwise, variable not assigned, not read
                 }
             }
@@ -871,7 +872,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Variable renamed = renameVariable(variable, renameMap);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
-                    translationMap.addVariableExpression(variable, VariableExpression.of(renamed));
+                    // TODO implement translationMap.addVariableExpression(variable, VariableExpression.of(renamed));
                     translationMap.put(variable, renamed);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
                             .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
@@ -886,7 +887,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (variable instanceof FieldReference fr) {
                 Expression newScope = fr.scope.translate(inspectionProvider, translationMap);
                 if (newScope != fr.scope) {
-                    return new FieldReference(inspectionProvider, fr.fieldInfo, newScope);
+                    // TODO implement   return new FieldReference(inspectionProvider, fr.fieldInfo, newScope);
                 }
             }
             return variable;
@@ -2116,14 +2117,17 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
                                 EvaluationResult.ChangeData changeData,
                                 int newStatementTime) {
         VariableInfoContainer vic;
+        VariableNature vn;
         if (!variableIsSet(variable.fullyQualifiedName())) {
-            assert variable.variableNature() instanceof VariableNature.NormalLocalVariable :
-                    "Encountering variable " + variable.fullyQualifiedName() + " of nature " + variable.variableNature();
-            vic = createVariable(evaluationContext, variable, flowData().getInitialTime(),
-                    VariableNature.normal(variable, index()), true);
+             vn = variable.variableNature();
+            assert vn instanceof VariableNature.NormalLocalVariable || vn instanceof VariableNature.ScopeVariable :
+                    "Encountering variable " + variable.fullyQualifiedName() + " of nature " + vn;
+            VariableNature newVn = vn instanceof VariableNature.NormalLocalVariable
+                    ? VariableNature.normal(variable, index()) : vn;
+            vic = createVariable(evaluationContext, variable, flowData().getInitialTime(), newVn, true);
         } else {
             vic = getVariable(variable.fullyQualifiedName());
-
+            vn = vic.variableNature();
         }
         String id = index() + EVALUATION;
         VariableInfo initial = vic.getPreviousOrInitial();
@@ -2131,7 +2135,8 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         // we do not set readId to the empty set when markAssignment... we'd rather keep the old value
         // we will compare the recency anyway
 
-        String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
+        String readId = changeData.readAtStatementTime().isEmpty() && !(vn instanceof VariableNature.ScopeVariable)
+                ? initial.getReadId() : id;
 
         vic.ensureEvaluation(location(EVALUATION), assignmentIds, readId, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) {

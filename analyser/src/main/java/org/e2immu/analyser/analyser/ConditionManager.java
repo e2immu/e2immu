@@ -192,6 +192,24 @@ public record ConditionManager(Expression condition,
         return And.and(context, expressions);
     }
 
+    //i>3?i:3, for example. Result is non-boolean. CM may have a state saying that i<0, which solves this one
+    // this method is called for scopes and indices of array access, and for scopes of field references
+    public Expression evaluateNonBoolean(EvaluationResult context, Expression value) {
+        assert !value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
+        Expression conditionalPart = value.extractConditions(context.getPrimitives());
+        if (conditionalPart.isBoolValueTrue()) return value;
+        Expression absoluteState = absoluteState(context);
+        if (absoluteState.isEmpty() || absoluteState.isBoolValueTrue()) return value;
+        Expression newState = And.and(context, absoluteState, conditionalPart);
+        if (newState.equals(conditionalPart) || newState.equals(absoluteState)) {
+            return value.applyCondition(new BooleanConstant(context.getPrimitives(), true));
+        }
+        if (newState instanceof And and && and.getExpressions().stream().anyMatch(conditionalPart::equals)) {
+            return value; // no improvement can be made
+        }
+        return value.applyCondition(newState);
+    }
+
     /**
      * computes a value in the context of the current condition manager.
      *
@@ -203,7 +221,7 @@ public record ConditionManager(Expression condition,
 
     public Expression evaluate(EvaluationResult context, Expression value, boolean negate) {
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
-        if(value.isBoolValueFalse()) return value; // no matter what the conditions and state is
+        if (value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
         Expression absoluteState = absoluteState(context);
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
@@ -230,7 +248,7 @@ public record ConditionManager(Expression condition,
         }
         // return the result without precondition
         Expression result = reallyNegate ? Or.or(context, negated, value) : And.and(context, negated, value);
-        if(result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
+        if (result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
             return value;
         }
         return result;
@@ -410,8 +428,8 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable);
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue);
         }
 
         @Override

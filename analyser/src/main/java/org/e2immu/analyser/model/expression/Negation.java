@@ -170,4 +170,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         }
         return this;
     }
+
+    @Override
+    public Expression extractConditions(Primitives primitives) {
+        if (returnType().isBooleanOrBoxedBoolean()) return this;
+        return new BooleanConstant(primitives, true);
+    }
 }

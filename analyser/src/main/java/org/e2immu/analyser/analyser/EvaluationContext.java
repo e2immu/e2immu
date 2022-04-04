@@ -104,7 +104,17 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+    /*
+     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
+     companion analyser, that would be chicken-and-egg).
+    */
+    default Expression currentValue(Variable variable) {
+        if (variable.parameterizedType().isPrimitiveExcludingVoid()) return null;
+        // a new one with empty state -- we cannot be bothered here.
+        return Instance.forTesting(variable.parameterizedType());
+    }
+
+    default Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("In " + getClass());
     }
 
@@ -257,16 +267,6 @@ public interface EvaluationContext {
                 CONTAINER, analyserContext.defaultContainer(formalType),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-    }
-
-    /*
-    This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
-    companion analyser, that would be chicken-and-egg).
-     */
-    default Expression currentValue(Variable variable) {
-        if (variable.parameterizedType().isPrimitiveExcludingVoid()) return null;
-        // a new one with empty state -- we cannot be bothered here.
-        return Instance.forTesting(variable.parameterizedType());
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
@@ -486,7 +486,7 @@ public interface EvaluationContext {
         return expression.state();
     }
 
-    default Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
+    default Expression getVariableValue(Variable myself, Expression scopeValue, VariableInfo variableInfo) {
         return variableInfo.getValue();
     }
 
@@ -499,8 +499,4 @@ public interface EvaluationContext {
     }
 
     int getDepth();
-
-    default VariableExpression makeVariableExpression(VariableInfo variableInfo) {
-        throw new UnsupportedOperationException();
-    }
 }

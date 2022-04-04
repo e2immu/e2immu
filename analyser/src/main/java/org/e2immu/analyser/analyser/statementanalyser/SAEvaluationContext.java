@@ -507,7 +507,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     // this happens in the case of confirmed variable fields, where the name indicates the statement time;
     // and in the case of variables assigned in a loop defined outside, where the name indicates the loop statement id
     @Override
-    public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableInfo variableInfo = findForReading(variable, forwardEvaluationInfo.isNotAssignmentTarget());
 
         // important! do not use variable in the next statement, but variableInfo.variable()
@@ -520,7 +520,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return new VariableExpression(variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
-        return getVariableValue(null, variableInfo);
+        return getVariableValue(null, scopeValue, variableInfo);
     }
 
     @Override
@@ -607,7 +607,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             if (bestValue.isDone()) {
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression veSuffix = new VariableExpression(variable, suffix);
+                VariableExpression veSuffix = new VariableExpression(variable, suffix, null); // FIXME
 
                 VariableExpression ve = new VariableExpression(variable);
                 translationMap.put(veSuffix, ve);
@@ -625,7 +625,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
                         valueProperties);
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression ve = new VariableExpression(variable, suffix);
+                VariableExpression ve = new VariableExpression(variable, suffix, null); // FIXME implement
                 translationMap.put(ve, newObject);
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
@@ -633,9 +633,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
                 // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
                 // see VariableScope_10
-                if (variable.allowedToCreateVariableExpression()) {
-                    translationMap.put(new VariableExpression(variable), delayed);
-                }
+                //if (variable.allowedToCreateVariableExpression()) { TODO implement
+                translationMap.put(new VariableExpression(variable), delayed);
+                //}
             }
         }
     }
@@ -755,12 +755,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * @return the value, potentially replaced by a VariableExpression
      */
     @Override
-    public Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
-        VariableExpression ve = makeVariableExpression(variableInfo);
+    public Expression getVariableValue(Variable myself, Expression scopeValue, VariableInfo variableInfo) {
+        Expression expression = makeVariableExpression(variableInfo, scopeValue);
+        if (expression.isDelayed()) return expression;
 
-        Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(ve);
-        if (valueFromState != null) {
-            return valueFromState;
+        if (expression instanceof VariableExpression ve) {
+            Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(ve);
+            if (valueFromState != null) {
+                return valueFromState;
+            }
         }
 
         // variable fields
@@ -770,16 +773,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         boolean isInstance = value.isInstanceOf(Instance.class);
         if (isInstance && !v.equals(myself) && v instanceof FieldReference) {
             // see Basics_4 for the combination of v==myself, yet VE is returned
-            return ve;
+            return expression;
         }
         if (!v.equals(myself)) {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
             if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-
+                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue() : null;
                 // variables in loop defined outside
                 if (isInstance) {
                     VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                    return new VariableExpression(v, suffix2);
+                    return new VariableExpression(v, suffix2, sv);
                 }
                 // do not return a value when it has not yet been written to
                 if (!value.isDelayed()) {
@@ -789,7 +792,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                             && statementIndex().startsWith(outside.statementIndex())) {
                         // has not yet been assigned in the loop, and we're in that loop
                         VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                        return new VariableExpression(v, suffix2);
+                        return new VariableExpression(v, suffix2, sv);
                     }
                 }
             }
@@ -800,9 +803,18 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return value;
     }
 
-    public VariableExpression makeVariableExpression(VariableInfo variableInfo) {
+    public Expression makeVariableExpression(VariableInfo variableInfo, Expression scopeValue) {
         VariableExpression.Suffix suffix;
-        if (variableInfo.variable() instanceof FieldReference fieldReference) {
+        Variable variable = variableInfo.variable();
+        Expression evaluatedScopeValue = scopeValue != null
+                ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), scopeValue) : null;
+
+        if (variable instanceof FieldReference fieldReference) {
+            if (evaluatedScopeValue != null && evaluatedScopeValue.isDelayed()) {
+                int initialStatementTime = getInitialStatementTime();
+                CausesOfDelay causesOfDelay = evaluatedScopeValue.causesOfDelay();
+                return DelayedVariableExpression.forField(fieldReference, initialStatementTime, causesOfDelay);
+            }
             FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
@@ -811,9 +823,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             } else {
                 suffix = VariableExpression.NO_SUFFIX;
             }
+            if (evaluatedScopeValue != null) {
+                Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
+                if (shortCut != null) return shortCut;
+            }
         } else {
             suffix = VariableExpression.NO_SUFFIX;
         }
-        return new VariableExpression(variableInfo.variable(), suffix);
+        return new VariableExpression(variable, suffix, evaluatedScopeValue);
     }
 }

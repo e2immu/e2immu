@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&(o==this||i==conditionalChecks.i)";
+    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&(o==this||o/*(ConditionalChecks_4)*/.i==i)";
 
     public Test_02_ConditionalChecks() {
         super(false);
@@ -351,7 +351,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||i==<f:conditionalChecks.i>)";
+                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                             default -> RETURN_VALUE;
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -414,7 +414,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
                         case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||i==<f:conditionalChecks.i>)";
+                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                         default -> RETURN_VALUE;
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().toString());

@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 
+import java.lang.reflect.Type;
 import java.util.Optional;
 
 public class ParseFieldAccessExpr {
@@ -48,19 +49,21 @@ public class ParseFieldAccessExpr {
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
             return new TypeExpression(objectType, Diamond.NO);
         }
-        return createFieldAccess(expressionContext.typeContext(), object, name, fieldAccessExpr.getBegin().orElseThrow());
+        return createFieldAccess(expressionContext.typeContext(), object, name, fieldAccessExpr.getBegin().orElseThrow(),
+                expressionContext.enclosingType());
     }
 
     public static Expression createFieldAccess(InspectionProvider inspectionProvider,
                                                Expression object,
                                                String name,
-                                               Position positionForErrorReporting) {
+                                               Position positionForErrorReporting,
+                                               TypeInfo enclosingType) {
         ParameterizedType objectType = object.returnType();
         if (objectType.arrays > 0 && "length".equals(name)) {
             return new ArrayLength(inspectionProvider.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Expression res = findFieldOrSubType(objectType.typeInfo, object, name, inspectionProvider);
+            Expression res = findFieldOrSubType(objectType.typeInfo, object, name, inspectionProvider, enclosingType);
             if (res == null) {
                 throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
                         + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
@@ -73,11 +76,12 @@ public class ParseFieldAccessExpr {
     private static Expression findFieldOrSubType(TypeInfo typeInfo,
                                                  Expression object,
                                                  String name,
-                                                 InspectionProvider inspectionProvider) {
+                                                 InspectionProvider inspectionProvider,
+                                                 TypeInfo enclosingType) {
         Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo.primaryType())
                 .filter(f -> name.equals(f.name)).findFirst();
         if (oFieldInfo.isPresent()) {
-            return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object));
+            return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object, enclosingType));
         }
         TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
@@ -86,11 +90,11 @@ public class ParseFieldAccessExpr {
         }
         ParameterizedType parent = objectTypeInspection.parentClass();
         if(parent != null && !parent.isJavaLangObject()) {
-            Expression res = findFieldOrSubType(parent.typeInfo, object, name, inspectionProvider);
+            Expression res = findFieldOrSubType(parent.typeInfo, object, name, inspectionProvider, enclosingType);
             if(res != null) return res;
         }
         for (ParameterizedType interfaceImplemented : objectTypeInspection.interfacesImplemented()) {
-            Expression res = findFieldOrSubType(interfaceImplemented.typeInfo, object, name, inspectionProvider);
+            Expression res = findFieldOrSubType(interfaceImplemented.typeInfo, object, name, inspectionProvider, enclosingType);
             if(res != null) return res;
         }
         return null;

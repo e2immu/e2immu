@@ -200,7 +200,7 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
                 if (remapping == null)
@@ -211,7 +211,7 @@ public class CompanionAnalyser {
                 Expression remapped = remapping.get(parameterInfo.name);
                 if(remapped != null) return remapped;
             }
-            return new VariableExpression(variable);
+            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue);
         }
 
         @Override

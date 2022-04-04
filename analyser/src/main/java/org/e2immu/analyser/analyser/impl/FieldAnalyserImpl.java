@@ -1664,7 +1664,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof FieldReference) {
                 return FieldAnalyserImpl.this.getVariableValue(variable);
             }
@@ -1677,7 +1677,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                  see test SubTypes_5
                  */
                 assert closure != null;
-                return closure.currentValue(variable, forwardEvaluationInfo);
+                return closure.currentValue(variable, scopeValue, forwardEvaluationInfo);
             }
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");

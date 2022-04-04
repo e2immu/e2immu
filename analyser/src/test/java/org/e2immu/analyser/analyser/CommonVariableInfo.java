@@ -86,8 +86,8 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable);
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+            return new VariableExpression(variable, null, scopeValue);
         }
 
         @Override

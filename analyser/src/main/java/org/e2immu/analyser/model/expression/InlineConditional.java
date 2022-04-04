@@ -313,4 +313,16 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (c.isBoolValueFalse()) return f;
         return new InlineConditional(identifier, inspectionProvider, c, t, f);
     }
+
+    @Override
+    public Expression extractConditions(Primitives primitives) {
+        return condition;
+    }
+
+    @Override
+    public Expression applyCondition(Expression newState) {
+        if(newState.isBoolValueTrue()) return ifTrue;
+        if(newState.isBoolValueFalse()) return ifFalse;
+        return this;
+    }
 }

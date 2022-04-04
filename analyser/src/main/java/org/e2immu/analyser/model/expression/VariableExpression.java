@@ -20,11 +20,9 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
@@ -38,23 +36,6 @@ import java.util.function.Predicate;
 
 @E2Container
 public final class VariableExpression extends BaseExpression implements IsVariableExpression {
-
-    public static Expression of(Variable v) {
-        if (!(v instanceof FieldReference fr) || fr.scope.isDone()) return new VariableExpression(v);
-        if (fr.scope instanceof DelayedVariableExpression dve) {
-            return DelayedVariableExpression.forVariable(v, dve.statementTime, fr.scope.causesOfDelay());
-        }
-        //could, for example, be a DelayedVariableOutOfScope...
-        return DelayedVariableExpression.forVariable(v, VariableInfoContainer.NOT_A_FIELD, fr.scope.causesOfDelay());
-    }
-
-    public static Expression of(Variable v, Suffix suffix) {
-        if (!(v instanceof FieldReference fr) || fr.scope.isDone()) return new VariableExpression(v, suffix);
-        if (fr.scope instanceof DelayedVariableExpression dve) {
-            return DelayedVariableExpression.forVariable(v, dve.statementTime, fr.scope.causesOfDelay());
-        }
-        return DelayedVariableExpression.forVariable(v, VariableInfoContainer.NOT_A_FIELD, fr.scope.causesOfDelay());
-    }
 
     public interface Suffix extends Comparable<Suffix> {
 
@@ -96,7 +77,6 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
         @Override
         public int compareTo(Suffix o) {
-            if (o == NO_SUFFIX) return 1;
             if (o instanceof VariableField vf) {
                 return toString().compareTo(vf.toString());
             }
@@ -117,7 +97,6 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
         @Override
         public int compareTo(Suffix o) {
-            if (o == NO_SUFFIX) return 1;
             if (o instanceof VariableInLoop vil) {
                 return assignmentId.compareTo(vil.assignmentId);
             }
@@ -127,25 +106,33 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     private final Variable variable;
     private final Suffix suffix;
+    private final Expression scopeValue;
 
     public VariableExpression(Variable variable) {
-        this(variable, NO_SUFFIX);
+        this(variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope : null);
     }
 
-    public VariableExpression(Variable variable, Suffix suffix) {
+    public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue) {
         super(Identifier.constant(variable.fullyQualifiedName() + suffix));
         this.variable = variable;
-        this.suffix = suffix;
-        // a variable expression is never delayed; however, <out of scope> is possible (see Test_Util_06_DependencyGraph)
-        assert variable.allowedToCreateVariableExpression();
+        this.suffix = Objects.requireNonNull(suffix);
+        if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic) {
+            this.scopeValue = Objects.requireNonNull(scopeValue);
+        } else {
+            this.scopeValue = null;
+        }
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof VariableExpression that)) return false;
-        if (!variable.equals(that.variable)) return false;
-        return Objects.equals(suffix, that.suffix);
+        if (variable instanceof FieldReference fr && that.variable instanceof FieldReference thatFr) {
+            if (fr.isStatic) return fr.equals(thatFr);
+            if (thatFr.isStatic) return false;
+            return fr.fieldInfo.equals(thatFr.fieldInfo) && suffix.equals(that.suffix) && scopeValue.equals(that.scopeValue);
+        }
+        return variable.equals(that.variable) && suffix.equals(that.suffix);
     }
 
     @Override
@@ -163,16 +150,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         IsVariableExpression ive;
         if ((ive = e.asInstanceOf(IsVariableExpression.class)) != null) {
             // compare variables
-            int c = variableId().compareTo(ive.variableId());
-            if (c == 0) {
-                VariableExpression ve;
-                if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
-                    return suffix.compareTo(ve.suffix);
-                }
-                // same variable, but the other one is delayed
-                return -1; // I come first!
-            }
-            return c;
+            return variableId().compareTo(ive.variableId());
         }
         throw new UnsupportedOperationException();
     }
@@ -181,13 +159,17 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return suffix;
     }
 
+    public Expression getScopeValue() {
+        return scopeValue;
+    }
+
     public boolean isDependentOnStatementTime() {
         return suffix instanceof VariableField;
     }
 
     @Override
     public int hashCode() {
-        return variable.hashCode() + 37 * suffix.hashCode();
+        return variable.hashCode() + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode();
     }
 
     @Override
@@ -195,7 +177,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         // removes all suffixes!
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
-            return VariableExpression.of(translated, suffix);
+            throw new UnsupportedOperationException("to implement");
         }
         Expression translated2 = translationMap.translateExpression(this);
         if (translated2 != this) {
@@ -205,24 +187,6 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         Expression translated3 = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
         if (translated3 != null) {
             return translated3;
-        }
-        if (variable instanceof FieldReference fieldReference) {
-            Expression translatedScope = fieldReference.scope.translate(inspectionProvider, translationMap);
-            if (translatedScope != fieldReference.scope) {
-                FieldReference fr = new FieldReference(inspectionProvider, fieldReference.fieldInfo, translatedScope);
-                return VariableExpression.of(fr, suffix);
-            }
-        }
-        if (variable instanceof DependentVariable dv) {
-            Expression originalArray = dv.expressionOrArrayVariable.isLeft()
-                    ? dv.expressionOrArrayVariable.getLeft().value() : new VariableExpression(dv.expressionOrArrayVariable.getRight());
-            Expression translatedArray = originalArray.translate(inspectionProvider, translationMap);
-            Expression originalIndex = dv.expressionOrIndexVariable.isLeft()
-                    ? dv.expressionOrIndexVariable.getLeft().value() : new VariableExpression(dv.expressionOrIndexVariable.getRight());
-            Expression translatedIndex = originalIndex.translate(inspectionProvider, translationMap);
-            if (translatedArray == originalArray && translatedIndex == originalIndex) return this;
-            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray, translatedIndex, dv.parameterizedType, dv.statementIndex);
-            return new VariableExpression(newDv);
         }
         return this;
     }
@@ -244,21 +208,13 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }
-        EvaluationResult scopeResult;
-        if (variable instanceof FieldReference fr) {
-            // do not continue modification onto This: we want modifications on this only when there's a direct method call
-            ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
-                    forwardEvaluationInfo.copyModificationEnsureNotNull();
-            scopeResult = fr.scope.evaluate(context, forward);
-            builder.compose(scopeResult);
-        } else {
-            scopeResult = null;
-        }
+        EvaluationResult scopeResult = evaluateScope(context, forwardEvaluationInfo);
+        if (scopeResult != null) builder.compose(scopeResult);
 
-        Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
-        Expression adjustedScope = adjustScope(context, scopeResult, currentValue);
+        Expression currentValue = builder.currentExpression(variable, scopeResult == null ? null : scopeResult.value(),
+                forwardEvaluationInfo);
 
-        builder.setExpression(adjustedScope);
+        builder.setExpression(currentValue);
 
         // no statement analyser... no need to compute all these properties
         // mind that all evaluation contexts deriving from the one in StatementAnalyser must have
@@ -273,7 +229,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
             VariableExpression ve;
-            if ((ve = adjustedScope.asInstanceOf(VariableExpression.class)) != null) {
+            if ((ve = currentValue.asInstanceOf(VariableExpression.class)) != null) {
                 builder.markRead(ve.variable);
                 if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(context.getCurrentType())) {
                     builder.markRead(context.evaluationContext().currentThis());
@@ -282,7 +238,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        builder.variableOccursInNotNullContext(variable, adjustedScope, notNull, forwardEvaluationInfo.complainInlineConditional());
+        builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo.complainInlineConditional());
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         builder.markContextModified(variable, modified);
@@ -302,8 +258,8 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
 
         // having done all this, we do try for a shortcut
-        if (scopeResult != null) {
-            Expression shortCut = tryShortCut(context, scopeResult.value(), adjustedScope);
+        if (scopeResult != null && variable instanceof FieldReference fr) {
+            Expression shortCut = tryShortCut(context, scopeResult.value(), fr);
             if (shortCut != null) {
                 builder.setExpression(shortCut);
             }
@@ -311,24 +267,26 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return builder.build(forwardEvaluationInfo.isNotAssignmentTarget());
     }
 
-    static Expression adjustScope(EvaluationResult context,
-                                  EvaluationResult scopeResult,
-                                  Expression currentValue) {
-        if (scopeResult != null) {
-            if (currentValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
-                CausesOfDelay scopeResultIsDelayed = scopeResult.getExpression().causesOfDelay();
-                int initialStatementTime = context.evaluationContext().getInitialStatementTime();
-                if (scopeResultIsDelayed.isDelayed() && !fr.scope.equals(scopeResult.value())) {
-                    return DelayedVariableExpression.forField(fr, initialStatementTime, scopeResultIsDelayed);
-                }
+    private EvaluationResult evaluateScope(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (variable instanceof FieldReference fr) {
+            if (fr.isStatic) {
+                // no need to do an assignment
+                return fr.scope.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
             }
-            if (currentValue instanceof DelayedVariableExpression ve
-                    && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
-                int initialStatementTime = context.evaluationContext().getInitialStatementTime();
-                return DelayedVariableExpression.forField(fr, initialStatementTime, ve.causesOfDelay);
+            // there is a scope variable
+            if (fr.scope instanceof VariableExpression ve) {
+                // do not continue modification onto This: we want modifications on this only when there's a direct method call
+                ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
+                        forwardEvaluationInfo.copyModificationEnsureNotNull();
+                return ve.evaluate(context, forward);
             }
+            assert fr.scopeVariable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+            ForwardEvaluationInfo forward = forwardEvaluationInfo.copyModificationEnsureNotNull();
+            VariableExpression scopeVE = new VariableExpression(fr.scopeVariable);
+            Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope);
+            return assignment.evaluate(context, forward);
         }
-        return currentValue;
+        return null;
     }
 
     @Override
@@ -364,6 +322,13 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public OutputBuilder output(Qualification qualification) {
+        if (variable instanceof FieldReference fr && !fr.isStatic) {
+            OutputBuilder outputBuilder = new OutputBuilder();
+            if (!fr.isDefaultScope) {
+                outputBuilder.add(outputInParenthesis(qualification, precedence(), scopeValue)).add(Symbol.DOT);
+            }
+            return outputBuilder.add(new Text(fr.fieldInfo.name)).add(suffix.output());
+        }
         return new OutputBuilder().add(variable.output(qualification)).add(suffix.output());
     }
 
@@ -390,19 +355,17 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return List.of();
     }
 
-    private static Expression tryShortCut(EvaluationResult evaluationContext, Expression scopeValue, Expression variableValue) {
-        if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
-            ConstructorCall constructorCall;
-            if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
-                return extractNewObject(evaluationContext, constructorCall, fr.fieldInfo);
-            }
-            if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
-                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
-                Expression efv = fieldAnalysis.getValue();
-                ConstructorCall cc2;
-                if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
-                    return extractNewObject(evaluationContext, cc2, fr.fieldInfo);
-                }
+    public static Expression tryShortCut(EvaluationResult evaluationContext, Expression scopeValue, FieldReference fr) {
+        ConstructorCall constructorCall;
+        if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
+            return extractNewObject(evaluationContext, constructorCall, fr.fieldInfo);
+        }
+        if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
+            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
+            Expression efv = fieldAnalysis.getValue();
+            ConstructorCall cc2;
+            if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
+                return extractNewObject(evaluationContext, cc2, fr.fieldInfo);
             }
         }
         return null;
@@ -434,8 +397,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     // used by internal compare to
     @Override
     public String variableId() {
-        if (suffix != NO_SUFFIX) return variable.fullyQualifiedName() + suffix;
-        return variable.fullyQualifiedName();
+        StringBuilder sb = new StringBuilder(variable.fullyQualifiedName());
+        if (suffix != NO_SUFFIX) sb.append(suffix.toString());
+        if (scopeValue != null) sb.append("#").append(scopeValue.output(Qualification.FULLY_QUALIFIED_NAME));
+        return sb.toString();
     }
 
     @Override

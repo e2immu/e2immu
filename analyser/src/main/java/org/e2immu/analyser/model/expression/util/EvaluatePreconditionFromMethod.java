@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,7 @@ public class EvaluatePreconditionFromMethod {
         Expression reEvaluated;
         if (!translationMap.isEmpty()) {
             Expression translated = precondition.expression().translate(context.getAnalyserContext(), translationMap);
-            if(translated != precondition.expression()) {
+            if (translated != precondition.expression()) {
                 EvaluationResult eRreEvaluated = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT);
                 reEvaluated = eRreEvaluated.value();
                 builder.composeIgnoreExpression(eRreEvaluated);
@@ -107,9 +106,9 @@ public class EvaluatePreconditionFromMethod {
     }
 
     private static TranslationMap translationMap(InspectionProvider inspectionProvider,
-                                                              MethodInfo methodInfo,
-                                                              List<Expression> parameters,
-                                                              Expression scope) {
+                                                 MethodInfo methodInfo,
+                                                 List<Expression> parameters,
+                                                 Expression scope) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         List<ParameterInfo> methodParameters = methodInfo.methodInspection.get().getParameters();
         int i = 0;
@@ -125,11 +124,14 @@ public class EvaluatePreconditionFromMethod {
         if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 boolean staticField = fieldInfo.isStatic(inspectionProvider);
-                FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
+               /* FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
                 FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : ve);
+
                 if (!thisField.equals(scopeField)) {
                     builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
                 }
+                TODO implement
+                */
             }
         }
         return builder.build();

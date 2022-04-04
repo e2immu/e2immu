@@ -215,13 +215,13 @@ public class TypeContext implements TypeAndInspectionProvider {
                     .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
-                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo, null)));
+                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo)));
         }
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
                     .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
-                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo, null)));
+                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo)));
         }
         return map;
     }

@@ -157,7 +157,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
                         builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable(), arrayExpression,
                                 MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo.complainInlineConditional());
                     }
-                    Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
+                    Expression currentValue = builder.currentExpression(evaluatedDependentVariable, null, // FIXME
+                            forwardEvaluationInfo);
                     builder.setExpression(currentValue);
                 }
             }

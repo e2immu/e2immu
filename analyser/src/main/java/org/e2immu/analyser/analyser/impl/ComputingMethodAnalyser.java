@@ -1148,8 +1148,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable);
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue);
         }
 
         @Override

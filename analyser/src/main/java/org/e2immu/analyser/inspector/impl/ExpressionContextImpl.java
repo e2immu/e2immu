@@ -601,7 +601,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                             scope = new TypeExpression(parameterizedType, Diamond.NO);
                         }
                         return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, cit.getNameAsString(),
-                                expression.getBegin().orElseThrow());
+                                expression.getBegin().orElseThrow(), enclosingType);
                     }
                     // there is a real possibility that the type expression is NOT a type but a local field...
                     // therefore we check the variable context first

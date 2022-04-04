@@ -247,24 +247,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             }
             return expression;
         }
-        if (variable instanceof FieldReference fr) {
-            Expression scope = fr.scope.translate(inspectionProvider, translationMap);
-            if (scope != fr.scope) {
-                FieldReference newRef = new FieldReference(inspectionProvider, fr.fieldInfo, scope);
-                return new DelayedVariableExpression(msg, newRef, statementTime, causesOfDelay);
-            }
-        }
-        if (variable instanceof DependentVariable dv) {
-            Expression originalArray = dv.expressionOrArrayVariable.isLeft()
-                    ? dv.expressionOrArrayVariable.getLeft().value() : new VariableExpression(dv.expressionOrArrayVariable.getRight());
-            Expression translatedArray = originalArray.translate(inspectionProvider, translationMap);
-            Expression originalIndex = dv.expressionOrIndexVariable.isLeft()
-                    ? dv.expressionOrIndexVariable.getLeft().value() : new VariableExpression(dv.expressionOrIndexVariable.getRight());
-            Expression translatedIndex = originalIndex.translate(inspectionProvider, translationMap);
-            if (translatedArray == originalArray && translatedIndex == originalIndex) return this;
-            DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray, translatedIndex, dv.parameterizedType, dv.statementIndex);
-            return new DelayedVariableExpression(msg, newDv, statementTime, causesOfDelay);
-        }
         return this;
     }
 

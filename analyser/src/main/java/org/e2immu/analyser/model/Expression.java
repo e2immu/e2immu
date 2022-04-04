@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -248,5 +249,13 @@ public interface Expression extends Element, Comparable<Expression> {
         if (isDelayed()) return causesOfDelay();
         if (isBoolValueFalse()) return DV.TRUE_DV;
         return DV.FALSE_DV;
+    }
+
+    default Expression extractConditions(Primitives primitives) {
+        return returnType().isBooleanOrBoxedBoolean() ? this : new BooleanConstant(primitives, true);
+    }
+
+    default Expression applyCondition(Expression newState) {
+        return this;
     }
 }

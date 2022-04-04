@@ -297,18 +297,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
             }
             if (effectivelyFinal.valueIsFalse()) {
                 // variable field: replace the VE with Suffix by one without (i$0 --> i)
-                return replacementForVariableField(inspectionProvider, fieldReference, scope);
+                //TODO implement return replacementForVariableField(inspectionProvider, fieldReference, scope);
             }
         }
 
         // e.g., local variable reference, see InlinedMethod_3
         return defaultReplacement;
-    }
-
-    private Expression replacementForVariableField(InspectionProvider inspectionProvider,
-                                                   FieldReference fieldReference,
-                                                   Expression scope) {
-        return new VariableExpression(new FieldReference(inspectionProvider, fieldReference.fieldInfo, scope));
     }
 
     private Expression replacementForConstructorCall(EvaluationResult evaluationContext,
@@ -468,12 +462,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo pi && pi.owner == methodInfo) {
                 return new VariableExpression(variable);
             }
-            Expression expression = evaluationContext.currentValue(variable, forwardEvaluationInfo);
-            return expression;
+            return evaluationContext.currentValue(variable, scopeValue, forwardEvaluationInfo);
         }
 
         @Override
