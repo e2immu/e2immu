@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -178,9 +177,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals(3, inlinedMethod.getVariablesOfExpression().size());
-                        assertEquals("bool, string, this", inlinedMethod.getVariablesOfExpression()
-                                .stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                        assertEquals("bool, string, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -203,7 +200,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
         testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

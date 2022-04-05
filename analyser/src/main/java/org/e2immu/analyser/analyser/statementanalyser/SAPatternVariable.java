@@ -62,8 +62,8 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
                     Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
                             ve.variable() : null;
                     VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
-                    statementAnalysis.createVariable(evaluationContext, lvr,
-                            VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature, true);
+                    statementAnalysis.createVariable(evaluationContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                            variableNature);
                 });
 
         // add assignments

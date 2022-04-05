@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
@@ -51,17 +52,19 @@ import java.util.stream.Stream;
  Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
 public class InlinedMethod extends BaseExpression implements Expression {
+
+    public enum ExpansionType {NORMAL, EXPANDED_VARIABLE}
+
     private final MethodInfo methodInfo;
     private final Expression expression;
-    private final Set<VariableExpression> variablesOfExpression;
+    private final Map<VariableExpression, ExpansionType> variablesOfExpression;
     private final boolean containsVariableFields;
     private final Set<Variable> myParameters;
-    private final Expression defaultReplacement;
 
     public InlinedMethod(Identifier identifier,
                          MethodInfo methodInfo,
                          Expression expression,
-                         Set<VariableExpression> variablesOfExpression,
+                         Map<VariableExpression, ExpansionType> variablesOfExpression,
                          boolean containsVariableFields) {
         super(identifier);
         this.methodInfo = Objects.requireNonNull(methodInfo);
@@ -69,8 +72,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
         this.variablesOfExpression = variablesOfExpression;
         this.containsVariableFields = containsVariableFields;
         myParameters = Set.copyOf(methodInfo.methodInspection.get().getParameters());
-        // used as a marker constant
-        defaultReplacement = UnknownExpression.forSpecial();
     }
 
     public static Expression of(Identifier identifier,
@@ -85,24 +86,41 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                  MethodInfo methodInfo,
                                  Expression expression,
                                  Predicate<FieldReference> isVariableField) {
-        Set<VariableExpression> variableExpressions = new HashSet<>();
+        Map<VariableExpression, ExpansionType> variableExpressions = new HashMap<>();
         AtomicBoolean containsVariableFields = new AtomicBoolean();
         AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
         expression.visit(e -> {
+            Variable v;
+            VariableExpression variableExpression;
+            ExpansionType expansionType;
             if (e instanceof VariableExpression ve) {
-                boolean add = ve.variable() instanceof ParameterInfo pi && pi.owner == methodInfo ||
-                        ve.variable() instanceof This ||
-                        ve.variable() instanceof LocalVariableReference ||
-                        ve.variable() instanceof FieldReference fr && (fr.fieldInfo.isStatic() || fr.scopeIsThis(methodInfo.typeInfo));
+                v = ve.variable();
+                variableExpression = ve;
+                expansionType = ExpansionType.NORMAL;
+            } else if (e instanceof ExpandedVariable ev) {
+                v = ev.getVariable();
+                variableExpression = new VariableExpression(v);
+                expansionType = ExpansionType.EXPANDED_VARIABLE;
+                // FIXME recursion for the scope variables, given that visit does not go there
+            } else {
+                v = null;
+                variableExpression = null;
+                expansionType = null;
+            }
+            if (v != null) {
+                boolean add = v instanceof ParameterInfo pi && pi.owner == methodInfo ||
+                        v instanceof This ||
+                        v instanceof LocalVariableReference ||
+                        v instanceof FieldReference fr && (fr.fieldInfo.isStatic() || fr.scopeIsThis(methodInfo.typeInfo));
                 if (add) {
-                    variableExpressions.add(ve);
+                    variableExpressions.put(variableExpression, expansionType);
                 }
-                if (ve.variable() instanceof FieldReference fr) {
+                if (v instanceof FieldReference fr) {
                     boolean contains = isVariableField.test(fr);
                     if (contains) containsVariableFields.set(true);
                 }
                 // descend into scope, expressions of dependent variable!
-                return !add || ve.variable() instanceof FieldReference;
+                return !add || v instanceof FieldReference;
             }
             if (e instanceof DelayedVariableExpression dve) {
                 causes.set(causes.get().merge(dve.causesOfDelay));
@@ -111,7 +129,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             return true;
         });
         if (causes.get().isDone()) {
-            return new InlinedMethod(identifier, methodInfo, expression, Set.copyOf(variableExpressions),
+            return new InlinedMethod(identifier, methodInfo, expression, Map.copyOf(variableExpressions),
                     containsVariableFields.get());
         }
         return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), causes.get());
@@ -146,11 +164,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return Precedence.TERNARY;
     }
 
+    private Stream<VariableExpression> normalExpressionStream() {
+        return variablesOfExpression.entrySet().stream()
+                .filter(entry -> entry.getValue() == ExpansionType.NORMAL)
+                .map(Map.Entry::getKey);
+    }
+
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        boolean allParametersCovered = variablesOfExpression.stream().map(VariableExpression::variable)
+        boolean allParametersCovered = normalExpressionStream()
+                .map(VariableExpression::variable)
                 .filter(variable -> variable instanceof ParameterInfo).allMatch(context.evaluationContext()::isPresent);
-        boolean haveParameters = variablesOfExpression.stream().anyMatch(ve -> ve.variable() instanceof ParameterInfo);
+        boolean haveParameters = normalExpressionStream().anyMatch(ve -> ve.variable() instanceof ParameterInfo);
         if (!allParametersCovered && haveParameters) {
             // do not evaluate further
             return new EvaluationResult.Builder(context).setExpression(this).build();
@@ -238,10 +263,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return containsVariableFields;
     }
 
-    public Set<VariableExpression> getVariablesOfExpression() {
-        return variablesOfExpression;
+    public String variablesOfExpressionSorted() {
+        return variablesOfExpression.entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
-
 
     /*
      We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
@@ -257,12 +281,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                          Identifier identifierOfMethodCall) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
-        for (VariableExpression variableExpression : variablesOfExpression) {
-            Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext);
+        for (Map.Entry<VariableExpression, ExpansionType> entry : variablesOfExpression.entrySet()) {
+            VariableExpression variableExpression = entry.getKey();
+            Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext, identifierOfMethodCall);
             if (replacement != null) {
-                Variable variable = variableExpression.variable();
-                Expression toMap = ensureReplacement(evaluationContext, identifierOfMethodCall, variable, replacement);
-                builder.put(variableExpression, toMap);
+                builder.put(variableExpression, replacement);
             } // possibly a field need not replacing
         }
         return builder.build();
@@ -272,18 +295,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                List<Expression> parameters,
                                Expression scope,
                                TypeInfo typeOfTranslation,
-                               EvaluationResult evaluationResult) {
+                               EvaluationResult evaluationResult,
+                               Identifier identifierOfMethodCall) {
         Variable variable = variableExpression.variable();
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
             assert parameterInfo.getMethod() == methodInfo : "Parameter " + parameterInfo + " should not have been in variablesOfExpression";
             return parameterReplacement(parameters, inspectionProvider, parameterInfo);
         }
-        if (variable instanceof This) {
-            if (!methodInfo.methodInspection.get().isStatic()) {
-                return scope;
-            }
-            return defaultReplacement;
+        if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
+            return scope;
         }
         if (variable instanceof FieldReference fieldReference &&
                 visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
@@ -293,7 +314,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     .getFieldAnalysis(fieldReference.fieldInfo);
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             if (effectivelyFinal.valueIsTrue()) {
-                return replacementForConstructorCall(evaluationResult, scope, fieldReference);// keep the final field
+                return effectivelyFinalValue(evaluationResult, scope, fieldReference);// keep the final field
             }
             if (effectivelyFinal.valueIsFalse()) {
                 // variable field: replace the VE with Suffix by one without (i$0 --> i)
@@ -302,22 +323,23 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         // e.g., local variable reference, see InlinedMethod_3
-        return defaultReplacement;
+        return expandedVariable(evaluationResult, identifierOfMethodCall, variable);
     }
 
-    private Expression replacementForConstructorCall(EvaluationResult evaluationContext,
-                                                     Expression scope,
-                                                     FieldReference fieldReference) {
-        ConstructorCall constructorCall = bestConstructorCall(evaluationContext, scope);
+    private Expression effectivelyFinalValue(EvaluationResult context,
+                                             Expression scope,
+                                             FieldReference fieldReference) {
+        ConstructorCall constructorCall = bestConstructorCall(context, scope);
         if (constructorCall != null && constructorCall.constructor() != null) {
             // only now we can start to take a look at the parameters
-            int index = indexOfParameterLinkedToFinalField(evaluationContext, constructorCall.constructor(),
+            int index = indexOfParameterLinkedToFinalField(context, constructorCall.constructor(),
                     fieldReference.fieldInfo);
             if (index >= 0) {
                 return constructorCall.getParameterExpressions().get(index);
             }
         }
-        return null;
+        // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
+        return expandedVariable(context, fieldReference.fieldInfo.getIdentifier(), fieldReference);
     }
 
     private Expression parameterReplacement(List<Expression> parameters,
@@ -330,11 +352,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return parameters.get(parameterInfo.index);
     }
 
-    private ConstructorCall bestConstructorCall(EvaluationResult evaluationContext, Expression scope) {
+    private ConstructorCall bestConstructorCall(EvaluationResult context, Expression scope) {
         ConstructorCall constructorCall = scope.asInstanceOf(ConstructorCall.class);
         VariableExpression ve;
         if (constructorCall == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-            Expression value = evaluationContext.currentValue(ve.variable());
+            Expression value = context.currentValue(ve.variable());
             if (value != null) {
                 return value.asInstanceOf(ConstructorCall.class);
             } // else, see Loops_19
@@ -342,25 +364,26 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return constructorCall;
     }
 
-    private Expression ensureReplacement(EvaluationResult evaluationContext,
-                                         Identifier identifierOfMethodCall,
-                                         Variable variable,
-                                         Expression replacement) {
-        if (replacement != defaultReplacement) return replacement;
+    private Expression expandedVariable(EvaluationResult context,
+                                        Identifier identifierOfMethodCall,
+                                        Variable variable) {
 
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+        AnalyserContext analyserContext = context.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
 
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
-            LinkedVariables lv = evaluationContext.evaluationContext().linkedVariables(variable);
+            LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
             LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
                     changed, merged);
         }
-        return Instance.forGetInstance(Identifier.joined("inline", List.of(identifierOfMethodCall,
-                VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
+        // FIXME: modifying method: every field needs its own identifier by using identifierOfMethodCall.
+        // non-modifying: make sure it remains the same one
+        Identifier inline = Identifier.joined("inline", List.of(identifierOfMethodCall,
+                VariableIdentifier.variable(variable)));
+        return new ExpandedVariable(inline, variable, valueProperties);
     }
 
     private int indexOfParameterLinkedToFinalField(EvaluationResult context,
@@ -568,7 +591,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public boolean isPresent(Variable variable) {
-            return variablesOfExpression.stream().map(VariableExpression::variable).anyMatch(v -> v.equals(variable));
+            return normalExpressionStream().map(VariableExpression::variable).anyMatch(v -> v.equals(variable));
         }
 
         @Override

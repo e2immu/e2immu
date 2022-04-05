@@ -306,8 +306,8 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(fr.scope.variables(true), List.of(variable));
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic) {
+            return ListUtil.concatImmutable(scopeValue.variables(true), List.of(variable));
         }
         return List.of(variable);
     }

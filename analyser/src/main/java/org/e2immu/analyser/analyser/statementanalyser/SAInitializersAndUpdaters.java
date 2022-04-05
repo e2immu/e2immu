@@ -121,8 +121,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         } else {
                             variableNature = new VariableNature.NormalLocalVariable(index());
                         }
-                        statementAnalysis.createVariable(evaluationContext,
-                                lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature, true);
+                        statementAnalysis.createVariable(evaluationContext, lvr,
+                                VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
                         if (statement() instanceof LoopStatement) {
                             ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(lvr.fullyQualifiedName());
                         }

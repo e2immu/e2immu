@@ -18,7 +18,6 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -66,7 +64,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("/*inline plus*/i+r", inlinedMethod.toString());
-                    assertEquals("i, r, this", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                    assertEquals("i=NORMAL, r=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
                 } else fail();
             }
             if ("difference31".equals(d.methodInfo().name) && d.iteration() > 1) {
@@ -89,6 +87,14 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("expand1".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() <= 1 ? "<m:sum5>" : "11";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("expand3".equals(d.methodInfo().name)) {
                 if ("il5".equals(d.variableName())) {
@@ -109,27 +115,34 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("i=NORMAL, j=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                    } else fail();
                 }
             }
             if ("sum5".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/5+i";
+                String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/5+`i`";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
+                        assertEquals("i=EXPANDED_VARIABLE", inlinedMethod.variablesOfExpressionSorted());
+                    } else fail();
                 }
             }
             if ("expand3".equals(d.methodInfo().name)) {
                 String expect = d.iteration() <= 1 ? "<m:expand3>" : "/*inline expand3*/a+b";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
+                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
+                    } else fail();
                 }
             }
         };
         testClass("InlinedMethod_5", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -164,7 +177,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -182,7 +195,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass(List.of("InlinedMethod_6", "InlinedMethod_7"), 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -205,8 +218,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals(2, inlinedMethod.getVariablesOfExpression().size());
-                        assertTrue(inlinedMethod.getVariablesOfExpression().stream().allMatch(ve -> ve.variable() instanceof ParameterInfo));
+                        assertEquals(", ", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -218,8 +230,8 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_9", 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

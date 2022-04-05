@@ -424,7 +424,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // at the beginning of a block
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-                createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE, true);
+                createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
             }
             if (parent == null) {
                 createParametersThisAndVariablesFromClosure(evaluationContext, currentMethod);
@@ -454,7 +454,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 for (ParameterInfo parameterInfo : closure.getCurrentMethod().getMethodInspection().getParameters()) {
                     VariableNature variableNature = inClosure
                             ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.METHOD_WIDE;
-                    createVariable(closure, parameterInfo, 0, variableNature, true);
+                    createVariable(closure, parameterInfo, 0, variableNature);
                 }
             }
             closure = closure.getClosure();
@@ -463,7 +463,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // for now, other variations on this are not explicitly present at the moment IMPROVE?
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE, true);
+            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
         }
 
         // we'll copy local variables from outside this method
@@ -1081,7 +1081,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 } else {
                     variableNature = vic.variableNature();
                 }
-                destination = createVariable(evaluationContext, renamed, statementTime, variableNature, true);
+                destination = createVariable(evaluationContext, renamed, statementTime, variableNature);
             } else if (variable == renamed) {
                 destination = vic;
             } else {
@@ -1380,17 +1380,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                                 Variable variable,
                                                 int statementTime,
-                                                VariableNature variableNature,
-                                                boolean store) {
+                                                VariableNature variableNature) {
         String fqn = variable.fullyQualifiedName();
-        if (store && variables.isSet(fqn)) {
+        assert evaluationContext.getIteration() == 0 : "Cannot make new variables in iteration " + evaluationContext.getIteration() + ": " + fqn;
+        if (variables.isSet(fqn)) {
             throw new UnsupportedOperationException("Already exists: " +
                     fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
 
         VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(INITIAL), variable,
                 variableNature, navigationData.hasSubBlocks());
-        if (store) putVariable(variable.fullyQualifiedName(), vic);
+        putVariable(variable.fullyQualifiedName(), vic);
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
@@ -2101,16 +2101,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /*
-As the first action in 'apply', we need to ensure that all variables exist, and have a proper assignmentId and readId.
+    As the first action in 'apply', we need to ensure that all variables exist, and have a proper assignmentId and readId.
 
-We need to do:
-- generally ensure a EVALUATION level for each variable occurring, with correct assignmentId, readId
-- create fields + local copies of variable fields, because they don't exist in the first iteration
-- link the fields to their local copies (or at least, compute these links)
+    We need to do:
+    - generally ensure a EVALUATION level for each variable occurring, with correct assignmentId, readId
+    - create fields + local copies of variable fields, because they don't exist in the first iteration
+    - link the fields to their local copies (or at least, compute these links)
 
-Local variables, This, Parameters will already exist, minimally in INITIAL level
-Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
-*/
+    Local variables, This, Parameters will already exist, minimally in INITIAL level
+    Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
+    */
     @Override
     public void ensureVariables(EvaluationContext evaluationContext,
                                 Variable variable,
@@ -2119,12 +2119,12 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         VariableInfoContainer vic;
         VariableNature vn;
         if (!variableIsSet(variable.fullyQualifiedName())) {
-             vn = variable.variableNature();
+            vn = variable.variableNature();
             assert vn instanceof VariableNature.NormalLocalVariable || vn instanceof VariableNature.ScopeVariable :
                     "Encountering variable " + variable.fullyQualifiedName() + " of nature " + vn;
             VariableNature newVn = vn instanceof VariableNature.NormalLocalVariable
                     ? VariableNature.normal(variable, index()) : vn;
-            vic = createVariable(evaluationContext, variable, flowData().getInitialTime(), newVn, true);
+            vic = createVariable(evaluationContext, variable, flowData().getInitialTime(), newVn);
         } else {
             vic = getVariable(variable.fullyQualifiedName());
             vn = vic.variableNature();

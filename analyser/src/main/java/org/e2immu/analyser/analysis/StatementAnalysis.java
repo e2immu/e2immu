@@ -75,8 +75,7 @@ public interface StatementAnalysis extends Analysis,
     VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                          Variable variable,
                                          int statementTime,
-                                         VariableNature variableInLoop,
-                                         boolean store);
+                                         VariableNature variableInLoop);
 
     StatementAnalysis mostEnclosingLoop();
 

@@ -31,9 +31,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -62,10 +60,10 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 }
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("/*inline difference31*/2+instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference31*/2+`r`-`r`", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                assertEquals("/*inline difference11*/instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference11*/`r`-`r`", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -156,12 +154,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("s,stream", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        assertEquals("s=NORMAL, stream=NORMAL", inlinedMethod.variablesOfExpressionSorted());
                     }
                 }
             }
         };
-        testClass("InlinedMethod_10", 0, 5, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_10", 0, 4, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
@@ -213,12 +211,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("this", inlinedMethod.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        assertEquals("this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
                         if (inlinedMethod.expression() instanceof MethodCall mc1) {
                             if (mc1.object instanceof MethodCall mc2) {
                                 assertEquals(1, mc2.parameterExpressions.size());
                                 if (mc2.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
-                                    assertEquals("e", inlinedMethod2.getVariablesOfExpression().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+                                    assertEquals("e=NORMAL", inlinedMethod2.variablesOfExpressionSorted());
                                 } else fail();
                             } else fail();
                         } else fail();
@@ -295,7 +293,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         assertEquals("List.of().stream().flatMap(e.typesReferenced().map.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
                         // no "this", because subElements is inlined!
-                        assertEquals("[]", inlinedMethod.getVariablesOfExpression().toString());
+                        assertEquals("[]", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -329,7 +327,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         assertEquals("this.subElements().stream().flatMap(e.typesReferenced().map.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
                         // "this", because subElements is not inlined!
-                        assertEquals("[this]", inlinedMethod.getVariablesOfExpression().toString());
+                        assertEquals("[this]", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -355,7 +353,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("[lists]", inlinedMethod.getVariablesOfExpression().toString());
+                        assertEquals("[lists]", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -379,7 +377,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("strings, this", inlinedMethod.getVariablesOfExpression().stream().map(Objects::toString).sorted().collect(Collectors.joining(", ")));
+                        assertEquals("strings=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -403,7 +401,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("expressions, this", inlinedMethod.getVariablesOfExpression().stream().map(Objects::toString).sorted().collect(Collectors.joining(", ")));
+                        assertEquals("expressions=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }

@@ -60,6 +60,9 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     public static final Symbol LEFT_BLOCK_COMMENT = new Symbol("/*", ONE_IS_NICE_EASY_SPLIT, NONE, "LEFT_BLOCK_COMMENT");
     public static final Symbol RIGHT_BLOCK_COMMENT = new Symbol("*/", NONE, ONE_IS_NICE_EASY_SPLIT, "RIGHT_BLOCK_COMMENT");
 
+    public static final Symbol LEFT_BACKTICK = new Symbol("`", ONE_IS_NICE_EASY_L, NONE, "LEFT_BACKTICK");
+    public static final Symbol RIGHT_BACKTICK = new Symbol("`", NONE, ONE_IS_NICE_EASY_R, "RIGHT_BACKTICK");
+
     public static Symbol plusPlusPrefix(String s) {
         return new Symbol(s, ONE_IS_NICE_EASY_SPLIT, NONE, null);
     }
