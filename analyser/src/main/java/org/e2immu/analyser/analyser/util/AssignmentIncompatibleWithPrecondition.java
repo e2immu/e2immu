@@ -53,60 +53,61 @@ public class AssignmentIncompatibleWithPrecondition {
                             MethodAnalyser methodAnalyser) {
         Set<Variable> variables = new HashSet<>(precondition.expression().variables(true));
         for (Variable variable : variables) {
-            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            if (variable instanceof FieldReference fieldReference) {
+                FieldInfo fieldInfo = fieldReference.fieldInfo;
+                for (VariableInfo variableInfo : methodAnalyser.getMethodAnalysis().getFieldAsVariable(fieldInfo)) {
+                    boolean assigned = variableInfo.isAssigned();
+                    if (assigned) {
+                        Expression pcExpression = precondition.expression();
+                        String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
+                        LOGGER.debug("Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                                methodAnalyser.getMethodInfo().distinguishingName(), index);
 
-            for (VariableInfo variableInfo : methodAnalyser.getMethodAnalysis().getFieldAsVariable(fieldInfo)) {
-                boolean assigned = variableInfo.isAssigned();
-                if (assigned) {
-                    Expression pcExpression = precondition.expression();
-                    String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
-                    LOGGER.debug("Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
-                            methodAnalyser.getMethodInfo().distinguishingName(), index);
+                        StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
+                        StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
+                        EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
+                        EvaluationResult context = EvaluationResult.from(evaluationContext);
 
-                    StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
-                    StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
-                    EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
-                    EvaluationResult context = EvaluationResult.from(evaluationContext);
-
-                    VariableExpression ve;
-                    if (fieldInfo.type.isNumeric()) {
-                        Expression value = variableInfo.getValue();
-                        if (value instanceof ConstantExpression) {
+                        VariableExpression ve;
+                        if (fieldInfo.type.isNumeric()) {
+                            Expression value = variableInfo.getValue();
+                            if (value instanceof ConstantExpression) {
+                                Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
+                                        variableInfo.getValue(), pcExpression);
+                                if (incompatible != null) return DV.fromBoolDv(incompatible);
+                            } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
+                                // grab some state about this variable
+                                Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
+                                        .individualStateInfo(context, ve.variable());
+                                if (!state.isBoolValueTrue()) {
+                                    TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(ve.variable()), new VariableExpression(variable)).build();
+                                    Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
+                                    EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
+                                    EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
+                                    ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+                                    Expression stateInTermsOfField = translated.evaluate(neutralContext, fwd).getExpression();
+                                    return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
+                                }
+                            }
+                        } else if (fieldInfo.type.isBoolean()) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                     variableInfo.getValue(), pcExpression);
                             if (incompatible != null) return DV.fromBoolDv(incompatible);
-                        } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-                            // grab some state about this variable
-                            Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
-                                    .individualStateInfo(context, ve.variable());
-                            if (!state.isBoolValueTrue()) {
-                                TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(ve.variable()), new VariableExpression(variable)).build();
-                                Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
-                                EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
-                                EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
-                                ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
-                                Expression stateInTermsOfField = translated.evaluate(neutralContext, fwd).getExpression();
-                                return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
-                            }
-                        }
-                    } else if (fieldInfo.type.isBoolean()) {
-                        Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                                variableInfo.getValue(), pcExpression);
-                        if (incompatible != null) return DV.fromBoolDv(incompatible);
-                    } else {
-                        // normal object null checking for now
-                        Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                        Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement().state();
-                        Expression combined = And.and(context, state, notNull);
+                        } else {
+                            // normal object null checking for now
+                            Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
+                            Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement().state();
+                            Expression combined = And.and(context, state, notNull);
 
-                        if (isCompatible(context, combined, pcExpression)) {
-                            CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
-                            if (delays.isDelayed()) {
-                                return delays; // IMPROVE we're not gathering them, rather returning the first one here
+                            if (isCompatible(context, combined, pcExpression)) {
+                                CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
+                                if (delays.isDelayed()) {
+                                    return delays; // IMPROVE we're not gathering them, rather returning the first one here
+                                }
+                                return DV.FALSE_DV;
                             }
-                            return DV.FALSE_DV;
+                            return DV.TRUE_DV;
                         }
-                        return DV.TRUE_DV;
                     }
                 }
             }

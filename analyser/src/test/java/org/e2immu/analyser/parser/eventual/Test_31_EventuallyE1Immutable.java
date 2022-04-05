@@ -251,6 +251,16 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 }
             }
         };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setNegativeJ".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<f*:j><=0&&j<=0, causes=[escape, escape]]";
+                    default -> "Precondition[expression=j<=0, causes=[escape, escape]]";
+                };
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
+            }
+        };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_2_M".equals(d.typeInfo().simpleName)) {
                 String expectApprovedPreconditions = d.iteration() <= 1 ? "{}" : "{j=j<=0}";
@@ -261,6 +271,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
         testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());

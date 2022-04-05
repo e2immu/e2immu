@@ -313,33 +313,36 @@ public class InlinedMethod extends BaseExpression implements Expression {
             FieldAnalysis fieldAnalysis = evaluationResult.getAnalyserContext()
                     .getFieldAnalysis(fieldReference.fieldInfo);
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
+            Variable modifiedVariable = replaceScope(parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall, variable, inspectionProvider, fieldReference);
             if (effectivelyFinal.valueIsTrue()) {
-                return effectivelyFinalValue(evaluationResult, scope, fieldReference);// keep the final field
+                ConstructorCall constructorCall = bestConstructorCall(evaluationResult, scope);
+                if (constructorCall != null && constructorCall.constructor() != null) {
+                    // only now we can start to take a look at the parameters
+                    int index = indexOfParameterLinkedToFinalField(evaluationResult, constructorCall.constructor(),
+                            fieldReference.fieldInfo);
+                    if (index >= 0) {
+                        return constructorCall.getParameterExpressions().get(index);
+                    }
+                }
+                // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
+                return expandedVariable(evaluationResult, fieldReference.fieldInfo.getIdentifier(), modifiedVariable);
             }
-            if (effectivelyFinal.valueIsFalse()) {
-                // variable field: replace the VE with Suffix by one without (i$0 --> i)
-                //TODO implement return replacementForVariableField(inspectionProvider, fieldReference, scope);
-            }
+            return expandedVariable(evaluationResult, identifierOfMethodCall, modifiedVariable);
         }
 
         // e.g., local variable reference, see InlinedMethod_3
         return expandedVariable(evaluationResult, identifierOfMethodCall, variable);
     }
 
-    private Expression effectivelyFinalValue(EvaluationResult context,
-                                             Expression scope,
-                                             FieldReference fieldReference) {
-        ConstructorCall constructorCall = bestConstructorCall(context, scope);
-        if (constructorCall != null && constructorCall.constructor() != null) {
-            // only now we can start to take a look at the parameters
-            int index = indexOfParameterLinkedToFinalField(context, constructorCall.constructor(),
-                    fieldReference.fieldInfo);
-            if (index >= 0) {
-                return constructorCall.getParameterExpressions().get(index);
-            }
+    private Variable replaceScope(List<Expression> parameters, Expression scope, TypeInfo typeOfTranslation, EvaluationResult evaluationResult, Identifier identifierOfMethodCall, Variable variable, InspectionProvider inspectionProvider, FieldReference fieldReference) {
+        Variable modifiedVariable;
+        if (fieldReference.scope instanceof VariableExpression ve) {
+            Expression replacedScope = replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
+            modifiedVariable = new FieldReference(inspectionProvider, fieldReference.fieldInfo, replacedScope, fieldReference.getOwningType());
+        } else {
+            modifiedVariable = variable;
         }
-        // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
-        return expandedVariable(context, fieldReference.fieldInfo.getIdentifier(), fieldReference);
+        return modifiedVariable;
     }
 
     private Expression parameterReplacement(List<Expression> parameters,

@@ -460,11 +460,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             closure = closure.getClosure();
             inClosure = true;
         }
-        // for now, other variations on this are not explicitly present at the moment IMPROVE?
-        if (!currentMethod.methodInspection.get().isStatic()) {
-            This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
-        }
+
+        // even static methods need a "this" variable, because we use it to mark that modifying method has been called
+        // in a static context
+        This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
+        createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
 
         // we'll copy local variables from outside this method
         // NOT a while statement, because this one will work recursively

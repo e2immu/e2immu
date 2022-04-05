@@ -439,7 +439,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product";
-                        case 1 -> "<null-check>&&product.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=product.lhs";
+                        case 1 -> "<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs";
                         default -> "product.lhs instanceof ConstantExpression<?>&&product.rhs instanceof MethodCall&&expression instanceof Product&&null!=product.lhs&&null!=product.rhs&&null!=product.rhs/*(MethodCall)*/";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());

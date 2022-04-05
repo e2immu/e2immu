@@ -160,10 +160,10 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         // 3 condition evaluates to constant
         // @Constant expect
         testClass("BasicCompanionMethods_1", 3, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

@@ -381,7 +381,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
             if (assigned != null) {
                 DV assignedOrLinked = assigned.get(fieldInfo);
-                if (LinkedVariables.isAssigned(assignedOrLinked)) {
+                if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
                     return constructorCall.getParameterExpressions().get(i);
                 }
             }

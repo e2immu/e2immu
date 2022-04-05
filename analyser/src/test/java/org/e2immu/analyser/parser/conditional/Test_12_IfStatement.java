@@ -73,7 +73,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
+                    int expected = d.iteration() == 0 ? 0 : 1;
+                    assertEquals(expected, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().stateData().equalityAccordingToStateStream().count());
@@ -357,9 +358,9 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
         };
         testClass("IfStatement_9", 6, 2, new DebugConfiguration.Builder()
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

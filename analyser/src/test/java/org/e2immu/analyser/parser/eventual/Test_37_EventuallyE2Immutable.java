@@ -24,6 +24,9 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.expression.Equals;
+import org.e2immu.analyser.model.expression.ExpandedVariable;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -611,14 +614,21 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isNotYetSet>";
-                        case 2 -> "<null-check>";
-                        default -> "null==other.t$0";
+                        default -> "null==`other.t`";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
+                    if (d.iteration() >= 2) {
+                        if (d.evaluationResult().value() instanceof Equals equals) {
+                            if (equals.rhs instanceof ExpandedVariable ev) {
+                                assertEquals("ListOfIdentifiers[expression=inline, identifiers=[PositionalIdentifier[line=64, pos=13, endLine=64, endPos=31], VariableIdentifier[variable=other.t, index=-]]]",
+                                        ev.identifier.toString());
+                            } else fail();
+                        } else fail();
+                    }
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<m:setT>";
+                        case 0, 1 -> "<m:setT>";
                         default -> "<no return value>";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -630,8 +640,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isNotYetSet>";
-                        case 2 -> "<null-check>";
-                        default -> "null==other.t$0";
+                        default -> "null==`other.t`";
                     };
                     assertEquals(expected, d.condition().toString());
                 }
@@ -641,6 +650,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("getT".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:getT>" : "/*inline getT*/t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("t$0=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                    }
+                }
                 String pc = d.iteration() <= 1 ? "Precondition[expression=!<null-check>, causes=[escape]]"
                         : "Precondition[expression=null!=t, causes=[escape]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
@@ -648,6 +662,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("isNotYetSet".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:isNotYetSet>" : "/*inline isNotYetSet*/null==t$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("t$0=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                    }
+                }
             }
         };
         testClass("EventuallyE2Immutable_11", 2, 0, new DebugConfiguration.Builder()
