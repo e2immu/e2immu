@@ -125,7 +125,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
-                        assertEquals("i=EXPANDED_VARIABLE", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("i=EXPANDED_VARIABLE, this=EXPANDED_VARIABLE", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }

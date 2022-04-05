@@ -82,14 +82,20 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return of(identifier, methodInfo, expression, predicate);
     }
 
-    private static Expression of(Identifier identifier,
-                                 MethodInfo methodInfo,
-                                 Expression expression,
-                                 Predicate<FieldReference> isVariableField) {
-        Map<VariableExpression, ExpansionType> variableExpressions = new HashMap<>();
-        AtomicBoolean containsVariableFields = new AtomicBoolean();
-        AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
-        expression.visit(e -> {
+    private static class ExpressionVisitor implements Predicate<Expression> {
+        final Map<VariableExpression, ExpansionType> variableExpressions = new HashMap<>();
+        final AtomicBoolean containsVariableFields = new AtomicBoolean();
+        final AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
+        final MethodInfo methodInfo;
+        final Predicate<FieldReference> isVariableField;
+
+        ExpressionVisitor(MethodInfo methodInfo, Predicate<FieldReference> isVariableField) {
+            this.methodInfo = methodInfo;
+            this.isVariableField = isVariableField;
+        }
+
+        @Override
+        public boolean test(Expression e) {
             Variable v;
             VariableExpression variableExpression;
             ExpansionType expansionType;
@@ -101,38 +107,55 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 v = ev.getVariable();
                 variableExpression = new VariableExpression(v);
                 expansionType = ExpansionType.EXPANDED_VARIABLE;
-                // FIXME recursion for the scope variables, given that visit does not go there
             } else {
                 v = null;
                 variableExpression = null;
                 expansionType = null;
             }
             if (v != null) {
-                boolean add = v instanceof ParameterInfo pi && pi.owner == methodInfo ||
-                        v instanceof This ||
-                        v instanceof LocalVariableReference ||
-                        v instanceof FieldReference fr && (fr.fieldInfo.isStatic() || fr.scopeIsThis(methodInfo.typeInfo));
-                if (add) {
-                    variableExpressions.put(variableExpression, expansionType);
-                }
-                if (v instanceof FieldReference fr) {
-                    boolean contains = isVariableField.test(fr);
-                    if (contains) containsVariableFields.set(true);
-                }
-                // descend into scope, expressions of dependent variable!
-                return !add || v instanceof FieldReference;
+                return add(v, variableExpression, expansionType);
             }
             if (e instanceof DelayedVariableExpression dve) {
                 causes.set(causes.get().merge(dve.causesOfDelay));
                 return false;
             }
             return true;
-        });
-        if (causes.get().isDone()) {
-            return new InlinedMethod(identifier, methodInfo, expression, Map.copyOf(variableExpressions),
-                    containsVariableFields.get());
         }
-        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), causes.get());
+
+        private boolean add(Variable v, VariableExpression variableExpression, ExpansionType expansionType) {
+            boolean add = v instanceof ParameterInfo pi && pi.owner == methodInfo ||
+                    v instanceof This ||
+                    v instanceof LocalVariableReference ||
+                    v instanceof FieldReference fr && (fr.fieldInfo.isStatic() || fr.scopeIsThis(methodInfo.typeInfo));
+            if (add) {
+                variableExpressions.put(variableExpression, expansionType);
+            }
+            if (v instanceof FieldReference fr) {
+                boolean contains = isVariableField.test(fr);
+                if (contains) containsVariableFields.set(true);
+                if (fr.scope instanceof VariableExpression ve) {
+                    add(ve.variable(), ve, expansionType);
+                } else if(fr.scope instanceof ExpandedVariable ev) {
+                    add(ev.getVariable(), new VariableExpression(ev.getVariable()), ExpansionType.EXPANDED_VARIABLE);
+                }
+            }
+            // IMPORTANT: when adding a VE with a field reference, we do not rely on visit recursion anymore,
+            // but on the recursion with add(...) why? because that one also works once within an ExpandedVariable.
+            return !add;
+        }
+    }
+
+    private static Expression of(Identifier identifier,
+                                 MethodInfo methodInfo,
+                                 Expression expression,
+                                 Predicate<FieldReference> isVariableField) {
+        ExpressionVisitor ev = new ExpressionVisitor(methodInfo, isVariableField);
+        expression.visit(ev);
+        if (ev.causes.get().isDone()) {
+            return new InlinedMethod(identifier, methodInfo, expression, Map.copyOf(ev.variableExpressions),
+                    ev.containsVariableFields.get());
+        }
+        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), ev.causes.get());
     }
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {

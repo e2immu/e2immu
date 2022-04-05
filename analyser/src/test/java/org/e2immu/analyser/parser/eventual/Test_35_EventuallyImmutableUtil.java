@@ -185,6 +185,11 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "/*inline isTReady*/`s1.bool`.isSet()&&`s1.string`.isSet()&&`s2.bool`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                if (d.iteration() >= 3) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("bool=NORMAL, string=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                    } else fail();
+                }
             }
 
             final String expected12 = "`t.s1.bool`.isSet()&&`t.s1.string`.isSet()&&`t.s2.bool`.isSet()&&`t.s2.string`.isSet()";
