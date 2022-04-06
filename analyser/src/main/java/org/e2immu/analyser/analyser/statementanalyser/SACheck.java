@@ -99,9 +99,8 @@ public record SACheck(StatementAnalysis statementAnalysis) {
 
     private boolean uselessForDependentVariable(VariableInfo variableInfo) {
         if (variableInfo.variable() instanceof DependentVariable dv) {
-            return dv.hasArrayVariable()
-                    // do check that the array variable exists, it can have gone out of scope here
-                    && statementAnalysis.variableIsSet(dv.arrayVariable().fullyQualifiedName())
+            return  // do check that the array variable exists, it can have gone out of scope here
+                    statementAnalysis.variableIsSet(dv.arrayVariable().fullyQualifiedName())
                     && !variableHasBeenReadAfter(dv.arrayVariable(), variableInfo.getAssignmentIds().getLatestAssignment());
         }
         return true;

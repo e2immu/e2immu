@@ -15,12 +15,8 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.support.Either;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -29,69 +25,64 @@ import java.util.function.Predicate;
  * variable representing a complex expression by name, concretely, used to store array access variables.
  * two situations: the array is a variable, and, more complex, the array is an expression.
  * <p>
- * the former is much more stable than the latter.
- * in the latter, we store the unevaluated expression to be re-evaluated at initialisation time.
+ * if the array or the index is a variable, we refer to this variable when evaluating a variable expression.
  * <p>
  * In either case StatementAnalysisImpl.initializeLocalOrDependentVariable needs to run on every iteration.
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
 
-
-    public record NonVariable(Expression value, Identifier identifier) {
-    }
-
-    public final TypeInfo owningType;
     public final String name;
     public final String simpleName;
-    public final Either<NonVariable, Variable> expressionOrArrayVariable;
-    public final Either<NonVariable, Variable> expressionOrIndexVariable;
+    private final Expression arrayExpression;
+    private final Variable arrayVariable;
+    private final Expression indexExpression;
+    private final Variable indexVariable;
     public final String statementIndex;
     private final Identifier identifier;
 
     public DependentVariable(Identifier identifier,
                              Expression arrayExpression,
+                             Variable arrayVariable,
                              Expression indexExpression,
-                             @NotNull ParameterizedType parameterizedType,//formal type
+                             Variable indexVariable,
+                             ParameterizedType parameterizedType,//formal type
                              String statementIndex) {
         super(parameterizedType);
         this.identifier = identifier;
         this.statementIndex = statementIndex; // not-"" when created during analysis
-        Variable arrayVariable = singleVariable(arrayExpression);
-        this.expressionOrArrayVariable = arrayVariable == null
-                ? Either.left(new NonVariable(arrayExpression, identifier))
-                : Either.right(arrayVariable);
-        Variable indexVariable = singleVariable(indexExpression);
-        this.expressionOrIndexVariable = indexVariable == null
-                ? Either.left(new NonVariable(indexExpression, identifier))
-                : Either.right(indexVariable);
-        String indexString = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.fullyQualifiedName());
-        String indexSimple = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.simpleName());
-        if (arrayVariable != null) {
-            name = arrayVariable.fullyQualifiedName() + "[" + indexString + "]";
-            simpleName = arrayVariable.simpleName() + "[" + indexSimple + "]";
-        } else {
-            name = "AV$" + expressionOrArrayVariable.getLeft().identifier + "[" + indexString + "]";
-            simpleName = "AV$[" + indexSimple + "]";
-        }
-        this.owningType = arrayVariable != null ? arrayVariable.getOwningType() : null;
+        this.arrayExpression = arrayExpression;
+        this.arrayVariable = arrayVariable;
+        this.indexExpression = indexExpression;
+        this.indexVariable = indexVariable; // can be null, in case of a constant
+        String indexFqn = indexVariable == null ? indexExpression.minimalOutput() : indexVariable.fullyQualifiedName();
+        name = arrayVariable.fullyQualifiedName() + "[" + indexFqn + "]";
+        String indexSimple = indexVariable == null ? indexExpression.minimalOutput() : indexVariable.simpleName();
+        simpleName = arrayVariable.simpleName() + "[" + indexSimple + "]";
     }
 
     public Identifier getIdentifier() {
         return identifier;
     }
 
-    public static Variable singleVariable(Expression expression) {
-        IsVariableExpression ve;
-        if ((ve = expression.asInstanceOf(IsVariableExpression.class)) != null) {
-            return ve.variable();
-        }
-        return null;
+    public Expression indexExpression() {
+        return indexExpression;
     }
 
+    public Variable indexVariable() {
+        return indexVariable;
+    }
+
+    public Expression arrayExpression() {
+        return arrayExpression;
+    }
+
+    public Variable arrayVariable() {
+        return arrayVariable;
+    }
 
     @Override
     public TypeInfo getOwningType() {
-        return owningType;
+        return arrayVariable.getOwningType();
     }
 
     @Override
@@ -129,24 +120,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     @Override
     public boolean isLocal() {
-        if (expressionOrArrayVariable.isLeft()) return false;
-        Variable arrayVariable = expressionOrArrayVariable.getRight();
-        return arrayVariable != null && arrayVariable.isLocal();
-    }
-
-    public boolean hasArrayVariable() {
-        return expressionOrArrayVariable.isRight();
-    }
-
-    public Variable arrayVariable() {
-        return expressionOrArrayVariable.getRight();
+        return arrayVariable.isLocal() && (indexVariable == null || indexVariable.isLocal());
     }
 
     @Override
     public void visit(Predicate<Expression> predicate) {
-        if (expressionOrArrayVariable.isLeft()) expressionOrArrayVariable.getLeft().value.visit(predicate);
-        else new VariableExpression(expressionOrArrayVariable.getRight()).visit(predicate);
-        if (expressionOrIndexVariable.isLeft()) expressionOrIndexVariable.getLeft().value.visit(predicate);
-        else new VariableExpression(expressionOrIndexVariable.getRight()).visit(predicate);
+        arrayExpression.visit(predicate);
+        indexExpression.visit(predicate);
     }
 }

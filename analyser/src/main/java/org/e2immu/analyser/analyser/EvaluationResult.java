@@ -423,7 +423,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public Expression currentExpression(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentExpression(Variable variable, Expression scopeValue,
+                                            Expression indexValue,
+                                            ForwardEvaluationInfo forwardEvaluationInfo) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value != null) {
                 return currentExpression.value;
@@ -433,7 +435,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (inPrevious != null && inPrevious.value != null) {
                 return inPrevious.value;
             }
-            return evaluationContext.currentValue(variable, scopeValue, forwardEvaluationInfo);
+            return evaluationContext.currentValue(variable, scopeValue, indexValue, forwardEvaluationInfo);
         }
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have

@@ -106,20 +106,31 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     private final Variable variable;
     private final Suffix suffix;
+    // only used when the variable is a FieldReference, with !isStatic, OR a DependentVariable
     private final Expression scopeValue;
+    // only used when the variable is a DependentVariable
+    private final Expression indexValue;
 
     public VariableExpression(Variable variable) {
-        this(variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope : null);
+        this(variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
+                        variable instanceof DependentVariable dv ? dv.arrayExpression() : null,
+                variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
 
-    public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue) {
+    public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
         super(Identifier.constant(variable.fullyQualifiedName() + suffix));
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
-        if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic) {
+        if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic ||
+                variable instanceof DependentVariable) {
             this.scopeValue = Objects.requireNonNull(scopeValue);
         } else {
             this.scopeValue = null;
+        }
+        if (variable instanceof DependentVariable) {
+            this.indexValue = indexValue;
+        } else {
+            this.indexValue = null;
         }
     }
 
@@ -131,6 +142,9 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             if (fr.isStatic) return fr.equals(thatFr);
             if (thatFr.isStatic) return false;
             return fr.fieldInfo.equals(thatFr.fieldInfo) && suffix.equals(that.suffix) && scopeValue.equals(that.scopeValue);
+        }
+        if (variable instanceof DependentVariable && that.variable instanceof DependentVariable) {
+            return this.scopeValue.equals(that.scopeValue) && indexValue.equals(that.indexValue);
         }
         return variable.equals(that.variable) && suffix.equals(that.suffix);
     }
@@ -169,7 +183,8 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public int hashCode() {
-        return variable.hashCode() + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode();
+        return variable.hashCode() + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode()
+                - 89 * (indexValue == null ? 0 : indexValue.hashCode());
     }
 
     @Override
@@ -210,9 +225,20 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
         EvaluationResult scopeResult = evaluateScope(context, forwardEvaluationInfo);
         if (scopeResult != null) builder.compose(scopeResult);
+        EvaluationResult indexResult = evaluateIndex(context, forwardEvaluationInfo);
+        if (indexResult != null) builder.compose(indexResult);
+
+        if (variable instanceof DependentVariable && scopeResult.value() instanceof ArrayInitializer initializer && scopeResult.value() instanceof Numeric in) {
+            // known array, known index (a[] = {1,2,3}, a[2] == 3)
+            int intIndex = in.getNumber().intValue();
+            if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+            return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
+        }
 
         Expression currentValue = builder.currentExpression(variable, scopeResult == null ? null : scopeResult.value(),
-                forwardEvaluationInfo);
+                indexResult == null ? null : indexResult.value(), forwardEvaluationInfo);
 
         builder.setExpression(currentValue);
 
@@ -286,7 +312,34 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope);
             return assignment.evaluate(context, forward);
         }
+        if (variable instanceof DependentVariable dv) {
+            return evaluateForArray(context, forwardEvaluationInfo, dv.arrayExpression(), dv.arrayVariable());
+        }
         return null;
+    }
+
+    private EvaluationResult evaluateIndex(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (variable instanceof DependentVariable dv) {
+            // there is an index variable
+            return evaluateForArray(context, forwardEvaluationInfo, dv.indexExpression(), dv.indexVariable());
+        }
+        return null;
+    }
+
+    // also used by ArrayAccess
+    public static EvaluationResult evaluateForArray(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo,
+                                                    Expression expression, Variable variable) {
+        if (expression instanceof ConstantExpression<?>) {
+            return new EvaluationResult.Builder(context).setExpression(expression).build();
+        }
+        if (expression instanceof VariableExpression ve) {
+            return ve.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        }
+        assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copyModificationEnsureNotNull();
+        VariableExpression scopeVE = new VariableExpression(variable);
+        Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
+        return assignment.evaluate(context, forward);
     }
 
     @Override
@@ -322,14 +375,19 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public OutputBuilder output(Qualification qualification) {
+        OutputBuilder outputBuilder = new OutputBuilder();
         if (variable instanceof FieldReference fr && !fr.isStatic) {
-            OutputBuilder outputBuilder = new OutputBuilder();
             if (!fr.isDefaultScope) {
                 outputBuilder.add(outputInParenthesis(qualification, precedence(), scopeValue)).add(Symbol.DOT);
             }
-            return outputBuilder.add(new Text(fr.fieldInfo.name)).add(suffix.output());
+            outputBuilder.add(new Text(fr.fieldInfo.name));
+        } else if (variable instanceof DependentVariable) {
+            outputBuilder.add(outputInParenthesis(qualification, precedence(), scopeValue))
+                    .add(Symbol.LEFT_BRACKET).add(indexValue.output(qualification)).add(Symbol.RIGHT_BRACKET);
+        } else {
+            outputBuilder.add(variable.output(qualification));
         }
-        return new OutputBuilder().add(variable.output(qualification)).add(suffix.output());
+        return outputBuilder.add(suffix.output());
     }
 
     @Override

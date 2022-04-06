@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -22,6 +25,7 @@ import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -44,52 +48,41 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 String read = d.variableInfo().getReadId();
                 String assigned = d.variableInfo().getAssignmentIds().getLatestAssignment();
 
-                if ("1".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                    assertEquals("12", d.currentValue().toString());
-                }
-                if ("2".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                    assertTrue(assigned.compareTo(read) > 0);
-                    assertEquals("12", d.variableInfo().getValue().toString());
-                }
-                if ("2".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
-                    assertEquals("13", d.currentValue().toString());
-                }
-                if ("4".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                    assertTrue(assigned.compareTo(read) < 0);
-                    assertEquals("12", d.variableInfo().getValue().toString());
-                }
-                if ("4".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
-                    assertTrue(assigned.compareTo(read) < 0);
-                    assertEquals("13", d.variableInfo().getValue().toString());
-                }
-                if ("4".equals(d.statementId()) && "array[2]".equals(d.variableName())) {
-                    assertTrue(assigned.compareTo(read) < 0);
-                    assertEquals("31", d.variableInfo().getValue().toString());
-                }
-                if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                    assertEquals("4" + Stage.EVALUATION, read);
-                }
-            }
-            if ("method2".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo) {
-                    assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
+                if ("array[0]".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    }
-                } else if ("b".equals(d.variableName())) {
-                    assertEquals("a", d.variableInfo().getValue().toString());
-                } else if ("array".equals(d.variableName())) {
-                    assertEquals("new int[](3)", d.currentValue().toString());
-                } else if (d.variable() instanceof ReturnVariable) {
-                    if ("3".equals(d.statementId())) {
                         assertEquals("12", d.currentValue().toString());
                     }
-                } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_0.method2(int):0:a]"
-                        .equals(d.variableName())) {
-                    assertTrue(d.statementId().compareTo("2") >= 0);
-                    assertEquals("12", d.currentValue().toString());
-                } else {
-                    fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("1-E", assigned);
+                        assertEquals("-", read);
+                        assertEquals("12", d.variableInfo().getValue().toString());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        assertTrue(assigned.compareTo(read) < 0);
+                        assertEquals("12", d.variableInfo().getValue().toString());
+                    }
+                } else if ("array[1]".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("2-E", assigned);
+                        assertEquals("-", read);
+                        assertEquals("13", d.currentValue().toString());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        assertTrue(assigned.compareTo(read) < 0);
+                        assertEquals("13", d.variableInfo().getValue().toString());
+                    }
+                } else if ("array[2]".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        assertEquals("3-E", assigned);
+                        assertEquals("4-E", read);
+                        assertEquals("31", d.variableInfo().getValue().toString());
+                    }
+                } else if ("array".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        assertEquals("4" + Stage.EVALUATION, read);
+                    }
+                } else if (!(d.variable() instanceof This) && !(d.variable() instanceof ParameterInfo) && !(d.variable() instanceof ReturnVariable)) {
+                    fail("have variable " + d.variableName());
                 }
             }
         };
@@ -99,26 +92,12 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 VariableInfo tv = d.getReturnAsVariable();
                 assertEquals("56", tv.getValue().toString());
             }
-            if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
-                VariableInfo tv = d.getReturnAsVariable();
-                assertEquals("12", tv.getValue().toString());
-            }
-        };
-
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("method2".equals(d.methodInfo().name)) {
-                if ("2".equals(d.statementId())) {
-                    assertEquals("12", d.evaluationResult().value().toString());
-
-                }
-            }
         };
 
         // unused parameter in method1
-        testClass("DependentVariables_0", 0, 1, new DebugConfiguration.Builder()
+        testClass("DependentVariables_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -315,7 +294,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("bs[0]".equals(d.variable().simpleName())) {
                     assertEquals("org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]",
                             d.variable().fullyQualifiedName());
-                    assertCurrentValue(d,1, "instance type boolean/*{L bs:independent:805,bs[0]:assigned:1}*/");
+                    assertCurrentValue(d, 1, "instance type boolean/*{L bs:independent:805,bs[0]:assigned:1}*/");
                 }
                 if ("added".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
@@ -372,6 +351,54 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_4() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo) {
+                    assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    }
+                } else if ("b".equals(d.variableName())) {
+                    assertEquals("a", d.variableInfo().getValue().toString());
+                } else if ("array".equals(d.variableName())) {
+                    assertEquals("new int[](3)", d.currentValue().toString());
+                } else if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("<v:array[a]>", d.currentValue().toString());
+                    }
+                } else if ("array[b]".equals(d.variableName())) {
+                    if (d.variable() instanceof DependentVariable dv) {
+                        assertEquals("b", dv.indexVariable().toString());
+                    } else fail();
+                    assertTrue(d.statementId().compareTo("2") >= 0);
+                    assertEquals("12", d.currentValue().toString());
+                } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_4.method(int):0:a]".equals(d.variableName())) {
+                    assertEquals("3", d.statementId());
+                } else if (!(d.variable() instanceof This)) {
+                    fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
+                }
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals("12", d.evaluationResult().value().toString());
+                }
+            }
+        };
+
+        // unused parameter in method1
+        testClass("DependentVariables_4", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

@@ -115,6 +115,11 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);
     }
 
+    public static Expression forDependentVariable(DependentVariable dv, CausesOfDelay causesOfDelay) {
+        String msg = "<dv:" + dv.simpleName+">";
+        return new DelayedVariableExpression(msg, dv, dv.statementTime(), causesOfDelay);
+    }
+
     @Override
     public void visit(Predicate<Expression> predicate) {
         predicate.test(this);

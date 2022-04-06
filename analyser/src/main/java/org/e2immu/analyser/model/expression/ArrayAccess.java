@@ -14,10 +14,16 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -26,22 +32,48 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 @E2Container
 public class ArrayAccess extends BaseExpression implements Expression {
 
+    public static final String ARRAY_VARIABLE = "av-";
+    public static final String INDEX_VARIABLE = "iv-";
     public final Expression expression;
     public final Expression index;
     public final DependentVariable dependentVariable;
     public final ParameterizedType returnType;
 
-    public ArrayAccess(Identifier identifier, @NotNull Expression expression, @NotNull Expression index) {
+    /*
+    indexIdentifier separately, because when the index expression is a constant, this expression does not have
+    a positional identifier.
+     */
+    public ArrayAccess(Identifier identifier,
+                       @NotNull Expression expression,
+                       @NotNull Expression index,
+                       Identifier indexIdentifier,
+                       TypeInfo owningType) {
         super(identifier);
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();
-        dependentVariable = new DependentVariable(identifier, expression, index, returnType, "");
+        Variable arrayVariable = makeVariable(expression, expression.getIdentifier(), ARRAY_VARIABLE, owningType);
+        Variable indexVariable = makeVariable(index, indexIdentifier, INDEX_VARIABLE, owningType);
+        dependentVariable = new DependentVariable(identifier, expression, arrayVariable, index, indexVariable, returnType, "");
+    }
+
+    private Variable makeVariable(Expression expression, Identifier identifier, String variablePrefix, TypeInfo owningType) {
+        if(expression instanceof ConstantExpression<?>) return null;
+        if (expression instanceof VariableExpression ve) {
+            return ve.variable();
+        }
+        assert identifier instanceof Identifier.PositionalIdentifier;
+        String name = variablePrefix + identifier.compact();
+        VariableNature vn = new VariableNature.ScopeVariable();
+        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, expression.returnType(),
+                List.of(), owningType, vn);
+        return new LocalVariableReference(lv, expression);
     }
 
     @Override
@@ -71,7 +103,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
         Expression translatedExpression = expression.translate(inspectionProvider, translationMap);
         Expression translatedIndex = index.translate(inspectionProvider, translationMap);
         if (translatedIndex == this.index && translatedExpression == this.expression) return this;
-        return new ArrayAccess(identifier, translatedExpression, translatedIndex);
+        return new ArrayAccess(identifier, translatedExpression, translatedIndex,
+                dependentVariable.indexExpression().getIdentifier(), dependentVariable.getOwningType());
     }
 
     @Override
@@ -117,60 +150,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult array = expression.evaluate(context, forwardEvaluationInfo.notNullKeepAssignment());
-        EvaluationResult indexValue = index.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(array, indexValue);
-
-        Expression arrayValue = array.value();
-        if (arrayValue instanceof ArrayInitializer initializer && indexValue.value() instanceof Numeric in) {
-            // known array, known index (a[] = {1,2,3}, a[2] == 3)
-            int intIndex = in.getNumber().intValue();
-            if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
-            builder.setExpression(initializer.multiExpression.expressions()[intIndex]);
-        } else {
-            Expression arrayExpression = DependentVariable.singleVariable(expression) != null ? expression : arrayValue;
-            boolean delayed = arrayExpression.isDelayed() || indexValue.value().isDelayed();
-            DependentVariable evaluatedDependentVariable = new DependentVariable(identifier, expression,
-                    indexValue.value(), returnType, context.evaluationContext().statementIndex());
-            if (evaluatedDependentVariable.hasArrayVariable()) {
-                builder.markRead(evaluatedDependentVariable.arrayVariable());
-            }
-            if (forwardEvaluationInfo.isAssignmentTarget()) {
-                builder.setExpression(new VariableExpression(evaluatedDependentVariable));
-            } else {
-
-                // evaluatedDependentVariable is our best effort at evaluation of the individual components
-                // we need to mark it as read, even if it is delayed!
-                builder.markRead(evaluatedDependentVariable);
-
-                if (delayed) {
-                    CausesOfDelay causesOfDelay = arrayExpression.causesOfDelay()
-                            .merge(indexValue.value().causesOfDelay());
-                    Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable,
-                            context.evaluationContext().getInitialStatementTime(), causesOfDelay);
-
-                    builder.setExpression(dve);
-                } else {
-                    if (evaluatedDependentVariable.hasArrayVariable()) {
-                        builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable(), arrayExpression,
-                                MultiLevel.EFFECTIVELY_NOT_NULL_DV, forwardEvaluationInfo.complainInlineConditional());
-                    }
-                    Expression currentValue = builder.currentExpression(evaluatedDependentVariable, null, // FIXME
-                            forwardEvaluationInfo);
-                    builder.setExpression(currentValue);
-                }
-            }
-        }
-
-        DV notNullRequired = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        IsVariableExpression ve;
-        if (notNullRequired.gt(MultiLevel.NULLABLE_DV) &&
-                (ve = builder.getExpression().asInstanceOf(IsVariableExpression.class)) != null) {
-            builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired,
-                    forwardEvaluationInfo.complainInlineConditional());
-        }
-        return builder.build();
+        VariableExpression ve = new VariableExpression(dependentVariable, VariableExpression.NO_SUFFIX,expression, index);
+        return ve.evaluate(context, forwardEvaluationInfo);
     }
 }

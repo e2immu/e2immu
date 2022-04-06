@@ -1454,36 +1454,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
+            Expression arrayBase = new VariableExpression(dv.arrayVariable());
+            LinkedVariables lvArrayBase = arrayBase.linkedVariables(evaluationContext);
+            DV independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
+            CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;
-            Expression arrayBase;
-            LinkedVariables lvArrayBase;
-            DV independent;
-            Properties valueProperties;
-            if (dv.hasArrayVariable()) {
-                arrayBase = new VariableExpression(dv.arrayVariable());
-                lvArrayBase = arrayBase.linkedVariables(evaluationContext);
-                independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
-                CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
-                if (causesOfDelay.isDelayed()) {
-                    arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
-                } else {
-                    arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
-                }
-                valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
+            if (causesOfDelay.isDelayed()) {
+                arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
             } else {
-                Expression unevaluated = dv.expressionOrArrayVariable.getLeft().value();
-                EvaluationResult result = unevaluated.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                arrayBase = result.getExpression();
-                arrayValue = arrayBase;
-                valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
-                CausesOfDelay vpDelay = valueProperties.delays();
-                lvArrayBase = arrayBase.linkedVariables(evaluationContext);
-                independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
-                CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay()).merge(vpDelay);
-                if (causesOfDelay.isDelayed()) {
-                    arrayValue = DelayedExpression.forValueOf(dv.parameterizedType, causesOfDelay);
-                }
+                arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
             }
+            Properties valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
             linkedVariables = lvArrayBase
                     .changeAllTo(independent)
                     .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));

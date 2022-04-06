@@ -428,8 +428,11 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue);
+        public Expression currentValue(Variable variable,
+                                       Expression scopeValue,
+                                       Expression indexValue,
+                                       ForwardEvaluationInfo forwardEvaluationInfo) {
+            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
         }
 
         @Override

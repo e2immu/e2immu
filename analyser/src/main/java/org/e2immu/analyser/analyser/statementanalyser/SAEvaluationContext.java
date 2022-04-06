@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.LhsRhs;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -507,7 +504,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     // this happens in the case of confirmed variable fields, where the name indicates the statement time;
     // and in the case of variables assigned in a loop defined outside, where the name indicates the loop statement id
     @Override
-    public Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableInfo variableInfo = findForReading(variable, forwardEvaluationInfo.isNotAssignmentTarget());
 
         // important! do not use variable in the next statement, but variableInfo.variable()
@@ -520,7 +517,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return new VariableExpression(variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
-        return getVariableValue(null, scopeValue, variableInfo);
+        return getVariableValue(null, scopeValue, indexValue, variableInfo);
     }
 
     @Override
@@ -607,7 +604,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             if (bestValue.isDone()) {
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression veSuffix = new VariableExpression(variable, suffix, null); // FIXME
+                VariableExpression veSuffix = new VariableExpression(variable, suffix, null, null); // FIXME
 
                 VariableExpression ve = new VariableExpression(variable);
                 translationMap.put(veSuffix, ve);
@@ -625,7 +622,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
                         valueProperties);
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression ve = new VariableExpression(variable, suffix, null); // FIXME implement
+                VariableExpression ve = new VariableExpression(variable, suffix, null, null); // FIXME implement
                 translationMap.put(ve, newObject);
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
@@ -755,8 +752,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * @return the value, potentially replaced by a VariableExpression
      */
     @Override
-    public Expression getVariableValue(Variable myself, Expression scopeValue, VariableInfo variableInfo) {
-        Expression expression = makeVariableExpression(variableInfo, scopeValue);
+    public Expression getVariableValue(Variable myself, Expression scopeValue, Expression indexValue, VariableInfo variableInfo) {
+        // variable fields
+        Expression expression = makeVariableExpression(variableInfo, scopeValue, indexValue);
         if (expression.isDelayed()) return expression;
 
         if (expression instanceof VariableExpression ve) {
@@ -765,8 +763,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 return valueFromState;
             }
         }
-
-        // variable fields
 
         Expression value = variableInfo.getValue();
         Variable v = variableInfo.variable();
@@ -779,10 +775,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
             if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                 Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue() : null;
+                Expression iv = null; // FIXME
                 // variables in loop defined outside
                 if (isInstance) {
                     VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                    return new VariableExpression(v, suffix2, sv);
+                    return new VariableExpression(v, suffix2, sv, iv);
                 }
                 // do not return a value when it has not yet been written to
                 if (!value.isDelayed()) {
@@ -792,7 +789,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                             && statementIndex().startsWith(outside.statementIndex())) {
                         // has not yet been assigned in the loop, and we're in that loop
                         VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                        return new VariableExpression(v, suffix2, sv);
+                        return new VariableExpression(v, suffix2, sv, iv);
                     }
                 }
             }
@@ -803,12 +800,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return value;
     }
 
-    public Expression makeVariableExpression(VariableInfo variableInfo, Expression scopeValue) {
+    public Expression makeVariableExpression(VariableInfo variableInfo, Expression scopeValue, Expression indexValue) {
         VariableExpression.Suffix suffix;
         Variable variable = variableInfo.variable();
         Expression evaluatedScopeValue = scopeValue != null
                 ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), scopeValue) : null;
-
+        Expression evaluatedIndexValue = indexValue != null
+                ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), indexValue) : null;
         if (variable instanceof FieldReference fieldReference) {
             if (evaluatedScopeValue != null && evaluatedScopeValue.isDelayed()) {
                 int initialStatementTime = getInitialStatementTime();
@@ -827,9 +825,17 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
                 if (shortCut != null) return shortCut;
             }
+        } else if (variable instanceof DependentVariable dv) {
+            CausesOfDelay scopeCauses = evaluatedScopeValue == null ? CausesOfDelay.EMPTY : evaluatedScopeValue.causesOfDelay();
+            CausesOfDelay indexCauses = evaluatedIndexValue == null ? CausesOfDelay.EMPTY : evaluatedIndexValue.causesOfDelay();
+            CausesOfDelay merge = scopeCauses.merge(indexCauses);
+            if (merge.isDelayed()) {
+                return DelayedVariableExpression.forDependentVariable(dv, merge);
+            }
+            suffix = VariableExpression.NO_SUFFIX;
         } else {
             suffix = VariableExpression.NO_SUFFIX;
         }
-        return new VariableExpression(variable, suffix, evaluatedScopeValue);
+        return new VariableExpression(variable, suffix, evaluatedScopeValue, evaluatedIndexValue);
     }
 }

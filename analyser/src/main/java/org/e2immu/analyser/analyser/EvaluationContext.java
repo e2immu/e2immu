@@ -114,7 +114,7 @@ public interface EvaluationContext {
         return Instance.forTesting(variable.parameterizedType());
     }
 
-    default Expression currentValue(Variable variable, Expression scopeValue, ForwardEvaluationInfo forwardEvaluationInfo) {
+    default Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("In " + getClass());
     }
 
@@ -486,7 +486,7 @@ public interface EvaluationContext {
         return expression.state();
     }
 
-    default Expression getVariableValue(Variable myself, Expression scopeValue, VariableInfo variableInfo) {
+    default Expression getVariableValue(Variable myself, Expression scopeValue, Expression indexValue, VariableInfo variableInfo) {
         return variableInfo.getValue();
     }
 
