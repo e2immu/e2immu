@@ -21,17 +21,16 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class Test_00_Basics_21 extends CommonTestRunner {
@@ -50,7 +49,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
                         case 0, 1 -> "<m:isSet>";
-                        default -> "null!=other.t";
+                        default -> "null!=`other.t`";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
@@ -71,6 +70,11 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                }
+            }
+            if ("set".equals(d.methodInfo().name)) {
+                if ("1.0.1".equals(d.statementId())) {
+                    assertEquals("t", d.evaluationResult().value().toString());
                 }
             }
         };
@@ -112,6 +116,20 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     }
                 }
             }
+            if ("set".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                    assertEquals("this", fr.scope.toString());
+                    assertNotNull(fr.scopeVariable);
+                    assertEquals("this", fr.scopeVariable.toString());
+                    assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals("1.0.1-E", d.variableInfo().getAssignmentIds().getLatestAssignment());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("1:M", d.variableInfo().getAssignmentIds().getLatestAssignment());
+                    }
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -136,6 +154,13 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, FINAL);
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
@@ -144,10 +169,11 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

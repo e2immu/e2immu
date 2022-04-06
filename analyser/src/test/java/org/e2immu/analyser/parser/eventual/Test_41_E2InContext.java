@@ -81,7 +81,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
             }
             if ("error".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.IMMUTABLE);
             }
         };
 
