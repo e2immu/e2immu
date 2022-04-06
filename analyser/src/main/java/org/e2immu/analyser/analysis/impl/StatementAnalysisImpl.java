@@ -2225,4 +2225,44 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
     }
+
+    @Override
+    public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable dependentVariable,
+                                                                         Expression arrayValue,
+                                                                         Expression indexValue) {
+        List<VariableInfo> inEquivalenceGroup = variableStream().filter(vi -> {
+            Variable v = vi.variable();
+            if (v.equals(dependentVariable)) return true;
+            if (v instanceof DependentVariable dv) {
+                boolean acceptArrayValue;
+                if (dv.arrayVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
+                    throw new UnsupportedOperationException("NYI, evaluate");
+                } else if (dv.arrayVariable().equals(dependentVariable.arrayVariable())) {
+                    acceptArrayValue = true;
+                } else {
+                    VariableInfo variableInfo = getVariable(dv.arrayVariable().fullyQualifiedName()).best(INITIAL);
+                    acceptArrayValue = variableInfo.getValue().equals(arrayValue);
+                }
+                if (acceptArrayValue) {
+                    if (dv.indexVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
+                        throw new UnsupportedOperationException("NYI, evaluate");
+                    }
+                    if (dv.indexVariable() == null) {
+                        return dv.indexExpression().equals(indexValue);
+                    }
+                    if (dv.indexVariable().equals(dependentVariable.indexVariable())) {
+                        return true;
+                    }
+                    VariableInfo variableInfo = getVariable(dv.indexVariable().fullyQualifiedName()).best(INITIAL);
+                    return variableInfo.getValue().equals(indexValue);
+                }
+            }
+            return false;
+        }).sorted(Comparator.comparing(StatementAnalysisImpl::key)).toList();
+        return inEquivalenceGroup.isEmpty() ? dependentVariable : (DependentVariable) inEquivalenceGroup.get(0).variable();
+    }
+
+    private static String key(VariableInfo vi) {
+        return (vi.getAssignmentIds().hasNotYetBeenAssigned() ? "~" : vi.getAssignmentIds().getLatestAssignment()) + "|" + vi.variable().fullyQualifiedName();
+    }
 }

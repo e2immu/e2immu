@@ -135,10 +135,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<v:xs[index]>";
+                        case 0 -> "<dv:xs[index]>";
                         // from iteration 1, we know xs, and we know index; at iteration 1, we do not know the dependent variable
                         case 1 -> "<array-access:X>/*{L xs:independent1:5,xs[index]:assigned:1}*/";
-                        default -> "org.e2immu.analyser.parser.start.testexample.DependentVariables_1.XS.xs[org.e2immu.analyser.parser.start.testexample.DependentVariables_1.XS.getX(int):0:index]";
+                        default -> "xs[index]";
                     };
                     assertEquals(expectValue, d.currentValue().minimalOutput());
 
@@ -284,7 +284,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
                             ? "<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>"
-                            : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[3]";
+                            : "bs[0]||bs[1]||bs[2]||bs[3]";
                     assertEquals(expected, d.evaluationResult().value().minimalOutput());
                 }
             }
@@ -301,21 +301,19 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals("false", d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:bs[0]>/*{DL bs:initial@Class_DependentVariables_3,bs[0]:assigned:1}*/"
-                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2.0.1".equals(d.statementId()) || "0.0.2.0.2".equals(d.statementId())) {
                         assertEquals("true", d.currentValue().toString(), "In " + d.statementId());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:bs[0]>/*{DL bs:initial@Class_DependentVariables_3,bs[0]:assigned:1}*/||<v:bs[1]>/*{DL bs:initial@Class_DependentVariables_3,bs[1]:assigned:1}*/"
-                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[0]>||<dv:bs[1]>" : "bs[0]||bs[1]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:bs[0]>/*{DL bs:initial@Class_DependentVariables_3,bs[0]:assigned:1}*/||<v:bs[1]>/*{DL bs:initial@Class_DependentVariables_3,bs[1]:assigned:1}*/||<v:bs[2]>/*{DL bs:initial@Class_DependentVariables_3,bs[2]:assigned:1}*/"
-                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[0]>||<dv:bs[1]>||<dv:bs[2]>"
+                                : "bs[0]||bs[1]||bs[2]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -328,21 +326,15 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 } else fail();
             }
             if ("0.0.1.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0
-                        ? "<v:bs[0]>/*{DL bs:initial@Class_DependentVariables_3,bs[0]:assigned:1}*/&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
-                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]";
+                String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]";
                 assertEquals(expected, d.absoluteState().toString());
             }
             if ("0.0.2.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0
-                        ? "<v:bs[1]>/*{DL bs:initial@Class_DependentVariables_3,bs[1]:assigned:1}*/&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
-                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
+                String expected = d.iteration() == 0 ? "<dv:bs[1]>" : "bs[1]";
                 assertEquals(expected, d.absoluteState().toString());
             }
             if ("0.0.3.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0
-                        ? "<v:bs[2]>/*{DL bs:initial@Class_DependentVariables_3,bs[2]:assigned:1}*/&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
-                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]";
+                String expected = d.iteration() == 0 ? "<dv:bs[2]>" : "bs[2]";
                 assertEquals(expected, d.absoluteState().toString());
             }
         };
@@ -371,7 +363,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals("new int[](3)", d.currentValue().toString());
                 } else if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        assertEquals("<v:array[a]>", d.currentValue().toString());
+                        assertEquals("12", d.currentValue().toString());
                     }
                 } else if ("array[b]".equals(d.variableName())) {
                     if (d.variable() instanceof DependentVariable dv) {
@@ -381,6 +373,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals("12", d.currentValue().toString());
                 } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_4.method(int):0:a]".equals(d.variableName())) {
                     assertEquals("3", d.statementId());
+                    String expected = d.iteration() == 0
+                            ? "<v:array[a]>/*{DL array:initial@Class_DependentVariables_4,array[a]:assigned:1}*/"
+                            : "instance type int/*{L array:independent:805,array[a]:assigned:1}*/";
+                    assertEquals(expected, d.currentValue().toString());
                 } else if (!(d.variable() instanceof This)) {
                     fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
                 }
@@ -392,11 +388,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     assertEquals("12", d.evaluationResult().value().toString());
                 }
+                if ("3".equals(d.statementId())) {
+                    assertEquals("12", d.evaluationResult().value().toString());
+                }
             }
         };
 
         // unused parameter in method1
-        testClass("DependentVariables_4", 0, 1, new DebugConfiguration.Builder()
+        testClass("DependentVariables_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());

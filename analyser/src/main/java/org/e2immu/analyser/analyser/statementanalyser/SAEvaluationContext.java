@@ -838,4 +838,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         return new VariableExpression(variable, suffix, evaluatedScopeValue, evaluatedIndexValue);
     }
+
+    @Override
+    public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue) {
+        return statementAnalysis.searchInEquivalenceGroupForLatestAssignment(variable, arrayValue, indexValue);
+    }
 }

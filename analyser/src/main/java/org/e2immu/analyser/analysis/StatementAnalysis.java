@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
@@ -167,6 +168,8 @@ public interface StatementAnalysis extends Analysis,
 
     // can we still reach index?
     boolean isStillReachable(String index);
+
+    DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue);
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

@@ -228,16 +228,25 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         EvaluationResult indexResult = evaluateIndex(context, forwardEvaluationInfo);
         if (indexResult != null) builder.compose(indexResult);
 
-        if (variable instanceof DependentVariable && scopeResult.value() instanceof ArrayInitializer initializer && scopeResult.value() instanceof Numeric in) {
-            // known array, known index (a[] = {1,2,3}, a[2] == 3)
-            int intIndex = in.getNumber().intValue();
-            if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
-                throw new ArrayIndexOutOfBoundsException();
+        Variable source;
+        if (variable instanceof DependentVariable) {
+            if (scopeResult.value() instanceof ArrayInitializer initializer && scopeResult.value() instanceof Numeric in) {
+                // known array, known index (a[] = {1,2,3}, a[2] == 3)
+                int intIndex = in.getNumber().intValue();
+                if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+                return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
             }
-            return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
-        }
+            assert scopeResult != null;
+            assert indexResult != null;
+            source = context.evaluationContext().searchInEquivalenceGroupForLatestAssignment((DependentVariable) variable,
+                    scopeResult.value(), indexResult.value());
+        } else {
+            source = variable;
+        } // TODO implement this "source" choice for field reference scope as well
 
-        Expression currentValue = builder.currentExpression(variable, scopeResult == null ? null : scopeResult.value(),
+        Expression currentValue = builder.currentExpression(source, scopeResult == null ? null : scopeResult.value(),
                 indexResult == null ? null : indexResult.value(), forwardEvaluationInfo);
 
         builder.setExpression(currentValue);

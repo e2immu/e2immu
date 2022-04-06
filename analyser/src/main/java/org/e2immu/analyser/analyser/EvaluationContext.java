@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -406,6 +407,10 @@ public interface EvaluationContext {
                 //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
                 //  && !(fr.isStatic);
                 && fr.scope instanceof VariableExpression ve && acceptForVariableAccessReport(ve.variable(), nestedType);
+    }
+
+    default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue) {
+        return variable;
     }
 
     /*
