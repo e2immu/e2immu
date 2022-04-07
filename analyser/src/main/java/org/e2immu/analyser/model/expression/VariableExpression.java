@@ -426,17 +426,17 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return List.of();
     }
 
-    public static Expression tryShortCut(EvaluationResult evaluationContext, Expression scopeValue, FieldReference fr) {
+    public static Expression tryShortCut(EvaluationResult context, Expression scopeValue, FieldReference fr) {
         ConstructorCall constructorCall;
         if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
-            return extractNewObject(evaluationContext, constructorCall, fr.fieldInfo);
+            return extractNewObject(context, constructorCall, fr.fieldInfo);
         }
         if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
-            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
+            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
             Expression efv = fieldAnalysis.getValue();
             ConstructorCall cc2;
             if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
-                return extractNewObject(evaluationContext, cc2, fr.fieldInfo);
+                return extractNewObject(context, cc2, fr.fieldInfo);
             }
         }
         return null;

@@ -2104,10 +2104,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             assert vn instanceof VariableNature.NormalLocalVariable || vn instanceof VariableNature.ScopeVariable :
                     "Encountering variable " + variable.fullyQualifiedName() + " of nature " + vn;
             // a dependent variable should have a scope restricted by the least of the two parts
+            VariableNature normal = VariableNature.normal(variable, index());
             VariableNature newVn =
-                    variable instanceof DependentVariable dv ? computeVariableNature(dv) :
+                    variable instanceof DependentVariable dv ? computeVariableNature(dv, normal) :
                             vn instanceof VariableNature.NormalLocalVariable
-                                    ? VariableNature.normal(variable, index()) : vn;
+                                    ? normal : vn;
             vic = createVariable(evaluationContext, variable, flowData().getInitialTime(), newVn);
         } else {
             vic = getVariable(variable.fullyQualifiedName());
@@ -2128,14 +2129,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
-    private VariableNature computeVariableNature(DependentVariable dv) {
-        VariableInfoContainer arrayVic = variables.get(dv.arrayVariable().fullyQualifiedName());
+    private VariableNature computeVariableNature(DependentVariable dv, VariableNature normal) {
+        VariableInfoContainer arrayVic = variables.getOrDefaultNull(dv.arrayVariable().fullyQualifiedName());
+        if(arrayVic == null) return normal;
         if (dv.indexVariable() != null) {
-            VariableInfoContainer scopeVic = variables.get(dv.indexVariable().fullyQualifiedName());
-            String arrayBlock = arrayVic.variableNature().getStatementIndexOfBlockVariable();
-            String indexBlock = scopeVic.variableNature().getStatementIndexOfBlockVariable();
-            if (indexBlock != null && (arrayBlock == null || indexBlock.startsWith(arrayBlock))) {
-                return scopeVic.variableNature();
+            VariableInfoContainer scopeVic = variables.getOrDefaultNull(dv.indexVariable().fullyQualifiedName());
+            if(scopeVic != null) {
+                String arrayBlock = arrayVic.variableNature().getStatementIndexOfBlockVariable();
+                String indexBlock = scopeVic.variableNature().getStatementIndexOfBlockVariable();
+                if (indexBlock != null && (arrayBlock == null || indexBlock.startsWith(arrayBlock))) {
+                    return scopeVic.variableNature();
+                }
             }
         }
         return arrayVic.variableNature();

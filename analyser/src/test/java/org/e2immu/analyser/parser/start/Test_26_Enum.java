@@ -225,13 +225,13 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -341,16 +341,24 @@ public class Test_26_Enum extends CommonTestRunner {
 
         // expect an "always true" warning on the assert statement
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test4() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("highest".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 2 ? "1==<m:getCnt>" : "true";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         // two assert statements should return "true"
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("cnt".equals(d.fieldInfo().name)) {
@@ -367,9 +375,14 @@ public class Test_26_Enum extends CommonTestRunner {
                     assertEquals("{cnt=assigned:1}", cnt.getAssignedToField().toString());
                 }
             }
+            if ("getCnt".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:getCnt>" : "/*inline getCnt*/cnt";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
         };
 
         testClass("Enum_4", 0, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

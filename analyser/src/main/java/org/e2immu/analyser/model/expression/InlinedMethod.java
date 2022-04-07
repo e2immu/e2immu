@@ -135,7 +135,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 if (contains) containsVariableFields.set(true);
                 if (fr.scope instanceof VariableExpression ve) {
                     add(ve.variable(), ve, expansionType);
-                } else if(fr.scope instanceof ExpandedVariable ev) {
+                } else if (fr.scope instanceof ExpandedVariable ev) {
                     add(ev.getVariable(), new VariableExpression(ev.getVariable()), ExpansionType.EXPANDED_VARIABLE);
                 }
             }
@@ -323,8 +323,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Variable variable = variableExpression.variable();
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
-            assert parameterInfo.getMethod() == methodInfo : "Parameter " + parameterInfo + " should not have been in variablesOfExpression";
-            return parameterReplacement(parameters, inspectionProvider, parameterInfo);
+            if (parameterInfo.getMethod() == methodInfo) {
+                return parameterReplacement(parameters, inspectionProvider, parameterInfo);
+            }
+            // we can get here because of the recursive call when expanding ConstructorCalls
+            // see Modification_11
+            MethodAnalyser currentMethodAnalyser = evaluationResult.evaluationContext().getCurrentMethod();
+            if (currentMethodAnalyser != null && parameterInfo.getMethod() == currentMethodAnalyser.getMethodInfo()) {
+                return variableExpression;
+            }
+            return expandedVariable(evaluationResult, identifierOfMethodCall, variable);
         }
         if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
             return scope;
@@ -344,7 +352,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     int index = indexOfParameterLinkedToFinalField(evaluationResult, constructorCall.constructor(),
                             fieldReference.fieldInfo);
                     if (index >= 0) {
-                        return constructorCall.getParameterExpressions().get(index);
+                        Expression ccValue = constructorCall.getParameterExpressions().get(index);
+                        if (ccValue instanceof VariableExpression ve) {
+                            return replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
+                        }
+                        // see Enum_4 as a nice example
+                        return ccValue;
                     }
                 }
                 // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
@@ -357,7 +370,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return expandedVariable(evaluationResult, identifierOfMethodCall, variable);
     }
 
-    private Variable replaceScope(List<Expression> parameters, Expression scope, TypeInfo typeOfTranslation, EvaluationResult evaluationResult, Identifier identifierOfMethodCall, Variable variable, InspectionProvider inspectionProvider, FieldReference fieldReference) {
+    private Variable replaceScope(List<Expression> parameters, Expression scope,
+                                  TypeInfo typeOfTranslation, EvaluationResult evaluationResult,
+                                  Identifier identifierOfMethodCall, Variable variable,
+                                  InspectionProvider inspectionProvider, FieldReference fieldReference) {
         Variable modifiedVariable;
         if (fieldReference.scope instanceof VariableExpression ve) {
             Expression replacedScope = replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
@@ -380,14 +396,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     private ConstructorCall bestConstructorCall(EvaluationResult context, Expression scope) {
         ConstructorCall constructorCall = scope.asInstanceOf(ConstructorCall.class);
+        if (constructorCall != null) return constructorCall;
+        if (scope instanceof PropertyWrapper pw && pw.state() instanceof ConstructorCall cc) {
+            return cc;
+        }
         VariableExpression ve;
-        if (constructorCall == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+        if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
             Expression value = context.currentValue(ve.variable());
             if (value != null) {
-                return value.asInstanceOf(ConstructorCall.class);
+                return bestConstructorCall(context, value);
             } // else, see Loops_19
         }
-        return constructorCall;
+        return null;
     }
 
     private Expression expandedVariable(EvaluationResult context,
