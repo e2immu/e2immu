@@ -17,9 +17,12 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ExpandedVariable;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,27 +62,24 @@ public class EvaluatePreconditionFromMethod {
 
         // there is a precondition, and we have a list of values... let's see what we can learn
         // the precondition is using parameter info's as variables so we'll have to substitute
-        TranslationMap translationMap = translationMap(context.getAnalyserContext(),
+        TranslationMap translationMap = translationMap(context.evaluationContext(),
                 methodInfo, parameterValues, scopeObject);
 
+        Expression translated = precondition.expression().translate(context.getAnalyserContext(), translationMap);
         Expression reEvaluated;
-        if (!translationMap.isEmpty()) {
-            Expression translated = precondition.expression().translate(context.getAnalyserContext(), translationMap);
-            if (translated != precondition.expression()) {
-                EvaluationResult eRreEvaluated = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-                reEvaluated = eRreEvaluated.value();
-                builder.composeIgnoreExpression(eRreEvaluated);
-            } else {
-                reEvaluated = precondition.expression();
-            }
+        if (translated != precondition.expression()) {
+            EvaluationResult eRreEvaluated = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            reEvaluated = eRreEvaluated.value();
+            builder.composeIgnoreExpression(eRreEvaluated);
         } else {
             reEvaluated = precondition.expression();
         }
+
         // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
-        // the result of the re-evaluation may cause delays
+        // in the form of ExpandedVariable, so they cannot cause delays
 
         // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
-        Expression inCondition = context.evaluationContext().getConditionManager().evaluate(context, reEvaluated, true);
+        Expression inCondition = context.evaluationContext().getConditionManager().evaluate(context, reEvaluated, false);
         if (inCondition.isDelayed()) {
             return Precondition.forDelayed(inCondition);
         }
@@ -105,7 +105,7 @@ public class EvaluatePreconditionFromMethod {
         return Precondition.empty(context.getPrimitives());
     }
 
-    private static TranslationMap translationMap(InspectionProvider inspectionProvider,
+    private static TranslationMap translationMap(EvaluationContext evaluationContext,
                                                  MethodInfo methodInfo,
                                                  List<Expression> parameters,
                                                  Expression scope) {
@@ -119,19 +119,19 @@ public class EvaluatePreconditionFromMethod {
             builder.put(vv, parameterValue);
             i++;
         }
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
-        VariableExpression ve;
-        if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+        if (!(scope instanceof VariableExpression ve && ve.variable() instanceof This)) {
+            InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 boolean staticField = fieldInfo.isStatic(inspectionProvider);
-               /* FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
-                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : ve);
-
+                FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
+                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : scope, fieldInfo.owner);
+                Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(scopeField.parameterizedType);
+                ExpandedVariable ev = new ExpandedVariable(fieldInfo.getIdentifier(), scopeField, properties);
                 if (!thisField.equals(scopeField)) {
-                    builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
+                    builder.put(new VariableExpression(thisField), ev);
                 }
-                TODO implement
-                */
             }
         }
         return builder.build();

@@ -428,7 +428,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
             toEvaluate = currentReturnValue.translate(sharedState.evaluationContext().getAnalyserContext(), tm);
             evaluationContext = sharedState.evaluationContext().dropConditionManager();
-            forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditional();
+            forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditionalIgnoreValueFromState();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);

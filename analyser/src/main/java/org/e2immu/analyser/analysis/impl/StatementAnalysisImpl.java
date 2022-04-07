@@ -2103,8 +2103,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             vn = variable.variableNature();
             assert vn instanceof VariableNature.NormalLocalVariable || vn instanceof VariableNature.ScopeVariable :
                     "Encountering variable " + variable.fullyQualifiedName() + " of nature " + vn;
-            VariableNature newVn = vn instanceof VariableNature.NormalLocalVariable
-                    ? VariableNature.normal(variable, index()) : vn;
+            // a dependent variable should have a scope restricted by the least of the two parts
+            VariableNature newVn =
+                    variable instanceof DependentVariable dv ? computeVariableNature(dv) :
+                            vn instanceof VariableNature.NormalLocalVariable
+                                    ? VariableNature.normal(variable, index()) : vn;
             vic = createVariable(evaluationContext, variable, flowData().getInitialTime(), newVn);
         } else {
             vic = getVariable(variable.fullyQualifiedName());
@@ -2123,6 +2126,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (evaluationContext.isMyself(variable)) {
             vic.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV, EVALUATION);
         }
+    }
+
+    private VariableNature computeVariableNature(DependentVariable dv) {
+        VariableInfoContainer arrayVic = variables.get(dv.arrayVariable().fullyQualifiedName());
+        if (dv.indexVariable() != null) {
+            VariableInfoContainer scopeVic = variables.get(dv.indexVariable().fullyQualifiedName());
+            String arrayBlock = arrayVic.variableNature().getStatementIndexOfBlockVariable();
+            String indexBlock = scopeVic.variableNature().getStatementIndexOfBlockVariable();
+            if (indexBlock != null && (arrayBlock == null || indexBlock.startsWith(arrayBlock))) {
+                return scopeVic.variableNature();
+            }
+        }
+        return arrayVic.variableNature();
     }
 
 
@@ -2227,16 +2243,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable dependentVariable,
+    public DependentVariable searchInEquivalenceGroupForLatestAssignment(EvaluationContext evaluationContext,
+                                                                         DependentVariable dependentVariable,
                                                                          Expression arrayValue,
-                                                                         Expression indexValue) {
+                                                                         Expression indexValue,
+                                                                         ForwardEvaluationInfo forwardEvaluationInfo) {
         List<VariableInfo> inEquivalenceGroup = variableStream().filter(vi -> {
             Variable v = vi.variable();
             if (v.equals(dependentVariable)) return true;
-            if (v instanceof DependentVariable dv) {
+            if (v instanceof DependentVariable dv && !forwardEvaluationInfo.evaluating().contains(v)) {
                 boolean acceptArrayValue;
                 if (dv.arrayVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
-                    throw new UnsupportedOperationException("NYI, evaluate");
+                    // the idea is to evaluate the expression, but we have to be careful to avoid recursions
+                    ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.addEvaluating(dv);
+                    EvaluationResult er = dv.arrayExpression().evaluate(EvaluationResult.from(evaluationContext), fwd);
+                    acceptArrayValue = arrayValue.equals(er.value());
                 } else if (dv.arrayVariable().equals(dependentVariable.arrayVariable())) {
                     acceptArrayValue = true;
                 } else {

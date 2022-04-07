@@ -82,35 +82,21 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                                 ? "<v:array[i]>/*{DL array:initial@Class_Loops_21,array[i]:assigned:1}*/"
                                 : "nullable instance type String[]/*{L array:independent:805,array[i]:assigned:1}*/";
                         assertEquals(expected, d.currentValue().toString());
-                    } else fail();
+                    } else if (!"2.0.1".equals(d.statementId())) fail();
                 }
                 if ("array".equals(d.variableName())) {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = "array:0";
+                        String linked = d.iteration() == 0 ? "array:0,array[i]:-1,av-32:17:-1" : "array:0,array[i]:805,av-32:17:805";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    }
-                }
-                if ("AV$[j]".equals(d.variable().simpleName())) {
-                    if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<m:charAt>+\"->\"+<m:charAt>"
-                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j%inner$2.0.1.length())";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
-                    } else if ("2.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<m:charAt>+\"->\"+<m:charAt>"
-                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(instance type int%inner$2.0.1.length())";
-                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("2.0.1".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "cm:array@Method_method_2.0.1.0.2-E;initial@Class_Loops_21" : "";
+                String expected = d.iteration() == 0 ? "cm:array@Method_method_2.0.1:M;initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1.0.2-C;initial@Class_Loops_21" : "";
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 if (d.iteration() >= 2) {
                     assertTrue(d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));

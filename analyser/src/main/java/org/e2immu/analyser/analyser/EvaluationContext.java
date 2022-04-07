@@ -409,7 +409,10 @@ public interface EvaluationContext {
                 && fr.scope instanceof VariableExpression ve && acceptForVariableAccessReport(ve.variable(), nestedType);
     }
 
-    default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue) {
+    default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
+                                                                          Expression arrayValue,
+                                                                          Expression indexValue,
+                                                                          ForwardEvaluationInfo forwardEvaluationInfo) {
         return variable;
     }
 
@@ -491,7 +494,11 @@ public interface EvaluationContext {
         return expression.state();
     }
 
-    default Expression getVariableValue(Variable myself, Expression scopeValue, Expression indexValue, VariableInfo variableInfo) {
+    default Expression getVariableValue(Variable myself,
+                                        Expression scopeValue,
+                                        Expression indexValue,
+                                        VariableInfo variableInfo,
+                                        ForwardEvaluationInfo forwardEvaluationInfo) {
         return variableInfo.getValue();
     }
 

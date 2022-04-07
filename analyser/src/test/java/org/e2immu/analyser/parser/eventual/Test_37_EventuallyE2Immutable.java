@@ -569,7 +569,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_9".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() <= 2) {
+                if (d.iteration() <= 1) {
                     assertTrue(d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
                 } else {
                     // we expect "value" to be guarded by isFinal (ComputingTypeAnalyser.findFieldsGuardedByEventuallyImmutableFields)

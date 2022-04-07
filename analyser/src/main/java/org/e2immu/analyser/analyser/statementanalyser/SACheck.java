@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -98,16 +95,25 @@ public record SACheck(StatementAnalysis statementAnalysis) {
     }
 
     private boolean uselessForDependentVariable(VariableInfo variableInfo) {
+        if(variableInfo.variable() instanceof LocalVariableReference lvr
+                && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
+            return false;
+            // we do automatic assignments to scope variables at every read operation
+        }
         if (variableInfo.variable() instanceof DependentVariable dv) {
+            Variable arrayBase = dv.arrayBaseVariable();
+            if(arrayBase instanceof FieldReference) return false;
+            StatementAnalysis last = statementAnalysis.methodAnalysis().getLastStatement();
+            // TODO using "last" is rather crude
             return  // do check that the array variable exists, it can have gone out of scope here
-                    statementAnalysis.variableIsSet(dv.arrayVariable().fullyQualifiedName())
-                    && !variableHasBeenReadAfter(dv.arrayVariable(), variableInfo.getAssignmentIds().getLatestAssignment());
+                    last.variableIsSet(arrayBase.fullyQualifiedName())
+                    && !variableHasBeenReadAfter(last, arrayBase, variableInfo.getAssignmentIds().getLatestAssignment());
         }
         return true;
     }
 
-    private boolean variableHasBeenReadAfter(Variable variable, String assignment) {
-        VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
+    private static boolean variableHasBeenReadAfter(StatementAnalysis last, Variable variable, String assignment) {
+        VariableInfo variableInfo = last.findOrThrow(variable);
         int c = variableInfo.getReadId().compareTo(assignment);
         return c > 0;
     }

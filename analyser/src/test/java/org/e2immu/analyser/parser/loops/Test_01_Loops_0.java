@@ -72,7 +72,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             }
             if (d.variable() instanceof This) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("i".equals(d.variableName())) {
@@ -90,7 +90,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<vl:i>" : "1+i$2";
+                    String expect = d.iteration() == 0 ? "<vl:i>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {

@@ -517,7 +517,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return new VariableExpression(variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
-        return getVariableValue(null, scopeValue, indexValue, variableInfo);
+        return getVariableValue(null, scopeValue, indexValue, variableInfo, forwardEvaluationInfo);
     }
 
     @Override
@@ -654,6 +654,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         precondition.visit(e -> {
             if (e instanceof VariableExpression ve && ve.isDependentOnStatementTime()) {
                 builder.put(ve, new VariableExpression(ve.variable()));
+            } else if (e instanceof ExpandedVariable ev) {
+                builder.put(ev, new VariableExpression(ev.getVariable()));
             }
         });
         TranslationMap translationMap = builder.build();
@@ -752,12 +754,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * @return the value, potentially replaced by a VariableExpression
      */
     @Override
-    public Expression getVariableValue(Variable myself, Expression scopeValue, Expression indexValue, VariableInfo variableInfo) {
+    public Expression getVariableValue(Variable myself,
+                                       Expression scopeValue,
+                                       Expression indexValue,
+                                       VariableInfo variableInfo,
+                                       ForwardEvaluationInfo forwardEvaluationInfo) {
         // variable fields
         Expression expression = makeVariableExpression(variableInfo, scopeValue, indexValue);
         if (expression.isDelayed()) return expression;
 
-        if (expression instanceof VariableExpression ve) {
+        if (expression instanceof VariableExpression ve && !forwardEvaluationInfo.ignoreValueFromState()) {
             Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(ve);
             if (valueFromState != null) {
                 return valueFromState;
@@ -774,8 +780,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (!v.equals(myself)) {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
             if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue() : null;
-                Expression iv = null; // FIXME
+                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue(): null;
+                Expression iv = expression instanceof VariableExpression ve ? ve.getIndexValue() : null;
                 // variables in loop defined outside
                 if (isInstance) {
                     VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
@@ -840,7 +846,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue) {
-        return statementAnalysis.searchInEquivalenceGroupForLatestAssignment(variable, arrayValue, indexValue);
+    public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
+                                                                         Expression arrayValue,
+                                                                         Expression indexValue,
+                                                                         ForwardEvaluationInfo forwardEvaluationInfo) {
+        return statementAnalysis.searchInEquivalenceGroupForLatestAssignment(this, variable, arrayValue,
+                indexValue, forwardEvaluationInfo);
     }
 }

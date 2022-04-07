@@ -60,11 +60,12 @@ public class ArrayAccess extends BaseExpression implements Expression {
         this.returnType = expression.returnType().copyWithOneFewerArrays();
         Variable arrayVariable = makeVariable(expression, expression.getIdentifier(), ARRAY_VARIABLE, owningType);
         Variable indexVariable = makeVariable(index, indexIdentifier, INDEX_VARIABLE, owningType);
+        assert arrayVariable != null; // an array initializer (such as {3,5,6}) is not a constant
         dependentVariable = new DependentVariable(identifier, expression, arrayVariable, index, indexVariable, returnType, "");
     }
 
     private Variable makeVariable(Expression expression, Identifier identifier, String variablePrefix, TypeInfo owningType) {
-        if(expression instanceof ConstantExpression<?>) return null;
+        if (expression instanceof ConstantExpression<?>) return null;
         if (expression instanceof VariableExpression ve) {
             return ve.variable();
         }
@@ -150,7 +151,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        VariableExpression ve = new VariableExpression(dependentVariable, VariableExpression.NO_SUFFIX,expression, index);
+        VariableExpression ve = new VariableExpression(dependentVariable, VariableExpression.NO_SUFFIX, expression, index);
         return ve.evaluate(context, forwardEvaluationInfo);
     }
 }

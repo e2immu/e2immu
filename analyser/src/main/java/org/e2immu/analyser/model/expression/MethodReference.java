@@ -115,8 +115,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
             scopeForward = new ForwardEvaluationInfo(map, false, true,
                     forwardEvaluationInfo.assignmentTarget(), true,
-                    forwardEvaluationInfo.inCompanionExpression(),
-                    forwardEvaluationInfo.inlining());
+                    forwardEvaluationInfo.inCompanionExpression(), false,
+                    forwardEvaluationInfo.inlining(), forwardEvaluationInfo.evaluating());
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {

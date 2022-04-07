@@ -289,7 +289,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
                 forwardEvaluationInfo.assignmentTarget(), forwardEvaluationInfo.complainInlineConditional(),
                 forwardEvaluationInfo.inCompanionExpression(),
-                forwardEvaluationInfo.inlining()));
+                forwardEvaluationInfo.ignoreValueFromState(),
+                forwardEvaluationInfo.inlining(),
+                forwardEvaluationInfo.evaluating()));
 
         // null scope
         Expression objectValue = objectResult.value();

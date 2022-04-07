@@ -82,7 +82,12 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:<return value>"
-                                : "(sa.navigationData().next.isPresent()||null==sa$1)&&(null==sa$1||null!=sa.navigationData().next.get().orElse(null))?<return value>:sa$1";
+                                : "((sa$1.navigationData()).next.isPresent()||null==sa$1)&&(null==sa$1||null!=(sa$1.navigationData()).next.get().orElse(null))?<return value>:sa$1";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
+                                : "(((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==nullable instance type StatementAnalyser)&&(((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==sa$1)&&(null==nullable instance type StatementAnalyser||null!=((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))&&(null==sa$1||null!=((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))?null:null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -94,8 +99,15 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
-        // FIXME this error is problematic, needs solving!!
-        testClass("VariableInLoop_1", 1, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("findFirstStatementWithDelays".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals(0L, d.statementAnalysis().messageStream().count());
+                }
+            }
+        };
+        testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

@@ -177,6 +177,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return scopeValue;
     }
 
+    public Expression getIndexValue() {
+        return indexValue;
+    }
+
     public boolean isDependentOnStatementTime() {
         return suffix instanceof VariableField;
     }
@@ -189,14 +193,14 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        // removes all suffixes!
-        Variable translated = translationMap.translateVariable(variable);
-        if (translated != variable) {
-            throw new UnsupportedOperationException("to implement");
-        }
+        // priority to expression translation, which is richer
         Expression translated2 = translationMap.translateExpression(this);
         if (translated2 != this) {
             return translated2;
+        }
+        Variable translated = translationMap.translateVariable(variable);
+        if (translated != variable) {
+            return new VariableExpression(translated);
         }
         // helps with bypassing suffixes
         Expression translated3 = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
@@ -230,7 +234,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
         Variable source;
         if (variable instanceof DependentVariable) {
-            if (scopeResult.value() instanceof ArrayInitializer initializer && scopeResult.value() instanceof Numeric in) {
+            if (scopeResult.value() instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
                 int intIndex = in.getNumber().intValue();
                 if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
@@ -241,7 +245,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             assert scopeResult != null;
             assert indexResult != null;
             source = context.evaluationContext().searchInEquivalenceGroupForLatestAssignment((DependentVariable) variable,
-                    scopeResult.value(), indexResult.value());
+                    scopeResult.value(), indexResult.value(), forwardEvaluationInfo);
         } else {
             source = variable;
         } // TODO implement this "source" choice for field reference scope as well

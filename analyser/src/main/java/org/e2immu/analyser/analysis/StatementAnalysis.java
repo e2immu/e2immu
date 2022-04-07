@@ -169,7 +169,11 @@ public interface StatementAnalysis extends Analysis,
     // can we still reach index?
     boolean isStillReachable(String index);
 
-    DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable, Expression arrayValue, Expression indexValue);
+    DependentVariable searchInEquivalenceGroupForLatestAssignment(EvaluationContext evaluationContext,
+                                                                  DependentVariable variable,
+                                                                  Expression arrayValue,
+                                                                  Expression indexValue,
+                                                                  ForwardEvaluationInfo forwardEvaluationInfo);
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

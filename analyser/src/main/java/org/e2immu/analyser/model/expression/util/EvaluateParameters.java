@@ -129,7 +129,9 @@ public class EvaluateParameters {
                     forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
                     forwardEvaluationInfo.assignmentTarget(), true,
                     forwardEvaluationInfo.inCompanionExpression(),
-                    forwardEvaluationInfo.inlining());
+                    forwardEvaluationInfo.ignoreValueFromState(),
+                    forwardEvaluationInfo.inlining(),
+                    forwardEvaluationInfo.evaluating());
             parameterResult = parameterExpression.evaluate(context, forward);
             parameterValue = parameterResult.value();
         } else {

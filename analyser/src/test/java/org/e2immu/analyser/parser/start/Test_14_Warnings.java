@@ -115,12 +115,13 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertDv(d, 1, AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertEquals(AnalysisStatus.DONE, analysisStatus);
+                assertDv(d, 1, AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertTrue(d.haveError(Message.Label.USELESS_ASSIGNMENT).detailedMessage().endsWith("integers[0]"));
-
-                assertEquals(AnalysisStatus.DONE, analysisStatus);
+                if (d.iteration() > 1) {
+                    assertTrue(d.haveError(Message.Label.USELESS_ASSIGNMENT).detailedMessage().endsWith("integers[0]"));
+                    assertEquals(AnalysisStatus.DONE, analysisStatus);
+                }
             }
             if ("checkForEach".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -189,6 +190,8 @@ public class Test_14_Warnings extends CommonTestRunner {
                         assertEquals("3", d.currentValue().toString());
                     } else if (THIS.equals(d.variableName())) {
                         assertFalse(d.variableInfo().isRead());
+                    } else if ("integers[i]".equals(d.variableName())) {
+                        assertEquals("3", d.currentValue().toString());
                     } else fail("Variable named " + d.variableName());
                 }
             }
@@ -245,10 +248,10 @@ public class Test_14_Warnings extends CommonTestRunner {
         };
 
         testClass("Warnings_1", 5, 2, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

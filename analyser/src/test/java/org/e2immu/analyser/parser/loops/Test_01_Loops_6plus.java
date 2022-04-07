@@ -560,12 +560,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:<out of scope:container:1.0.1>.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
-                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(instance type Entry<String,Container>).getValue().read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:container.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
+                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==(entry.getValue()).read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 1) {
-                            String expectVars = "[(instance type Entry<String,Container>).getValue().read, kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried]";
+                            String expectVars = "[container.read, entry, kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, this]";
                             assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
                         }
                     }
@@ -575,7 +575,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "entry:0,key:-1" : "entry:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
-
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         String expectL1 = switch (d.iteration()) {
                             case 0 -> "container:-1,entry:0,key:-1";
@@ -584,19 +583,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         };
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
-                }
-                if ("org.e2immu.analyser.parser.loops.testexample.Loops_18.Container.read#<out of scope:container:1.0.1>".equals(d.variableName())) {
-                    if ("1".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<f:read>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())?instance type int:<f:read>";
-                            default -> "instance type int";
-                        };
-                        assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.OutOfScopeVariable);
-                    }
-                    assertTrue(d.statementId().compareTo("2") < 0, "The variable should not exist beyond the merge!");
                 }
             }
         };

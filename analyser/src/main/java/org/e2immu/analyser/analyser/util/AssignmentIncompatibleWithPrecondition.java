@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,9 @@ public class AssignmentIncompatibleWithPrecondition {
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Precondition.PreconditionCause preconditionCause : precondition.causes()) {
             // example in FlipSwitch, where copy() calls set(), which should have been handled before
-            if (preconditionCause instanceof Precondition.MethodCallCause methodCallCause) {
+            if (preconditionCause instanceof Precondition.MethodCallCause methodCallCause
+                    && methodCallCause.scopeObject() instanceof VariableExpression scope
+                    && scope.variable() instanceof This) {
                 MethodInfo calledMethod = methodCallCause.methodInfo();
                 MethodAnalysis calledMethodAnalysis = analyserContext.getMethodAnalysis(calledMethod);
                 CausesOfDelay delays = calledMethodAnalysis.eventualStatus();
