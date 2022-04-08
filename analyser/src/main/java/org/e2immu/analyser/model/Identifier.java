@@ -83,7 +83,7 @@ public interface Identifier extends Comparable<Identifier> {
     }
 
     static Identifier forVariableOutOfScope(Variable toRemove, String index) {
-        return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), index);
+        return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), toRemove.simpleName(), index);
     }
 
     String compact();
@@ -263,7 +263,7 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
-    record VariableOutOfScopeIdentifier(String fqn, String index) implements Identifier {
+    record VariableOutOfScopeIdentifier(String fqn, String simpleName, String index) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
             return identifierOrder() - o.identifierOrder();
@@ -276,7 +276,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public String compact() {
-            return "V:" + index;
+            return simpleName + ":" + index;
         }
     }
 }

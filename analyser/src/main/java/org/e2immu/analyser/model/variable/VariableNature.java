@@ -155,27 +155,6 @@ public interface VariableNature {
     }
 
     /*
-    Created in merge, but limited to exactly the block where it is created.
-     */
-    record OutOfScopeVariable(String statementIndex) implements VariableNature {
-
-        @Override
-        public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
-            return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex));
-        }
-
-        @Override
-        public String getStatementIndexOfBlockVariable() {
-            return statementIndex;
-        }
-
-        @Override
-        public String definedInBlock() {
-            return statementIndex;
-        }
-    }
-
-    /*
     situation 6: Loop variable, like 'i' in (for int i=0; ...) or 'x' in for(X x: xs) { ... }.
     Only thing we need to store is the statement id of the loop.
 
@@ -302,9 +281,15 @@ public interface VariableNature {
     }
 
 
-    record ScopeVariable() implements VariableNature {
+    record ScopeVariable(String indexCreatedInMerge) implements VariableNature {
 
+        public ScopeVariable() {
+            this(null);
+        }
 
+        public boolean descendInto(String index) {
+            return indexCreatedInMerge == null || index.compareTo(indexCreatedInMerge) >= 0;
+        }
     }
 }
 

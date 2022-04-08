@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
@@ -132,5 +133,15 @@ public class GroupPropertyValues {
                 }
             }
         });
+    }
+
+    public void setDefaultsForScopeVariable(LocalVariableReference lvr) {
+        for (Property property : PROPERTIES) {
+            if (property == CONTEXT_NOT_NULL) {
+                set(property, lvr, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            } else {
+                set(property, lvr, property.falseDv);
+            }
+        }
     }
 }

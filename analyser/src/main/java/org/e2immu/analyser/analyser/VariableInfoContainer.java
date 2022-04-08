@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -126,18 +125,7 @@ public interface VariableInfoContainer {
 
     // writing operations
     @Modified
-    void setValue(Expression value,
-                  LinkedVariables linkedVariables,
-                  Map<Property, DV> propertiesToSet,
-                  boolean initialOrEvaluation);
-
-    // FIXME temp hack, this should become the native method
-    default void setValue(Expression value,
-                          LinkedVariables linkedVariables,
-                          Properties propertiesToSet,
-                          boolean initialOrEvaluation) {
-        setValue(value, linkedVariables, propertiesToSet.toImmutableMap(), initialOrEvaluation);
-    }
+    void setValue(Expression value, LinkedVariables linkedVariables, Properties propertiesToSet, Stage stage);
 
     @Modified
     default void setProperty(Property property, DV value, Stage level) {
@@ -189,4 +177,6 @@ public interface VariableInfoContainer {
     void remove();
 
     boolean previousIsRemoved();
+
+    void ensureMerge(Location location, String currentIndex);
 }

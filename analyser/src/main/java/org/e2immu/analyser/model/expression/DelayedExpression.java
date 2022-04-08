@@ -198,6 +198,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, "<null-check>", primitives.booleanParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
     }
 
+    public static Expression forOutOfScope(Identifier identifier, String variableName, ParameterizedType parameterizedType, CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "<oos:" + variableName + ">", parameterizedType, LinkedVariables.EMPTY, causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

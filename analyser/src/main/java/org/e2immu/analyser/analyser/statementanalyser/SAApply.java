@@ -190,11 +190,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
                         // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
                         Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, combined.get(IMMUTABLE)));
-                        vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, false);
+                        vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, EVALUATION);
                     } else {
                         // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
                         // evaluation context
-                        vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
+                        vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, EVALUATION);
                     }
                     if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                         statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -212,7 +212,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                     LinkedVariables removed = vi1.getLinkedVariables()
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
-                    vic.setValue(changeData.value(), removed, merged, false);
+                    vic.setValue(changeData.value(), removed, Properties.of(merged), EVALUATION);
                 } else {
                     LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, variable, vic, vi);
                     delay = delay.merge(loopResult.delays);
@@ -240,7 +240,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             } else {
                                 value = vi1.getValue();
                             }
-                            vic.setValue(value, vi1.getLinkedVariables(), merged, false);
+                            vic.setValue(value, vi1.getLinkedVariables(), Properties.of(merged), EVALUATION);
                         } else {
                             // delayed situation; do not copy the value properties UNLESS there is a break delay
                             Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
@@ -317,7 +317,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
                 Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
                 vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
-                vic.setValue(delayedValue, LinkedVariables.delayedEmpty(causes), delayedVPs, false);
+                vic.setValue(delayedValue, LinkedVariables.delayedEmpty(causes), delayedVPs, EVALUATION);
                 return new LoopResult(true, causes);
             }
             // is the variable assigned inside the loop, but not in -E ?
@@ -334,7 +334,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         Identifier identifier = statement().getIdentifier();
                         value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
                     }
-                    vic.setValue(value, LinkedVariables.EMPTY, properties, false);
+                    vic.setValue(value, LinkedVariables.EMPTY, properties, EVALUATION);
                     return new LoopResult(true, causes);
                 }
             }

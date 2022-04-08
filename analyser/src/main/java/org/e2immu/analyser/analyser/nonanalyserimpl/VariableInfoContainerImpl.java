@@ -28,7 +28,6 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -231,11 +230,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void setValue(Expression value,
                          LinkedVariables linkedVariables,
-                         Map<Property, DV> propertiesToSet,
-                         boolean initialOrEvaluation) {
+                         Properties properties,
+                         Stage stage) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
-        VariableInfoImpl variableInfo = getToWrite(initialOrEvaluation ? Stage.INITIAL : Stage.EVALUATION);
+        VariableInfoImpl variableInfo = getToWrite(stage);
         try {
             variableInfo.setValue(value);
         } catch (IllegalStateException ise) {
@@ -244,7 +243,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             throw ise;
         }
         boolean valueIsDone = value.isDone() && !value.isNotYetAssigned();
-        propertiesToSet.forEach((vp, v) -> {
+        properties.stream().forEach(e -> {
+            DV v = e.getValue();
+            Property vp = e.getKey();
             if (v.isDelayed() && valueIsDone && vp.valueProperty) {
                 throw new IllegalStateException("Not allowed to even try to set delay on a value property");
             }
@@ -318,6 +319,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (!pi.valueIsSet()) {
                 eval.setValue(pi.getValue());
             }
+        }
+    }
+
+    @Override
+    public void ensureMerge(Location location, String currentIndex) {
+        if(!merge.isSet()) {
+            VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
+            AssignmentIds assignmentIds = new AssignmentIds(currentIndex);
+            VariableInfoImpl vii = new VariableInfoImpl(location, pi.variable(), assignmentIds, NOT_YET_READ,
+                    Set.of(), pi.valueIsSet() ? null : pi.getValue(), pi.variable().statementTime());
+            this.merge.set(vii);
         }
     }
 
@@ -507,10 +519,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     public void remove() {
-        if(!removed.isSet()) removed.set();
+        if (!removed.isSet()) removed.set();
     }
 
     public boolean previousIsRemoved() {
-       return previousOrInitial.isLeft() && !previousOrInitial.getLeft().isNotRemoved();
+        return previousOrInitial.isLeft() && !previousOrInitial.getLeft().isNotRemoved();
     }
 }

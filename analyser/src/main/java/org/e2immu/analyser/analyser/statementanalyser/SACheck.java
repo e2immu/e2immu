@@ -95,19 +95,19 @@ public record SACheck(StatementAnalysis statementAnalysis) {
     }
 
     private boolean uselessForDependentVariable(VariableInfo variableInfo) {
-        if(variableInfo.variable() instanceof LocalVariableReference lvr
+        if (variableInfo.variable() instanceof LocalVariableReference lvr
                 && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
             return false;
             // we do automatic assignments to scope variables at every read operation
         }
         if (variableInfo.variable() instanceof DependentVariable dv) {
             Variable arrayBase = dv.arrayBaseVariable();
-            if(arrayBase instanceof FieldReference) return false;
+            if (arrayBase instanceof FieldReference) return false;
             StatementAnalysis last = statementAnalysis.methodAnalysis().getLastStatement();
             // TODO using "last" is rather crude
             return  // do check that the array variable exists, it can have gone out of scope here
                     last.variableIsSet(arrayBase.fullyQualifiedName())
-                    && !variableHasBeenReadAfter(last, arrayBase, variableInfo.getAssignmentIds().getLatestAssignment());
+                            && !variableHasBeenReadAfter(last, arrayBase, variableInfo.getAssignmentIds().getLatestAssignment());
         }
         return true;
     }
@@ -132,7 +132,8 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                     .filter(e -> !(e.getValue().variableNature() instanceof VariableNature.LoopVariable) &&
                             e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
-                    .filter(vi -> !(vi.variable() instanceof DependentVariable))
+                    .filter(vi -> !(vi.variable() instanceof DependentVariable) &&
+                            !(vi.variable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.EVALUATION),
                             Message.Label.UNUSED_LOCAL_VARIABLE, vi.name())));

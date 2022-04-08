@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedVariableOutOfScope;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -51,10 +50,21 @@ public class FieldReference extends VariableWithConcreteReturnType {
     private final int hashCode;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
-        this(inspectionProvider, fieldInfo, null, null);
+        this(inspectionProvider, fieldInfo, null, null, null);
     }
 
-    public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo, Expression scope, TypeInfo owningType) {
+    public FieldReference(InspectionProvider inspectionProvider,
+                          FieldInfo fieldInfo,
+                          Expression scope,
+                          TypeInfo owningType) {
+        this(inspectionProvider, fieldInfo, scope, null, owningType);
+    }
+
+    public FieldReference(InspectionProvider inspectionProvider,
+                          FieldInfo fieldInfo,
+                          Expression scope,
+                          Variable overrideScopeVariable, // only provide when you want to override normal computation
+                          TypeInfo owningType) {
         super(scope == null ? fieldInfo.type :
                 // it is possible that the field's type shares a type parameter with the scope
                 // if so, there *may* be a concrete type to fill
@@ -90,8 +100,8 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 // the scope is not a variable, we must introduce a new scope variable
                 this.scope = scope;
                 isDefaultScope = false;
-                LocalVariable lv = newScopeVariable(scope, owningType);
-                scopeVariable = new LocalVariableReference(lv, scope);
+                scopeVariable = overrideScopeVariable != null ? overrideScopeVariable
+                        : new LocalVariableReference(newScopeVariable(scope, owningType), scope);
             }
         }
         this.fullyQualifiedName = computeFqn();
@@ -211,15 +221,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
         IsVariableExpression ive;
         if ((ive = scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof This thisVar) {
             return thisVar.typeInfo.equals(currentType);
-        }
-        return false;
-    }
-
-    public boolean anyScopeDelayedOutOfScope() {
-        if (scope instanceof DelayedVariableOutOfScope) return true;
-        IsVariableExpression ive;
-        if ((ive = scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr) {
-            return fr.anyScopeDelayedOutOfScope();
         }
         return false;
     }

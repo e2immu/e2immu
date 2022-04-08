@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -551,7 +550,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
                     VariableInfo hereInitial = here.getRecursiveInitialOrNull();
                     if (hereInitial != null && !hereInitial.valueIsSet()) {
-                        here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(), viInClosure.valueProperties(), true);
+                        here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(),
+                                viInClosure.valueProperties(), INITIAL);
                     }
                 }
             });
@@ -624,6 +624,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private boolean explicitlyPropagate(StatementAnalysis copyFrom, boolean copyIsParent, VariableInfoContainer vic) {
         if (vic.variableNature() instanceof VariableNature.Pattern pattern) {
             return StringUtil.inScopeOf(pattern.scope(), index);
+        }
+        if (copyIsParent && vic.variableNature() instanceof VariableNature.ScopeVariable sv) {
+            // FIXME block all field references with scope variable that does not comply
+            return sv.descendInto(index);
         }
         if (copyIsParent) {
             // see variableEntryStream(EVALUATION) -> ignore those that have merges but no eval; see e.g. Basics_7
@@ -755,7 +759,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         if (!viInitial.valueIsSet()) {
-            vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);
+            vic.setValue(initialValue, LinkedVariables.EMPTY, map, INITIAL);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
 
@@ -772,7 +776,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
                 // end of the "apply" phase, even for variables that aren't read
                 map.removeAll(GroupPropertyValues.PROPERTIES);
-                vic.setValue(initialValue, viInitial.getLinkedVariables(), map, false);
+                vic.setValue(initialValue, viInitial.getLinkedVariables(), map, EVALUATION);
             }
         }
     }
@@ -848,15 +852,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param toIgnore variables to be ignored by the merge process, they will not get a -M VariableInfo
      * @param toRemove references to these variables (in value, in scope of field ref) will be replaced by Instance objects
      */
-    private record PrepareMerge(InspectionProvider inspectionProvider,
+    private record PrepareMerge(EvaluationContext evaluationContext,
                                 List<VariableInfoContainer> toMerge,
                                 List<VariableInfoContainer> toIgnore,
                                 Set<Variable> toRemove,
                                 TranslationMapImpl.Builder bestValueForToRemove,
                                 Map<Variable, Variable> renames,
                                 TranslationMapImpl.Builder translationMap) {
-        public PrepareMerge(InspectionProvider inspectionProvider) {
-            this(inspectionProvider, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new TranslationMapImpl.Builder(),
+        public PrepareMerge(EvaluationContext evaluationContext) {
+            this(evaluationContext, new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new TranslationMapImpl.Builder(),
                     new HashMap<>(), new TranslationMapImpl.Builder());
         }
 
@@ -865,40 +869,67 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // this method relies on bestValueForToRemove
         // at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
         // we remove the non-renamed
-        private void computeRenames() {
+        // return new scope variables to be created and assigned
+        private Set<LocalVariableReference> computeRenames() {
             TranslationMap renameMap = bestValueForToRemove.build();
+            Set<LocalVariableReference> newScopeVariables = new HashSet<>();
             toMerge.removeIf(vic -> {
                 Variable variable = vic.current().variable();
-                Variable renamed = renameVariable(variable, renameMap);
-                if (renamed != variable) {
-                    renames.put(variable, renamed);
-                    // TODO implement translationMap.addVariableExpression(variable, VariableExpression.of(renamed));
-                    translationMap.put(variable, renamed);
+                RenameVariableResult rvr = renameVariable(variable, renameMap);
+                if (rvr != null) {
+                    newScopeVariables.addAll(rvr.newScopeVariables);
+                    renames.put(variable, rvr.variable);
+                    translationMap.addVariableExpression(variable, rvr.variableExpression);
+                    translationMap.put(variable, rvr.variable);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
-                            .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
+                            .filter(vic2 -> vic2.current().variable().equals(rvr.variable)).findFirst();
                     if (orig.isPresent()) toIgnore.add(vic);
                     return orig.isPresent();
                 }
                 return false;
             });
+            return newScopeVariables;
         }
 
-        private Variable renameVariable(Variable variable, TranslationMap translationMap) {
+        private record RenameVariableResult(Variable variable,
+                                            VariableExpression variableExpression,
+                                            List<LocalVariableReference> newScopeVariables) {
+        }
+
+        // serious example for this method is VariableScope_10; VS_6 shows that field references need to remain:
+        // otherwise, we cannot see their assignment easily.
+        private RenameVariableResult renameVariable(Variable variable, TranslationMap translationMap) {
             if (variable instanceof FieldReference fr) {
-                Expression newScope = fr.scope.translate(inspectionProvider, translationMap);
+                Expression newScope = fr.scope.translate(evaluationContext.getAnalyserContext(), translationMap);
                 if (newScope != fr.scope) {
-                    // TODO implement   return new FieldReference(inspectionProvider, fr.fieldInfo, newScope);
+                    assert fr.scopeVariable != null;
+                    Identifier identifier = Identifier.forVariableOutOfScope(fr.scopeVariable, evaluationContext.statementIndex());
+                    String name = "scope-" + identifier.compact();
+                    // if statement index is 2, then 2~ is after 2.x.x, but before 3
+                    VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex() + "~");
+                    LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
+                    LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
+                    Expression scope = new VariableExpression(scopeVariable);
+                    FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
+                    VariableExpression ve = new VariableExpression(newFr, VariableExpression.NO_SUFFIX, scope, null);
+                    return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
+                }
+                if (fr.scopeVariable instanceof FieldReference) {
+                    RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);
+                    if (rvr != null) {
+                        throw new UnsupportedOperationException("Implement!"); // FIXME
+                    }
                 }
             }
-            return variable;
+            return null;
         }
     }
 
     // as a general remark: This and ReturnVariable variables are always merged, never removed
-    private PrepareMerge mergeActions(InspectionProvider inspectionProvider,
+    private PrepareMerge mergeActions(EvaluationContext evaluationContext,
                                       List<ConditionAndLastStatement> lastStatements,
                                       Set<Variable> mergeEvenIfNotInSubBlocks) {
-        PrepareMerge pm = new PrepareMerge(inspectionProvider);
+        PrepareMerge pm = new PrepareMerge(evaluationContext);
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
         // we want to deal with them only once, though.
         Set<Variable> seen = new HashSet<>();
@@ -1007,8 +1038,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        PrepareMerge prepareMerge = mergeActions(evaluationContext.getAnalyserContext(),
-                lastStatements, setCnnVariables.keySet());
+        PrepareMerge prepareMerge = mergeActions(evaluationContext, lastStatements, setCnnVariables.keySet());
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         TranslationMapImpl.Builder outOfScopeBuilder = new TranslationMapImpl.Builder();
         Map<Variable, Expression> afterFiltering = new HashMap<>();
@@ -1024,8 +1054,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Properties bestProperties = best.valueProperties();
                 if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
                     CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
-                    outOfScopeValue = new DelayedVariableOutOfScope(identifier,
-                            toRemove.parameterizedType(), best.getLinkedVariables(), causes);
+                    outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(), toRemove.parameterizedType(), causes);
                     afterFiltering.put(toRemove, outOfScopeValue);
                 } else {
                     // at the moment, there may be references to other variables to be removed inside the best.getValue()
@@ -1055,10 +1084,27 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
             prepareMerge.translationMap.put(expression, bestValue);
         }
-        prepareMerge.computeRenames();
-        TranslationMap translationMap = prepareMerge.translationMap.build();
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
+        // fields never go out of scope, but their scope variables may. "computeRenames" will create
+        // new field references, each with new scope variables that also don't go out of scope anymore.
+        // the same applies to dependent variables
+        Set<LocalVariableReference> newScopeVariables = prepareMerge.computeRenames();
+        for (LocalVariableReference lvr : newScopeVariables) {
+            VariableInfoContainer newScopeVar;
+            if (!variables.isSet(lvr.fullyQualifiedName())) {
+                newScopeVar = createVariable(evaluationContext, lvr, statementTime(MERGE), new VariableNature.ScopeVariable(evaluationContext.statementIndex() + "~"));
+                newScopeVar.ensureMerge(evaluationContext.getLocation(MERGE), evaluationContext.statementIndex() + ":M");
+            } else {
+                newScopeVar = variables.get(lvr.fullyQualifiedName());
+            }
+            Properties propertiesOfLvr = evaluationContext.getValueProperties(lvr.assignmentExpression);
+            newScopeVar.setValue(lvr.assignmentExpression, LinkedVariables.EMPTY, propertiesOfLvr, MERGE);
+            groupPropertyValues.setDefaultsForScopeVariable(lvr);
+            linkedVariablesMap.put(lvr, LinkedVariables.EMPTY);
+        }
+        TranslationMap translationMap = prepareMerge.translationMap.build();
+
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
         CausesOfDelay delay = CausesOfDelay.EMPTY;
@@ -1071,9 +1117,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (!variables.isSet(renamed.fullyQualifiedName())) {
                 VariableNature variableNature;
                 if (renamed instanceof FieldReference fr) {
-                    if (fr.anyScopeDelayedOutOfScope()) {
-                        variableNature = new VariableNature.OutOfScopeVariable(index);
-                    } else if (fr.scope.isDelayed()) {
+                    if (fr.scope.isDelayed()) {
                         variableNature = new VariableNature.DelayedScope();
                     } else {
                         variableNature = vic.variableNature();
@@ -1439,7 +1483,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 CONTEXT_CONTAINER, valueProperties.get(CONTAINER)
         ));
         Properties allProperties = valueProperties.combine(properties);
-        vic.setValue(instance, LinkedVariables.EMPTY, allProperties, true);
+        vic.setValue(instance, LinkedVariables.EMPTY, allProperties, INITIAL);
         // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
     }
 
@@ -1474,7 +1518,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             initialValue = UnknownExpression.forNotYetAssigned(Identifier.generate("not yet assigned"), variable.parameterizedType());
             linkedVariables = LinkedVariables.EMPTY;
         }
-        vic.setValue(initialValue, linkedVariables, properties, true);
+        vic.setValue(initialValue, linkedVariables, properties, INITIAL);
     }
 
     /*
@@ -1521,7 +1565,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         UnknownExpression value = UnknownExpression.forReturnVariable(methodAnalysis.getMethodInfo().identifier,
                 returnVariable.returnType);
-        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, INITIAL);
     }
 
     private void initializeThis(VariableInfoContainer vic, EvaluationContext evaluationContext, This thisVar) {
@@ -1544,7 +1588,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
-        vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
+        vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, INITIAL);
     }
 
     private void initializeFieldReference(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldReference fieldReference) {
@@ -1597,7 +1641,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             toWrite = value;
         }
-        vic.setValue(toWrite, LinkedVariables.EMPTY, combined, true);
+        vic.setValue(toWrite, LinkedVariables.EMPTY, combined, INITIAL);
     }
 
     private DV contextImmutable(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldAnalysis fieldAnalysis, DV valueProperty) {
@@ -1671,7 +1715,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(IDENTITY, DV.fromBoolDv(identity));
 
         Expression value = Instance.initialValueOfParameter(parameterInfo, properties);
-        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, INITIAL);
     }
 
     private Properties sharedContext(DV contextNotNull) {
@@ -1966,7 +2010,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(index(), loopVar, valueProperties);
         }
-        vic.setValue(value, LinkedVariables.EMPTY, valueProperties, false);
+        vic.setValue(value, LinkedVariables.EMPTY, valueProperties, EVALUATION);
         vic.setLinkedVariables(linked, EVALUATION);
         return value.causesOfDelay();
     }
@@ -2131,10 +2175,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private VariableNature computeVariableNature(DependentVariable dv, VariableNature normal) {
         VariableInfoContainer arrayVic = variables.getOrDefaultNull(dv.arrayVariable().fullyQualifiedName());
-        if(arrayVic == null) return normal;
+        if (arrayVic == null) return normal;
         if (dv.indexVariable() != null) {
             VariableInfoContainer scopeVic = variables.getOrDefaultNull(dv.indexVariable().fullyQualifiedName());
-            if(scopeVic != null) {
+            if (scopeVic != null) {
                 String arrayBlock = arrayVic.variableNature().getStatementIndexOfBlockVariable();
                 String indexBlock = scopeVic.variableNature().getStatementIndexOfBlockVariable();
                 if (indexBlock != null && (arrayBlock == null || indexBlock.startsWith(arrayBlock))) {
