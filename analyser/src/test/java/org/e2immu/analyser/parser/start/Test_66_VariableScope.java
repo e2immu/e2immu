@@ -693,6 +693,32 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("x".equals(fr.scope.toString())) {
+                        if ("0.0.0.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() <= 1 ? "<f:i>" : "s.length()";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("0.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("0".equals(d.statementId())) {
+                            fail("Should not exist here");
+                        }
+                    } else if ("scope-x:0".equals(fr.scope.toString())) {
+                        assertNotNull(fr.scopeVariable);
+                        assertEquals("scope-x:0", fr.scopeVariable.fullyQualifiedName());
+                        if ("0".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<f:i>";
+                                case 1 -> "xs.isEmpty()?instance type int:<f:i>";
+                                default -> "instance type int";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else fail("Scope " + fr.scope);
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -732,8 +758,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
-                                ? "y instanceof X&&null!=y&&s.length()==<f:x.i>?<f:x.i>:0"
-                                : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length():0";
+                                ? "y instanceof X&&null!=y&&<f:x.i>==<m:length>?<f:x.i>:0"
+                                : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length():0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -745,12 +771,25 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         }
                         if ("0.0.0".equals(d.statementId())) {
                             String expected = d.iteration() <= 1 ? "<f:i>"
-                                    : "s.length()==y/*(X)*/.i$0?s.length():instance type int";
+                                    // myself is recognized in EvaluateInlineConditional
+                                    : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
+                        }
+                        if ("0".equals(d.statementId())) {
+                            fail("Should not exist here");
                         }
                     } else if ("scope-x:0".equals(fr.scope.toString())) {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("scope-x:0", fr.scopeVariable.fullyQualifiedName());
+                        if ("0".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<f:i>";
+                                case 1 -> "y instanceof X&&null!=y?<f:i>:instance type int";
+                                // myself is recognized in EvaluateInlineConditional
+                                default -> "instance type int";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                        }
                     } else fail("Scope " + fr.scope);
                 }
                 if ("scope-x:0".equals(d.variableName())) {
@@ -771,10 +810,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1
-                            ? "CM{state=xs.isEmpty()||s.length()!=<f:x.i>;parent=CM{}}"
-                            : "CM{state=xs.isEmpty()||s.length()!=scope-x:0.i;parent=CM{}}";
-                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                    assertEquals("CM{parent=CM{}}", d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
             }
         };

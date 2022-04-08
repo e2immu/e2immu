@@ -315,28 +315,30 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Map<Variable, DV> setCnnVariables = addToContextNotNullAfterStatement(sharedState.context(), executions);
 
             // need timeAfterSubBlocks set already
-            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), lastStatements, atLeastOneBlockExecuted,
+            StatementAnalysisImpl.MergeResult result = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
+                    sharedState.localConditionManager().state(), addToStateAfterStatement, lastStatements, atLeastOneBlockExecuted,
                     maxTimeWithEscape, setCnnVariables);
-            analysisStatus = analysisStatus.combine(copyStatus);
+            analysisStatus = analysisStatus.combine(result.analysisStatus());
 
             // compute the escape situation of the sub-blocks
 
-            if (!addToStateAfterStatement.isBoolValueTrue()) {
+            Expression translatedAddToState = result.translatedAddToStateAfterMerge();
+            if (!translatedAddToState.isBoolValueTrue()) {
                 ConditionManager newLocalConditionManager = sharedState.localConditionManager()
-                        .newForNextStatementDoNotChangePrecondition(sharedState.context(), addToStateAfterStatement);
+                        .newForNextStatementDoNotChangePrecondition(sharedState.context(), translatedAddToState);
                 statementAnalysis.stateData().setLocalConditionManagerForNextStatement(newLocalConditionManager);
                 keepCurrentLocalConditionManager = false;
-                LOGGER.debug("Continuing beyond default condition with conditional {}", addToStateAfterStatement);
+                LOGGER.debug("Continuing beyond default condition with conditional {}", translatedAddToState);
             }
         } else {
             int maxTime = statementAnalysis.flowData().getTimeAfterEvaluation();
             if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
-            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), List.of(), false, maxTime, Map.of());
-            analysisStatus = analysisStatus.combine(copyStatus);
+            StatementAnalysisImpl.MergeResult result = ((StatementAnalysisImpl) statementAnalysis)
+                    .mergeVariablesFromSubBlocks(evaluationContext, sharedState.localConditionManager().state(),
+                            null, List.of(), false, maxTime, Map.of());
+            analysisStatus = analysisStatus.combine(result.analysisStatus());
         }
 
         if (keepCurrentLocalConditionManager) {

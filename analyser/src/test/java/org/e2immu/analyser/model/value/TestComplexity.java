@@ -76,7 +76,7 @@ public class TestComplexity extends CommonAbstractValue {
                 overall.toString());
         assertEquals(115, overall.getComplexity());
 
-        Expression better = overall.optimise(context);
+        Expression better = overall.optimise(context, null);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:!a&&null==s&&s1==s2?s5:s6", better.toString());
 
         Assignment assignment = new Assignment(PRIMITIVES, s1, overall);

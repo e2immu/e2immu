@@ -698,7 +698,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Identifier generate = Identifier.generate("inline condition var def outside loop");
                 InlineConditional inlineConditional = new InlineConditional(generate,
                         evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
-                return inlineConditional.optimise(EvaluationResult.from(evaluationContext.dropConditionManager()));
+                return inlineConditional.optimise(EvaluationResult.from(evaluationContext.dropConditionManager()), variable);
             }
         }
         return value;

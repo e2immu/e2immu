@@ -225,29 +225,30 @@ public class InlineConditional extends BaseExpression implements Expression {
             return builder.setExpression(inlineConditional).build();
         }
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                conditionAfterState, t, f, forwardEvaluationInfo.complainInlineConditional());
+                conditionAfterState, t, f, forwardEvaluationInfo.complainInlineConditional(), null);
         return builder.compose(cv).build();
     }
 
-    public Expression optimise(EvaluationResult evaluationContext) {
-        return optimise(evaluationContext, false);
+    public Expression optimise(EvaluationResult evaluationContext, Variable myself) {
+        return optimise(evaluationContext, false, myself);
     }
 
-    private Expression optimise(EvaluationResult evaluationContext, boolean useState) {
+    private Expression optimise(EvaluationResult evaluationContext, boolean useState, Variable myself) {
         boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition);
-        Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true) : ifTrue;
+        Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
         EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition));
-        Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true) : ifFalse;
+        Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
 
         if (useState) {
             return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();
         }
-        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f, false).getExpression();
+        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f,
+                false, myself).getExpression();
 
     }
 
@@ -321,8 +322,8 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public Expression applyCondition(Expression newState) {
-        if(newState.isBoolValueTrue()) return ifTrue;
-        if(newState.isBoolValueFalse()) return ifFalse;
+        if (newState.isBoolValueTrue()) return ifTrue;
+        if (newState.isBoolValueFalse()) return ifFalse;
         return this;
     }
 }

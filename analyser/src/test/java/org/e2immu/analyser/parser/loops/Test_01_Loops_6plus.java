@@ -560,12 +560,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<oos:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
-                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==instance type int?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:container.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
+                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==scope-container:1.0.1.read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 1) {
-                            String expectVars = "[kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, this]";
+                            String expectVars = "[kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, scope-container:1.0.1, scope-container:1.0.1.read, this]";
                             assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
                         }
                     }

@@ -77,7 +77,7 @@ public class TestEqualsMethod extends CommonAbstractValue {
 
     private static Expression inline(Expression c, Expression t, Expression f) {
         return EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                c, t, f, true).value();
+                c, t, f, true, null).value();
     }
 
     @Test

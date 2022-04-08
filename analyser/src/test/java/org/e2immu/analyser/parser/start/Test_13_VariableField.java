@@ -53,7 +53,8 @@ public class Test_13_VariableField extends CommonTestRunner {
 
                 // evaluation of the return value, which is 'string' in the current state
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<f:string>" : "string$2";
+                    String expectValue = d.iteration() == 0 ? "b&&<m:startsWith>?\"abc\"+<f:string>:<f:string>"
+                            : "string$2.startsWith(\"abc\")&&b?\"abc\"+string$2:string$2";
                     assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -80,7 +81,6 @@ public class Test_13_VariableField extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId()) || "0.0.0.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                     } else if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        // result of merging: FIXME <v:string$0> should not be a delayed variable, but sth else
                         assertEquals("b?nullable instance type String:<not yet assigned>", d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));

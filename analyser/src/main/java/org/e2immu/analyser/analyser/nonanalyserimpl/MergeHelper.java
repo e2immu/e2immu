@@ -451,9 +451,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         if (!ifTrue.isDelayed() && ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifFalse)) {
             return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
         }
-
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(EvaluationResult.from(evaluationContext),
-                condition, ifTrue.getValue(), ifFalse.getValue(), false));
+                condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable()));
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {
             CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(vi.variable(),

@@ -1018,6 +1018,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                             boolean alwaysEscapesOrReturns) {
     }
 
+    public record MergeResult(AnalysisStatus analysisStatus, Expression translatedAddToStateAfterMerge) {
+    }
+
     /**
      * From child blocks into the parent block; determine the value and properties for the current statement
      *
@@ -1027,12 +1030,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param statementTime           the statement time of subBlocks
      * @param setCnnVariables         variables that should receive CNN >= ENN because of escape in sub-block
      */
-    public AnalysisStatus mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
-                                                      Expression stateOfConditionManagerBeforeExecution,
-                                                      List<ConditionAndLastStatement> lastStatements,
-                                                      boolean atLeastOneBlockExecuted,
-                                                      int statementTime,
-                                                      Map<Variable, DV> setCnnVariables) {
+    public MergeResult mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
+                                                   Expression stateOfConditionManagerBeforeExecution,
+                                                   Expression addToStateAfterMerge,
+                                                   List<ConditionAndLastStatement> lastStatements,
+                                                   boolean atLeastOneBlockExecuted,
+                                                   int statementTime,
+                                                   Map<Variable, DV> setCnnVariables) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
@@ -1196,8 +1200,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         });
 
-        return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
+        AnalysisStatus mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay);
+
+        Expression translatedAddToState = addToStateAfterMerge == null ? null :
+                addToStateAfterMerge.translate(evaluationContext.getAnalyserContext(), translationMap);
+        return new MergeResult(mergeStatus, translatedAddToState);
     }
 
     private boolean isVariableInLoopDefinedOutside(Expression value) {
