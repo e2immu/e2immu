@@ -116,7 +116,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     }
 
     public static Expression forDependentVariable(DependentVariable dv, CausesOfDelay causesOfDelay) {
-        String msg = "<dv:" + dv.simpleName+">";
+        String msg = "<dv:" + dv.simpleName + ">";
         return new DelayedVariableExpression(msg, dv, dv.statementTime(), causesOfDelay);
     }
 
@@ -228,7 +228,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.complainInlineConditional());
         }
 
-        if(forwardEvaluationInfo.isNotAssignmentTarget()) {
+        if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
         }
         return builder.setExpression(this).build();
@@ -248,7 +248,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             // we'd rather not replace a DVE with a VE
             IsVariableExpression ive;
             if (expression.isDone() && (ive = expression.asInstanceOf(IsVariableExpression.class)) != null) {
-                return new DelayedVariableExpression(msg, ive.variable(), statementTime, causesOfDelay);
+                return new DelayedVariableExpression("<dv:" + ive.variable() + ">", ive.variable(), statementTime, causesOfDelay);
             }
             return expression;
         }

@@ -207,6 +207,19 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (translated3 != null) {
             return translated3;
         }
+        Expression translatedScope = scopeValue == null ? null : scopeValue.translate(inspectionProvider, translationMap);
+        if (translatedScope != scopeValue) {
+            IsVariableExpression svIve;
+            IsVariableExpression trIve;
+            if (variable instanceof FieldReference fr
+                    && (trIve = translatedScope.asInstanceOf(IsVariableExpression.class)) != null && trIve instanceof VariableExpression trVe
+                    && (svIve = scopeValue.asInstanceOf(IsVariableExpression.class)) != null && svIve instanceof VariableExpression svVe) {
+                VariableExpression newScope = new VariableExpression(trVe.variable(), svVe.suffix, null, null);
+                Variable newFr = new FieldReference(inspectionProvider, fr.fieldInfo, newScope, trIve.variable(), fr.getOwningType());
+                return new VariableExpression(newFr, NO_SUFFIX, newScope, null);
+            }
+            throw new UnsupportedOperationException();
+        }
         return this;
     }
 

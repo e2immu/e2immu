@@ -416,7 +416,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         EvaluationContext evaluationContext;
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
-        if (localConditionManager.state().isBoolValueTrue() && currentReturnValue instanceof UnknownExpression) {
+        if (currentReturnValue instanceof UnknownExpression) {
             // default situation
             toEvaluate = expression;
             evaluationContext = sharedState.evaluationContext();
