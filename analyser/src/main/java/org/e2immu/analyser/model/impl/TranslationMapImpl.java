@@ -34,6 +34,27 @@ import java.util.stream.Collectors;
  * <p>
  * Blocks can only translate into blocks;
  * statements can translate into lists of statements.
+ * <p>
+ * Variable translations come in three flavours, and are always translated in this order:
+ * <ul>
+ *     <li>
+ *         Expression to Expression (VE->Expression, DVE->Expression).
+ *         Allows for the finest control. Can, for example, remove or add Suffixes in VEs.
+ *     </li>
+ *     <li>
+ *         Variable to Expression. Implemented both in DVE and VE. The DVE translation will return a
+ *         new DVE, containing the translated variable if present.
+ * <p>
+ *         Used in merge for renames and variables going out of scope.
+ *         Used in Explicit Constructor Invocations to replace parameters by parameter expressions.
+ *     </li>
+ *     <li>
+ *         Variable to Variable.
+ *         Primary use case: renaming variables in code transformations.
+ *     </li>
+ * </ul>
+ *
+ *
  */
 @E2Container
 public class TranslationMapImpl implements TranslationMap {

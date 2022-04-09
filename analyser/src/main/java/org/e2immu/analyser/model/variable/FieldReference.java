@@ -229,4 +229,14 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public void visit(Predicate<Expression> predicate) {
         if (scope != null) scope.visit(predicate);
     }
+
+    @Override
+    public boolean hasScopeVariableCreatedAt(String index) {
+        return scopeVariable != null && scopeVariable.hasScopeVariableCreatedAt(index);
+    }
+
+    public boolean hasAsScopeVariable(Variable pv) {
+        return scopeVariable != null &&
+                (pv.equals(scopeVariable) || scopeVariable instanceof FieldReference fr && fr.hasAsScopeVariable(pv));
+    }
 }

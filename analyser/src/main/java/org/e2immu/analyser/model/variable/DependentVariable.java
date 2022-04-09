@@ -133,4 +133,9 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         if (arrayVariable instanceof DependentVariable dv) return dv.arrayBaseVariable();
         return arrayVariable;
     }
+
+    @Override
+    public boolean hasScopeVariableCreatedAt(String index) {
+        return arrayVariable.hasScopeVariableCreatedAt(index) || indexVariable != null && indexVariable.hasScopeVariableCreatedAt(index);
+    }
 }

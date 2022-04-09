@@ -560,7 +560,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<f:container.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<dv:scope-container:1.0.1.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<mmc:result>";
                             default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==scope-container:1.0.1.read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());

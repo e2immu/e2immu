@@ -106,4 +106,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
    default void visit(Predicate<Expression> predicate) {
         // do nothing, but any variable containing an expression should go there (field reference, dependent variable)
    }
+
+   default boolean hasScopeVariableCreatedAt(String index) { return false; }
 }

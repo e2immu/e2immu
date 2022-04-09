@@ -92,4 +92,10 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public VariableNature variableNature() {
         return variable.nature();
     }
+
+    @Override
+    public boolean hasScopeVariableCreatedAt(String index) {
+        assert index != null;
+        return variableNature() instanceof VariableNature.ScopeVariable sv && index.equals(sv.getIndexCreatedInMerge());
+    }
 }

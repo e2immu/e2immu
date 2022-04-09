@@ -193,32 +193,18 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        // priority to expression translation, which is richer
-        Expression translated2 = translationMap.translateExpression(this);
-        if (translated2 != this) {
+        // see explanation in TranslationMapImpl for the order of translation.
+        Expression translated1 = translationMap.translateExpression(this);
+        if (translated1 != this) {
+            return translated1;
+        }
+        Expression translated2 = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
+        if (translated2 != null) {
             return translated2;
         }
-        Variable translated = translationMap.translateVariable(variable);
-        if (translated != variable) {
-            return new VariableExpression(translated);
-        }
-        // helps with bypassing suffixes
-        Expression translated3 = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
-        if (translated3 != null) {
-            return translated3;
-        }
-        Expression translatedScope = scopeValue == null ? null : scopeValue.translate(inspectionProvider, translationMap);
-        if (translatedScope != scopeValue) {
-            IsVariableExpression svIve;
-            IsVariableExpression trIve;
-            if (variable instanceof FieldReference fr
-                    && (trIve = translatedScope.asInstanceOf(IsVariableExpression.class)) != null && trIve instanceof VariableExpression trVe
-                    && (svIve = scopeValue.asInstanceOf(IsVariableExpression.class)) != null && svIve instanceof VariableExpression svVe) {
-                VariableExpression newScope = new VariableExpression(trVe.variable(), svVe.suffix, null, null);
-                Variable newFr = new FieldReference(inspectionProvider, fr.fieldInfo, newScope, trIve.variable(), fr.getOwningType());
-                return new VariableExpression(newFr, NO_SUFFIX, newScope, null);
-            }
-            throw new UnsupportedOperationException();
+        Variable translated3 = translationMap.translateVariable(variable);
+        if (translated3 != variable) {
+            return new VariableExpression(translated3);
         }
         return this;
     }

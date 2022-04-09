@@ -561,8 +561,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&this!=(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>)";
-                        case 1 -> "<null-check>&&this!=(vn$1/*(VariableDefinedOutsideLoop)*/.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<f:vdol.previousVariableNature>:nullable instance type VariableScope_10)";
-                        default -> "";
+                        case 1, 2, 3 -> "<null-check>&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10)";
+                        default -> "this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&(scope-vdol:1.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(vn$1 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -581,8 +581,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = switch (d.iteration()) {
                             case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>";
-                            case 1, 2, 3 -> "vn$1/*(VariableDefinedOutsideLoop)*/.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10";
-                            default -> "instance type VariableDefinedOutsideLoop.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?instance type VariableDefinedOutsideLoop.previousVariableNature:nullable instance type VariableScope_10";
+                            case 1, 2, 3 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10";
+                            default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10";
                         };
                         assertEquals(merge, d.currentValue().toString());
                         List<Variable> variables = d.currentValue().variables(true);
@@ -602,7 +602,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
                             case 1 -> "<vp:vn:cm:scope-vdol:1.previousVariableNature@Method_removeInSubBlockMerge_3-E;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
-                            case 2, 3 -> "<vp:vn:cm@Parameter_index>/*(VariableDefinedOutsideLoop)*/";
+                            case 2, 3 -> "<vp:vn:[11 delays]>/*(VariableDefinedOutsideLoop)*/";
                             default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -611,11 +611,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     assertTrue(d.statementId().compareTo("2") < 0, "Found in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "statementIndex".equals(fr.fieldInfo.name)) {
-                    if (d.iteration() <= 3) {
-                        assertEquals("vdol", fr.scope.toString());
-                    } else {
-                        assertTrue(Set.of("vdol", "instance type VariableDefinedOutsideLoop").contains(fr.scope.toString()));
-                    }
+                    if ("vdol".equals(fr.scope.toString())) {
+                        assertTrue(d.statementId().compareTo("2") < 0);
+                    } else if ("scope-vdol:1".equals(fr.scope.toString())) {
+                        assertNotNull(fr.scopeVariable);
+                        if (fr.scopeVariable.variableNature() instanceof VariableNature.ScopeVariable sv) {
+                            assertEquals("1", sv.getIndexCreatedInMerge());
+                            assertEquals("1~", sv.getBeyondIndex());
+                        } else fail();
+                        assertNotEquals("1.0.0", d.statementId());
+                    } else fail("? scope " + fr.scope);
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:statementIndex>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
@@ -641,17 +646,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("removeInSubBlockMerge".equals(d.methodInfo().name) && "VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;parent=CM{}}";
-                        default -> "CM{state=!vn$1/*(VariableDefinedOutsideLoop)*/.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
-                    };
+                    String expected = d.iteration() == 0
+                            ? "CM{state=!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>;parent=CM{}}"
+                            : "CM{state=!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop);parent=CM{}}";
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||this==(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>));parent=CM{}}";
-                        case 1 -> "CM{state=(!vn$1/*(VariableDefinedOutsideLoop)*/.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(vn$1/*(VariableDefinedOutsideLoop)*/.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<f:vdol.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
-                        default -> "";
+                        case 1, 2, 3 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
+                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||!(vn$1 instanceof VariableDefinedOutsideLoop)&&null==nullable instance type VariableScope_10);parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }
@@ -680,12 +684,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "xs.isEmpty()||s.length()!=<f:x.i>?<return value>:<f:x.i>"
+                        String expected = d.iteration() <= 1
+                                ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "xs.isEmpty()||<f:x.i>!=<m:length>?0:<f:x.i>"
+                        String expected = d.iteration() <= 1
+                                ? "xs.isEmpty()||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -722,7 +728,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() <= 1
-                            ? "CM{state=xs.isEmpty()||s.length()!=<f:x.i>;parent=CM{}}"
+                            ? "CM{state=xs.isEmpty()||s.length()!=<dv:scope-x:0.i>;parent=CM{}}"
                             : "CM{state=xs.isEmpty()||s.length()!=scope-x:0.i;parent=CM{}}";
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
@@ -749,13 +755,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
-                                ? "y instanceof X&&null!=y&&s.length()==<f:x.i>?<f:x.i>:<return value>"
+                                ? "y instanceof X&&null!=y&&s.length()==<dv:scope-x:0.i>?<dv:scope-x:0.i>:<return value>"
                                 : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?s.length():<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
-                                ? "y instanceof X&&null!=y&&<f:x.i>==<m:length>?<f:x.i>:0"
+                                ? "y instanceof X&&null!=y&&<dv:scope-x:0.i>==<m:length>?<dv:scope-x:0.i>:0"
                                 : "y instanceof X&&null!=y&&s.length()==y/*(X)*/.i$1?s.length():0";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -792,7 +798,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("scope-x:0".equals(d.variableName())) {
                     if (d.variable() instanceof LocalVariableReference lvr) {
                         if (lvr.variableNature() instanceof VariableNature.ScopeVariable sv) {
-                            assertEquals("0~", sv.indexCreatedInMerge());
+                            assertEquals("0~", sv.getBeyondIndex());
                         } else fail();
                     } else fail();
                     assertFalse(d.statementId().startsWith("0."), "in " + d.statementId());
@@ -814,6 +820,37 @@ public class Test_66_VariableScope extends CommonTestRunner {
         testClass("VariableScope_12", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("x".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+
+                    } else if ("2".equals(d.statementId())) {
+
+                    } else fail("x should only exist in statements 0 and 2");
+                }
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("x".equals(fr.scope.toString())) {
+                        if ("0".equals(d.statementId())) {
+
+                        } else if ("2".equals(d.statementId())) {
+
+                        } else fail("x should only exist in statements 0 and 2");
+                    }
+                }
+            }
+        };
+        testClass("VariableScope_13", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

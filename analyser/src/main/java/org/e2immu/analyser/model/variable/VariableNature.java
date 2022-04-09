@@ -281,14 +281,36 @@ public interface VariableNature {
     }
 
 
-    record ScopeVariable(String indexCreatedInMerge) implements VariableNature {
+    class ScopeVariable implements VariableNature {
+
+        private final String indexCreatedInMerge;
+        private final String beyondIndex;
+
+        public ScopeVariable(String indexCreatedInMerge) {
+            this.indexCreatedInMerge = indexCreatedInMerge;
+            this.beyondIndex = indexCreatedInMerge == null ? null : indexCreatedInMerge + "~";
+        }
 
         public ScopeVariable() {
             this(null);
         }
 
         public boolean descendInto(String index) {
-            return indexCreatedInMerge == null || index.compareTo(indexCreatedInMerge) >= 0;
+            return indexCreatedInMerge == null || index.compareTo(beyondIndex) >= 0;
+        }
+
+        public String getBeyondIndex() {
+            return beyondIndex;
+        }
+
+        public String getIndexCreatedInMerge() {
+            return indexCreatedInMerge;
+        }
+
+        // created: 1, beyond, 1~, so 1.0.0 < 1~, we do not copy into 1.0.0
+        @Override
+        public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
+            return indexCreatedInMerge != null && index.compareTo(beyondIndex) < 0;
         }
     }
 }

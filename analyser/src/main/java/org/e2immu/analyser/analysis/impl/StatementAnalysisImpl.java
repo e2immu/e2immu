@@ -491,7 +491,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression newValue = vi.getValue().generify(evaluationContext);
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(INITIAL),
                     vic, navigationData.hasSubBlocks(), newValue);
-        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
+        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious, previousIsParent)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable)) {
             // move a local variable, not defined in this loop, inside the loop
@@ -507,15 +507,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private boolean doNotCopyToNextStatement(StatementAnalysis copyFrom,
                                              VariableInfoContainer vic,
                                              Variable variable,
-                                             String indexOfPrevious) {
+                                             String indexOfPrevious,
+                                             boolean previousIsParent) {
         if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
+        // if (indexOfPrevious != null && previousIsParent && variable.hasScopeVariableCreatedAt(indexOfPrevious)) {
+        //      return true; FIXME do we need this?
+        // }
         // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
-                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), indexOfPrevious);
+                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), indexOfPrevious, previousIsParent);
             }
             return true;
         }
@@ -625,9 +629,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature() instanceof VariableNature.Pattern pattern) {
             return StringUtil.inScopeOf(pattern.scope(), index);
         }
-        if (copyIsParent && vic.variableNature() instanceof VariableNature.ScopeVariable sv) {
-            // FIXME block all field references with scope variable that does not comply
-            return sv.descendInto(index);
+        Variable variable = vic.current().variable();
+        if (copyIsParent && variable.hasScopeVariableCreatedAt(copyFrom.index())) {
+            return false;
         }
         if (copyIsParent) {
             // see variableEntryStream(EVALUATION) -> ignore those that have merges but no eval; see e.g. Basics_7
@@ -637,7 +641,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         // don't continue loop and resource variables beyond the loop
         if (copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable())) return false;
-        Variable variable = vic.current().variable();
+
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
@@ -873,22 +877,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         private Set<LocalVariableReference> computeRenames() {
             TranslationMap renameMap = bestValueForToRemove.build();
             Set<LocalVariableReference> newScopeVariables = new HashSet<>();
-            toMerge.removeIf(vic -> {
-                Variable variable = vic.current().variable();
-                RenameVariableResult rvr = renameVariable(variable, renameMap);
-                if (rvr != null) {
-                    newScopeVariables.addAll(rvr.newScopeVariables);
-                    renames.put(variable, rvr.variable);
-                    translationMap.addVariableExpression(variable, rvr.variableExpression);
-                    translationMap.put(variable, rvr.variable);
-                    Optional<VariableInfoContainer> orig = toMerge.stream()
-                            .filter(vic2 -> vic2.current().variable().equals(rvr.variable)).findFirst();
-                    if (orig.isPresent()) toIgnore.add(vic);
-                    return orig.isPresent();
-                }
-                return false;
-            });
+            toMerge.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
+            toIgnore.removeIf(vic -> prepareRenameDecideToRemove(vic, renameMap, newScopeVariables));
             return newScopeVariables;
+        }
+
+        private boolean prepareRenameDecideToRemove(VariableInfoContainer vic,
+                                                    TranslationMap renameMap,
+                                                    Set<LocalVariableReference> newScopeVariables) {
+            Variable variable = vic.current().variable();
+            RenameVariableResult rvr = renameVariable(variable, renameMap);
+            if (rvr != null) {
+                newScopeVariables.addAll(rvr.newScopeVariables);
+                renames.put(variable, rvr.variable);
+                translationMap.addVariableExpression(variable, rvr.variableExpression);
+                translationMap.put(variable, rvr.variable);
+                return false;
+            }
+            // scope variables that are created here, are filled in using renames
+            return variable.hasScopeVariableCreatedAt(evaluationContext.statementIndex());
         }
 
         private record RenameVariableResult(Variable variable,
@@ -906,7 +913,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Identifier identifier = Identifier.forVariableOutOfScope(fr.scopeVariable, evaluationContext.statementIndex());
                     String name = "scope-" + identifier.compact();
                     // if statement index is 2, then 2~ is after 2.x.x, but before 3
-                    VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex() + "~");
+                    VariableNature vn = new VariableNature.ScopeVariable(evaluationContext.statementIndex());
                     LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, fr.scope.returnType(), List.of(), fr.getOwningType(), vn);
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
                     Expression scope = new VariableExpression(scopeVariable);
@@ -1097,7 +1104,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (LocalVariableReference lvr : newScopeVariables) {
             VariableInfoContainer newScopeVar;
             if (!variables.isSet(lvr.fullyQualifiedName())) {
-                newScopeVar = createVariable(evaluationContext, lvr, statementTime(MERGE), new VariableNature.ScopeVariable(evaluationContext.statementIndex() + "~"));
+                newScopeVar = createVariable(evaluationContext, lvr, statementTime(MERGE), new VariableNature.ScopeVariable(evaluationContext.statementIndex()));
                 newScopeVar.ensureMerge(evaluationContext.getLocation(MERGE), evaluationContext.statementIndex() + ":M");
             } else {
                 newScopeVar = variables.get(lvr.fullyQualifiedName());
@@ -1115,6 +1122,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
             Variable variable = current.variable();
+            assert !variable.hasScopeVariableCreatedAt(index) : "should have been removed";
             Variable renamed = prepareMerge.renames.getOrDefault(variable, variable);
 
             VariableInfoContainer destination;
@@ -1275,6 +1283,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Map<Variable, DV> setCnnVariables,
                                                      TranslationMap translationMap,
                                                      CausesOfDelay delay) {
+
+        for (VariableInfoContainer vic : prepareMerge.toIgnore) {
+            Variable variable = vic.current().variable();
+            Variable renamed = prepareMerge.renames.get(variable);
+            if (renamed != null) {
+                ensureDestination(renamed, vic, evaluationContext, statementTime(MERGE));
+            }
+        }
+
         // then, per cluster of variables
         // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
         // create looks at these+previous, minus those to be removed.
@@ -1301,11 +1318,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (!linkedVariablesMap.containsKey(variable)) {
                 VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null;
-                vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+                Variable renamed = prepareMerge.renames.get(variable);
+                if (renamed != null) {
+                    // copy from vic into the renamed variable
+                    VariableInfoContainer vicRenamed = variables.get(renamed.fullyQualifiedName());
+                    vic.copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, vicRenamed);
+                } else {
+                    vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+                }
             }
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
-        ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
+        ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable())
+                || prepareMerge.renames.containsKey(vic.current().variable()));
 
         CausesOfDelay externalDelaysOnIgnoredVariables = CausesOfDelay.EMPTY;
         for (VariableInfoContainer vic : ignoredNotTouched) {
@@ -1347,6 +1372,24 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return AnalysisStatus.of(delay.merge(ennStatus).merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
                 .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables));
+    }
+
+    private VariableInfoContainer ensureDestination(Variable renamed, VariableInfoContainer vic,
+                                                    EvaluationContext evaluationContext, int statementTime) {
+        if (!variables.isSet(renamed.fullyQualifiedName())) {
+            VariableNature variableNature;
+            if (renamed instanceof FieldReference fr) {
+                if (fr.scope.isDelayed()) {
+                    variableNature = new VariableNature.DelayedScope();
+                } else {
+                    variableNature = vic.variableNature();
+                }
+            } else {
+                variableNature = vic.variableNature();
+            }
+            return createVariable(evaluationContext, renamed, statementTime, variableNature);
+        }
+        return variables.get(renamed.fullyQualifiedName());
     }
 
 

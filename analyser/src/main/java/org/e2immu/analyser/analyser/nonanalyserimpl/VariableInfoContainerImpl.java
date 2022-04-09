@@ -324,7 +324,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public void ensureMerge(Location location, String currentIndex) {
-        if(!merge.isSet()) {
+        if (!merge.isSet()) {
             VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
             AssignmentIds assignmentIds = new AssignmentIds(currentIndex);
             VariableInfoImpl vii = new VariableInfoImpl(location, pi.variable(), assignmentIds, NOT_YET_READ,
@@ -444,10 +444,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues) {
-        assert hasMerge();
+        copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, this);
+    }
+
+    @Override
+    public void copyNonContextFromPreviousOrEvalToMergeOfOther(GroupPropertyValues groupPropertyValues,
+                                                               VariableInfoContainer vicRenamed) {
+        assert vicRenamed.hasMerge();
         VariableInfo eval = best(Stage.EVALUATION);
         Variable v = eval.variable();
-        VariableInfoImpl mergeImpl = merge.get();
+        VariableInfoImpl mergeImpl = ((VariableInfoContainerImpl) vicRenamed).merge.get();
         mergeImpl.setValue(eval.getValue());
 
         eval.propertyStream()
