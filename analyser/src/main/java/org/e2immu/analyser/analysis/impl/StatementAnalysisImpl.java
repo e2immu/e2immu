@@ -491,7 +491,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Expression newValue = vi.getValue().generify(evaluationContext);
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(INITIAL),
                     vic, navigationData.hasSubBlocks(), newValue);
-        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious, previousIsParent)) {
+        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable)) {
             // move a local variable, not defined in this loop, inside the loop
@@ -507,19 +507,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private boolean doNotCopyToNextStatement(StatementAnalysis copyFrom,
                                              VariableInfoContainer vic,
                                              Variable variable,
-                                             String indexOfPrevious,
-                                             boolean previousIsParent) {
+                                             String indexOfPrevious) {
         if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
-        // if (indexOfPrevious != null && previousIsParent && variable.hasScopeVariableCreatedAt(indexOfPrevious)) {
-        //      return true; FIXME do we need this?
-        // }
         // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
-                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), indexOfPrevious, previousIsParent);
+                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), indexOfPrevious);
             }
             return true;
         }
@@ -629,6 +625,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature() instanceof VariableNature.Pattern pattern) {
             return StringUtil.inScopeOf(pattern.scope(), index);
         }
+        if (vic.variableNature().doNotCopyToNextStatement(copyFrom.index(), index)) return false;
         Variable variable = vic.current().variable();
         if (copyIsParent && variable.hasScopeVariableCreatedAt(copyFrom.index())) {
             return false;

@@ -445,7 +445,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private EvaluationResult createAndEvaluateReturnStatement(StatementAnalyserSharedState sharedState, Expression expression) {
         assert methodInfo().hasReturnValue();
         Structure structure = statementAnalysis.statement().getStructure();
-        ConditionManager localConditionManager = sharedState.localConditionManager();
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
 

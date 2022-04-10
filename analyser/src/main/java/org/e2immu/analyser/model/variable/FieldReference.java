@@ -111,7 +111,10 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     private LocalVariable newScopeVariable(Expression scope, TypeInfo owningType) {
         Identifier identifier = scope.getIdentifier();
-        assert identifier instanceof Identifier.PositionalIdentifier;
+        // in the first iteration, we have
+        // "assert identifier instanceof Identifier.PositionalIdentifier;"
+        // because it must come from the inspector.
+        // but in a InlinedMethod replacement, the scope can literally come from everywhere
         String name = "scope-" + identifier.compact();
         VariableNature vn = new VariableNature.ScopeVariable();
         return new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, scope.returnType(), List.of(), owningType, vn);
