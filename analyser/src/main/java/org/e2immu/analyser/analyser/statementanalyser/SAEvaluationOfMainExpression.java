@@ -417,7 +417,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
         if (currentReturnValue instanceof UnknownExpression) {
-            // default situation
+            // simplest situation
             toEvaluate = expression;
             evaluationContext = sharedState.evaluationContext();
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
@@ -426,7 +426,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
-            toEvaluate = currentReturnValue.translate(sharedState.evaluationContext().getAnalyserContext(), tm);
+            Expression translated = currentReturnValue.translate(sharedState.evaluationContext().getAnalyserContext(), tm);
+            // if translated == currentReturnValue, then there was no returnExpression, so we stick to expression
+            toEvaluate = translated == currentReturnValue ? expression : translated;
             evaluationContext = sharedState.evaluationContext().dropConditionManager();
             forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditionalIgnoreValueFromState();
         }
