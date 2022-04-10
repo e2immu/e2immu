@@ -21,7 +21,6 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -58,8 +57,9 @@ public interface TranslationMap {
 
     boolean hasVariableTranslations();
 
+    // unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
+    boolean recurseIntoScopeVariables();
+
     // because equality of delayed variables is based on ==
     Expression translateVariableExpressionNullIfNotTranslated(Variable variable);
-
-    TranslationMap update(Map<Variable, Expression> variableExpressionMap);
 }

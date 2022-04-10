@@ -252,6 +252,18 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             }
             return expression;
         }
+        // unlike in merge, in the case of ExplicitConstructorInvocation, we cannot predict which fields need their scope translating
+        if (translationMap.recurseIntoScopeVariables()) {
+            if (variable instanceof FieldReference fr) {
+                Expression translated = fr.scope.translate(inspectionProvider, translationMap);
+                if (translated != fr.scope) {
+                    FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
+                    return DelayedVariableExpression.forField(newFr, statementTime, causesOfDelay);
+                }
+            } else if (variable instanceof DependentVariable dv) {
+                throw new UnsupportedOperationException("NYI");
+            }
+        }
         return this;
     }
 

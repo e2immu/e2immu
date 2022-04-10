@@ -339,19 +339,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
         assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
-        if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
-            assert sharedState.evaluationContext().getIteration() == 0 : "In iteration " + sharedState.evaluationContext().getIteration();
-            /* if the method has not gone through 1st iteration of analysis, we need to wait.
-             this should never be a circular wait because we're talking a strict constructor hierarchy
-             the delay has to have an effect on CM in the next iterations, because introducing the assignments here
-             will cause delays (see LoopStatement constructor, where "expression" appears in statement 1, iteration 1)
-             because of the 'super' call to StatementWithExpression which comes after LoopStatement.
-             Without method analysis we have no idea which variables will be affected
-             */
-            LOGGER.debug("Cannot continue with ECI because first iteration of this/super {} has not been analysed yet",
-                    eci.methodInfo.fullyQualifiedName);
-            return null;
-        }
 
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
@@ -366,16 +353,36 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 i++;
             }
         }
+
+        boolean weMustWait;
+        if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
+            assert sharedState.evaluationContext().getIteration() == 0 : "In iteration " + sharedState.evaluationContext().getIteration();
+            /* if the method has not gone through 1st iteration of analysis, we need to wait.
+             this should never be a circular wait because we're talking a strict constructor hierarchy
+             the delay has to have an effect on CM in the next iterations, because introducing the assignments here
+             will cause delays (see LoopStatement constructor, where "expression" appears in statement 1, iteration 1)
+             because of the 'super' call to StatementWithExpression which comes after LoopStatement.
+             Without method analysis we have no idea which variables will be affected
+             */
+
+            weMustWait = true;
+        } else {
+            weMustWait = false;
+        }
+
         List<Expression> assignments = new ArrayList<>();
-        TranslationMap translationMap = translationMapBuilder.build();
+        TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
         List<FieldInfo> visibleFields = methodInfo().typeInfo.visibleFields(analyserContext);
         for (FieldInfo fieldInfo : visibleFields) {
             if (!fieldInfo.isStatic(analyserContext)) {
+                boolean assigned = false;
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         Expression start = variableInfo.getValue();
                         FieldReference fr = new FieldReference(analyserContext, fieldInfo);
-                        Expression translated = start.translate(analyserContext, translationMap);
+                        Expression translated1 = start.translate(analyserContext, translationMap);
+                        Expression translated = sharedState.evaluationContext().getIteration() > 0
+                                ? replaceUnknownFields(sharedState.evaluationContext(), translated1) : translated1;
                         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
                         EvaluationResult er = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
                         Expression end = er.value();
@@ -386,11 +393,40 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                 new VariableExpression(fr),
                                 end, null, null, false);
                         assignments.add(assignment);
+                        assigned = true;
                     }
+                }
+                if (!assigned && weMustWait) {
+                    // do an assignment
+                    FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+                    CauseOfDelay causeOfDelay = new SimpleCause(sharedState.evaluationContext().getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
+                    DelayedVariableExpression end = DelayedVariableExpression.forField(fr, statementAnalysis.statementTime(EVALUATION), causeOfDelay);
+                    Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
+                            statementAnalysis.primitives(),
+                            new VariableExpression(fr),
+                            end, null, null, false);
+                    assignments.add(assignment);
+                    // FIXME ensure that the set of fields assigned now agrees with the one after the waiting
                 }
             }
         }
         return CommaExpression.comma(sharedState.context(), assignments);
+    }
+
+    private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
+        List<Variable> variables = expression.variables(true);
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        Identifier identifier = statement().getIdentifier();
+        for (Variable variable : variables) {
+            if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
+                Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(variable.parameterizedType());
+                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
+                builder.addVariableExpression(variable, ev);
+                builder.put(new VariableExpression(variable), ev);
+            }
+        }
+        TranslationMap translationMap = builder.build();
+        return expression.translate(evaluationContext.getAnalyserContext(), translationMap);
     }
 
     /*

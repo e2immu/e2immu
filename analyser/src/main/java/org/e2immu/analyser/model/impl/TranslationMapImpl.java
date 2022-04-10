@@ -67,6 +67,7 @@ public class TranslationMapImpl implements TranslationMap {
     public final Map<LocalVariable, LocalVariable> localVariables;
     public final Map<? extends Variable, ? extends Expression> variableExpressions;
     public final boolean expandDelayedWrappedExpressions;
+    public final boolean recurseIntoScopeVariables;
 
     public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                               Map<? extends Expression, ? extends Expression> expressions,
@@ -74,7 +75,8 @@ public class TranslationMapImpl implements TranslationMap {
                               Map<? extends Variable, ? extends Variable> variables,
                               Map<MethodInfo, MethodInfo> methods,
                               Map<ParameterizedType, ParameterizedType> types,
-                              boolean expandDelayedWrappedExpressions) {
+                              boolean expandDelayedWrappedExpressions,
+                              boolean recurseIntoScopeVariables) {
         this.variables = variables;
         this.expressions = expressions;
         this.variableExpressions = variableExpressions;
@@ -86,6 +88,7 @@ public class TranslationMapImpl implements TranslationMap {
                 .collect(Collectors.toMap(e -> ((LocalVariableReference) e.getKey()).variable,
                         e -> ((LocalVariableReference) e.getValue()).variable));
         this.expandDelayedWrappedExpressions = expandDelayedWrappedExpressions;
+        this.recurseIntoScopeVariables = recurseIntoScopeVariables;
     }
 
     @Override
@@ -103,6 +106,11 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public boolean hasVariableTranslations() {
         return !variables.isEmpty();
+    }
+
+    @Override
+    public boolean recurseIntoScopeVariables() {
+        return recurseIntoScopeVariables;
     }
 
     @Override
@@ -170,19 +178,6 @@ public class TranslationMapImpl implements TranslationMap {
                 types.isEmpty() && variables.isEmpty() && localVariables.isEmpty() && variableExpressions.isEmpty();
     }
 
-    @Override
-    public TranslationMap update(Map<Variable, Expression> variableExpressionMap) {
-        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        builder.variables.putAll(variables);
-        builder.expressions.putAll(expressions);
-        builder.methods.putAll(methods);
-        builder.statements.putAll(statements);
-        builder.types.putAll(types);
-        builder.variableExpressions.putAll(variableExpressions);
-        builder.variableExpressions.putAll(variableExpressionMap);
-        return builder.build();
-    }
-
     @Container(builds = TranslationMapImpl.class)
     public static class Builder {
         private final Map<Variable, Variable> variables = new HashMap<>();
@@ -192,10 +187,16 @@ public class TranslationMapImpl implements TranslationMap {
         private final Map<Statement, List<Statement>> statements = new HashMap<>();
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
         private boolean expandDelayedWrappedExpressions;
+        private boolean recurseIntoScopeVariables;
 
         public TranslationMapImpl build() {
             return new TranslationMapImpl(statements, expressions, variableExpressions, variables, methods, types,
-                    expandDelayedWrappedExpressions);
+                    expandDelayedWrappedExpressions, recurseIntoScopeVariables);
+        }
+
+        public Builder setRecurseIntoScopeVariables(boolean recurseIntoScopeVariables) {
+            this.recurseIntoScopeVariables = recurseIntoScopeVariables;
+            return this;
         }
 
         public Builder put(Statement template, Statement actual) {

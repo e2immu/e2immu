@@ -206,6 +206,21 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (translated3 != variable) {
             return new VariableExpression(translated3);
         }
+        if (translationMap.recurseIntoScopeVariables()) {
+            if (variable instanceof FieldReference fr) {
+                Expression translated = fr.scope.translate(inspectionProvider, translationMap);
+                if (translated != fr.scope) {
+                    FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
+                    if (translated.isDelayed()) {
+                        int statementTime = translated instanceof DelayedVariableExpression dve ? dve.statementTime : 0;
+                        return DelayedVariableExpression.forField(newFr, statementTime, translated.causesOfDelay());
+                    }
+                    return new VariableExpression(newFr, suffix, translated, null);
+                }
+            } else if (variable instanceof DependentVariable dv) {
+                throw new UnsupportedOperationException("NYI");
+            }
+        }
         return this;
     }
 

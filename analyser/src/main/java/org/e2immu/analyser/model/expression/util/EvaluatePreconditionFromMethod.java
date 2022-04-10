@@ -124,9 +124,9 @@ public class EvaluatePreconditionFromMethod {
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
 
             for (FieldInfo fieldInfo : typeInspection.fields()) {
-                boolean staticField = fieldInfo.isStatic(inspectionProvider);
+                boolean staticFieldOrStaticMethod = fieldInfo.isStatic(inspectionProvider) || methodInfo.methodInspection.get().isStatic();
                 FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
-                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : scope, fieldInfo.owner);
+                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticFieldOrStaticMethod ? null : scope, fieldInfo.owner);
                 Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(scopeField.parameterizedType);
                 ExpandedVariable ev = new ExpandedVariable(fieldInfo.getIdentifier(), scopeField, properties);
                 if (!thisField.equals(scopeField)) {

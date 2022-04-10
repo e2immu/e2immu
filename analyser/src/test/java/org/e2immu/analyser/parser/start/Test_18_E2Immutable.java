@@ -407,9 +407,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -595,10 +595,56 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     }
 
 
+    /*
+    Current difference between the two new Suffix() {} implementations: PARTIAL_IMMUTABLE
+    Also cause of the exception
+     */
+
     @Test
     public void test_15() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("suffix".equals(d.methodInfo().name)) {
+                if ("VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if (d.variable() instanceof ReturnVariable) {
+                        if ("0".equals(d.statementId())) {
+                            assertEquals("<new:Suffix>", d.currentValue().toString());
+                            // FIXME @ERImmutable from iteration 0
+                            assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                            //         assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+                        }
+                    }
+                } else if ("E2Immutable_15".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if (d.variable() instanceof ReturnVariable) {
+                        if ("0".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<f:NO_SUFFIX>" : "E2Immutable_15.NO_SUFFIX";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                        }
+                    }
+                } else fail();
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_15".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            } else if ("Suffix".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            } else if ("VariableDefinedOutsideLoop".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+            } else if ("$1".equals(d.typeInfo().simpleName)) {
+                // new Suffix() {}
+                assertEquals("VariableDefinedOutsideLoop", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+            } else if ("$2".equals(d.typeInfo().simpleName)) {
+                // new Suffix() {}
+                assertEquals("E2Immutable_15", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            } else fail("type " + d.typeInfo());
+        };
         testClass("E2Immutable_15", 2, 13, new DebugConfiguration.Builder()
-
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

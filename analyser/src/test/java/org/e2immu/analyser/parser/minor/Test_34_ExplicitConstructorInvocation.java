@@ -18,12 +18,15 @@ package org.e2immu.analyser.parser.minor;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.minor.testexample.ExplicitConstructorInvocation_7;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -160,7 +163,26 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            int numParams = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("ExplicitConstructorInvocation_7".equals(d.methodInfo().name) && numParams == 2) {
+                ParameterizedType typeOfParam1 = d.methodInfo().methodInspection.get().getParameters().get(1).parameterizedType;
+                assertNotNull(typeOfParam1.typeInfo);
+                if ("Primitives".equals(typeOfParam1.typeInfo.simpleName)) {
+                    if ("0".equals(d.statementId())) {
+                        VariableInfoContainer vic = d.statementAnalysis().getVariable(ExplicitConstructorInvocation_7.class.getCanonicalName() + ".primitives");
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:primitives>";
+                            case 1 -> "<s:Primitives>";
+                            default -> "primitives/*@NotNull*/";
+                        };
+                        assertEquals(expected, vic.current().getValue().toString());
+                    }
+                }
+            }
+        };
         testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
@@ -237,11 +259,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("BaseExpression".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr) {
-                    if (d.iteration() == 0) {
-                        assertEquals("complexity", fr.fieldInfo.name);
-                    } else {
-                        assertTrue(Set.of("complexity", "identifier").contains(fr.fieldInfo.name));
-                    }
+                    assertTrue(Set.of("complexity", "identifier").contains(fr.fieldInfo.name));
                 }
             }
         };
@@ -250,7 +268,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
                 FieldInfo identifier = d.methodInfo().typeInfo.typeInspection.get().parentClass().typeInfo.getFieldByName("identifier", true);
                 List<VariableInfo> viList = d.methodAnalysis().getFieldAsVariable(identifier);
-                assertEquals(d.iteration() == 0 ? 0 : 1, viList.size());
+                assertEquals(1, viList.size());
             }
             if ("BinaryOperator".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
@@ -262,10 +280,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
         };
-        testClass("ExplicitConstructorInvocation_11", 0, 3, new DebugConfiguration.Builder()
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -292,8 +310,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
             }
         };
-        testClass("ExplicitConstructorInvocation_12", 0, 3, new DebugConfiguration.Builder()
-                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -304,7 +322,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_13() throws IOException {
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .setForceAlphabeticAnalysisInPrimaryType(true)
