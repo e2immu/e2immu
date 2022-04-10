@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-public interface VariableScope_9 {
+public interface E2Immutable_15 {
 
     interface Suffix {
     }
@@ -29,8 +29,8 @@ public interface VariableScope_9 {
     /*
     situation 8
      */
-    record VariableDefinedOutsideLoop(VariableScope_9 previousVariableNature,
-                                      String statementIndex) implements VariableScope_9 {
+    record VariableDefinedOutsideLoop(E2Immutable_15 previousVariableNature,
+                                      String statementIndex) implements E2Immutable_15 {
         @Override
         public Suffix suffix() {
             return new Suffix() {

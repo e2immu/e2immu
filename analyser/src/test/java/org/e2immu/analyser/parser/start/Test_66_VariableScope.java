@@ -532,21 +532,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8", 4, 15, new DebugConfiguration.Builder()
-        //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
 
-    }
-
-    @Test
-    public void test_9() throws IOException {
-        testClass("VariableScope_9", 2, 13, new DebugConfiguration.Builder()
-
-                        .build(),
-                new AnalyserConfiguration.Builder()
-                        .setComputeFieldAnalyserAcrossAllMethods(true)
-                        .setForceAlphabeticAnalysisInPrimaryType(true)
-                        .build());
     }
 
     @Test

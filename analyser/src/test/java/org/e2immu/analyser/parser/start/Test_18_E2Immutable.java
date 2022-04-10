@@ -593,4 +593,17 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_15() throws IOException {
+        testClass("E2Immutable_15", 2, 13, new DebugConfiguration.Builder()
+
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
 }
