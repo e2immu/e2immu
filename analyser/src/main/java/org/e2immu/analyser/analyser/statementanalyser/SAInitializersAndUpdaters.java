@@ -67,7 +67,6 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
      */
     List<Expression> initializersAndUpdaters(ForwardAnalysisInfo forwardAnalysisInfo, EvaluationContext evaluationContext) {
         List<Expression> expressionsToEvaluate = new ArrayList<>();
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e), or for(int i=...), or int i=3, j=4;
         // variable will be set to a NewObject case of a catch
@@ -96,6 +95,11 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
         Set<Variable> variableCreatedInLoop = new HashSet<>();
         for (Expression expression : statementAnalysis.statement().getStructure().initialisers()) {
+
+            List<Assignment> patterns = new SAPatternVariable(statementAnalysis)
+                    .patternVariables(evaluationContext, expression);
+            expressionsToEvaluate.addAll(patterns);
+
             if (expression instanceof LocalVariableCreation lvc) {
                 boolean addInitializersSeparately;
                 if (statement() instanceof LoopStatement) {

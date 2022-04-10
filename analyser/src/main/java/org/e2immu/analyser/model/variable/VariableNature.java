@@ -125,7 +125,7 @@ public interface VariableNature {
     record Pattern(String scope, String parentBlockIndex, boolean isPositive,
                    Variable localCopyOf) implements VariableNature {
         public Pattern(String scope, boolean isPositive, Variable localCopyOf) {
-            this(scope, VariableNature.computeParentBlockIndex(scope), isPositive, localCopyOf);
+            this(scope, scope == null ? null : VariableNature.computeParentBlockIndex(scope), isPositive, localCopyOf);
         }
 
         @Override
@@ -153,6 +153,8 @@ public interface VariableNature {
             return parentBlockIndex;
         }
     }
+
+    Pattern PATTERN = new Pattern(null, null, false, null);
 
     /*
     situation 6: Loop variable, like 'i' in (for int i=0; ...) or 'x' in for(X x: xs) { ... }.
@@ -293,10 +295,6 @@ public interface VariableNature {
 
         public ScopeVariable() {
             this(null);
-        }
-
-        public boolean descendInto(String index) {
-            return indexCreatedInMerge == null || index.compareTo(beyondIndex) >= 0;
         }
 
         public String getBeyondIndex() {

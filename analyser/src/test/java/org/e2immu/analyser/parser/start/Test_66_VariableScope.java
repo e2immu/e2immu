@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -531,8 +532,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8", 4, 15, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+        //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+         //       .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
 
     }
@@ -829,28 +830,135 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     @Test
     public void test_13() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "y instanceof X&&null!=y&&s.length()==<dv:scope-x:0.i>?<dv:scope-x:0.i>:3"
+                            : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?scope-x:0.i:3";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<vp:y:container@Class_X>/*(X)*/";
+                    case 1 -> "<vp:y:final@Field_i>/*(X)*/";
+                    default -> "y/*(X)*/";
+                };
+                if ("scope-x:0".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
                 if ("x".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-
+                        assertEquals(expected, d.currentValue().toString());
                     } else if ("2".equals(d.statementId())) {
-
+                        String expected1 = switch (d.iteration()) {
+                            case 0 -> "<p:y>/*(X)*/";
+                            case 1 -> "<vp:y:final@Field_i>/*(X)*/";
+                            default -> "y/*(X)*/";
+                        };
+                        assertEquals(expected1, d.currentValue().toString());
                     } else fail("x should only exist in statements 0 and 2");
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    String expected1 = d.iteration() == 0 ? "<f:i>" : "instance type int";
                     if ("x".equals(fr.scope.toString())) {
-                        if ("0".equals(d.statementId())) {
-
-                        } else if ("2".equals(d.statementId())) {
-
-                        } else fail("x should only exist in statements 0 and 2");
-                    }
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else if ("scope-x:0".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else if ("scope-x:2".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else fail("Scope " + fr.scope);
                 }
             }
         };
         testClass("VariableScope_13", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
+    @Test
+    public void test_14() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("k".equals(d.variableName())) {
+                    // note that because of the value translations, we already see the delayed scope value
+                    String expected = d.iteration() == 0
+                            ? "y instanceof X&&null!=y&&s.length()==<dv:scope-x:0.i>?<dv:scope-x:0.i>:3"
+                            : "y instanceof X&&null!=y&&s.length()==scope-x:0.i?scope-x:0.i:3";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<vp:y:container@Class_X>/*(X)*/";
+                    case 1 -> "<vp:y:final@Field_i>/*(X)*/";
+                    default -> "y/*(X)*/";
+                };
+                if ("scope-x:0".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("x".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    } else fail("x should only exist in statement 0");
+                }
+                String expectedZ = switch (d.iteration()) {
+                    case 0 -> "<p:y>/*(X)*/";
+                    case 1 -> "<vp:y:final@Field_i>/*(X)*/";
+                    default -> "y/*(X)*/";
+                };
+                if ("scope-z:2".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals(expectedZ, d.currentValue().toString());
+                    }
+                }
+                if ("z".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals(expectedZ, d.currentValue().toString());
+                    } else fail("x should only exist in statement 2");
+                }
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    String expected1 = d.iteration() == 0 ? "<f:i>" : "instance type int";
+                    if ("x".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else if ("scope-x:0".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else if ("z".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else if ("scope-z:2".equals(fr.scope.toString())) {
+                        assertEquals(expected1, d.currentValue().toString());
+                    } else fail("Scope " + fr.scope);
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("i".equals(d.fieldInfo().name)) {
+                FieldAnalysisImpl.Builder b = ((FieldAnalysisImpl.Builder) d.fieldAnalysis());
+                assertEquals("0,i", b.sortedValuesString());
+                assertEquals("", b.valuesDelayed().toString());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("X".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        testClass("VariableScope_14", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

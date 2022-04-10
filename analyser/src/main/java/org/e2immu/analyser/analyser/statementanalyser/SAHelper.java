@@ -14,26 +14,23 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.Property.*;
 
@@ -145,7 +142,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
 
         res.remove(CONTEXT_IMMUTABLE);
-        DV contextImm =  typeOfVariableIsMyself || variable instanceof ReturnVariable ?  MultiLevel.MUTABLE_DV: valueProps.get(IMMUTABLE);
+        DV contextImm = typeOfVariableIsMyself || variable instanceof ReturnVariable ? MultiLevel.MUTABLE_DV : valueProps.get(IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, contextImm);
 
         DV cCont = res.remove(CONTEXT_CONTAINER);
@@ -193,5 +190,59 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));
         }
+    }
+
+    // see VariableScope_13:  int j = y instance of X x ? x.i: 3;
+    // after this statement, x does not exist, and x.i needs to become scope-x:0.i
+
+    public static EvaluationResult scopeVariablesForPatternVariables(EvaluationResult evaluationResult2, String index) {
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        EvaluationResult.Builder erBuilder = new EvaluationResult.Builder(evaluationResult2);
+        for (Map.Entry<Variable, EvaluationResult.ChangeData> e : evaluationResult2.changeData().entrySet()) {
+            if (evaluationResult2.evaluationContext().isPatternVariableCreatedAt(e.getKey(), index)) {
+                Variable pv = e.getKey();
+
+                // we have pattern variables, which should not exist in the next iteration. This is not a problem in itself, but it is
+                // where there are also fields that have these pattern variables in their scope. Because the value may have to live on,
+                // a scope variable will need creating for every pattern variable used in a scope
+                List<Map.Entry<Variable, EvaluationResult.ChangeData>> entriesOfFieldRefs = evaluationResult2.changeData().entrySet().stream()
+                        .filter(e1 -> e1.getKey() instanceof FieldReference fr && fr.hasAsScopeVariable(pv)).toList();
+                if (!entriesOfFieldRefs.isEmpty()) {
+
+                    // we'll have to create a scope variable
+                    Identifier identifier = Identifier.forVariableOutOfScope(pv, index);
+                    String name = "scope-" + identifier.compact();
+                    VariableNature vn = new VariableNature.ScopeVariable(index);
+                    TypeInfo currentType = evaluationResult2.getCurrentType();
+                    LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name,
+                            pv.parameterizedType(), List.of(), currentType, vn);
+                    Expression scopeValue = Objects.requireNonNullElseGet(e.getValue().value(),
+                            () -> DelayedVariableExpression.forVariable(e.getKey(), evaluationResult2.statementTime(), evaluationResult2.causesOfDelay()));
+                    LocalVariableReference scopeVariable = new LocalVariableReference(lv, scopeValue);
+                    Expression scope = new VariableExpression(scopeVariable);
+
+                    builder.put(pv, scopeVariable);
+                    builder.addVariableExpression(pv, new VariableExpression(scopeVariable));
+
+                    // then, other field references
+                    for (Map.Entry<Variable, EvaluationResult.ChangeData> e2 : entriesOfFieldRefs) {
+                        FieldReference fr = (FieldReference) e2.getKey();
+                        assert fr.scopeVariable != null && fr.scopeVariable.equals(pv) : "other situations not yet implemented";
+
+
+                        FieldReference newFr = new FieldReference(evaluationResult2.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
+                        VariableExpression ve = new VariableExpression(newFr, VariableExpression.NO_SUFFIX, scope, null);
+                        builder.addVariableExpression(fr, ve);
+                        builder.put(fr, newFr);
+                    }
+                }
+            }
+        }
+        if (builder.isEmpty()) return evaluationResult2;
+        // what to do? create a new evaluation result, where (1) the new scope variables have been added, (2) the fields are replaced
+        // and (3) all values related to these fields are replaced (that's the most difficult)
+        TranslationMap translationMap = builder.build();
+        return evaluationResult2.translate(translationMap);
+
     }
 }

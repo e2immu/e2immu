@@ -15,10 +15,14 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.AbstractDelay;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface CausesOfDelay extends DV, AnalysisStatus {
@@ -34,6 +38,8 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
     CausesOfDelay removeAll(Set<CauseOfDelay> breaks);
 
     int maxPriority();
+
+    CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
 
     CausesOfDelay EMPTY = new AbstractDelay() {
 
@@ -113,6 +119,11 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
         @Override
         public String toString() {
             return "";
+        }
+
+        @Override
+        public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            return this;
         }
     };
 }

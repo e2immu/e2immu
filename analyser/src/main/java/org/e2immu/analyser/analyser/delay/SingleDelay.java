@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser.delay;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -102,5 +104,12 @@ public class SingleDelay extends AbstractDelay {
     @Override
     public String toString() {
         return cause.toString();
+    }
+
+    @Override
+    public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        CauseOfDelay translated = cause.translate(inspectionProvider, translationMap);
+        if(translated != cause) return new SingleDelay(translated);
+        return this;
     }
 }

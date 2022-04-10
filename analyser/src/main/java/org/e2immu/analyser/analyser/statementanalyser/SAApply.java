@@ -94,24 +94,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
             }
         });
-        EvaluationResult evaluationResult = builder.compose(evaluationResult1).build();
+        EvaluationResult evaluationResult2 = builder.compose(evaluationResult1).build();
         // ***
 
+        EvaluationResult evaluationResult;
         if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
-            evaluationResult.changeData().entrySet().stream()
-                    .filter(e1 -> e1.getKey().variableNature() instanceof VariableNature.Pattern pv && pv.definedInBlock().equals(index()))
-                    .forEach(e1 -> {
-                        Variable pv = e1.getKey();
-                        // we have pattern variables, which should not exist in the next iteration. This is not a problem in itself, but it is
-                        // where there are also fields that have these pattern variables in their scope. Because the value may have to live on,
-                        // a scope variable will need creating for every pattern variable used in a scope
-                        List<Map.Entry<Variable, EvaluationResult.ChangeData>> entriesOfFieldRefs = evaluationResult.changeData().entrySet().stream()
-                                .filter(e -> e.getKey() instanceof FieldReference fr && fr.hasAsScopeVariable(pv)).toList();
-                        if (!entriesOfFieldRefs.isEmpty()) {
-                            // we'll have to create a scope variable; we'll update the whole lot, so that the rest of the machinery can proceed as normal
-                            throw new UnsupportedOperationException("NYI");
-                        }
-                    });
+            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult2, index());
+        } else {
+            evaluationResult = evaluationResult2;
         }
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();

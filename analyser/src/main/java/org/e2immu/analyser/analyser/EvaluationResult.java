@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
@@ -167,6 +168,25 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return copy(child);
     }
 
+    public EvaluationResult translate(TranslationMap translationMap) {
+        Map<Variable, ChangeData> newMap = new HashMap<>();
+        InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
+        for (Map.Entry<Variable, ChangeData> e : changeData().entrySet()) {
+            Variable translated = translationMap.translateVariable(e.getKey());
+            EvaluationResult.ChangeData newChangeData = e.getValue().translate(inspectionProvider, translationMap);
+            newMap.put(translated, newChangeData);
+            if (translated != e.getKey()) {
+                newMap.put(e.getKey(), newChangeData);
+            }
+        }
+        Expression translatedValue = value == null ? null : value.translate(inspectionProvider, translationMap);
+        List<Expression> translatedStoredValues = storedValues == null ? null :
+                storedValues.stream().map(e -> e.translate(inspectionProvider, translationMap)).toList();
+        CausesOfDelay translatedCauses = causesOfDelay.translate(inspectionProvider, translationMap);
+        Precondition translatedPrecondition = precondition == null ? null : precondition.translate(inspectionProvider, translationMap);
+        return new EvaluationResult(evaluationContext, statementTime, translatedValue, translatedStoredValues, translatedCauses, messages, newMap, translatedPrecondition);
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
@@ -211,6 +231,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public boolean isMarkedRead() {
             return !readAtStatementTime.isEmpty();
+        }
+
+        public ChangeData translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+            Expression translatedValue = value == null ? null : value.translate(inspectionProvider, translationMap);
+            CausesOfDelay translatedDelays = delays == null ? null : delays.translate(inspectionProvider, translationMap);
+            CausesOfDelay translatedStateIsDelayed = stateIsDelayed == null ? null : stateIsDelayed.translate(inspectionProvider, translationMap);
+            LinkedVariables translatedLv = linkedVariables == null ? null : linkedVariables.translate(translationMap);
+            LinkedVariables translatedToRemove = toRemoveFromLinkedVariables == null ? null : toRemoveFromLinkedVariables.translate(translationMap);
+            if (translatedValue == value && translatedDelays == delays && translatedStateIsDelayed == stateIsDelayed
+                    && translatedLv == linkedVariables && translatedToRemove == toRemoveFromLinkedVariables) {
+                return this;
+            }
+            return new ChangeData(translatedValue, translatedDelays, translatedStateIsDelayed, markAssignment,
+                    readAtStatementTime, translatedLv, translatedToRemove, properties);
         }
     }
 
@@ -573,7 +607,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (container.equals(MultiLevel.CONTAINER_DV)) {
                 return;
             }
-            if(complain) {
+            if (complain) {
                 Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);
             }

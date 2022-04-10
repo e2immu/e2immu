@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
 
 public interface CauseOfDelay extends Comparable<CauseOfDelay> {
@@ -120,4 +122,6 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
 
     @NotNull
     Location location();
+
+    CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
 }

@@ -21,10 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
@@ -414,6 +411,11 @@ public interface EvaluationContext {
                                                                           Expression indexValue,
                                                                           ForwardEvaluationInfo forwardEvaluationInfo) {
         return variable;
+    }
+
+    // problem: definedInBlock() is only non-null after the first evaluation
+    default boolean isPatternVariableCreatedAt(Variable v, String index) {
+        return v.variableNature() instanceof VariableNature.Pattern pvn && index.equals(pvn.definedInBlock());
     }
 
     /*

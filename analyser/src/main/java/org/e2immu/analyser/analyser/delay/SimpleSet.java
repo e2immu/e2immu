@@ -17,7 +17,9 @@ package org.e2immu.analyser.analyser.delay;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -132,5 +134,10 @@ class SimpleSet extends AbstractDelay {
     @Override
     public int numberOfDelays() {
         return causes.size();
+    }
+
+    @Override
+    public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        return DelayFactory.createDelay(causesStream().map(c -> c.translate(inspectionProvider, translationMap)).collect(Collectors.toUnmodifiableSet()));
     }
 }

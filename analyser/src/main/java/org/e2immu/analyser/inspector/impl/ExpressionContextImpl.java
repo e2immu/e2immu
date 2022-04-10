@@ -28,10 +28,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -754,6 +751,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
                 LocalVariableReference patternVariable = instanceOfExpr.getPattern().map(pattern ->
                         new LocalVariableReference(new LocalVariable.Builder()
+                                .setNature(VariableNature.PATTERN)
                                 .setName(pattern.getNameAsString())
                                 .setOwningType(enclosingType)
                                 .setParameterizedType(type)

@@ -15,14 +15,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -47,6 +45,14 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
 
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay();
+    }
+
+    public Precondition translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+        Expression translated = expression.translate(inspectionProvider, translationMap);
+        if(translated != expression) {
+            return new Precondition(translated, causes);
+        }
+        return this;
     }
 
     public interface PreconditionCause {

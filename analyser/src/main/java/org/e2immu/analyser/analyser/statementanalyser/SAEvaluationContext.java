@@ -780,7 +780,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (!v.equals(myself)) {
             VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
             if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue(): null;
+                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue() : null;
                 Expression iv = expression instanceof VariableExpression ve ? ve.getIndexValue() : null;
                 // variables in loop defined outside
                 if (isInstance) {
@@ -852,5 +852,19 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                                                                          ForwardEvaluationInfo forwardEvaluationInfo) {
         return statementAnalysis.searchInEquivalenceGroupForLatestAssignment(this, variable, arrayValue,
                 indexValue, forwardEvaluationInfo);
+    }
+
+    @Override
+    public boolean isPatternVariableCreatedAt(Variable v, String index) {
+        if (v.variableNature() instanceof VariableNature.Pattern pvn) {
+            if (index.equals(pvn.definedInBlock())) return true;
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+            if (vic == null) {
+                // variable does not exist yet, we can live with definedInBlock == null
+                return pvn.definedInBlock() == null;
+            }
+            return vic.variableNature() instanceof VariableNature.Pattern pv2 && index.equals(pv2.definedInBlock());
+        }
+        return false;
     }
 }
