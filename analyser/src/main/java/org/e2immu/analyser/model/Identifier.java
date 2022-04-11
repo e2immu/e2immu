@@ -86,6 +86,10 @@ public interface Identifier extends Comparable<Identifier> {
         return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), toRemove.simpleName(), index);
     }
 
+    static Identifier forStatementTime(int statementTime) {
+        return new StatementTimeIdentifier(statementTime);
+    }
+
     String compact();
 
     record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {
@@ -277,6 +281,23 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return simpleName + ":" + index;
+        }
+    }
+
+    record StatementTimeIdentifier(int statementTime) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 8;
+        }
+
+        @Override
+        public String compact() {
+            return "T:" + statementTime;
         }
     }
 }

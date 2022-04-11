@@ -77,7 +77,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/properties.get(s)";
+                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/`properties`.get(s)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("properties".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -96,10 +96,10 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

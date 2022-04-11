@@ -115,7 +115,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:sum>" : "/*inline sum*/i+j";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
-                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("i, j, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
@@ -124,7 +124,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:sum5>" : "/*inline sum5*/5+`i`";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
-                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
@@ -133,7 +133,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expect = d.iteration() <= 1 ? "<m:expand3>" : "/*inline expand3*/a+b";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
-                    if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
@@ -159,7 +159,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 }
             }
             if ("expandSum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+k*i";
+                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+`i`*k";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
 
@@ -168,16 +168,16 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                     assertEquals("srv@Method_expand",
                             d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertTrue(inlinedMethod.containsVariableFields());
-                    assertEquals("variableField.i", inlinedMethod.expression().toString());
+                    assertFalse(inlinedMethod.containsVariableFields());
+                    assertEquals("`variableField.i`", inlinedMethod.expression().toString());
                 } else fail();
 
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField.i";
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/`variableField.i`";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlinedMethod_6", 0, 0, new DebugConfiguration.Builder()
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -186,16 +186,18 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expand".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("variableField.i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline expand*/`variableField.i`",
+                        d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("variableField.getI()", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline doNotExpand*/variableField.getI()",
+                        d.methodAnalysis().getSingleReturnValue().toString());
                 // non-modifying, so inlined!
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         testClass(List.of("InlinedMethod_6", "InlinedMethod_7"), 0, 0, new DebugConfiguration.Builder()
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -206,32 +208,31 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 String expected = switch (d.iteration()) {
                     case 0 -> "<m:get>+<m:get>";
                     case 1 -> "<simplification>";
-                    default -> "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                    default -> "`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`";
                 };
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:get>"
-                        : "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]";
+                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/input[index]";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals(", ", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("index, input, input[index]", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
             if ("method".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:method>"
-                        : "org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[0]+org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.method(java.lang.String[]):0:in[1]";
+                        : "/*inline method*/`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`+`org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):0:input[org.e2immu.analyser.parser.functional.testexample.InlinedMethod_9.get(java.lang.String[],int):1:index]`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         testClass("InlinedMethod_9", 0, 0, new DebugConfiguration.Builder()
-                //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

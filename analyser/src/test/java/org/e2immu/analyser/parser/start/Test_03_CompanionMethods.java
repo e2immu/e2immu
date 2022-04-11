@@ -146,7 +146,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertTrue(d.statusesAsMap().values().stream().allMatch(as -> as == AnalysisStatus.DONE || as == AnalysisStatus.RUN_AGAIN));
+                assertEquals(d.iteration() > 0,
+                        d.statusesAsMap().values().stream().allMatch(as -> as == AnalysisStatus.DONE || as == AnalysisStatus.RUN_AGAIN));
             }
         };
 
@@ -160,10 +161,10 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         // 3 condition evaluates to constant
         // @Constant expect
         testClass("BasicCompanionMethods_1", 3, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

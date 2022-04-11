@@ -123,11 +123,11 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
 
         // modification not allowed (breach of @Container contract on parameter)
         testClass("ExternalContainer_0", 1, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

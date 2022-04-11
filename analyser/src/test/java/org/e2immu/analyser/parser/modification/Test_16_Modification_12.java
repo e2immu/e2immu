@@ -64,7 +64,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
                 }
             }
@@ -97,8 +97,8 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else fail();
                 } else fail();
-                assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().preconditionIsFinal());
-                if (d.iteration() > 0) assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
+                assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
+                assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
             }
         };
 
@@ -147,10 +147,10 @@ public class Test_16_Modification_12 extends CommonTestRunner {
         };
 
         testClass("Modification_12", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

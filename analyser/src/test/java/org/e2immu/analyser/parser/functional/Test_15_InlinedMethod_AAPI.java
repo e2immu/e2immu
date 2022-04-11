@@ -88,14 +88,14 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if ("numParameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:size>"
-                                : "(inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
+                                : "(`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("parameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:getParameters>"
-                                : "inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
+                                : "`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -104,7 +104,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "(<m:equals>||<m:equals>)&&(<m:equals>||<m:isLong>)";
                             case 1, 2 -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||<m:isLong>)";
-                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||parameters.get(0).parameterizedType.s.startsWith(\"x\")||null==parameters.get(0).parameterizedType.s)";
+                            default -> "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||`((`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0)).parameterizedType.s`.startsWith(\"x\")||null==`((`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).get(0)).parameterizedType.s`)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -115,7 +115,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "1==<m:size>"
-                            : "1==(inspectionProvider.getMethodInspection(this).b?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
+                            : "1==(`inspectionProvider.getMethodInspection(this).b`?List.of(new ParameterInfo(new ParameterizedType(\"i\"),0)):List.of()).size()";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -137,10 +137,10 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_8", 0, 3, new DebugConfiguration.Builder()
-                //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
@@ -290,24 +290,24 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
 
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("List.of().stream().flatMap(e.typesReferenced().map.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
+                        assertEquals("List.of().stream().flatMap(/*inline apply*/`e.typesReferenced().map`.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
                         // no "this", because subElements is inlined!
-                        assertEquals("[]", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("$3", d.methodInfo().typeInfo.simpleName);
-                assertEquals("UpgradableBooleanMap::new", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline supplier*/UpgradableBooleanMap::new", d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
         testClass("InlinedMethod_13", 0, 6, new DebugConfiguration.Builder()
-                //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -317,17 +317,16 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("subElements".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().hasImplementations());
-                assertEquals("nullable instance type List<Expression>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline subElements*/List.of()", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("typesReferenced".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertFalse(d.methodInfo().hasImplementations());
 
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("this.subElements().stream().flatMap(e.typesReferenced().map.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
+                        assertEquals("List.of().stream().flatMap(/*inline apply*/`e.typesReferenced().map`.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
-                        // "this", because subElements is not inlined!
-                        assertEquals("[this]", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -338,8 +337,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_14", 0, 6, new DebugConfiguration.Builder()
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -353,18 +352,18 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("[lists]", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("lists", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
             if ("concatImmutable".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:concatImmutable>"
-                        : "/*inline concatImmutable*/list2.isEmpty()?list1:list1.isEmpty()&&!list2.isEmpty()?list2:List.copyOf(instance type boolean&&!list1.isEmpty()&&!list2.isEmpty()?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
+                        : "/*inline concatImmutable*/list2.isEmpty()?list1:list1.isEmpty()?list2:List.copyOf(instance type boolean?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlinedMethod_15", 0, 2, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

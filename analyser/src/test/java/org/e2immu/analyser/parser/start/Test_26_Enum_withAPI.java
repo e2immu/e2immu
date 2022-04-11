@@ -112,7 +112,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expect = d.iteration() <= 2 ? "<m:valueOf>" : "/*inline valueOf*/Arrays.stream({Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}).filter(/*inline test*/(instance type String).equals(name)).findFirst().orElseThrow()";
+                String expect = d.iteration() <= 2 ? "<m:valueOf>"
+                        : "/*inline valueOf*/Arrays.stream({`Enum_0.ONE`,`Enum_0.TWO`,`Enum_0.THREE`}).filter(/*inline test*/(instance type String).equals(name)).findFirst().orElseThrow()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 mustSeeIteration(d, 3);
 
@@ -136,12 +137,12 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);
@@ -193,9 +194,9 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         };
 
         testClass("Enum_4", 0, 2, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

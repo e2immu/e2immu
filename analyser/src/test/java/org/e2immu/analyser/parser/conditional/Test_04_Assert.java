@@ -45,7 +45,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:isDelayed>";
-                        default -> "!causes.isEmpty()";
+                        default -> "!`causes`.isEmpty()";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -68,8 +68,8 @@ public class Test_04_Assert extends CommonTestRunner {
             }
         };
         testClass("Assert_0", 0, 3, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 

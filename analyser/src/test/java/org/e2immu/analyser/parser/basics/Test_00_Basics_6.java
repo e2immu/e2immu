@@ -131,7 +131,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     }
                 }
                 if ("v3".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "field.toUpperCase()";
+                    String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "field$0.toUpperCase()";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
 
@@ -154,7 +154,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<s:String>" : "field.toUpperCase()";
+                        String expectValue = d.iteration() == 0 ? "<s:String>" : "field$0.toUpperCase()";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -349,13 +349,13 @@ public class Test_00_Basics_6 extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
         TypeInfo b6 = typeContext.getFullyQualified(Basics_6.class);
         MethodInfo test5 = b6.findUniqueMethod("test5", 0);

@@ -331,7 +331,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>)";
                             case 1 -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()?instance type int:min$4.0.3.0.0><m:size>?<m:size>:<vl:min>)";
-                            default -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3.0.0?instance type int:instance type ParameterizedType.typeInfo.length())";
+                            default -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()||`otherBound.typeInfo`.length()>=min$4.0.3.0.0?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -358,9 +358,9 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
         };
         testClass("IfStatement_9", 6, 2, new DebugConfiguration.Builder()
-                //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

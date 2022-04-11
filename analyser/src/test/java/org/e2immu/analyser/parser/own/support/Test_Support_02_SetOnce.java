@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Support_02_SetOnce extends CommonTestRunner {
@@ -101,7 +102,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     default -> "null!=`t`";
                 };
                 assertEquals(expectCondition, d.condition().toString());
-                String expectPrecondition = d.iteration() <= 1 ? "<precondition>" : "null!=t"; // FIXME should be "true"
+                String expectPrecondition = d.iteration() <= 1 ? "<precondition>" : "true";
                 assertEquals(expectPrecondition, d.statementAnalysis().stateData().getPrecondition().expression().toString());
             }
 
@@ -164,7 +165,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof LocalVariableReference lvr && "t$0".equals(lvr.simpleName())) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -191,11 +192,11 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0, 1 -> "<m:isSet>?<m:get>:null";
-                            default -> "null==`t`?null:`t`"; // TODO could be better
+                            default -> "`this.t`";
                         };
                         assertEquals(expect, d.currentValue().toString());
 
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -211,20 +212,20 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                             default -> "`this.t`";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
-// FIXME nullable                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         assertDv(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                     if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                         assertTrue(d.iteration() > 0);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 1);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                 }
                 if ("0".equals(d.statementId())) {
@@ -243,7 +244,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                             default -> "null==`t`?alternative/*@NotNull*/:`t`";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
-                        // FIXME PLAINLY WRONG assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -316,13 +317,13 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 String expectedPc = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
                     case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    default -> "Precondition[expression=null==t, causes=[methodCall:get, methodCall:set]]";
+                    default -> "Precondition[expression=null==t, causes=[methodCall:set]]";
                 };
                 assertEquals(expectedPc, d.methodAnalysis().getPreconditionForEventual().toString());
 
                 String expected = switch (d.iteration()) {
                     case 0, 1 -> "<precondition>&&<precondition>";
-                    default -> "null!=other.t&&null==t";
+                    default -> "null==t";
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
 
@@ -379,10 +380,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
 
                 // this should simply be t?
-                String expected = d.iteration() <= 1 ? "<m:getOrDefaultNull>" : "/*inline getOrDefaultNull*/null==`t`?null:`t`";
+                String expected = d.iteration() <= 1 ? "<m:getOrDefaultNull>" : "/*inline getOrDefaultNull*/`t`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
             }
         };
 

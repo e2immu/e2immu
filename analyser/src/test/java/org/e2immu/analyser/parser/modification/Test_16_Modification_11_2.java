@@ -123,8 +123,8 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String causesOfDelay = switch (d.iteration()) {
-                        case 0 -> "initial:c.set@Method_example1_2-C;initial:localD.set@Method_example1_2-C";
-                        case 1 -> "cnn@Parameter_d";
+                        case 0 -> "initial:this.s2@Method_example1_0-C";
+                        case 1 -> "cm@Parameter_setC;cm@Parameter_string;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                         // when all goes well:
                         case 2 -> "initial:this.s2@Method_example1_0-C;initial@Field_set";
                         // otherwise: cm@Parameter_string;container@Class_C1;initial@Method_add
@@ -208,11 +208,11 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
         };
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                 //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

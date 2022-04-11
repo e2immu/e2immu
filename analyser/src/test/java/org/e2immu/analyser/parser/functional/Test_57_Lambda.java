@@ -96,7 +96,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "<m:get>" : "i";
+                    String expect = d.iteration() == 0 ? "<m:get>" : "i$0";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -107,12 +107,12 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("/*inline method*/i*i$1", srv.toString());
+                assertEquals("/*inline method*/i$0*i$1", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -293,8 +293,8 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    // IMPROVE should be inner.i (see translation in InlinedMethod)
-                    String expect = d.iteration() == 0 ? "<m:get>" : "inner.i.get()";
+                    // IMPROVE should be inner.i without the .get() (see translation in InlinedMethod)
+                    String expect = d.iteration() == 0 ? "<m:get>" : "`inner.i`.get()";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -306,13 +306,13 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
                 // IMPROVE should be inner.i*inner.i$1
-                assertEquals("/*inline method*/inner.i.get()*inner.i$1", srv.toString());
+                assertEquals("/*inline method*/`inner.i`.get()*inner.i$1", srv.toString());
             }
         };
 
         testClass("Lambda_8", 0, 0, new DebugConfiguration.Builder()
-         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
