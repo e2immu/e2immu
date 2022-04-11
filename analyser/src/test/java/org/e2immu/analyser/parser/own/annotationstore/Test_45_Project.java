@@ -56,7 +56,7 @@ public class Test_45_Project extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
-                        default -> "container.read.plusMillis(readWithinMillis).isAfter(now$2)&&container.read.isBefore(container.updated)&&null!=container.read";
+                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&(entry.getValue()).read.isBefore((entry.getValue()).updated)&&null!=(entry.getValue()).read";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
@@ -65,7 +65,7 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2 -> "<m:put>";
-                        default -> "result$2.put(entry.getKey(),container.value)";
+                        default -> "result$2.put(entry.getKey(),(entry.getValue()).value)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -86,9 +86,8 @@ public class Test_45_Project extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<null-check>?null:<f:prev.value>";
-                        case 1, 2 -> "<null-check>?null:<f:value>";
-                        default -> "null==kvStore.get(key)?null:prev.value";
+                        case 0, 1, 2 -> "<null-check>?null:<f:prev.value>";
+                        default -> "null==kvStore.get(key)?null:(kvStore.get(key)).value";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
@@ -127,7 +126,7 @@ public class Test_45_Project extends CommonTestRunner {
                     String expectedCondition = switch (d.iteration()) {
                         case 0 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1, 2 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
-                        default -> "container.read.plusMillis(readWithinMillis).isAfter(now$2)&&container.read.isBefore(container.updated)&&null!=container.read";
+                        default -> "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&(entry.getValue()).read.isBefore((entry.getValue()).updated)&&null!=(entry.getValue()).read";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());
@@ -178,10 +177,10 @@ public class Test_45_Project extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 String linked = switch (d.iteration()) {
                     case 0, 1, 2 -> "";
-                    default -> "(nullable instance type Entry<String,Container>).getValue().updated:2,previousRead:0,this.kvStore:3";
+                    default -> "previousRead:0,scope-container:2.0.1.updated:2,this.kvStore:3";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }

@@ -27,9 +27,9 @@ public class ForwardEvaluationInfo {
 
     private final Map<Property, DV> properties;
     private final boolean doNotReevaluateVariableExpressions;
-    private final boolean notAssignmentTarget;
+    private final boolean isAssignmentTarget;
     private final Variable assignmentTarget;
-    private final boolean complainInlineConditional;
+    private final boolean doNotComplainInlineConditional;
     private final boolean inCompanionExpression;
     private final boolean ignoreValueFromState;
     private final Set<MethodInfo> inlining;
@@ -38,18 +38,18 @@ public class ForwardEvaluationInfo {
 
     private ForwardEvaluationInfo(Map<Property, DV> properties,
                                   boolean doNotReevaluateVariableExpressions,
-                                  boolean notAssignmentTarget,
+                                  boolean isAssignmentTarget,
                                   Variable assignmentTarget,
-                                  boolean complainInlineConditional,
+                                  boolean doNotComplainInlineConditional,
                                   boolean inCompanionExpression,
                                   boolean ignoreValueFromState,
                                   boolean evaluatingFieldExpression,
                                   Set<MethodInfo> inlining,
                                   Set<Variable> evaluating) {
         this.properties = Map.copyOf(properties);
-        this.notAssignmentTarget = notAssignmentTarget;
+        this.isAssignmentTarget = isAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
-        this.complainInlineConditional = complainInlineConditional;
+        this.doNotComplainInlineConditional = doNotComplainInlineConditional;
         this.inCompanionExpression = inCompanionExpression;
         this.doNotReevaluateVariableExpressions = doNotReevaluateVariableExpressions;
         this.ignoreValueFromState = ignoreValueFromState;
@@ -66,17 +66,13 @@ public class ForwardEvaluationInfo {
         return properties.getOrDefault(property, property.falseDv);
     }
 
-    public boolean isNotAssignmentTarget() {
-        return notAssignmentTarget;
-    }
-
     public boolean isAssignmentTarget() {
-        return !notAssignmentTarget;
+        return isAssignmentTarget;
     }
 
     public String toString() {
         return new StringJoiner(", ", ForwardEvaluationInfo.class.getSimpleName() + "[", "]")
-                .add("notAssignmentTarget=" + notAssignmentTarget)
+                .add("isAssignmentTarget=" + isAssignmentTarget)
                 .add("properties=" + properties)
                 .toString();
     }
@@ -87,7 +83,7 @@ public class ForwardEvaluationInfo {
     }
 
     public boolean isComplainInlineConditional() {
-        return complainInlineConditional;
+        return !doNotComplainInlineConditional;
     }
 
     public boolean isDoNotReevaluateVariableExpressions() {
@@ -96,10 +92,6 @@ public class ForwardEvaluationInfo {
 
     public boolean isInCompanionExpression() {
         return inCompanionExpression;
-    }
-
-    public Set<MethodInfo> getInlining() {
-        return inlining;
     }
 
     public Set<Variable> getEvaluating() {
@@ -126,9 +118,9 @@ public class ForwardEvaluationInfo {
     public static class Builder {
         private final Map<Property, DV> properties = new HashMap<>();
         private boolean doNotReevaluateVariableExpressions;
-        private boolean notAssignmentTarget = true;
+        private boolean isAssignmentTarget;
         private Variable assignmentTarget;
-        private boolean complainInlineConditional = true;
+        private boolean doNotComplainInlineConditional;
         private boolean inCompanionExpression;
         private boolean ignoreValueFromState;
         private boolean evaluatingFieldExpression;
@@ -142,18 +134,19 @@ public class ForwardEvaluationInfo {
         public Builder(ForwardEvaluationInfo fwd) {
             properties.putAll(fwd.properties);
             this.doNotReevaluateVariableExpressions = fwd.doNotReevaluateVariableExpressions;
-            this.notAssignmentTarget = fwd.notAssignmentTarget;
+            this.isAssignmentTarget = fwd.isAssignmentTarget;
             this.assignmentTarget = fwd.assignmentTarget;
-            this.complainInlineConditional = fwd.complainInlineConditional;
+            this.doNotComplainInlineConditional = fwd.doNotComplainInlineConditional;
             this.inCompanionExpression = fwd.inCompanionExpression;
             this.ignoreValueFromState = fwd.ignoreValueFromState;
+            this.evaluatingFieldExpression = fwd.evaluatingFieldExpression;
             this.inlining.addAll(fwd.inlining);
             this.evaluating.addAll(fwd.evaluating);
         }
 
         public ForwardEvaluationInfo build() {
             return new ForwardEvaluationInfo(Map.copyOf(properties), doNotReevaluateVariableExpressions,
-                    notAssignmentTarget, assignmentTarget, complainInlineConditional, inCompanionExpression,
+                    isAssignmentTarget, assignmentTarget, doNotComplainInlineConditional, inCompanionExpression,
                     ignoreValueFromState, evaluatingFieldExpression, Set.copyOf(inlining), Set.copyOf(evaluating));
         }
 
@@ -168,7 +161,7 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder setAssignmentTarget() {
-            this.notAssignmentTarget = false;
+            this.isAssignmentTarget = true;
             return this;
         }
 
@@ -178,14 +171,14 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder notNullNotAssignment() {
+            properties.clear();
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-            notAssignmentTarget = true;
+            isAssignmentTarget = false;
             return this;
         }
 
-        public Builder setCnnNotNull() {
+        public void setCnnNotNull() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-            return this;
         }
 
         public Builder ensureModificationSetNotNull() {
@@ -193,7 +186,7 @@ public class ForwardEvaluationInfo {
             if (properties.containsKey(Property.CONTEXT_MODIFIED)) {
                 addProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             }
-            notAssignmentTarget = true;
+            isAssignmentTarget = false;
             return this;
         }
 
@@ -203,12 +196,12 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder doNotComplainInlineConditional() {
-            complainInlineConditional = false;
+            doNotComplainInlineConditional = true;
             return this;
         }
 
         public Builder setComplainInlineConditional() {
-            complainInlineConditional = true;
+            doNotComplainInlineConditional = false;
             return this;
         }
 
@@ -224,7 +217,7 @@ public class ForwardEvaluationInfo {
 
         public Builder doNotReevaluateVariableExpressionsDoNotComplain() {
             doNotReevaluateVariableExpressions = true;
-            complainInlineConditional = false;
+            doNotComplainInlineConditional = false;
             return this;
         }
 
@@ -261,12 +254,17 @@ public class ForwardEvaluationInfo {
         }
 
         public Builder setNotAssignmentTarget() {
-            notAssignmentTarget = true;
+            isAssignmentTarget = false;
             return this;
         }
 
         public Builder addProperties(Map<Property, DV> map) {
             properties.putAll(map);
+            return this;
+        }
+
+        public Builder clearProperties() {
+            properties.clear();
             return this;
         }
     }

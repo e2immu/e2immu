@@ -229,7 +229,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.isComplainInlineConditional());
         }
 
-        if (forwardEvaluationInfo.isNotAssignmentTarget()) {
+        if (!forwardEvaluationInfo.isAssignmentTarget()) {
             builder.markRead(variable);
         }
         return builder.setExpression(this).build();

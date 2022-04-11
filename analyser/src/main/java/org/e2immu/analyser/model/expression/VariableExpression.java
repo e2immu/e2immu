@@ -243,9 +243,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }
-        EvaluationResult scopeResult = evaluateScope(context, forwardEvaluationInfo);
+        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
+        EvaluationResult scopeResult = evaluateScope(context, fwd);
         if (scopeResult != null) builder.compose(scopeResult);
-        EvaluationResult indexResult = evaluateIndex(context, forwardEvaluationInfo);
+        EvaluationResult indexResult = evaluateIndex(context, fwd);
         if (indexResult != null) builder.compose(indexResult);
 
         Variable source;
@@ -281,7 +282,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         if (variable instanceof This thisVar && !thisVar.typeInfo.equals(context.getCurrentType())) {
             builder.markRead(context.evaluationContext().currentThis());
         }
-        if (forwardEvaluationInfo.isNotAssignmentTarget()) {
+        if (!forwardEvaluationInfo.isAssignmentTarget()) {
             builder.markRead(variable);
             VariableExpression ve;
             if ((ve = currentValue.asInstanceOf(VariableExpression.class)) != null) {
@@ -293,8 +294,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        builder.variableOccursInNotNullContext(variable, currentValue, notNull,
-                forwardEvaluationInfo.isComplainInlineConditional());
+        builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo.isComplainInlineConditional());
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         builder.markContextModified(variable, modified);
@@ -320,7 +320,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 builder.setExpression(shortCut);
             }
         }
-        return builder.build(forwardEvaluationInfo.isNotAssignmentTarget());
+        return builder.build(!forwardEvaluationInfo.isAssignmentTarget());
     }
 
     private EvaluationResult evaluateScope(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {

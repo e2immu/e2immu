@@ -270,9 +270,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

@@ -325,7 +325,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
-                        ForwardEvaluationInfo.DEFAULT);
+                        new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
 

@@ -505,7 +505,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     // and in the case of variables assigned in a loop defined outside, where the name indicates the loop statement id
     @Override
     public Expression currentValue(Variable variable, Expression scopeValue, Expression indexValue, ForwardEvaluationInfo forwardEvaluationInfo) {
-        VariableInfo variableInfo = findForReading(variable, forwardEvaluationInfo.isNotAssignmentTarget());
+        VariableInfo variableInfo = findForReading(variable, !forwardEvaluationInfo.isAssignmentTarget());
 
         // important! do not use variable in the next statement, but variableInfo.variable()
         // we could have redirected from a variable field to a local variable copy

@@ -283,6 +283,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // scope
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                .clearProperties()
                 .addProperty(Property.CONTEXT_NOT_NULL, notNullForward)
                 .addProperty(Property.CONTEXT_MODIFIED, modified)
                 .addProperty(Property.CONTEXT_IMMUTABLE, immutableData.required)

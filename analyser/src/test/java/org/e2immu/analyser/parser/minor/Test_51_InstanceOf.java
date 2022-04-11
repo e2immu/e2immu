@@ -166,8 +166,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<instanceOf:List<String>>&&<m:isEmpty>?\"Empty\":<m:get>"
-                                : "collection/*(List<String>)*/.isEmpty()&&collection instanceof List<String>&&null!=collection?\"Empty\":collection/*(List<String>)*/.get(0)";
+                                ? "<m:isEmpty>?\"Empty\":<m:get>"
+                                : "collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0)";
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "collection:-1,list:-1,return add:0" : "return add:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -201,8 +201,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -373,13 +373,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("!(object instanceof String)||null==object", d.state().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<null-check>&&object instanceof Boolean"
+                    String expected = d.iteration() == 0 ? "<null-check>&&object instanceof Boolean"
                             : "object instanceof Boolean&&null!=object";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = d.iteration() == 0 ? "(<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                    String expected = d.iteration() == 0 ? "(!<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
                             : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected, d.state().toString());
                 }
@@ -389,7 +389,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = d.iteration() == 0 ? "!<instanceOf:Integer>&&(<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                    String expected = d.iteration() == 0
+                            ? "!<instanceOf:Integer>&&(!<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
                             : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected,
                             d.state().toString());
@@ -405,8 +406,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
 
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -485,8 +486,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
-                            case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
+                            case 0, 1 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -598,14 +598,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation>/*(Negation)*/";
-                            case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
-                            case 2 -> "<vp:expression:cm:scope-ne:2.expression@Method_method_3-E;cm:x@Method_method_3-E;initial@Field_expression>/*(Negation)*/";
-                            case 3 -> "<vp:expression:cm:expression@Method_method_2:M;cm:ne.expression@Method_method_2.0.0-E;cm:scope-ne:2.expression@Method_method_3-E;cm:x@Method_method_3-E;initial@Field_expression>/*(Negation)*/";
-                            case 4 -> "<vp:expression:cm:expression@Method_method_2:M;cm:ne.expression@Method_method_2.0.0-E;cm:ne@Method_method_2.0.0-E;cm:scope-ne:2.expression@Method_method_3-E;cm:x@Method_method_3-E;initial@Field_expression>/*(Negation)*/";
-                            default -> "expression/*(Negation)*/";
-                        };
+                        String expected = d.iteration() <= 4
+                                ? "<vp:expression:container@Record_Negation>/*(Negation)*/"
+                                : "expression/*(Negation)*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -739,26 +734,20 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("sum".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<f:expression>/*(Sum)*/";
-                            case 1 -> "<vp:expression:container@Class_InstanceOf_11>/*(Sum)*/";
-                            case 2, 3, 4 -> "<vp:expression:cm@Parameter_evaluationContext>/*(Sum)*/";
+                            case 0, 1, 2, 3, 4 -> "<f:expression>/*(Sum)*/";
                             default -> "expression/*(Sum)*/";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<f:expression>/*(Sum)*/";
-                            case 1 -> "<vp:expression:container@Class_InstanceOf_11>/*(Sum)*/";
-                            case 2, 3, 4 -> "<vp:expression:cm@Parameter_evaluationContext>/*(Sum)*/";
+                            case 0, 1, 2, 3, 4 -> "<f:expression>/*(Sum)*/";
                             default -> "expression/*(Sum)*/";
                         };
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals(expect, initial.getValue().toString());
                         String expectFixme = switch (d.iteration()) {
-                            case 0 -> "<f:expression>/*(Sum)*/";
-                            case 1 -> "<vp:expression:container@Class_InstanceOf_11>/*(Sum)*/";
-                            case 2, 3, 4 -> "<vp:expression:cm@Parameter_evaluationContext>/*(Sum)*/";
+                            case 0, 1, 2, 3, 4 -> "<f:expression>/*(Sum)*/";
                             default -> "expression/*(Sum)*/";
                         };
                         assertEquals(expectFixme, d.currentValue().toString());
@@ -1018,9 +1007,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_16", 0, 8, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }
