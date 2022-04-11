@@ -327,7 +327,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {

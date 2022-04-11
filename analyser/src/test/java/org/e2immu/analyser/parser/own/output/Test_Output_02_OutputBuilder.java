@@ -103,7 +103,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 4) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("fromPrimaryTypeDownwards, fullyQualifiedName, required, simpleName, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }

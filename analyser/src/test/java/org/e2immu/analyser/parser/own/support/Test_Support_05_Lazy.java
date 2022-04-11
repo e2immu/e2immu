@@ -76,8 +76,9 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
-                        case 1 -> "<null-check>?<vp:t:initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
-                        case 2, 3 -> "<wrapped:t>";
+                        case 1 -> "<null-check>?<f:t>:<m:requireNonNull>";
+                        case 2 -> "<wrapped:t>";
+                        case 3 -> "<s:T>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
@@ -91,24 +92,33 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
+                assertEquals("this", t.scopeVariable.simpleName());
+                assertEquals("this", t.scope.toString());
+
                 if ("0.0.0".equals(d.statementId())) {
                     assertCurrentValue(d, 4, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
                     assertCurrentValue(d, 4, "nullable instance type T");
                 }
-                String expect = switch (d.iteration()) {
-                    case 0, 1 -> "<m:requireNonNull>";
-                    case 2 -> "<wrapped:t>";
-                    case 3 -> "<s:T>";
-                    default -> "nullable instance type T/*@NotNull*/";
-                };
                 if ("1".equals(d.statementId())) {
+                    String expect = switch (d.iteration()) {
+                        case 0, 1 -> "<m:requireNonNull>";
+                        case 2 -> "<wrapped:t>";
+                        case 3 -> "<s:T>";
+                        default -> "nullable instance type T/*@NotNull*/";
+                    };
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 4, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
+                    String expect = switch (d.iteration()) {
+                        case 0, 1 -> "<m:requireNonNull>";
+                        case 2,3 -> "<wrapped:t>";
+                     //   case 3 -> "<s:T>";
+                        default -> "nullable instance type T/*@NotNull*/";
+                    };
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }

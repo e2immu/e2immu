@@ -147,9 +147,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
         testClass("FormatterSimplified_2", 4, 7, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -163,14 +163,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("4.0.0.0.0".equals(d.statementId())) {
-                String expect = d.iteration() <= 2 ? "<m:combine>"
-                        : "outputElement instanceof Symbol symbol&&null==lastOneWasSpace&&end$4>pos$4&&list.get(pos$4)!=Space.NEWLINE?null:lastOneWasSpace";
+                String expect = d.iteration() <= 2 ? "<m:combine>" : "lastOneWasSpace$4";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
 
-        testClass("FormatterSimplified_4", 2, 1, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+        testClass("FormatterSimplified_4", 2, 3, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -233,10 +232,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         DV expectCnn = switch (d.variableName()) {
-                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo",
-                                    "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE_DV;
-                            default -> throw new UnsupportedOperationException("? " + d.variableName());
+                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.$1.apply(org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo):0:forwardInfo" -> MultiLevel.NULLABLE_DV;
+                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.GuideOnStack.forwardInfo#scope-49:20" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                            default -> fail("? " + d.variableName());
                         };
                         assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL), d.variableName());
                     }
@@ -252,10 +250,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         // guide becomes ENN, which is harsh, but for now we'll keep it as is
         testClass("FormatterSimplified_6", 0, 3, new DebugConfiguration.Builder()
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -279,15 +277,18 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2
-                            ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
-                            : "(new Stack<GuideOnStack>()).peek().forwardInfo";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
+                        case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
+                        case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;initial@Field_chars;initial@Field_guide;initial@Field_pos;initial@Field_string;initial@Field_symbol;mom@Parameter_guide;mom@Parameter_string>";
+                        default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
+                    };
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1, 2 -> "<null-check>&&9==<m:index>";
-                        default -> "null!=(new Stack<GuideOnStack>()).peek().forwardInfo&&9==fwdInfo.guide.index()";
+                        default -> "null!=((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo&&9==((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo.guide.index()";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
@@ -307,9 +308,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
                 if ("fwdInfo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 2
-                                ? "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>"
-                                : "(new Stack<GuideOnStack>()).peek().forwardInfo";
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
+                            case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
+                            case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;initial@Field_chars;initial@Field_guide;initial@Field_pos;initial@Field_string;initial@Field_symbol;mom@Parameter_guide;mom@Parameter_string>";
+                            default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
+                        };
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
@@ -382,8 +386,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(d.iteration() <= 2, d.conditionManagerForNextStatement().isDelayed());
                     assertFalse(d.localConditionManager().isDelayed());
 
-                    assertEquals(d.iteration() >= 4,
-                            d.statementAnalysis().stateData().valueOfExpressionIsDelayed() == null);
+                    assertEquals(d.iteration() >= 3,
+                            d.statementAnalysis().stateData().valueOfExpressionIsDelayed().isDone());
+                    mustSeeIteration(d, 3);
 
                     assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().preconditionIsFinal());
                     assertEquals(d.iteration() >= 3,
