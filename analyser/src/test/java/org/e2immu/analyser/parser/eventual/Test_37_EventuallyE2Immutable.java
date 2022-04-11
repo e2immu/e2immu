@@ -652,7 +652,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("t$0=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("t$0, this", inlinedMethod.variablesOfExpressionSorted());
                     }
                 }
                 String pc = d.iteration() <= 1 ? "Precondition[expression=!<null-check>, causes=[escape]]"
@@ -664,7 +664,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("t$0=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("t$0, this", inlinedMethod.variablesOfExpressionSorted());
                     }
                 }
             }

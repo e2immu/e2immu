@@ -341,8 +341,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
         builder.companionAnalyses.freeze();
         VariableExpression ve = new VariableExpression(parameterInfo);
-        builder.singleReturnValue.setFinal(new InlinedMethod(Identifier.generate("isFact"), methodInfo, ve,
-                Map.of(ve, InlinedMethod.ExpansionType.NORMAL), false));
+        builder.singleReturnValue.setFinal(new InlinedMethod(Identifier.generate("isFact"), methodInfo, ve, Set.of(ve),
+                false));
         LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

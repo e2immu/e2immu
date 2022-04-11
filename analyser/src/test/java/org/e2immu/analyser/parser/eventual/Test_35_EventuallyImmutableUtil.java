@@ -177,7 +177,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("bool=NORMAL, string=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("bool, string, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -187,7 +187,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("bool=NORMAL, string=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("bool, string, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }

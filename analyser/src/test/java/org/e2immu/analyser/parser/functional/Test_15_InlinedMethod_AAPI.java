@@ -154,7 +154,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 1) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("s=NORMAL, stream=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("s, stream", inlinedMethod.variablesOfExpressionSorted());
                     }
                 }
             }
@@ -211,12 +211,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("this", inlinedMethod.variablesOfExpressionSorted());
                         if (inlinedMethod.expression() instanceof MethodCall mc1) {
                             if (mc1.object instanceof MethodCall mc2) {
                                 assertEquals(1, mc2.parameterExpressions.size());
                                 if (mc2.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
-                                    assertEquals("e=NORMAL", inlinedMethod2.variablesOfExpressionSorted());
+                                    assertEquals("e", inlinedMethod2.variablesOfExpressionSorted());
                                 } else fail();
                             } else fail();
                         } else fail();
@@ -377,7 +377,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("strings=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("strings, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -401,7 +401,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("expressions=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("expressions, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }

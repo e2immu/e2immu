@@ -64,7 +64,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("/*inline plus*/i+r", inlinedMethod.toString());
-                    assertEquals("i=NORMAL, r=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                    assertEquals("i, r, this", inlinedMethod.variablesOfExpressionSorted());
                 } else fail();
             }
             if ("difference31".equals(d.methodInfo().name) && d.iteration() > 1) {
@@ -116,7 +116,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("i=NORMAL, j=NORMAL, this=NORMAL", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("i, j, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -125,7 +125,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 1) {
                     if(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod){
-                        assertEquals("i=EXPANDED_VARIABLE, this=EXPANDED_VARIABLE", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
