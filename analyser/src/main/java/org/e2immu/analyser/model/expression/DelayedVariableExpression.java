@@ -217,15 +217,16 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
         if (variable instanceof FieldReference fr) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
-            ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
-                    forwardEvaluationInfo.copyModificationEnsureNotNull();
+            ForwardEvaluationInfo forward = fr.scopeIsThis()
+                    ? forwardEvaluationInfo.copy().notNullNotAssignment().build()
+                    : forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
             EvaluationResult scopeResult = fr.scope.evaluate(context, forward);
             builder.compose(scopeResult);
         }
 
         DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (cnn.gt(MultiLevel.NULLABLE_DV)) {
-            builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.complainInlineConditional());
+            builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.isComplainInlineConditional());
         }
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
@@ -260,7 +261,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                     FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
                     return DelayedVariableExpression.forField(newFr, statementTime, causesOfDelay);
                 }
-            } else if (variable instanceof DependentVariable dv) {
+            } else if (variable instanceof DependentVariable) {
                 throw new UnsupportedOperationException("NYI");
             }
         }

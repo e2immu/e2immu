@@ -134,7 +134,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         ForwardEvaluationInfo forward = allowsForNullOperands(primitives)
-                ? forwardEvaluationInfo.copyDefault() : forwardEvaluationInfo.notNullNotAssignment();
+                ? new ForwardEvaluationInfo.Builder(forwardEvaluationInfo).setCnnNullable().build()
+                : new ForwardEvaluationInfo.Builder(forwardEvaluationInfo).notNullNotAssignment().build();
         EvaluationResult leftResult = lhs.evaluate(context, forward);
         EvaluationResult rightResult = rhs.evaluate(context, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);
@@ -261,10 +262,10 @@ public class BinaryOperator extends BaseExpression implements Expression {
             return StringConcat.stringConcat(identifier, context, l, r);
         }
 
-        if(operator == primitives.andOperatorBool()) {
+        if (operator == primitives.andOperatorBool()) {
             return And.and(identifier, context, l, r);
         }
-        if(operator == primitives.orOperatorBool()) {
+        if (operator == primitives.orOperatorBool()) {
             return Or.or(identifier, context, l, r);
         }
 
@@ -297,7 +298,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     private EvaluationResult shortCircuit(EvaluationResult context,
                                           ForwardEvaluationInfo forwardEvaluationInfo,
                                           boolean and) {
-        ForwardEvaluationInfo forward = forwardEvaluationInfo.notNullNotAssignment();
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         Primitives primitives = context.getPrimitives();
 

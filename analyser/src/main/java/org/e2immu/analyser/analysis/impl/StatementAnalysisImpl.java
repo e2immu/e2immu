@@ -2336,11 +2336,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         List<VariableInfo> inEquivalenceGroup = variableStream().filter(vi -> {
             Variable v = vi.variable();
             if (v.equals(dependentVariable)) return true;
-            if (v instanceof DependentVariable dv && !forwardEvaluationInfo.evaluating().contains(v)) {
+            if (v instanceof DependentVariable dv && !forwardEvaluationInfo.getEvaluating().contains(v)) {
                 boolean acceptArrayValue;
                 if (dv.arrayVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
                     // the idea is to evaluate the expression, but we have to be careful to avoid recursions
-                    ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.addEvaluating(dv);
+                    ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().addEvaluating(dv).build();
                     EvaluationResult er = dv.arrayExpression().evaluate(EvaluationResult.from(evaluationContext), fwd);
                     acceptArrayValue = arrayValue.equals(er.value());
                 } else if (dv.arrayVariable().equals(dependentVariable.arrayVariable())) {

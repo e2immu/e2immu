@@ -219,7 +219,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                     }
                     return new VariableExpression(newFr, suffix, translated, null);
                 }
-            } else if (variable instanceof DependentVariable dv) {
+            } else if (variable instanceof DependentVariable) {
                 throw new UnsupportedOperationException("NYI");
             }
         }
@@ -240,7 +240,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        if (forwardEvaluationInfo.doNotReevaluateVariableExpressions()) {
+        if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();
         }
         EvaluationResult scopeResult = evaluateScope(context, forwardEvaluationInfo);
@@ -293,7 +293,8 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo.complainInlineConditional());
+        builder.variableOccursInNotNullContext(variable, currentValue, notNull,
+                forwardEvaluationInfo.isComplainInlineConditional());
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         builder.markContextModified(variable, modified);
@@ -305,7 +306,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
-        builder.variableOccursInContainerContext(variable, contextContainer, forwardEvaluationInfo.complainInlineConditional());
+        builder.variableOccursInContainerContext(variable, contextContainer, forwardEvaluationInfo.isComplainInlineConditional());
 
         DV contextImmutable = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(Property.NEXT_CONTEXT_IMMUTABLE);
@@ -324,15 +325,17 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     private EvaluationResult evaluateScope(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (variable instanceof FieldReference fr) {
+            ForwardEvaluationInfo.Builder builder = forwardEvaluationInfo.copy();
             if (fr.isStatic) {
                 // no need to do an assignment
-                return fr.scope.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+                return fr.scope.evaluate(context, builder.notNullNotAssignment().build());
             }
             // there is a scope variable
             if (fr.scope instanceof VariableExpression ve) {
                 // do not continue modification onto This: we want modifications on this only when there's a direct method call
-                ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
-                        forwardEvaluationInfo.copyModificationEnsureNotNull();
+                ForwardEvaluationInfo forward = fr.scopeIsThis()
+                        ? builder.notNullNotAssignment().build()
+                        : builder.ensureModificationSetNotNull().build();
                 return ve.evaluate(context, forward);
             }
             if (forwardEvaluationInfo.isEvaluatingFieldExpression()) {
@@ -340,7 +343,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 return new EvaluationResult.Builder(context).setExpression(fr.scope).build();
             }
             assert fr.scopeVariable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
-            ForwardEvaluationInfo forward = forwardEvaluationInfo.copyModificationEnsureNotNull();
+            ForwardEvaluationInfo forward = builder.ensureModificationSetNotNull().build();
             VariableExpression scopeVE = new VariableExpression(fr.scopeVariable);
             Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, fr.scope);
             return assignment.evaluate(context, forward);
@@ -366,10 +369,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             return new EvaluationResult.Builder(context).setExpression(expression).build();
         }
         if (expression instanceof VariableExpression ve) {
-            return ve.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+            return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment().build());
         }
         assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
-        ForwardEvaluationInfo forward = forwardEvaluationInfo.copyModificationEnsureNotNull();
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
         VariableExpression scopeVE = new VariableExpression(variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
         return assignment.evaluate(context, forward);

@@ -282,16 +282,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // scope
-        EvaluationResult objectResult = object.evaluate(context, new ForwardEvaluationInfo(Map.of(
-                Property.CONTEXT_NOT_NULL, notNullForward,
-                Property.CONTEXT_MODIFIED, modified,
-                Property.CONTEXT_IMMUTABLE, immutableData.required,
-                Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), forwardEvaluationInfo.doNotReevaluateVariableExpressions(), true,
-                forwardEvaluationInfo.assignmentTarget(), forwardEvaluationInfo.complainInlineConditional(),
-                forwardEvaluationInfo.inCompanionExpression(),
-                forwardEvaluationInfo.ignoreValueFromState(),
-                forwardEvaluationInfo.inlining(),
-                forwardEvaluationInfo.evaluating()));
+        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                .addProperty(Property.CONTEXT_NOT_NULL, notNullForward)
+                .addProperty(Property.CONTEXT_MODIFIED, modified)
+                .addProperty(Property.CONTEXT_IMMUTABLE, immutableData.required)
+                .addProperty(Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next)
+                .setNotAssignmentTarget().build();
+        EvaluationResult objectResult = object.evaluate(context, fwd);
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -768,8 +765,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression companionValue = companionAnalysis.getValue();
         Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());
         EvaluationResult child = context.child(instanceState, true);
-        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain()
-                .copyInCompanionExpression();
+        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain()
+                .setInCompanionExpression().build();
         EvaluationResult companionValueTranslationResult = translated.evaluate(child, fwd);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();

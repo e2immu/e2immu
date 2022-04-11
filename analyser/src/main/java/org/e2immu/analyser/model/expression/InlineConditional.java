@@ -184,7 +184,8 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult conditionResult = condition.evaluate(context, forwardEvaluationInfo.notNullNotAssignment());
+        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
+        EvaluationResult conditionResult = condition.evaluate(context, fwd);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(conditionResult);
 
         boolean resultIsBoolean = returnType().equals(context.getPrimitives().booleanParameterizedType());
@@ -225,7 +226,7 @@ public class InlineConditional extends BaseExpression implements Expression {
             return builder.setExpression(inlineConditional).build();
         }
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
-                conditionAfterState, t, f, forwardEvaluationInfo.complainInlineConditional(), null);
+                conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null);
         return builder.compose(cv).build();
     }
 

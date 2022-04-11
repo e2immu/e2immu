@@ -28,7 +28,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -109,14 +108,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
-            Map<Property, DV> map = Map.of(
-                    Property.CONTEXT_MODIFIED, modified,
-                    Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-
-            scopeForward = new ForwardEvaluationInfo(map, false, true,
-                    forwardEvaluationInfo.assignmentTarget(), true,
-                    forwardEvaluationInfo.inCompanionExpression(), false,
-                    forwardEvaluationInfo.inlining(), forwardEvaluationInfo.evaluating());
+            scopeForward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                    .addProperty(Property.CONTEXT_MODIFIED, modified)
+                    .addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV)
+                    .setReevaluateVariableExpressions()
+                    .setNotAssignmentTarget()
+                    .setComplainInlineConditional()
+                    .doNotIgnoreValueFromState()
+                    .build();
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {
@@ -124,7 +123,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
             }
         } else {
-            scopeForward = forwardEvaluationInfo.notNullNotAssignment();
+            scopeForward = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         }
         EvaluationResult scopeResult = scope.evaluate(context, scopeForward);
         builder.compose(scopeResult);

@@ -384,7 +384,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         Expression translated = sharedState.evaluationContext().getIteration() > 0
                                 ? replaceUnknownFields(sharedState.evaluationContext(), translated1) : translated1;
                         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
-                        EvaluationResult er = translated.evaluate(context, ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain());
+                        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
+                        EvaluationResult er = translated.evaluate(context, fwd);
                         Expression end = er.value();
                         builder.compose(er);
 
@@ -465,7 +466,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             // if translated == currentReturnValue, then there was no returnExpression, so we stick to expression
             toEvaluate = translated == currentReturnValue ? expression : translated;
             evaluationContext = sharedState.evaluationContext().dropConditionManager();
-            forwardEvaluationInfo = structure.forwardEvaluationInfo().copyDoNotComplainInlineConditionalIgnoreValueFromState();
+            forwardEvaluationInfo = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
+                    .doNotComplainInlineConditional().setIgnoreValueFromState().build();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);

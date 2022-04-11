@@ -19,30 +19,33 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public record ForwardEvaluationInfo(Map<Property, DV> properties,
-                                    boolean doNotReevaluateVariableExpressions,
-                                    boolean notAssignmentTarget,
-                                    Variable assignmentTarget,
-                                    boolean complainInlineConditional,
-                                    boolean inCompanionExpression,
-                                    boolean ignoreValueFromState,
-                                    Set<MethodInfo> inlining,
-                                    Set<Variable> evaluating) {
+public class ForwardEvaluationInfo {
 
-    public ForwardEvaluationInfo(Map<Property, DV> properties,
-                                 boolean doNotReevaluateVariableExpressions,
-                                 boolean notAssignmentTarget,
-                                 Variable assignmentTarget,
-                                 boolean complainInlineConditional,
-                                 boolean inCompanionExpression,
-                                 boolean ignoreValueFromState,
-                                 Set<MethodInfo> inlining,
-                                 Set<Variable> evaluating) {
+    private final Map<Property, DV> properties;
+    private final boolean doNotReevaluateVariableExpressions;
+    private final boolean notAssignmentTarget;
+    private final Variable assignmentTarget;
+    private final boolean complainInlineConditional;
+    private final boolean inCompanionExpression;
+    private final boolean ignoreValueFromState;
+    private final Set<MethodInfo> inlining;
+    private final Set<Variable> evaluating;
+    private final boolean evaluatingFieldExpression;
+
+    private ForwardEvaluationInfo(Map<Property, DV> properties,
+                                  boolean doNotReevaluateVariableExpressions,
+                                  boolean notAssignmentTarget,
+                                  Variable assignmentTarget,
+                                  boolean complainInlineConditional,
+                                  boolean inCompanionExpression,
+                                  boolean ignoreValueFromState,
+                                  boolean evaluatingFieldExpression,
+                                  Set<MethodInfo> inlining,
+                                  Set<Variable> evaluating) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
         this.assignmentTarget = assignmentTarget;
@@ -52,6 +55,7 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
         this.ignoreValueFromState = ignoreValueFromState;
         this.inlining = inlining;
         this.evaluating = evaluating;
+        this.evaluatingFieldExpression = evaluatingFieldExpression;
     }
 
     public boolean assignToField() {
@@ -77,122 +81,199 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
                 .toString();
     }
 
-    public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
-            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false, true, null, true,
-            false, false, Set.of(), Set.of());
-
-    public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
-            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), false,
-            false, null, true, false,
-            false, Set.of(), Set.of());
-
-    public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
-            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), false,
-            true, null, true, false,
-            false, Set.of(), Set.of());
-
-    public ForwardEvaluationInfo copyDefault() {
-        return new ForwardEvaluationInfo(Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
-                doNotReevaluateVariableExpressions, true, assignmentTarget, complainInlineConditional,
-                inCompanionExpression, ignoreValueFromState, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo notNullNotAssignment() {
-        return new ForwardEvaluationInfo(
-                Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                true, assignmentTarget, complainInlineConditional, inCompanionExpression,
-                ignoreValueFromState, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo notNullKeepAssignment() {
-        return new ForwardEvaluationInfo(
-                Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV), doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, complainInlineConditional, inCompanionExpression,
-                ignoreValueFromState, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyModificationEnsureNotNull() {
-        Map<Property, DV> map = new HashMap<>();
-        map.put(Property.CONTEXT_MODIFIED,
-                properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV));
-        map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, true,
-                assignmentTarget, complainInlineConditional, inCompanionExpression,
-                ignoreValueFromState, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyAddAssignmentTarget(Variable variable) {
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, inCompanionExpression,
-                ignoreValueFromState, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyAddAssignmentTargetEnsureNotNull(Variable variable) {
-        Map<Property, DV> map = new HashMap<>(properties);
-        map.merge(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV, DV::max);
-        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, variable, complainInlineConditional, inCompanionExpression, ignoreValueFromState,
-                inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyDoNotComplainInlineConditional() {
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, false, inCompanionExpression, ignoreValueFromState,
-                inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyDoNotComplainInlineConditionalIgnoreValueFromState() {
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions,
-                notAssignmentTarget, assignmentTarget, false, inCompanionExpression,
-                true, inlining, evaluating);
-    }
-
-    public ForwardEvaluationInfo copyDoNotReevaluateVariableExpressionsDoNotComplain() {
-        return new ForwardEvaluationInfo(properties, true, notAssignmentTarget,
-                assignmentTarget, false, inCompanionExpression, ignoreValueFromState, inlining,
-                evaluating);
-    }
-
-    /*
-    if the condition contains a boolean method call expression, such as "this.contains("a")", an we are not
-    in companion expression mode, then evaluating this.contains("a") will result in TRUE.
-    In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
-     */
-    public ForwardEvaluationInfo copyInCompanionExpression() {
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions, notAssignmentTarget,
-                assignmentTarget, complainInlineConditional, true, ignoreValueFromState, inlining,
-                evaluating);
-    }
-
-    public ForwardEvaluationInfo copyRemoveContextNotNull() {
-        Map<Property, DV> map = new HashMap<>(properties);
-        map.remove(Property.CONTEXT_NOT_NULL);
-        return new ForwardEvaluationInfo(map, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, inCompanionExpression, ignoreValueFromState, inlining, evaluating);
-    }
-
     public boolean allowInline(MethodInfo methodInfo) {
         Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
         return Collections.disjoint(inlining, top);
     }
 
-    public ForwardEvaluationInfo addMethod(MethodInfo methodInfo) {
-        Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
-        assert Collections.disjoint(inlining, top);
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, inCompanionExpression, ignoreValueFromState, SetUtil.immutableUnion(inlining, top),
-                evaluating);
+    public boolean isComplainInlineConditional() {
+        return complainInlineConditional;
     }
 
-    private Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {
+    public boolean isDoNotReevaluateVariableExpressions() {
+        return doNotReevaluateVariableExpressions;
+    }
+
+    public boolean isInCompanionExpression() {
+        return inCompanionExpression;
+    }
+
+    public Set<MethodInfo> getInlining() {
+        return inlining;
+    }
+
+    public Set<Variable> getEvaluating() {
+        return evaluating;
+    }
+
+    public static ForwardEvaluationInfo DEFAULT = new Builder().build();
+    public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new Builder().setAssignmentTarget().build();
+    public static ForwardEvaluationInfo NOT_NULL = new Builder()
+            .addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV).build();
+
+    public boolean isEvaluatingFieldExpression() {
+        return evaluatingFieldExpression;
+    }
+
+    public Builder copy() {
+        return new Builder(this);
+    }
+
+    public boolean isIgnoreValueFromState() {
+        return ignoreValueFromState;
+    }
+
+    public static class Builder {
+        private final Map<Property, DV> properties = new HashMap<>();
+        private boolean doNotReevaluateVariableExpressions;
+        private boolean notAssignmentTarget = true;
+        private Variable assignmentTarget;
+        private boolean complainInlineConditional = true;
+        private boolean inCompanionExpression;
+        private boolean ignoreValueFromState;
+        private boolean evaluatingFieldExpression;
+        private final Set<MethodInfo> inlining = new HashSet<>();
+        private final Set<Variable> evaluating = new HashSet<>();
+
+        public Builder() {
+            addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
+        }
+
+        public Builder(ForwardEvaluationInfo fwd) {
+            properties.putAll(fwd.properties);
+            this.doNotReevaluateVariableExpressions = fwd.doNotReevaluateVariableExpressions;
+            this.notAssignmentTarget = fwd.notAssignmentTarget;
+            this.assignmentTarget = fwd.assignmentTarget;
+            this.complainInlineConditional = fwd.complainInlineConditional;
+            this.inCompanionExpression = fwd.inCompanionExpression;
+            this.ignoreValueFromState = fwd.ignoreValueFromState;
+            this.inlining.addAll(fwd.inlining);
+            this.evaluating.addAll(fwd.evaluating);
+        }
+
+        public ForwardEvaluationInfo build() {
+            return new ForwardEvaluationInfo(Map.copyOf(properties), doNotReevaluateVariableExpressions,
+                    notAssignmentTarget, assignmentTarget, complainInlineConditional, inCompanionExpression,
+                    ignoreValueFromState, evaluatingFieldExpression, Set.copyOf(inlining), Set.copyOf(evaluating));
+        }
+
+        public Builder addProperty(Property property, DV value) {
+            properties.put(property, value);
+            return this;
+        }
+
+        public Builder setEvaluatingFieldExpression() {
+            evaluatingFieldExpression = true;
+            return this;
+        }
+
+        public Builder setAssignmentTarget() {
+            this.notAssignmentTarget = false;
+            return this;
+        }
+
+        public Builder setCnnNullable() {
+            addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
+            return this;
+        }
+
+        public Builder notNullNotAssignment() {
+            addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            notAssignmentTarget = true;
+            return this;
+        }
+
+        public Builder setCnnNotNull() {
+            addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            return this;
+        }
+
+        public Builder ensureModificationSetNotNull() {
+            addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            if (properties.containsKey(Property.CONTEXT_MODIFIED)) {
+                addProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+            }
+            notAssignmentTarget = true;
+            return this;
+        }
+
+        public Builder setAssignmentTarget(Variable variable) {
+            assignmentTarget = variable;
+            return this;
+        }
+
+        public Builder doNotComplainInlineConditional() {
+            complainInlineConditional = false;
+            return this;
+        }
+
+        public Builder setComplainInlineConditional() {
+            complainInlineConditional = true;
+            return this;
+        }
+
+        public Builder setIgnoreValueFromState() {
+            ignoreValueFromState = true;
+            return this;
+        }
+
+        public Builder doNotIgnoreValueFromState() {
+            ignoreValueFromState = false;
+            return this;
+        }
+
+        public Builder doNotReevaluateVariableExpressionsDoNotComplain() {
+            doNotReevaluateVariableExpressions = true;
+            complainInlineConditional = false;
+            return this;
+        }
+
+        public Builder setReevaluateVariableExpressions() {
+            doNotReevaluateVariableExpressions = false;
+            return this;
+        }
+
+        /*
+        if the condition contains a boolean method call expression, such as "this.contains("a")", an we are not
+        in companion expression mode, then evaluating this.contains("a") will result in TRUE.
+        In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
+         */
+        public Builder setInCompanionExpression() {
+            inCompanionExpression = true;
+            return this;
+        }
+
+        public Builder removeContextNotNull() {
+            properties.remove(Property.CONTEXT_NOT_NULL);
+            return this;
+        }
+
+        public Builder addMethod(MethodInfo methodInfo) {
+            Set<MethodInfo> top = topOfOverloadingHierarchy(methodInfo);
+            assert Collections.disjoint(inlining, top);
+            inlining.addAll(top);
+            return this;
+        }
+
+        public Builder addEvaluating(Variable variable) {
+            evaluating.add(variable);
+            return this;
+        }
+
+        public Builder setNotAssignmentTarget() {
+            notAssignmentTarget = true;
+            return this;
+        }
+
+        public Builder addProperties(Map<Property, DV> map) {
+            properties.putAll(map);
+            return this;
+        }
+    }
+
+    private static Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {
         MethodResolution methodResolution = methodInfo.methodResolution.get();
         if (methodResolution.overrides().isEmpty()) return Set.of(methodInfo);
         return methodResolution.overrides().stream().flatMap(mi -> topOfOverloadingHierarchy(mi).stream()).collect(Collectors.toUnmodifiableSet());
-    }
-
-    public ForwardEvaluationInfo addEvaluating(Variable variable) {
-        return new ForwardEvaluationInfo(properties, doNotReevaluateVariableExpressions, notAssignmentTarget, assignmentTarget,
-                complainInlineConditional, inCompanionExpression, ignoreValueFromState, inlining,
-                SetUtil.immutableUnion(evaluating, Set.of(variable)));
     }
 }

@@ -763,7 +763,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         Expression expression = makeVariableExpression(variableInfo, scopeValue, indexValue);
         if (expression.isDelayed()) return expression;
 
-        if (expression instanceof VariableExpression ve && !forwardEvaluationInfo.ignoreValueFromState()) {
+        if (expression instanceof VariableExpression ve && !forwardEvaluationInfo.isIgnoreValueFromState()) {
             Expression valueFromState = statementAnalysis.stateData().equalityAccordingToStateGetOrDefaultNull(ve);
             if (valueFromState != null) {
                 return valueFromState;

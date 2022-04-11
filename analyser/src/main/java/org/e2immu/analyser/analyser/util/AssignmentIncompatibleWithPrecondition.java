@@ -85,7 +85,7 @@ public class AssignmentIncompatibleWithPrecondition {
                                     Expression translated = state.translate(evaluationContext.getAnalyserContext(), translationMap);
                                     EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                     EvaluationResult neutralContext = EvaluationResult.from(neutralEc);
-                                    ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+                                    ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
                                     Expression stateInTermsOfField = translated.evaluate(neutralContext, fwd).getExpression();
                                     return DV.fromBoolDv(!isCompatible(context, stateInTermsOfField, pcExpression));
                                 }
@@ -153,7 +153,7 @@ public class AssignmentIncompatibleWithPrecondition {
                                                    Expression precondition) {
         TranslationMap translationMap = new TranslationMapImpl.Builder().put(new VariableExpression(variable), value).build();
         Expression translated = precondition.translate(evaluationContext.getAnalyserContext(), translationMap);
-        ForwardEvaluationInfo fwd = ForwardEvaluationInfo.DEFAULT.copyDoNotReevaluateVariableExpressionsDoNotComplain();
+        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
         Expression reEvaluated = translated.evaluate(EvaluationResult.from(evaluationContext), fwd).getExpression();
         // false ~ incompatible with precondition
         if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();

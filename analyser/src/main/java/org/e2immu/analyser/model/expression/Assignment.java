@@ -246,13 +246,13 @@ public class Assignment extends BaseExpression implements Expression {
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
 
         // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a primitve
-        ForwardEvaluationInfo fwd;
         Variable variable = ve == null ? null : ve.variable();
+        ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                .setAssignmentTarget(variable);
         if (target.returnType().isPrimitiveExcludingVoid()) {
-            fwd = forwardEvaluationInfo.copyAddAssignmentTargetEnsureNotNull(variable);
-        } else {
-            fwd = forwardEvaluationInfo.copyAddAssignmentTarget(variable);
+            fwdBuilder.setCnnNotNull();
         }
+        ForwardEvaluationInfo fwd = fwdBuilder.build();
 
         EvaluationResult valueResult = value.evaluate(context, fwd);
 
