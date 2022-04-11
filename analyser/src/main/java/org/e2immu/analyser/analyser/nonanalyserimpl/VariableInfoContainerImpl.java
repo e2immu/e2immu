@@ -421,6 +421,21 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
+    public void copyFromPreviousOrInitialIntoMerge() {
+        assert this.evaluation.isSet();
+        VariableInfoImpl evaluation = this.evaluation.get();
+        VariableInfo previous = getPreviousOrInitial();
+        previous.propertyStream()
+                .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
+                .forEach(e -> {
+                    assert !e.getKey().valueProperty || previous.getValue().isDelayed() || e.getValue().isDone();
+                    setProperty(e.getKey(), e.getValue(), false, Stage.EVALUATION);
+                });
+
+        evaluation.setValue(previous.getValue());
+        evaluation.setLinkedVariables(previous.getLinkedVariables());
+    }
+
     // when a block changes to Execution.NEVER (see e.g. EvaluateToConstant)
     // we're not too worried about overwriting info
     @Override

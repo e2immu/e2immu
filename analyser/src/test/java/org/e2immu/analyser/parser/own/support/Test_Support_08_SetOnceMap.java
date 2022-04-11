@@ -77,7 +77,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 2) {
-                        String expected = "map=false:0,org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
+                        String expected = "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
                         assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
                                 .map(Object::toString).sorted().collect(Collectors.joining(",")));
                     }
@@ -178,6 +178,9 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
+                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/map.get(k)/*@NotNull*/";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
@@ -205,11 +208,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 1,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-               //         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-               //         .addStatementAnalyserVisitor(statementAnalyserVisitor)
-               //         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               //         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-               //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build());
     }
 

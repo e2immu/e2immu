@@ -570,19 +570,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             .defaultImmutable(variable.parameterizedType(), false);
                     vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
                 }
-            } else {
-                if (vic.previousIsRemoved()) {
-                    vic.remove();
-                }
-                if (vic.hasEvaluation()
-                        // the following situation is dealt with in SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                        && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside && index.equals(outside.statementIndex()))
-                    // see e.g. VariableInLoop_1: don't write now, there'll be an assignment in SAApply.apply soon
-                    //  && / TODO implement !variableInfo.variable().allowedToCreateVariableExpression() ||
-                    // TODO  !(stateData.inEqualityAccordingToState(evaluationContext.makeVariableExpression(variableInfo))))) {
-                ) {
-                    vic.copy(); //otherwise, variable not assigned, not read
-                }
+            } else if (vic.previousIsRemoved()) {
+                vic.remove();
             }
         });
         if (copyFrom != null) {

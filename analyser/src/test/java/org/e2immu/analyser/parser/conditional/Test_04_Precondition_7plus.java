@@ -119,9 +119,9 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         String expected2 = switch (d.iteration()) {
-                            case 0 -> "<vl:wildCard>";
-                            case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
-                            case 2 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
+                            case 0, 1, 2 -> "<vl:wildCard>";
+                            // case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
+                            // case 2 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
                             default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                         };
                         assertEquals(expected2, d.currentValue().toString());
@@ -159,7 +159,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.11".equals(d.statementId())) {
-                        String expected = d.iteration() <= 20 ? "<f:ARRAY_BRACKET>" : "'['";
+                        String expected = d.iteration() == 0 ? "<f:ARRAY_BRACKET>" : "'['";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -242,7 +242,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, cycleInfo.nonModified.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", ")));
             }
         };
-        testClass("Precondition_7", 7, 13,
+        testClass("Precondition_7", 6, 11,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -384,29 +384,26 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expected = switch (d.iteration()) {
-                    case 0, 1 -> "Precondition[expression=<precondition>, causes=[]]";
-                    case 2 -> "Precondition[expression=1==<f:<vp:TYPE_ANALYSIS:cm@Parameter_name;initial@Field_priority>.priority>, causes=[]]";
-                    case 3 -> "Precondition[expression=1==<f:Cause.TYPE_ANALYSIS.priority>, causes=[]]";
-                    default -> "Precondition[expression=true, causes=[]]";
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=1==<m:containsCauseOfDelay>, causes=[]]";
+                    default -> "Precondition[expression=1==`cause`.priority, causes=[methodCall:containsCauseOfDelay]]";
                 };
                 assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("containsCauseOfDelay".equals(d.methodInfo().name)) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "Precondition[expression=<precondition>, causes=[escape]]";
-                    case 1 -> "Precondition[expression=<m:highPriority>, causes=[escape]]";
-                    default -> "Precondition[expression=1==cause.priority, causes=[escape]]";
-                };
+                String expected = d.iteration() == 0
+                        ? "Precondition[expression=<m:highPriority>, causes=[escape]]"
+                        : "Precondition[expression=1==cause.priority, causes=[escape]]";
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
-        testClass("Precondition_10", 0, 16,
+        testClass("Precondition_10", 0, 4,
                 new DebugConfiguration.Builder()
-                        //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -508,10 +505,10 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

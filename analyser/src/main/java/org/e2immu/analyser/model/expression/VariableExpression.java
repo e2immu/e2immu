@@ -187,7 +187,9 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public int hashCode() {
-        return variable.hashCode() + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode()
+        int hc = variable instanceof FieldReference fr ? fr.fieldInfo.hashCode() :
+                variable instanceof DependentVariable ? 0 : variable.hashCode();
+        return hc + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode()
                 - 89 * (indexValue == null ? 0 : indexValue.hashCode());
     }
 
@@ -332,6 +334,10 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                 ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                         forwardEvaluationInfo.copyModificationEnsureNotNull();
                 return ve.evaluate(context, forward);
+            }
+            if (forwardEvaluationInfo.isEvaluatingFieldExpression()) {
+                // the field analyser does not know local variables, so no need for assignments
+                return new EvaluationResult.Builder(context).setExpression(fr.scope).build();
             }
             assert fr.scopeVariable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
             ForwardEvaluationInfo forward = forwardEvaluationInfo.copyModificationEnsureNotNull();

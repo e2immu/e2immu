@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -103,9 +104,16 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return VariableInfoContainer.NOT_A_FIELD;
     }
 
-   default void visit(Predicate<Expression> predicate) {
+    default void visit(Predicate<Expression> predicate) {
         // do nothing, but any variable containing an expression should go there (field reference, dependent variable)
-   }
+    }
 
-   default boolean hasScopeVariableCreatedAt(String index) { return false; }
+    default boolean hasScopeVariableCreatedAt(String index) {
+        return false;
+    }
+
+    // causes of delay in scope, index
+    default CausesOfDelay causesOfDelay() {
+        return CausesOfDelay.EMPTY;
+    }
 }

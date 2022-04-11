@@ -334,7 +334,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:myPackage>" : "nullable instance type String";
+                        String expected = d.iteration() <= 1 ? "<p:myPackage>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

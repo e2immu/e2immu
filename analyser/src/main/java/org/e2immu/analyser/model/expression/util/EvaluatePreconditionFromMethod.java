@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ExpandedVariable;
 import org.e2immu.analyser.model.expression.Filter;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -60,7 +61,20 @@ public class EvaluatePreconditionFromMethod {
             return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
         }
 
-        // there is a precondition, and we have a list of values... let's see what we can learn
+        Expression inlinedMethod = InlinedMethod.of(identifierOfMethodCall, methodInfo, precondition.expression(), context.getAnalyserContext());
+        if (inlinedMethod.isDelayed()) {
+            CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay()).merge(inlinedMethod.causesOfDelay());
+            return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
+        }
+        InlinedMethod iv = (InlinedMethod) inlinedMethod;
+        TranslationMap translationMap = iv.translationMap(context, parameterValues, scopeObject,
+                context.getCurrentType(), identifierOfMethodCall);
+        Expression translated = iv.translate(context.getAnalyserContext(), translationMap);
+        ForwardEvaluationInfo forward = ForwardEvaluationInfo.DEFAULT.addMethod(methodInfo).copyDoNotComplainInlineConditional();
+        EvaluationResult er = translated.evaluate(context, forward);
+        Expression reEvaluated = er.getExpression();
+        builder.compose(er);
+      /*  // there is a precondition, and we have a list of values... let's see what we can learn
         // the precondition is using parameter info's as variables so we'll have to substitute
         TranslationMap translationMap = translationMap(context.evaluationContext(),
                 methodInfo, parameterValues, scopeObject);
@@ -73,7 +87,7 @@ public class EvaluatePreconditionFromMethod {
             builder.composeIgnoreExpression(eRreEvaluated);
         } else {
             reEvaluated = precondition.expression();
-        }
+        }*/
 
         // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
         // in the form of ExpandedVariable, so they cannot cause delays

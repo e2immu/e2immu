@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -241,5 +242,10 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public boolean hasAsScopeVariable(Variable pv) {
         return scopeVariable != null &&
                 (pv.equals(scopeVariable) || scopeVariable instanceof FieldReference fr && fr.hasAsScopeVariable(pv));
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return scope.causesOfDelay().merge(scopeVariable == null ? CausesOfDelay.EMPTY: scopeVariable.causesOfDelay());
     }
 }

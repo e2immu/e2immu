@@ -34,6 +34,7 @@ public class ExpandedVariable extends BaseExpression {
 
     public ExpandedVariable(Identifier identifier, Variable variable, Properties properties) {
         super(identifier);
+        assert variable.causesOfDelay().isDone();
         this.variable = Objects.requireNonNull(variable);
         this.properties = Objects.requireNonNull(properties);
     }

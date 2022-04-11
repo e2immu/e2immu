@@ -44,8 +44,7 @@ public class Test_00_Basics_7_3 extends CommonTestRunner {
                 if ("j".equals(d.variableName())) {
                     if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<f:i>";
-                            case 1 -> "<vp:i:initial:System.out@Method_increment3_0-C;initial:this.i@Method_increment3_0-C;initial@Field_i;values:this.i@Field_i>";
+                            case 0, 1 -> "<f:i>";
                             default -> "i";
                         };
                         assertEquals(expect, d.currentValue().toString());

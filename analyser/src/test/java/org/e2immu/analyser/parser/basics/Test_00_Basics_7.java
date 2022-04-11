@@ -59,13 +59,13 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             }
 
             if ("increment".equals(d.methodInfo().name) && "4".equals(d.statementId()) && d.iteration() > 0) {
-                String expected = d.iteration() == 1 ? "<f*:i>==-<p:q>+<wrapped:i>" : "true";
+                String expected = d.iteration() == 1 ? "<f:i>==-<p:q>+<wrapped:i>" : "true";
                 assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId())) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "<simplification>";
-                    case 1 -> "-1==<vp:i:[11 delays]>-<wrapped:i>";
+                    case 1 -> "-1==<f:i>-<wrapped:i>";
                     default -> "true";
                 };
                 assertEquals(expected, d.evaluationResult().value().toString());
@@ -192,12 +192,12 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
 
                 if (I.equals(d.variableName())) {
-                    String expect0_100 = switch (d.iteration()) {
-                        case 0 -> "<f:i>";
-                        case 1 -> "<vp:i:[11 delays]>";
-                        default -> "instance type int";
-                    };
                     if ("0".equals(d.statementId())) {
+                        String expect0_100 = switch (d.iteration()) {
+                            case 0 -> "<f:i>";
+                            case 1 -> "<vp:i:[11 delays]>";
+                            default -> "instance type int";
+                        };
                         assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
@@ -205,6 +205,10 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
+                        String expect0_100 = switch (d.iteration()) {
+                            case 0, 1 -> "<f:i>";
+                            default -> "instance type int";
+                        };
                         assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);

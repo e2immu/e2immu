@@ -81,7 +81,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     private static class ExpressionVisitor implements Predicate<Expression> {
-        final List<VariableExpression> variableExpressions = new ArrayList<>();
+        final Set<VariableExpression> variableExpressions = new HashSet<>();
         final AtomicBoolean containsVariableFields = new AtomicBoolean();
         final AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
         final MethodInfo methodInfo;
@@ -144,8 +144,13 @@ public class InlinedMethod extends BaseExpression implements Expression {
         ExpressionVisitor ev = new ExpressionVisitor(methodInfo, isVariableField);
         expression.visit(ev);
         if (ev.causes.get().isDone()) {
-            return new InlinedMethod(identifier, methodInfo, expression, Set.copyOf(ev.variableExpressions),
-                    ev.containsVariableFields.get());
+            try {
+                Set<VariableExpression> variablesOfExpression = Set.copyOf(ev.variableExpressions);
+                return new InlinedMethod(identifier, methodInfo, expression, variablesOfExpression,
+                        ev.containsVariableFields.get());
+            } catch (RuntimeException rte) {
+                throw rte;
+            }
         }
         return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), ev.causes.get());
     }
@@ -325,8 +330,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
             return scope;
         }
-        if (variable instanceof FieldReference fieldReference &&
-                visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
+        if (variable instanceof FieldReference fieldReference) {
             // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
             FieldAnalysis fieldAnalysis = evaluationResult.getAnalyserContext()
@@ -346,11 +350,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
                             fieldReference.fieldInfo);
                     if (index >= 0) {
                         Expression ccValue = constructorCall.getParameterExpressions().get(index);
+                        // see Enum_4 as a nice example
+                        if (ccValue.isConstant()) return ccValue;
                         if (ccValue instanceof VariableExpression ve) {
                             return replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
                         }
-                        // see Enum_4 as a nice example
-                        return ccValue;
+                        // Loops_19 shows that we have to expand (d.time)
                     }
                 }
 
@@ -412,7 +417,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         ParameterizedType parameterizedType = variable.parameterizedType();
 
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
-        CausesOfDelay merged = valueProperties.delays();
+        CausesOfDelay merged = valueProperties.delays().merge(variable.causesOfDelay());
         if (merged.isDelayed()) {
             LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
             LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
@@ -443,18 +448,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
             i++;
         }
         return -1; // nothing
-    }
-
-    private boolean visibleIn(InspectionProvider inspectionProvider, FieldInfo fieldInfo, TypeInfo here) {
-        FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
-        return switch (fieldInspection.getAccess()) {
-            case PRIVATE -> here.primaryType().equals(fieldInfo.primaryType());
-            case PACKAGE -> here.primaryType().packageNameOrEnclosingType.getLeft()
-                    .equals(fieldInfo.owner.primaryType().packageNameOrEnclosingType.getLeft());
-            case PROTECTED -> here.primaryType().equals(fieldInfo.primaryType()) ||
-                    here.hasAsParentClass(inspectionProvider, fieldInfo.owner);
-            default -> true;
-        };
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

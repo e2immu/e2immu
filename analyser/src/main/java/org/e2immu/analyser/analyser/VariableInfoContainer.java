@@ -149,9 +149,13 @@ public interface VariableInfoContainer {
     copy from one statement to the next.
     this method uses assignmentId and readId to determine which values can be copied, and which values will be set
     by the apply method in the statement analyser.
+    FIXME check necessity since we have copyFromPreviousOrInitialIntoMerge()
      */
     @Modified
     void copy();
+
+    @Modified
+    void copyFromPreviousOrInitialIntoMerge();
 
     @Modified
     void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);

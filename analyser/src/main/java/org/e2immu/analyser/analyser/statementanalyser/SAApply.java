@@ -24,10 +24,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.QualificationImpl;
-import org.e2immu.analyser.model.statement.AssertStatement;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.ThrowStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -280,6 +277,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             delay = delay.merge(loopResult.delays);
         }
 
+
         /*
         The loop variable has been created in the initialisation phase. Evaluation has to wait until
         the expression of the forEach statement has been evaluated. For this reason, we need to handle
@@ -290,7 +288,17 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             Variable loopVar = statementAnalysis.obtainLoopVar();
             CausesOfDelay evalForEach = statementAnalysis.evaluationOfForEachVariable(loopVar,
                     evaluationResult.getExpression(), evaluationResult.causesOfDelay(), sharedState.evaluationContext());
+            existingVariablesNotVisited.remove(loopVar);
             delay = delay.merge(evalForEach);
+        }
+
+        // idea: variables which already have an evaluation, but do not feature anymore in the evaluation result
+        for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
+            if (!localVariablesNotVisited.containsKey(e.getKey())
+                    // TODO cleanup ECI
+                    && !(statement() instanceof ExplicitConstructorInvocation && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
+                e.getValue().copyFromPreviousOrInitialIntoMerge();
+            }
         }
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,

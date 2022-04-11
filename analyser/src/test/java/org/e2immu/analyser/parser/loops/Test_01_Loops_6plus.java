@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -623,26 +624,44 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
     // causing a value to be overwritten (variable "key", overwrite in merge of statement 1, into value of 1.0.1).
     @Test
     public void test_19() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.1.0.1".equals(d.statementId())) {
+                    String expected = d.iteration() <= 2 ? "<null-check>&&<m:isAfter>&&<m:isBefore>"
+                            : "`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&null!=(entry.getValue()).read";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-
                 if (d.variable() instanceof ParameterInfo p && "readWithinMillis".equals(p.name)) {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 1, 2,3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 1, 2 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
+                    if ("1.0.1.0.1".equals(d.statementId())) {
+                        assertNotNull(fr.scopeVariable);
+                        assertEquals("container", fr.scopeVariable.simpleName());
+                        String expected = d.iteration() <= 2 ? "<f:read>" : "nullable instance type Date";
+                        assertEquals(expected, d.currentValue().toString());
 
+                        assertEquals("container", fr.scope.toString());
+                    }
+                }
             }
         };
 
         testClass("Loops_19", 0, 3, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

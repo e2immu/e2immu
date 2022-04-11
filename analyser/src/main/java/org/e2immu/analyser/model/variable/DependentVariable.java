@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -137,5 +138,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     @Override
     public boolean hasScopeVariableCreatedAt(String index) {
         return arrayVariable.hasScopeVariableCreatedAt(index) || indexVariable != null && indexVariable.hasScopeVariableCreatedAt(index);
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        CausesOfDelay c1 = arrayExpression.causesOfDelay().merge(arrayVariable == null ? CausesOfDelay.EMPTY : arrayVariable.causesOfDelay());
+        CausesOfDelay c2 = indexExpression.causesOfDelay().merge(indexVariable == null ? CausesOfDelay.EMPTY : indexVariable.causesOfDelay());
+        return c1.merge(c2);
     }
 }
