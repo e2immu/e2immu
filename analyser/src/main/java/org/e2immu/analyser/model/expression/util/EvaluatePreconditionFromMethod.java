@@ -55,6 +55,7 @@ public class EvaluatePreconditionFromMethod {
             return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
         }
 
+        // we use the machinery of inlined methods to do proper translations.
         Expression inlinedMethod = InlinedMethod.of(identifierOfMethodCall, methodInfo, precondition.expression(), context.getAnalyserContext());
         if (inlinedMethod.isDelayed()) {
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay()).merge(inlinedMethod.causesOfDelay());

@@ -305,12 +305,10 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                          TypeInfo typeOfTranslation,
                                          Identifier identifierOfMethodCall) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-        DV modifying = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
 
         for (VariableExpression variableExpression : variablesOfExpression) {
             Expression replacement = replace(variableExpression, parameters, scope, typeOfTranslation, evaluationContext,
-                    identifierOfMethodCall, modifying);
+                    identifierOfMethodCall);
             if (replacement != null) {
                 builder.put(variableExpression, replacement);
             } // possibly a field need not replacing
@@ -323,8 +321,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                                Expression scope,
                                TypeInfo typeOfTranslation,
                                EvaluationResult evaluationResult,
-                               Identifier identifierOfMethodCall,
-                               DV modifying) {
+                               Identifier identifierOfMethodCall) {
         Variable variable = variableExpression.variable();
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
@@ -337,7 +334,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             if (currentMethodAnalyser != null && parameterInfo.getMethod() == currentMethodAnalyser.getMethodInfo()) {
                 return variableExpression;
             }
-            return expandedVariable(evaluationResult, identifierOfMethodCall, null, modifying, variable);
+            return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable);
         }
         if (variable instanceof This && !methodInfo.methodInspection.get().isStatic()) {
             return scope;
@@ -349,7 +346,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     .getFieldAnalysis(fieldReference.fieldInfo);
             DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             Variable modifiedVariable = replaceScope(parameters, scope, typeOfTranslation, evaluationResult,
-                    identifierOfMethodCall, variable, inspectionProvider, fieldReference, modifying);
+                    identifierOfMethodCall, variable, inspectionProvider, fieldReference);
 
             if (evaluationResult.evaluationContext() != null && evaluationResult.evaluationContext().isPresent(modifiedVariable)) {
                 return new VariableExpression(modifiedVariable);
@@ -366,8 +363,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                         // see Enum_4 as a nice example
                         if (ccValue.isConstant()) return ccValue;
                         if (ccValue instanceof VariableExpression ve) {
-                            return replace(ve, parameters, scope, typeOfTranslation, evaluationResult,
-                                    identifierOfMethodCall, modifying);
+                            return replace(ve, parameters, scope, typeOfTranslation, evaluationResult, identifierOfMethodCall);
                         }
                         // Loops_19 shows that we have to expand (d.time)
                     }
@@ -375,25 +371,27 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
                 // we use the identifier of the field itself here: every time this field is expanded, it gets the same identifier
                 return expandedVariable(evaluationResult, fieldReference.fieldInfo.getIdentifier(), effectivelyFinal,
-                        modifying, modifiedVariable);
+                        modifiedVariable);
             }
-            return expandedVariable(evaluationResult, identifierOfMethodCall, effectivelyFinal,
-                    modifying, modifiedVariable);
+            return expandedVariable(evaluationResult, identifierOfMethodCall, effectivelyFinal, modifiedVariable);
         }
 
         // e.g., local variable reference, see InlinedMethod_3
-        return expandedVariable(evaluationResult, identifierOfMethodCall, null, modifying, variable);
+        return expandedVariable(evaluationResult, identifierOfMethodCall, null, variable);
     }
 
-    private Variable replaceScope(List<Expression> parameters, Expression scope,
-                                  TypeInfo typeOfTranslation, EvaluationResult evaluationResult,
-                                  Identifier identifierOfMethodCall, Variable variable,
-                                  InspectionProvider inspectionProvider, FieldReference fieldReference,
-                                  DV modifying) {
+    private Variable replaceScope(List<Expression> parameters,
+                                  Expression scope,
+                                  TypeInfo typeOfTranslation,
+                                  EvaluationResult evaluationResult,
+                                  Identifier identifierOfMethodCall,
+                                  Variable variable,
+                                  InspectionProvider inspectionProvider
+            , FieldReference fieldReference) {
         Variable modifiedVariable;
         if (fieldReference.scope instanceof VariableExpression ve) {
             Expression replacedScope = replace(ve, parameters, scope, typeOfTranslation, evaluationResult,
-                    identifierOfMethodCall, modifying);
+                    identifierOfMethodCall);
             modifiedVariable = new FieldReference(inspectionProvider, fieldReference.fieldInfo, replacedScope, fieldReference.getOwningType());
         } else {
             modifiedVariable = variable;
@@ -430,7 +428,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
     private Expression expandedVariable(EvaluationResult context,
                                         Identifier identifierOfMethodCall,
                                         DV effectivelyFinal,
-                                        DV modifyingMethod,
                                         Variable variable) {
 
         AnalyserContext analyserContext = context.getAnalyserContext();
@@ -439,8 +436,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         CausesOfDelay merged = valueProperties.delays()
                 .merge(variable.causesOfDelay())
-                .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay())
-                .merge(modifyingMethod.causesOfDelay());
+                .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay());
         if (merged.isDelayed()) {
             LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
             LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
@@ -448,20 +444,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
                     changed, merged);
         }
         Identifier inline;
-        if (modifyingMethod.valueIsTrue()) {
-            inline = Identifier.joined("inline_modifying",
-                    List.of(identifierOfMethodCall, VariableIdentifier.variable(variable)));
+        // non-modifying: make sure it remains the same one
+        boolean addStatementTime = variable instanceof FieldReference
+                && effectivelyFinal != null && effectivelyFinal.valueIsFalse();
+        if (addStatementTime) {
+            inline = Identifier.joined("inline",
+                    List.of(Identifier.forStatementTime(context.evaluationContext().getInitialStatementTime()),
+                            VariableIdentifier.variable(variable)));
         } else {
-            // non-modifying: make sure it remains the same one
-            boolean addStatementTime = variable instanceof FieldReference
-                    && effectivelyFinal != null && effectivelyFinal.valueIsFalse();
-            if (addStatementTime) {
-                inline = Identifier.joined("inline",
-                        List.of(Identifier.forStatementTime(context.evaluationContext().getInitialStatementTime()),
-                                VariableIdentifier.variable(variable)));
-            } else {
-                inline = VariableIdentifier.variable(variable);
-            }
+            // non-modifying method when used for inlining actual method values
+            inline = VariableIdentifier.variable(variable);
         }
         return new ExpandedVariable(inline, variable, valueProperties);
     }

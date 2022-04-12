@@ -19,25 +19,24 @@ import org.e2immu.annotation.Modified;
 
 import java.util.Random;
 
-/*
-First of three: force plusRandom to be @Modified. This is technically the case, looking at its implementation:
-the constructor modifies a static field in the class java.util.Random.
- */
-public class InlinedMethod_3 {
+// if you want to see the modifications made by nextInt(), make a field
+public class InlinedMethod_3_3 {
 
-    @Modified(contract = true)
-    public static int plusRandom(int i) {
-        int r = new Random().nextInt();
+    private final Random random = new Random();
+
+    @Modified
+    public int plusRandom(int i) {
+        int r = random.nextInt();
         return i + r;
     }
 
     @Constant(absent = true)
-    public static int difference31() {
+    public int difference31() {
         return plusRandom(3) - plusRandom(1);
     }
 
     @Constant(absent = true)
-    public static int difference11() {
+    public int difference11() {
         return plusRandom(1) - plusRandom(1);
     }
 }

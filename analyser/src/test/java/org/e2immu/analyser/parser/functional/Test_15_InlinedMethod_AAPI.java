@@ -53,17 +53,20 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("/*inline plusRandom*/i+r", inlinedMethod.toString());
+
+                if (d.methodAnalysis().getSingleReturnValue() instanceof Sum) {
+                    assertEquals("i+r", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("/*inline difference31*/2+`r`-`r`", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                assertEquals("/*inline difference11*/`r`-`r`", d.methodAnalysis().getSingleReturnValue().toString());
+                // and not 0!!!
+                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -78,6 +81,74 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3_2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("i+r", d.evaluationResult().value().toString());
+                    assertTrue(d.evaluationResult().value() instanceof Sum);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+
+                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals("/*inline plusRandom*/i+r", inlinedMethod.toString());
+                } else {
+                    fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("difference31".equals(d.methodInfo().name)) {
+                assertEquals("2", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("difference11".equals(d.methodInfo().name)) {
+                assertEquals("0", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        testClass("InlinedMethod_3_2", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "i+<m:nextInt>" : "i+r";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertTrue(d.evaluationResult().value() instanceof Sum);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:plusRandom>" : "i+r";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if(d.iteration()>0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("difference31".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:difference31>" : "instance type int-(instance type int)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("difference11".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:difference11>" : "instance type int-(instance type int)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        testClass("InlinedMethod_3_3", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

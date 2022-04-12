@@ -1191,7 +1191,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
             // in the eventual case, we only need to look at the non-modifying methods
             // calling a modifying method will result in an error
-            if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
+            if (modified.valueIsFalse()) {
                 if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
                 DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
 
@@ -1244,30 +1244,38 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 } else {
                     minLevel = Math.min(minLevel, MultiLevel.level(returnTypeImmutable));
                 }
-            } else if (modified.valueIsTrue() && typeAnalysis.isEventual()) {
-                // code identical to that of constructors
-                for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
-                    DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                    if (independent.isDelayed()) {
-                        if (parameterAnalysis.getParameterInfo().parameterizedType.typeInfo != typeInfo) {
-                            LOGGER.debug("Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
-                                    methodAnalyser.getMethodInfo().distinguishingName());
-                            typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
-                            causesMethods = causesMethods.merge(independent.causesOfDelay()); //not decided
+            } else if (modified.valueIsTrue()) {
+                if (typeAnalysis.isEventual()) {
+                    // code identical to that of constructors
+                    for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
+                        DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                        if (independent.isDelayed()) {
+                            if (parameterAnalysis.getParameterInfo().parameterizedType.typeInfo != typeInfo) {
+                                LOGGER.debug("Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
+                                        methodAnalyser.getMethodInfo().distinguishingName());
+                                typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
+                                causesMethods = causesMethods.merge(independent.causesOfDelay()); //not decided
+                            }
+                        } else {
+                            DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                            if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
+                                LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
+                                        typeInfo.fullyQualifiedName);
+                                typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
+                                return ALT_DONE;
+                            }
+                            int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
+                            minLevel = Math.min(minLevel, independentLevel);
                         }
-                    } else {
-                        DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
-                        if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-                            LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
-                                    typeInfo.fullyQualifiedName);
-                            typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                            return ALT_DONE;
-                        }
-                        int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
-                        minLevel = Math.min(minLevel, independentLevel);
                     }
+                } else {
+                    // contracted @Modified, see e.g. InlinedMethod_AAPI_3
+                    LOGGER.debug("{} is not an E2Immutable class, because method {} is modifying (even though none of our fields are)",
+                            typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
+                    typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
+                    return ALT_DONE;
                 }
-            }
+            } else throw new UnsupportedOperationException("?");
         }
         if (causesMethods.isDelayed()) {
             typeAnalysis.setProperty(Property.IMMUTABLE, causesMethods);

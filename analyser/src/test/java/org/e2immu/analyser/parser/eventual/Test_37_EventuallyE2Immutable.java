@@ -617,7 +617,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     if (d.iteration() >= 2) {
                         if (d.evaluationResult().value() instanceof Equals equals) {
                             if (equals.rhs instanceof ExpandedVariable ev) {
-                                assertEquals("ListOfIdentifiers[expression=inline, identifiers=[PositionalIdentifier[line=64, pos=13, endLine=64, endPos=31], VariableIdentifier[variable=other.t, index=-]]]",
+                                assertEquals("ListOfIdentifiers[expression=inline, identifiers=[StatementTimeIdentifier[statementTime=0], VariableIdentifier[variable=other.t, index=-]]]",
                                         ev.identifier.toString());
                             } else fail();
                         } else fail();

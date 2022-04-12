@@ -359,15 +359,15 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals(d.iteration() <= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

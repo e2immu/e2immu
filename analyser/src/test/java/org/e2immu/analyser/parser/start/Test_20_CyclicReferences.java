@@ -206,7 +206,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                     String expected = "instance type boolean";
                     assertEquals(expected, expression.toString());
                     if (expression instanceof Instance i) {
-                        assertTrue(i.identifier instanceof Identifier.ListOfIdentifiers);
+                        assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
                     } else fail();
                 }
             }

@@ -101,7 +101,6 @@ public class Test_56_Fluent extends CommonTestRunner {
                             case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity>/*(Fluent_0)*/:<m:build>";
                             case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;initial@Field_value>/*(Fluent_0)*/:<m:build>";
                             case 3 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy>/*(Fluent_0)*/:<m:build>";
-                            case 4 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:<m:build>";
                             default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -110,7 +109,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -152,13 +151,13 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() <= 4 ? "<m:copyOf>"
+                String expect = d.iteration() <= 3 ? "<m:copyOf>"
                         : "/*inline copyOf*/instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
@@ -172,12 +171,12 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() <= 4 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() <= 2 ? "<m:from>" : "this/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 5, DV.TRUE_DV, Property.FLUENT);
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
@@ -268,7 +267,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'
-                    assertEquals(d.iteration() > 2, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                    assertEquals(d.iteration() >= 2, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };

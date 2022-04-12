@@ -15,28 +15,25 @@
 package org.e2immu.analyser.parser.functional.testexample;
 
 import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.Random;
 
-/*
-First of three: force plusRandom to be @Modified. This is technically the case, looking at its implementation:
-the constructor modifies a static field in the class java.util.Random.
- */
-public class InlinedMethod_3 {
+// without contract, plusRandom is not modifying
+public class InlinedMethod_3_2 {
 
-    @Modified(contract = true)
+    @NotModified
     public static int plusRandom(int i) {
         int r = new Random().nextInt();
         return i + r;
     }
 
-    @Constant(absent = true)
+    @Constant("2")
     public static int difference31() {
         return plusRandom(3) - plusRandom(1);
     }
 
-    @Constant(absent = true)
+    @Constant("0")
     public static int difference11() {
         return plusRandom(1) - plusRandom(1);
     }

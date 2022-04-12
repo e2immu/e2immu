@@ -138,7 +138,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
             }
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {

@@ -227,10 +227,7 @@ public class EvaluateMethodCall {
                 methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                         linkedVariablesForDelay.apply(delays), delays);
             } else {
-                methodValue = Instance.forMethodResult(Identifier.joined("mc", ListUtil.immutableConcat(
-                                List.of(methodInfo.identifier, methodCall.object.getIdentifier()),
-                                methodCall.parameterExpressions.stream().map(Expression::getIdentifier).toList())),
-                        concreteReturnType, valueProperties);
+                methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
             }
         } else {
             methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
