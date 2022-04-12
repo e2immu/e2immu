@@ -70,9 +70,9 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:it2>"
-                                : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
+                                : "values1.isEmpty()?values2.iterator():<mmc:it2>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }
@@ -86,9 +86,9 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
         };
 
         testSupportAndUtilClasses(List.of(ListUtil.class), 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

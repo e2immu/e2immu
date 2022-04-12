@@ -196,15 +196,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        case 1 -> "<simplification>";
+                        case 1 -> "null==<f:node.map>";
                         default -> "true";
                     };
                     assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
-                        case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
+                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
+                        case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:upToPosition><oos:i>?<m:get>:<vl:node>";
                         default -> "upToPosition>instance type int?null:node";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
@@ -217,7 +217,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expectState = switch (d.iteration()) {
                         case 0 -> "!<null-check>";
-                        case 1 -> "!<simplification>";
+                        case 1 -> "null!=<f:node.map>";
                         default -> "false";
                     };
                     assertEquals(expectState, d.state().toString());
@@ -235,7 +235,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<null-check>||!<loopIsNotEmptyCondition>)&&(!<null-check>||!<loopIsNotEmptyCondition>);parent=CM{}}";
-                        case 1 -> "CM{state=(!<null-check>||instance type int>=upToPosition)&&(!<simplification>||instance type int>=upToPosition);parent=CM{}}";
+                        case 1 -> "CM{state=(!<null-check>||instance type int>=upToPosition)&&(instance type int>=upToPosition||null!=<f:node.map>);parent=CM{}}";
                         default -> "CM{state=instance type int>=upToPosition;parent=CM{}}";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
@@ -243,7 +243,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "(!<null-check>||!<loopIsNotEmptyCondition>)&&(!<null-check>||!<loopIsNotEmptyCondition>)";
-                        case 1 -> "(!<null-check>||instance type int>=upToPosition)&&(!<simplification>||instance type int>=upToPosition)";
+                        case 1 -> "(!<null-check>||instance type int>=upToPosition)&&(instance type int>=upToPosition||null!=<f:node.map>)";
                         default -> "instance type int>=upToPosition";
                     };
                     assertEquals(expected, d.state().toString());
@@ -272,7 +272,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<f:map>";
-                            case 1 -> "upToPosition><out of scope:i:1>?<f:map>:null";
+                            case 1 -> "upToPosition><oos:i>?<f:map>:null";
                             default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -281,8 +281,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<f:map>";
-                            case 1 -> "upToPosition><out of scope:i:1>?<f:map>:null";
+                            case 0, 1 -> "<f:map>";
                             default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -320,16 +319,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
-                            case 1 -> "upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
+                            case 0 -> "<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
+                            case 1 -> "upToPosition><oos:i>?<m:get>:<vl:node>";
                             default -> "nullable instance type TrieNode<T>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
-                            case 1 -> "upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
+                            case 0, 1 -> "<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
                             default -> "nullable instance type TrieNode<T>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -345,7 +343,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?<vp::container@Class_TrieNode>:<return value>";
-                            case 1 -> "<simplification>?<vp::initial@Field_map>:<return value>";
+                            case 1 -> "null==<f:node.map>?<vp::initial@Field_map>:<return value>";
                             default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -353,15 +351,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<return value>";
-                            case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:<return value>";
+                            case 1 -> "upToPosition><oos:i>&&(<null-check>||null==<f:node.map>)?<vp::initial@Field_map>:<return value>";
                             default -> "upToPosition>instance type int?null:<return value>";
                         };
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<s:TrieNode<T>>:<vl:node>";
-                            case 1 -> "upToPosition><out of scope:i:1>&&(<null-check>||<simplification>)?<vp::initial@Field_map>:upToPosition><out of scope:i:1>?<s:TrieNode<T>>:<vl:node>";
+                            case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
+                            case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:upToPosition><oos:i>?<m:get>:<vl:node>";
                             default -> "upToPosition>instance type int?null:node";
                         };
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());

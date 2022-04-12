@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Precondition_7plus extends CommonTestRunner {
 
-    public static final String STMT_4 = "expression instanceof MethodCall&&null!=expression&&(!(product.lhs instanceof ConstantExpression<?>)||expression instanceof MethodCall&&null!=expression||expression instanceof MethodCall&&null!=expression&&null==product.lhs||expression instanceof MethodCall&&null!=expression&&null==product.rhs||expression instanceof MethodCall&&null!=expression&&null==product.rhs/*(MethodCall)*/)";
-
     public Test_04_Precondition_7plus() {
         super(true);
     }
@@ -62,15 +60,16 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                         case 0 -> "(<v:firstChar>==<f:ARRAY_BRACKET>?1+<v:arrays>:<vl:arrays>)>=1?<s:Result>:<f:TYPE_PARAM_T>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?<null-check>?<new:Result>:<new:Result>:<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?<m:normalType>:<f:WILDCARD_STAR>==<m:charAt>?<new:Result>:<new:Result>";
                         case 1 -> "('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?<new:Result>:'T'==('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?<null-check>?<new:Result>:<new:Result>:([arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,firstCharPos$0.0.06,<f:ARRAY_BRACKET>,signature,<too complex>])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:<new:Result>";
                         case 2 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?<new:Result>:'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,typeContext,signature,instance type boolean])?<new:Result>:<new:Result>:([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,signature,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:new Result(primitivePt,1,false)";
+                        case 3 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,signature,instance type boolean])?<inline>:'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
                         default -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,signature,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:from>"
+                    String expected = d.iteration() <= 4 ? "<m:from>"
                             : "('['==('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(``scope-primitivePt:0`.typeInfo`,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):([signature,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.substring(0).indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(0).substring(1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.substring(0).indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.substring(0).charAt(0)?`WildCard.EXTENDS`:'-'==signature.substring(0).charAt(0)?`WildCard.SUPER`:`WildCard.NONE`),signature.substring(0).indexOf(';')+1,false):instance type boolean?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.substring(0).charAt(0)?new Result(`ParameterizedType.WILDCARD_PARAMETERIZED_TYPE`,1,false):new Result(switch('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 4, d.evaluationResult().causesOfDelay().isDelayed());
@@ -119,7 +118,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         String expected2 = switch (d.iteration()) {
-                            case 0, 1, 2 -> "<vl:wildCard>";
+                            case 0, 1, 2, 3 -> "<vl:wildCard>";
                             // case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
                             // case 2 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
                             default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
@@ -205,7 +204,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() <= 2 ? "<m:from>"
+                String expected = d.iteration() <= 3 ? "<m:from>"
                         : "/*inline from*/('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(scope-primitivePt:0.typeInfo,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):'T'==('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?signature.charAt(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int)):instance type char)?(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,signature,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(switch('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -385,7 +384,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
-                    case 1 -> "Precondition[expression=1==<m:containsCauseOfDelay>, causes=[]]";
+                    case 1 -> "Precondition[expression=<inline>, causes=[]]";
                     default -> "Precondition[expression=1==`cause`.priority, causes=[methodCall:containsCauseOfDelay]]";
                 };
                 assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
@@ -458,14 +457,14 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product";
                         case 1 -> "<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs";
-                        default -> "product.lhs instanceof ConstantExpression<?>&&product.rhs instanceof MethodCall&&expression instanceof Product&&null!=product.lhs&&null!=product.rhs&&null!=product.rhs/*(MethodCall)*/";
+                        default -> "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs&&null!=expression/*(Product)*/.rhs/*(MethodCall)*/";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("4".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<null-check>";
-                        default -> STMT_4;
+                        default -> "expression instanceof MethodCall";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -474,8 +473,17 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<null-check>" : STMT_4;
+                    String expected = d.iteration() <= 1 ? "<null-check>" : "expression instanceof MethodCall";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+                if ("6".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "CM{state=!<null-check>&&!<instanceOf:ConstantExpression<?>>&&!<instanceOf:Negation>&&!(expression instanceof Sum)&&(!<instanceOf:ConstantExpression<?>>||!<null-check>||!(expression instanceof Product));parent=CM{}}";
+                        case 1 -> "CM{state=!<null-check>&&!<instanceOf:ConstantExpression<?>>&&!<instanceOf:Negation>&&!(expression instanceof Sum)&&(!<null-check>||!(scope-product:2.lhs instanceof ConstantExpression<?>)||!(expression instanceof Product)||null==scope-product:2.lhs);parent=CM{}}";
+                        default -> "CM{state=!(expression instanceof ConstantExpression<?>)&&!(expression instanceof MethodCall)&&!(expression instanceof Negation)&&!(expression instanceof Sum)&&(!(scope-product:2.lhs instanceof ConstantExpression<?>)||!(scope-product:2.rhs instanceof MethodCall)||!(expression instanceof Product)||null==scope-product:2.lhs||null==scope-product:2.rhs||null==scope-product:2.rhs/*(MethodCall)*/);parent=CM{}}";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                    assertEquals(d.iteration() >= 2, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
             }
         };
@@ -505,10 +513,10 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
         };
         testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
-                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

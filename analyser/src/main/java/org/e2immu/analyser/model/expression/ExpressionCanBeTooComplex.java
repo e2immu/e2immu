@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,8 +42,8 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
 
         // IMPROVE also add assignments
         // catch all variable expressions
-        TreeSet<IsVariableExpression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
-                .flatMap(e -> e.collect(IsVariableExpression.class).stream())
+        TreeSet<Expression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
+                .flatMap(e -> collect(e).stream())
                 .collect(Collectors.toCollection(TreeSet::new));
         List<Expression> newExpressions = new LinkedList<>(variableExpressions);
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
@@ -57,5 +54,17 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
         newExpressions.add(instance);
         MultiExpression multiExpression = new MultiExpression(newExpressions.toArray(Expression[]::new));
         return new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), multiExpression);
+    }
+
+    private static List<Expression> collect(Expression expression) {
+        List<Expression> result = new ArrayList<>();
+        expression.visit(e -> {
+            if (e.isInstanceOf(IsVariableExpression.class) || e.isInstanceOf(UnknownExpression.class)) {
+                result.add(e);
+                return false;
+            }
+            return true;
+        });
+        return result;
     }
 }

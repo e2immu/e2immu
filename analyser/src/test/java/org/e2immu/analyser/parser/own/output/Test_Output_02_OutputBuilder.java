@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser.own.output;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -63,8 +62,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, Space.class, TypeName.class),
                 4, 4, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 
@@ -74,8 +73,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("write".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.iteration() >= 4) {
-                    // return variable, this, 4 fields present in the inlined method
-                    assertEquals(6, d.evaluationResult().changeData().size());
+                    // return variable, this
+                    assertEquals(2, d.evaluationResult().changeData().size());
                 }
             }
         };
@@ -83,16 +82,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("write".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() <= 3 ? "<m:minimal>"
-                            : "switch(required){Required.SIMPLE->simpleName;Required.FQN->fullyQualifiedName;Required.QUALIFIED_FROM_PRIMARY_TYPE->fromPrimaryTypeDownwards;}";
-                    //   assertEquals(expected, d.currentValue().toString());
-                }
-            }
-        };
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("write".equals(d.methodInfo().name)) {
-                if (d.iteration() >= 4) {
-                    VariableInfoContainer vic = d.statementAnalysis().getVariable("org.e2immu.analyser.output.TypeName.simpleName");
-
+                            : "switch(`required`){Required.SIMPLE->`simpleName`;Required.FQN->`fullyQualifiedName`;Required.QUALIFIED_FROM_PRIMARY_TYPE->`fromPrimaryTypeDownwards`;}";
+                       assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
@@ -112,7 +103,6 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 2, 1, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }

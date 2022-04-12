@@ -117,7 +117,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("[maps]", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("maps", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }

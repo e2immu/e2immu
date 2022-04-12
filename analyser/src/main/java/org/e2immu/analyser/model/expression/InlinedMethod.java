@@ -70,6 +70,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         super(identifier);
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.expression = Objects.requireNonNull(expression);
+        assert !expression.isDelayed() : "Trying to create an inlined method with delays";
         this.variablesOfExpression = variablesOfExpression;
         this.containsVariableFields = containsVariableFields;
         myParameters = Set.copyOf(methodInfo.methodInspection.get().getParameters());
@@ -235,6 +236,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = expression.translate(inspectionProvider, translationMap);
         if (translated == expression) return this;
+        if (translated.isDelayed()) {
+            return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), translated.causesOfDelay());
+        }
         return of(identifier, methodInfo, translated, fr -> containsVariableFields);
     }
 
@@ -433,15 +437,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
         ParameterizedType parameterizedType = variable.parameterizedType();
 
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
-        CausesOfDelay merged = valueProperties.delays().merge(variable.causesOfDelay());
-        if (merged.isDelayed() || effectivelyFinal != null && effectivelyFinal.isDelayed()) {
+        CausesOfDelay merged = valueProperties.delays()
+                .merge(variable.causesOfDelay())
+                .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay())
+                .merge(modifyingMethod.causesOfDelay());
+        if (merged.isDelayed()) {
             LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
             LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
                     changed, merged);
         }
         Identifier inline;
-        if (modifyingMethod != null && modifyingMethod.valueIsTrue()) {
+        if (modifyingMethod.valueIsTrue()) {
             inline = Identifier.joined("inline_modifying",
                     List.of(identifierOfMethodCall, VariableIdentifier.variable(variable)));
         } else {
