@@ -155,7 +155,7 @@ public interface VariableInfoContainer {
     void copy();
 
     @Modified
-    void copyFromPreviousOrInitialIntoMerge();
+    CausesOfDelay copyFromPreviousOrInitialIntoEvaluation();
 
     @Modified
     void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);

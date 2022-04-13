@@ -421,9 +421,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    public void copyFromPreviousOrInitialIntoMerge() {
+    public CausesOfDelay copyFromPreviousOrInitialIntoEvaluation() {
         assert this.evaluation.isSet();
-        VariableInfoImpl evaluation = this.evaluation.get();
         VariableInfo previous = getPreviousOrInitial();
         previous.propertyStream()
                 .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
@@ -431,9 +430,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     assert !e.getKey().valueProperty || previous.getValue().isDelayed() || e.getValue().isDone();
                     setProperty(e.getKey(), e.getValue(), false, Stage.EVALUATION);
                 });
-
+        VariableInfoImpl evaluation = this.evaluation.get();
         evaluation.setValue(previous.getValue());
         evaluation.setLinkedVariables(previous.getLinkedVariables());
+        return previous.getValue().causesOfDelay().merge(previous.getLinkedVariables().causesOfDelay());
     }
 
     // when a block changes to Execution.NEVER (see e.g. EvaluateToConstant)

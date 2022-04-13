@@ -292,12 +292,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             delay = delay.merge(evalForEach);
         }
 
-        // idea: variables which already have an evaluation, but do not feature anymore in the evaluation result
+        // idea: variables which already have an evaluation, but do not feature (anymore) in the evaluation result
+        // or where the eval was created in contextProperties() in an earlier iteration (e.g. InstanceOf_9)
         for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
             if (!localVariablesNotVisited.containsKey(e.getKey())
                     // TODO cleanup ECI
                     && !(statement() instanceof ExplicitConstructorInvocation && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
-                e.getValue().copyFromPreviousOrInitialIntoMerge();
+                CausesOfDelay causes = e.getValue().copyFromPreviousOrInitialIntoEvaluation();
+                delay = delay.merge(causes);
             }
         }
 

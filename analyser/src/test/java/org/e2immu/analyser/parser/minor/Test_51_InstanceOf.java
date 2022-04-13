@@ -296,6 +296,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_9() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("create".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<null-check>&&object instanceof Boolean"
+                            : "object instanceof Boolean&&null!=object";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("create".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "object".equals(p.name)) {
@@ -361,6 +370,26 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
                     }
                 }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1
+                                ? "object instanceof String&&null!=object?<new:StringConstant>:<return value>"
+                                : "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<null-check>&&object instanceof Boolean?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            default -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<new:BooleanConstant>" : "new BooleanConstant(bool)";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -405,10 +434,23 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             assertEquals(MultiLevel.CONTAINER_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("BooleanConstant".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("IntConstant".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("StringConstant".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
