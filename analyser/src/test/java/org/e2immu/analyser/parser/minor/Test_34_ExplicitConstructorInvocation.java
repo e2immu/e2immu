@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -321,11 +322,46 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (d.methodInfo().isConstructor && d.methodInfo().isPrivate()) {
+                int n = d.methodInfo().methodInspection.get().getParameters().size();
+                assertEquals(10, n);
+
+                if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if (d.variable() instanceof FieldReference fr && "variableTarget".equals(fr.fieldInfo.name)) {
+                    assertTrue(d.statementId().compareTo("7") >= 0);
+                    String expected = d.iteration() == 0 ? "<vp:variableTarget:eci_helper@Method_Assignment_7-E>"
+                            : "variableTarget";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if (d.methodInfo().isConstructor && d.methodInfo().isPrivate()) {
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+        };
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .setForceAlphabeticAnalysisInPrimaryType(true)
                         .build());
+    }
+
+    @Test
+    public void test_14() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ExplicitConstructorInvocation_14".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("ExplicitConstructorInvocation_14", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
     }
 }

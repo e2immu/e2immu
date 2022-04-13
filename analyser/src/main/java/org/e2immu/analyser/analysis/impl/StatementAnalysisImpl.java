@@ -561,16 +561,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         rawVariableStream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo variableInfo = vic.current();
-            if (vic.isInitial()) {
-                Variable variable = variableInfo.variable();
-                if (variable instanceof FieldReference fieldReference) {
-                    fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
-                } else if (variable instanceof This) {
-                    DV immutable = evaluationContext.getAnalyserContext()
-                            .defaultImmutable(variable.parameterizedType(), false);
-                    vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
-                }
-            } else if (vic.previousIsRemoved()) {
+            Variable variable = variableInfo.variable();
+            if (variable instanceof This) {
+                DV immutable = evaluationContext.getAnalyserContext()
+                        .defaultImmutable(variable.parameterizedType(), false);
+                vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
+            }
+            if (vic.isInitial() && variable instanceof FieldReference fieldReference) {
+                fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
+            }
+            if (vic.previousIsRemoved()) {
                 vic.remove();
             }
         });

@@ -141,7 +141,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         CausesOfDelay ennStatus = applyResult.ennStatus();
 
         if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
-            // situation with parameters; this code is replicated below for the situation without params
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
@@ -370,9 +369,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             weMustWait = false;
         }
 
+        TypeInfo eciType = eci.isSuper ? methodInfo().typeInfo.typeInspection.get().parentClass().typeInfo : methodInfo().typeInfo;
         List<Expression> assignments = new ArrayList<>();
         TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
-        List<FieldInfo> visibleFields = methodInfo().typeInfo.visibleFields(analyserContext);
+        List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
         for (FieldInfo fieldInfo : visibleFields) {
             if (!fieldInfo.isStatic(analyserContext)) {
                 boolean assigned = false;
