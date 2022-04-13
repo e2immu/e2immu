@@ -234,7 +234,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<return value>||i>=<f:j>";
-                            case 1 -> "<wrapped:j>";
+                            case 1 -> "<return value>||i>=<wrapped:j>";
                             default -> "<return value>||i>=j$0";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -248,6 +248,37 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                     }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "i".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:i>" : "instance type int/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "j".equals(fr.fieldInfo.name)) {
+                    assertNotNull(fr.scopeVariable);
+                    assertEquals("this", fr.scopeVariable.simpleName());
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:j>";
+                            case 1 -> "<wrapped:j>";
+                            default -> "instance type int";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("addIfGreater".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "CM{state=-1-i+<f:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
+                        case 1 -> "CM{state=-1-i+<wrapped:j>>=0;pc=Precondition[expression=<precondition>, causes=[]];parent=CM{}}";
+                        default -> "CM{state=-1-i+j$0>=0;pc=Precondition[expression=j>=1, causes=[escape]];parent=CM{}}";
+                    };
+                    assertEquals(expected,
+                            d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
             }
         };
@@ -270,9 +301,10 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

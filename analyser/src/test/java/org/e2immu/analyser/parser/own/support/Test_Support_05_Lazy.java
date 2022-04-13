@@ -78,7 +78,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 0 -> "<f:t>";
                         case 1 -> "<null-check>?<f:t>:<m:requireNonNull>";
                         case 2 -> "<wrapped:t>";
-                        case 3 -> "<s:T>";
+                        case 3 -> "<null-check>?<f:t>:<s:T>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());

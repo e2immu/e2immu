@@ -111,9 +111,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             beforeMoveDWE = mergeValue.expression();
         }
 
-        Expression mergedValue = DelayedWrappedExpression
-                .moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), beforeMoveDWE);
-        // TODO do post-process and replace local variables change the value properties?
+        // delay wrapped expressions cannot work for return values! <return value> will disappear (E.g. EventuallyE1Immutable_2)
+        Expression mergedValue = vi.variable() instanceof FieldReference
+                ? DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), beforeMoveDWE)
+                : beforeMoveDWE;
         try {
             vi.setValue(mergedValue); // copy the delayed value
         } catch (IllegalStateException ise) {
@@ -320,7 +321,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     we cannot have an idea yet if the result is equals (certainly when effectively final) or not (possibly
     when variable, with different statement times).
      */
-    private boolean specialEquals(VariableInfo vi1,  VariableInfo vi2) {
+    private boolean specialEquals(VariableInfo vi1, VariableInfo vi2) {
         Expression e1 = vi1.getValue();
         Expression e2 = vi2.getValue();
         if (e1 instanceof DelayedVariableExpression dve1 && e2 instanceof DelayedVariableExpression dve2 &&
