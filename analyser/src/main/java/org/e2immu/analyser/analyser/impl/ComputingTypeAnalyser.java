@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.analyser.Property.CONTAINER;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
 
 /**
@@ -254,22 +254,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             LOGGER.debug("Found aspects {} in {}, {}", typeAnalysis.aspects.stream().map(Map.Entry::getKey).collect(Collectors.joining(",")),
                     typeAnalysis.typeInfo.fullyQualifiedName, mainMethod.fullyQualifiedName);
         }
-    }
-
-    private AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
-        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentTypeStatus();
-        if (typeAnalysis.immutableCanBeIncreasedByTypeParameters().isDone()) return DONE;
-        if (hiddenContentStatus.isDelayed()) {
-            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(hiddenContentStatus);
-            return hiddenContentStatus;
-        }
-
-        boolean res = typeAnalysis.getTransparentTypes().types()
-                .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
-
-        LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
-        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(res);
-        return DONE;
     }
 
     /*
@@ -745,6 +729,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.getMethodInfo().distinguishingName());
                         typeAnalysis.setProperty(CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+                        typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                         return DONE;
                     }
                 }
@@ -762,6 +747,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         typeAnalysis.setProperty(ALT_CONTAINER, MultiLevel.CONTAINER_DV);
         LOGGER.debug("Mark {} as {}", typeInfo.fullyQualifiedName, ALT_CONTAINER);
+        if (ALT_CONTAINER == CONTAINER) {
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, MultiLevel.CONTAINER_DV);
+        }
         return ALT_DONE;
     }
 
@@ -1142,8 +1130,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                        return ALT_DONE;
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                     }
                 } else {
                     LOGGER.debug("Ignoring private modifier check of {}, self-referencing", fieldFQN);
@@ -1173,8 +1160,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
                         LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
                                 typeInfo.fullyQualifiedName);
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                        return ALT_DONE;
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                     minLevel = Math.min(minLevel, independentLevel);
@@ -1237,8 +1223,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (independent.equals(MultiLevel.DEPENDENT_DV)) {
                         LOGGER.debug("{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                 typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                        return ALT_DONE;
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                     minLevel = Math.min(minLevel, independentLevel);
@@ -1262,8 +1247,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
                                 LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
                                         typeInfo.fullyQualifiedName);
-                                typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                                return ALT_DONE;
+                                return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                             }
                             int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                             minLevel = Math.min(minLevel, independentLevel);
@@ -1273,8 +1257,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     // contracted @Modified, see e.g. InlinedMethod_AAPI_3
                     LOGGER.debug("{} is not an E2Immutable class, because method {} is modifying (even though none of our fields are)",
                             typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                    typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                    return ALT_DONE;
+                    return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                 }
             } else throw new UnsupportedOperationException("?");
         }
@@ -1303,15 +1286,21 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (!fieldsThatMustBeGuarded.isEmpty()) {
                 LOGGER.debug("Set @Immutable of type {} to {}, fieldsThatMustBeGuarded not empty", typeInfo.fullyQualifiedName,
                         myWhenEXFails);
-                typeAnalysis.setProperty(ALT_IMMUTABLE, myWhenEXFails);
-                return ALT_DONE;
+                return doneImmutable(ALT_IMMUTABLE, myWhenEXFails, ALT_DONE);
             }
         }
 
         MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));
         LOGGER.debug("Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
-        typeAnalysis.setProperty(ALT_IMMUTABLE, finalValue);
+        return doneImmutable(ALT_IMMUTABLE, finalValue, ALT_DONE);
+    }
+
+    private AnalysisStatus doneImmutable(Property ALT_IMMUTABLE, DV whenEXFails, AnalysisStatus ALT_DONE) {
+        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
+        if (ALT_IMMUTABLE == IMMUTABLE) {
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, whenEXFails);
+        }
         return ALT_DONE;
     }
 

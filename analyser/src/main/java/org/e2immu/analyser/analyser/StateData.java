@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.parser.Primitives;
@@ -63,6 +64,32 @@ public class StateData {
         assert statesOfReturnInLoop == null || statesOfReturnInLoop.stream().allMatch(e -> e.getValue().isFinal());
     }
 
+    public void makeUnreachable(Primitives primitives) {
+        if (conditionManagerForNextStatement.isVariable()) {
+            conditionManagerForNextStatement.setFinal(ConditionManager.impossibleConditionManager(primitives));
+        }
+        if (precondition.isVariable()) {
+            precondition.setFinal(Precondition.empty(primitives));
+        }
+        if (preconditionFromMethodCalls.isVariable()) {
+            preconditionFromMethodCalls.setFinal(Precondition.empty(primitives));
+        }
+        Expression unreachable = UnknownExpression.forUnreachableStatement();
+        if (valueOfExpression.isVariable()) {
+            valueOfExpression.setFinal(unreachable);
+        }
+        if (statesOfInterrupts != null) {
+            statesOfInterrupts.stream().forEach(e -> {
+                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            });
+        }
+        if (statesOfReturnInLoop != null) {
+            statesOfReturnInLoop.stream().forEach(e -> {
+                if (e.getValue().isVariable()) e.getValue().setFinal(unreachable);
+            });
+        }
+    }
+
     public boolean equalityAccordingToStateIsSet(VariableExpression variable) {
         return equalityAccordingToState.isSet(variable);
     }
@@ -77,10 +104,6 @@ public class StateData {
 
     public Expression equalityAccordingToStateGetOrDefaultNull(VariableExpression v) {
         return equalityAccordingToState.getOrDefaultNull(v);
-    }
-
-    public boolean inEqualityAccordingToState(VariableExpression variable) {
-        return equalityAccordingToState.isSet(variable);
     }
 
     /*
@@ -205,6 +228,13 @@ public class StateData {
             cd.setVariable(state);
         } else {
             setFinalAllowEquals(cd, state);
+        }
+    }
+
+    public void stateOfReturnInLoopUnreachable(String index) {
+        EventuallyFinal<Expression> cd = statesOfReturnInLoop.getOrDefaultNull(index);
+        if (cd != null && cd.isVariable()) {
+            cd.setFinal(UnknownExpression.forUnreachableStatement());
         }
     }
 

@@ -105,15 +105,17 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals(FlowData.NEVER, inBlock);
                     assertEquals(FlowData.NEVER, inMethod);
                     assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
-                    assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    // the next one is true because of makeUnreachable() code
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
                 if ("5".equals(d.statementId())) {
                     assertEquals(FlowData.NEVER, inBlock);
                     assertEquals(FlowData.NEVER, inMethod);
                     assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     VariableInfo ret = d.getReturnAsVariable();
-                    assertNull(ret); // unreachable statement, no data have even been copied!
-                    assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
+                    assertNull(ret);
+                    // the next one is true because of makeUnreachable() code
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                 }
 
             }

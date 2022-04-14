@@ -175,6 +175,8 @@ public interface StatementAnalysis extends Analysis,
                                                                   Expression indexValue,
                                                                   ForwardEvaluationInfo forwardEvaluationInfo);
 
+    void makeUnreachable();
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

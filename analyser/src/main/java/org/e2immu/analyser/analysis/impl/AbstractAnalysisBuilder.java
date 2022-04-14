@@ -362,6 +362,12 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public void ensureNoDelayedPropertyValues() {
-        assert properties.delays().isDone();
+        assert properties.delays().isDone() : "Property map: " + properties;
+    }
+
+    public void setPropertyIfAbsentOrDelayed(Property property, DV finalValue) {
+        assert finalValue.isDone();
+        DV dv = properties.getOrDefaultNull(property);
+        if (dv == null || dv.isDelayed()) properties.put(property, finalValue);
     }
 }

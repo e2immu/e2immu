@@ -85,9 +85,22 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         super.internalAllDoneCheck();
         stateData.internalAllDoneCheck();
         flowData.internalAllDoneCheck();
-        if(rangeData != null) rangeData.internalAllDoneCheck();
+        if (rangeData != null) rangeData.internalAllDoneCheck();
         stateData.internalAllDoneCheck();
         methodLevelData.internalAllDoneCheck();
+    }
+
+    @Override
+    public void makeUnreachable() {
+        flowData.makeUnreachable();
+        stateData.makeUnreachable(primitives);
+        methodLevelData.makeUnreachable(primitives);
+        if (statement() instanceof ReturnStatement) {
+            StatementAnalysis.FindLoopResult loop = findLoopByLabel(null);
+            if (loop != null) {
+                loop.statementAnalysis().stateData().stateOfReturnInLoopUnreachable(index());
+            }
+        }
     }
 
     public StatementAnalysisImpl(Primitives primitives,

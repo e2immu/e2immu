@@ -38,6 +38,8 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     public static final String INDEPENDENT = "independent";
     public static final String CONTAINER = "container";
     public static final String TRANSPARENT = "transparent";
+    public static final String IMMUTABLE_CAN_BE_INCREASED = "immutableCanBeIncreased";
+
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
@@ -54,9 +56,9 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
-                .add(TRANSPARENT, iteration -> this.aggregateTransparent());
+                .add(TRANSPARENT, iteration -> this.aggregateTransparent())
+                .add(IMMUTABLE_CAN_BE_INCREASED, iteration -> super.analyseImmutableCanBeIncreasedByTypeParameters());
 
-        // TODO aggregate hidden content + explicit types
         analyserComponents = builder.build();
     }
 

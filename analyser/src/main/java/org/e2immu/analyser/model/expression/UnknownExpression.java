@@ -77,6 +77,11 @@ public class UnknownExpression extends BaseExpression implements Expression {
         return new UnknownExpression(Identifier.constant("__eci__"), ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "eci");
     }
 
+    public static Expression forUnreachableStatement() {
+        return new UnknownExpression(Identifier.constant("__unreachable__"),
+                ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "unreachable");
+    }
+
     @Override
     public void visit(Predicate<Expression> predicate) {
         predicate.test(this);
@@ -191,7 +196,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression removeAllReturnValueParts(Primitives primitives) {
-        if(isReturnValue()) return null;
+        if (isReturnValue()) return null;
         return this;
     }
 }

@@ -257,9 +257,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     blocksExecuted++;
                 } else {
                     // ensure that the first statement is unreachable
-                    FlowData flowData = executionOfBlock.startOfBlock.getStatementAnalysis().flowData();
-                    flowData.setGuaranteedToBeReachedInMethod(FlowData.NEVER);
-
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.MERGE),
                                 Message.Label.EMPTY_LOOP));

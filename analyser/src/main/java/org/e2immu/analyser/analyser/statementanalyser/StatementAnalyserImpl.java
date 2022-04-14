@@ -592,7 +592,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         // if the previous statement was not reachable, we won't reach this one either
         if (sharedState.previous() != null
                 && sharedState.previous().flowData().getGuaranteedToBeReachedInMethod().equals(FlowData.NEVER)) {
-            statementAnalysis.flowData().setGuaranteedToBeReached(FlowData.NEVER);
+            makeUnreachable();
             return DONE_ALL;
         }
         DV execution = sharedState.forwardAnalysisInfo().execution();
@@ -602,6 +602,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 (sharedState.previous(), execution, state, state.causesOfDelay(), localConditionManagerIsDelayed);
         if (analysisStatus == DONE_ALL) {
             statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.INITIAL), Message.Label.UNREACHABLE_STATEMENT));
+            makeUnreachable();
             return DONE_ALL; // means: don't run any of the other steps!!
         }
         return analysisStatus;
@@ -692,6 +693,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             navigationData.blocks.get().forEach(optSa -> optSa.ifPresent(StatementAnalyser::makeUnreachable));
             navigationData.next.get().ifPresent(StatementAnalyser::makeUnreachable);
             if (localAnalysers.isSet()) localAnalysers.get().forEach(PrimaryTypeAnalyser::makeUnreachable);
+            statementAnalysis.makeUnreachable();
         }
     }
 }

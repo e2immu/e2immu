@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -33,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 /**
@@ -165,4 +163,26 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         typeAnalysis.transferPropertiesToAnnotations(e2);
     }
+
+
+    protected AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
+        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentTypeStatus();
+        DV dv = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+        if (dv.isDone()) {
+            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(dv.valueIsTrue());
+            return DONE;
+        }
+        if (hiddenContentStatus.isDelayed()) {
+            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(hiddenContentStatus);
+            return hiddenContentStatus;
+        }
+
+        boolean res = typeAnalysis.getTransparentTypes().types()
+                .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
+
+        LOGGER.debug("Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
+        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(res);
+        return DONE;
+    }
+
 }

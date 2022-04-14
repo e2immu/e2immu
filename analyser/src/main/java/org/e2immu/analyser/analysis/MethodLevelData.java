@@ -20,6 +20,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -74,6 +75,11 @@ public class MethodLevelData {
     public void internalAllDoneCheck() {
         assert combinedPrecondition.isFinal();
         assert linksHaveBeenEstablished.isFinal();
+    }
+
+    public void makeUnreachable(Primitives primitives) {
+        if (combinedPrecondition.isVariable()) combinedPrecondition.setFinal(Precondition.empty(primitives));
+        if (linksHaveBeenEstablished.isVariable()) linksHaveBeenEstablished.setFinal(CausesOfDelay.EMPTY);
     }
 
     public record SharedState(AnalyserResult.Builder builder,

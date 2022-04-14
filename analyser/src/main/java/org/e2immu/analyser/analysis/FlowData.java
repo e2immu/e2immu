@@ -43,6 +43,7 @@ import static org.e2immu.analyser.analyser.InterruptsFlow.*;
  */
 public class FlowData {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowData.class);
+    private static final Integer ILLEGAL_STATEMENT_TIME = 1_000;
 
     // meant for statements following a
     private final VariableFirstThen<CausesOfDelay, DV> guaranteedToBeReachedInCurrentBlock;
@@ -75,6 +76,15 @@ public class FlowData {
         assert initialTime.isSet();
         assert timeAfterEvaluation.isSet();
         assert timeAfterSubBlocks.isSet();
+    }
+
+    public void makeUnreachable() {
+        setGuaranteedToBeReached(FlowData.NEVER);
+        if (!initialTime.isSet()) initialTime.set(ILLEGAL_STATEMENT_TIME);
+        if (!timeAfterEvaluation.isSet()) timeAfterEvaluation.set(ILLEGAL_STATEMENT_TIME);
+        if (!timeAfterSubBlocks.isSet()) timeAfterSubBlocks.set(ILLEGAL_STATEMENT_TIME);
+        if (blockExecution.isFirst()) blockExecution.set(NEVER);
+        if (interruptsFlow.isFirst()) interruptsFlow.set(Map.of());
     }
 
     public void initialiseAssignmentIds(FlowData previous) {
@@ -439,5 +449,4 @@ public class FlowData {
         }
         return true;
     }
-
 }

@@ -211,6 +211,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
             setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
+        statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
+        statementAnalysis.stateData().setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();
         }
