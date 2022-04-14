@@ -169,6 +169,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
         public final FlipSwitch modified = new FlipSwitch();
+
+        @Override
+        public String toString() {
+            return "{" + nonModified.stream().map(m -> m.name).sorted().collect(Collectors.joining(",")) +(modified.isSet() ? "_M" : "") + "}";
+        }
     }
 
     static FieldInfo translateToVisibleField(Set<FieldInfo> visibleFields, FieldReference fieldReference) {
@@ -389,7 +394,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
             if (!explicitTypes.isSet()) {
-                if(getTypeInfo().shallowAnalysis()){
+                if (getTypeInfo().shallowAnalysis()) {
                     Set<ParameterizedType> set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
                     Set<ParameterizedType> filtered = set.stream().filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet()).collect(Collectors.toUnmodifiableSet());
                     explicitTypes.set(new SetOfTypes(filtered));

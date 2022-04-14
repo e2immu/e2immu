@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -22,9 +21,9 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.ExtractVariablesToBeTranslated;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -35,9 +34,10 @@ import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -76,88 +76,37 @@ public class InlinedMethod extends BaseExpression implements Expression {
         myParameters = Set.copyOf(methodInfo.methodInspection.get().getParameters());
     }
 
+    public Set<Variable> getMyParameters() {
+        return myParameters;
+    }
+
     public static Expression of(Identifier identifier,
                                 MethodInfo methodInfo,
                                 Expression expression,
                                 AnalyserContext analyserContext) {
         Predicate<FieldReference> predicate = containsVariableFields(analyserContext);
-        return of(identifier, methodInfo, expression, predicate);
-    }
-
-    private static class ExpressionVisitor implements Predicate<Expression> {
-        final Set<VariableExpression> variableExpressions = new HashSet<>();
-        final AtomicBoolean containsVariableFields = new AtomicBoolean();
-        final AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
-        final MethodInfo methodInfo;
-        final Predicate<FieldReference> isVariableField;
-
-        ExpressionVisitor(MethodInfo methodInfo, Predicate<FieldReference> isVariableField) {
-            this.methodInfo = methodInfo;
-            this.isVariableField = isVariableField;
-        }
-
-        @Override
-        public boolean test(Expression e) {
-            if (e instanceof VariableExpression ve) {
-                add(ve.variable(), ve);
-                return false;
-            }
-            if (e instanceof DelayedVariableExpression dve) {
-                causes.set(causes.get().merge(dve.causesOfDelay));
-                return false;
-            }
-            return true;
-        }
-
-        private void add(Variable v, VariableExpression variableExpression) {
-            // essentially, parameters and this from lambda's inside the method; they stay as they are
-            // TODO implement a test "inside the method"
-            // they could be parameters that are active the whole time (method inside type inside method)
-            boolean doNotAdd = v instanceof ParameterInfo pi && pi.owner != methodInfo ||
-                    v instanceof This thisVar && thisVar.typeInfo != methodInfo.typeInfo;
-            if (doNotAdd) return;
-
-            // all the rest is added, work will be done during expansion
-            variableExpressions.add(variableExpression);
-
-            if (v instanceof FieldReference fr) {
-                boolean contains = isVariableField.test(fr);
-                if (contains) containsVariableFields.set(true);
-                if (fr.scope instanceof VariableExpression ve) {
-                    add(ve.variable(), ve);
-                }
-            }
-            if (v instanceof DependentVariable dv) {
-                if (dv.arrayExpression() instanceof VariableExpression ve) {
-                    add(ve.variable(), ve);
-                }
-                if (dv.indexExpression() instanceof VariableExpression ve) {
-                    add(ve.variable(), ve);
-                }
-            }
-            // IMPORTANT: when adding a VE with a field reference, we do not rely on visit recursion anymore,
-            // but on the recursion with add(...) why? USED TO BE: because that one also works once within an ExpandedVariable.
-            // now: no real reason anymore, maybe rewrite when this stays stable.
-        }
+        return of(identifier, methodInfo, expression, predicate, analyserContext);
     }
 
     private static Expression of(Identifier identifier,
                                  MethodInfo methodInfo,
                                  Expression expression,
-                                 Predicate<FieldReference> isVariableField) {
-        ExpressionVisitor ev = new ExpressionVisitor(methodInfo, isVariableField);
+                                 Predicate<FieldReference> isVariableField,
+                                 InspectionProvider inspectionProvider) {
+        ExtractVariablesToBeTranslated ev = new ExtractVariablesToBeTranslated(isVariableField, inspectionProvider, false, false);
         expression.visit(ev);
-        if (ev.causes.get().isDone()) {
+        if (ev.getCauses().isDone()) {
             try {
-                Set<VariableExpression> variablesOfExpression = Set.copyOf(ev.variableExpressions);
-                return new InlinedMethod(identifier, methodInfo, expression, variablesOfExpression,
-                        ev.containsVariableFields.get());
+                Set<VariableExpression> variableExpressions = ev.getExpressions()
+                        .stream().map(e -> (VariableExpression) e).collect(Collectors.toUnmodifiableSet());
+                return new InlinedMethod(identifier, methodInfo, expression, variableExpressions,
+                        ev.isContainsVariableFields());
             } catch (RuntimeException rte) {
                 LOGGER.error("Exception: ", rte);
                 throw rte;
             }
         }
-        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), ev.causes.get());
+        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), ev.getCauses());
     }
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {
@@ -239,7 +188,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if (translated.isDelayed()) {
             return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), translated.causesOfDelay());
         }
-        return of(identifier, methodInfo, translated, fr -> containsVariableFields);
+        return of(identifier, methodInfo, translated, fr -> containsVariableFields, inspectionProvider);
     }
 
     @Override
@@ -469,12 +418,16 @@ public class InlinedMethod extends BaseExpression implements Expression {
             }
             Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
             DV assignedOrLinked = assigned.get(fieldInfo);
-            if (LinkedVariables.isAssigned(assignedOrLinked)) {
+            if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
                 return i;
             }
             i++;
         }
         return -1; // nothing
+    }
+
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

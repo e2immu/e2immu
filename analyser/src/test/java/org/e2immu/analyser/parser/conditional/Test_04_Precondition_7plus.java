@@ -26,19 +26,25 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Precondition_7plus extends CommonTestRunner {
+
+    public static final String X_EQUALS = "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)";
 
     public Test_04_Precondition_7plus() {
         super(true);
@@ -499,21 +505,184 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     }
                 }
             }
+            if ("accept6".equals(d.methodInfo().name)) {
+                if ("xEquals".equals(d.variableName())) {
+                    if ("01".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4, 5 -> "<s:Double>";
+                            case 6 -> "<m:extractEquals>";
+                            default -> X_EQUALS;
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("03".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4, 5, 6 -> "<s:Double>";
+                            default -> X_EQUALS;
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("inequality".equals(d.variableName())) {
+                    if ("04.0.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:LinearInequalityInOneVariable>";
+                            case 1, 2, 3, 4, 5, 6, 7, 8 -> "<new:LinearInequalityInOneVariable>";
+                            default -> "new LinearInequalityInOneVariable(b,y,a*xEquals+c,allowEquals)";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("intervalX".equals(d.variableName())) {
+                    if ("06".equals(d.statementId())) {
+                        String expected = d.iteration() <= 8 ? "<s:Interval>"
+                                : "2==expressionsInX.size()?null==Interval.extractInterval2(expressionsInX.get(0))||null==Interval.extractInterval2(expressionsInX.get(1))?null:Double.isFinite(`Interval.extractInterval2(expressions.get(0)).left`)&&Infinity==`Interval.extractInterval2(expressions.get(0)).right`&&2==expressionsInX.size()?new Interval(`Interval.extractInterval2(expressions.get(0)).left`,`Interval.extractInterval2(expressions.get(0)).leftIncluded`,`Interval.extractInterval2(expressions.get(1)).right`,`Interval.extractInterval2(expressions.get(1)).rightIncluded`):([expressionsInX,expressionsInY,instance type boolean])?new Interval(`Interval.extractInterval2(expressions.get(1)).left`,`Interval.extractInterval2(expressions.get(1)).leftIncluded`,`Interval.extractInterval2(expressions.get(0)).right`,`Interval.extractInterval2(expressions.get(1)).rightIncluded`):<return value>:1==expressionsInX.size()?Interval.extractInterval2(expressionsInX.get(0)):null";
+                        assertEquals(expected, d.currentValue().toString());
+                        if (d.iteration() >= 9) {
+                            assertEquals("expressionsInX, expressionsInX, expressionsInX, expressionsInX, expressionsInX, expressionsInY, expressionsInX, expressionsInX",
+                                    d.currentValue().variables(true)
+                                            .stream().map(Variable::simpleName).collect(Collectors.joining(", ")));
+                        }
+                    }
+                }
+            }
         };
+        int BIG = 30;
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("extractOneVariable".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:extractOneVariable>"
                         : "/*inline extractOneVariable*/expression instanceof MethodCall&&null!=expression?expression/*(MethodCall)*/:null";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("accept5".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() == 0 ? "<m:accept5>"
+                        : "/*inline accept5*/allowEquals?a*px+py*b+c>=0:-1+a*px+py*b+c>=0";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 1) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
+                        assertEquals("a, allowEquals, b, c, px, py, this", im.variablesOfExpressionSorted());
+                    } else fail();
+                }
+            }
+            if ("extractInterval1".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
+                String srv = d.iteration() <= 2 ? "<m:extractInterval1>"
+                        : "/*inline extractInterval1*/2==expressions.size()?null==Interval.extractInterval2(expressions.get(0))||null==Interval.extractInterval2(expressions.get(1))?null:Double.isFinite(`Interval.extractInterval2(expressions.get(0)).left`)&&Infinity==`Interval.extractInterval2(expressions.get(0)).right`&&2==expressions.size()?new Interval(`Interval.extractInterval2(expressions.get(0)).left`,`Interval.extractInterval2(expressions.get(0)).leftIncluded`,`Interval.extractInterval2(expressions.get(1)).right`,`Interval.extractInterval2(expressions.get(1)).rightIncluded`):Double.isFinite(`Interval.extractInterval2(expressions.get(0)).right`)&&-Infinity==`left`&&2==expressions.size()&&null!=Interval.extractInterval2(expressions.get(0))&&null!=Interval.extractInterval2(expressions.get(1))&&(!Double.isFinite(`Interval.extractInterval2(expressions.get(0)).left`)||Infinity!=`Interval.extractInterval2(expressions.get(0)).right`)?new Interval(`Interval.extractInterval2(expressions.get(1)).left`,`Interval.extractInterval2(expressions.get(1)).leftIncluded`,`Interval.extractInterval2(expressions.get(0)).right`,`Interval.extractInterval2(expressions.get(1)).rightIncluded`):<return value>:1==expressions.size()?Interval.extractInterval2(expressions.get(0)):null";
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 3) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
+                        assertEquals("expressions", im.variablesOfExpressionSorted());
+                    } else fail();
+                }
+            }
+            if ("extractInterval2".equals(d.methodInfo().name)) {
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
+            }
+            if ("extractEquals".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("accept2".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("accept3".equals(d.methodInfo().name)) {
+                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 6 ? "<m:accept3>" :
+                        "/*inline accept3*/([<return value>,expressionsInV,instance type boolean])?null==expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?null||expressionsInV.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`):`allowEquals`?`a`*expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)+`b`>=0:-1+`a`*expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)+`b`>=0:instance type boolean";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 7) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
+                        assertEquals("expressionsInV", im.variablesOfExpressionSorted());
+                    } else fail();
+                }
+            }
+            if ("accept4".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("interval".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("LinearInequalityInOneVariable".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("accept6".equals(d.methodInfo().name)) {
+                assertDv(d, 7, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                if (d.iteration() == 9) {
+                    assertEquals("", d.getProperty(Property.TEMP_MODIFIED_METHOD).causesOfDelay().toString());
+                }
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 8 ? "<m:accept6>" : "/*inline accept6*/[a,b,this,instance type boolean]";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 9) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
+                        assertEquals("a, b, this", im.variablesOfExpressionSorted());
+                    } else fail();
+                }
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("a".equals(d.fieldInfo().name) && "LinearInequalityInTwoVariables".equals(d.fieldInfo().owner.simpleName)) {
+                assertEquals("a", d.fieldAnalysis().getValue().toString());
+            }
+            if ("x".equals(d.fieldInfo().name) && "LinearInequalityInTwoVariables".equals(d.fieldInfo().owner.simpleName)) {
+                assertEquals("x", d.fieldAnalysis().getValue().toString());
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Interval".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Precondition_11".equals(d.typeInfo().simpleName)) {
+                TypeAnalysisImpl.Builder b = (TypeAnalysisImpl.Builder) d.typeAnalysis();
+                assertEquals(2L, b.nonModifiedCountForMethodCallCycle.stream().count());
+                String sorted = b.nonModifiedCountForMethodCallCycle.stream().sorted(Comparator.comparing(e -> e.getKey().size()))
+                        .map(e -> e.getKey().stream().map(m -> m.name).sorted().collect(Collectors.joining(",")) + ":" + e.getValue()).collect(Collectors.joining("; "));
+                String expected = switch (d.iteration()) {
+                    case 0, 1, 2 -> "extract,extractInterval2,recursivelyCollectTerms:{extractInterval2}; accept1,accept3,accept6,evaluate,extractInterval1:{extractInterval1}";
+                    case 3 -> "extract,extractInterval2,recursivelyCollectTerms:{extractInterval2}; accept1,accept3,accept6,evaluate,extractInterval1:{accept3,extractInterval1}";
+                    case 4 -> "extract,extractInterval2,recursivelyCollectTerms:{extractInterval2,recursivelyCollectTerms}; accept1,accept3,accept6,evaluate,extractInterval1:{accept3,extractInterval1}";
+                    case 5, 6 -> "extract,extractInterval2,recursivelyCollectTerms:{extract,extractInterval2,recursivelyCollectTerms}; accept1,accept3,accept6,evaluate,extractInterval1:{accept3,extractInterval1}";
+                    default -> "extract,extractInterval2,recursivelyCollectTerms:{extract,extractInterval2,recursivelyCollectTerms}; accept1,accept3,accept6,evaluate,extractInterval1:{accept3,accept6,extractInterval1}";
+                };
+                assertEquals(expected, sorted);
+            }
+            if ("OneVariable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            }
+            if ("Variable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            }
+            if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 8, MultiLevel.CONTAINER_DV, CONTAINER);
+            }
+        };
+
+
         testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

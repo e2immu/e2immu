@@ -557,7 +557,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         CausesOfDelay modificationDelays = myMethodAnalysersExcludingSAMs.stream()
                 .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().isAbstract())
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis()
-                        .getProperty(Property.MODIFIED_METHOD).causesOfDelay())
+                        .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (modificationDelays.isDelayed()) {
             LOGGER.debug("Delaying only mark E2 in {}, modification delayed", typeInfo.fullyQualifiedName);
@@ -566,7 +566,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
 
         CausesOfDelay preconditionForEventualDelays = myMethodAnalysersExcludingSAMs.stream()
-                .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD).valueIsTrue())
+                .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue())
                 .map(ma -> ma.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (preconditionForEventualDelays.isDelayed()) {
@@ -576,7 +576,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return preconditionForEventualDelays;
         }
         Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream()
-                .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD).valueIsTrue() &&
+                .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue() &&
                         ma.getMethodAnalysis().getPreconditionForEventual() == null)
                 .findFirst();
         if (optEmptyPreconditions.isPresent()) {
@@ -589,7 +589,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
+            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
             if (modified.valueIsTrue()) {
                 Precondition precondition = methodAnalyser.getMethodAnalysis().getPreconditionForEventual();
                 if (precondition != null) {
@@ -1188,7 +1188,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         CausesOfDelay causesMethods = CausesOfDelay.EMPTY;
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
+            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
             // in the eventual case, we only need to look at the non-modifying methods
             // calling a modifying method will result in an error
             if (modified.valueIsFalse()) {

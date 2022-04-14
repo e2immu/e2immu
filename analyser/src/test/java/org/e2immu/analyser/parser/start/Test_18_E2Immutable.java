@@ -652,4 +652,28 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         .build());
     }
 
+    @Test
+    public void test_16() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_16".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+            }
+            if ("OneVariable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE); // FIXME is this correct? should it not be @ERContainer, given no methods?
+            }
+            if ("Variable".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
+            }
+            if ("Record".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+            }
+        };
+
+        // 2x potential null ptr, 1x real error: @Modified on variable() is worse than implied @NotModified in interface
+        testClass("E2Immutable_16", 1, 2, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
 }

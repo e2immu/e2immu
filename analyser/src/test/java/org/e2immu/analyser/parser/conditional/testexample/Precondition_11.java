@@ -60,22 +60,22 @@ public class Precondition_11 {
 
     public Boolean evaluate(Expression expression) {
         if (expression instanceof And and) {
-            return and.expressions().stream().map(this::accept)
+            return and.expressions().stream().map(this::accept1)
                     .reduce(true, (v1, v2) -> v1 == null ? v2 : v2 == null ? v1 : v1 && v2);
         }
-        return accept(expression);
+        return accept1(expression);
     }
 
     private final Map<OneVariable, List<Expression>> perComponent = new HashMap<>();
 
-    private Boolean accept(Expression expression) {
+    private Boolean accept1(Expression expression) {
         if (expression instanceof GreaterThanZero gt0) {
             Inequality inequality = extract(gt0);
 
             if (inequality instanceof LinearInequalityInOneVariable oneVar) {
                 List<Expression> expressionsInV = perComponent.getOrDefault(oneVar.v(), List.of());
                 if (expressionsInV.isEmpty()) return null;
-                return oneVar.accept(expressionsInV);
+                return oneVar.accept3(expressionsInV);
             }
 
             if (inequality instanceof LinearInequalityInTwoVariables twoVars) {
@@ -83,7 +83,7 @@ public class Precondition_11 {
                 List<Expression> expressionsInY = perComponent.getOrDefault(twoVars.y(), List.of());
                 if (expressionsInX.isEmpty() || expressionsInY.isEmpty()) return null;
 
-                return twoVars.accept(expressionsInX, expressionsInY);
+                return twoVars.accept6(expressionsInX, expressionsInY);
             }
         }
         return null;
@@ -196,7 +196,7 @@ public class Precondition_11 {
             assert v != null;
         }
 
-        public boolean accept(double x) {
+        public boolean accept2(double x) {
             double sum = a * x + b;
             return allowEquals ? sum >= 0 : sum > 0;
         }
@@ -215,17 +215,17 @@ public class Precondition_11 {
         /*
         null = not applicable; true = compatible/there are solutions; false = incompatible/no solutions
          */
-        public Boolean accept(List<Expression> expressionsInV) {
+        public Boolean accept3(List<Expression> expressionsInV) {
             if (onlyNotEquals(expressionsInV)) return true; // v != some constant
             Double vEquals = extractEquals(expressionsInV); // v == some constant
-            if (vEquals != null) return accept(vEquals);
-            Interval i = Interval.extractInterval(expressionsInV);
-            if (i != null) return accept(i);
+            if (vEquals != null) return accept2(vEquals);
+            Interval i = Interval.extractInterval1(expressionsInV);
+            if (i != null) return accept4(i);
             return null;
         }
 
-        public Boolean accept(Interval i) {
-            if (i.isPoint()) return accept(i.left());
+        public Boolean accept4(Interval i) {
+            if (i.isPoint()) return accept2(i.left());
             if (a > 0.0) {
                 if (i.isOpenRight()) return true;
                 assert i.isOpenLeft() || i.isClosed();
@@ -278,19 +278,19 @@ public class Precondition_11 {
             throw new IllegalStateException();
         }
 
-        public static Interval extractInterval(List<Expression> expressions) {
+        public static Interval extractInterval1(List<Expression> expressions) {
             if (expressions.size() == 1) {
-                return extractInterval(expressions.get(0));
+                return extractInterval2(expressions.get(0));
             }
             if (expressions.size() == 2) {
-                Interval i1 = extractInterval(expressions.get(0));
-                Interval i2 = extractInterval(expressions.get(1));
+                Interval i1 = extractInterval2(expressions.get(0));
+                Interval i2 = extractInterval2(expressions.get(1));
                 return i1 == null || i2 == null ? null : i1.combine(i2);
             }
             return null;
         }
 
-        public static Interval extractInterval(Expression expression) {
+        public static Interval extractInterval2(Expression expression) {
             if (expression instanceof GreaterThanZero ge) {
                 Inequality inequality = extract(ge);
                 if (inequality instanceof LinearInequalityInOneVariable one) return one.interval();
@@ -312,7 +312,7 @@ public class Precondition_11 {
             assert !x.equals(y);
         }
 
-        public boolean accept(double px, double py) {
+        public boolean accept5(double px, double py) {
             double sum = a * px + b * py + c;
             return allowEquals ? sum >= 0 : sum > 0;
         }
@@ -333,54 +333,54 @@ public class Precondition_11 {
             return b > 0;
         }
 
-        public Boolean accept(List<Expression> expressionsInX, List<Expression> expressionsInY) {
+        public Boolean accept6(List<Expression> expressionsInX, List<Expression> expressionsInY) {
             if (onlyNotEquals(expressionsInX) || onlyNotEquals(expressionsInY)) return true;
             Double xEquals = extractEquals(expressionsInX);
             Double yEquals = extractEquals(expressionsInY);
             if (xEquals != null && yEquals != null) {
-                return accept(xEquals, yEquals);
+                return accept5(xEquals, yEquals);
             }
             if (xEquals != null) {
                 // we have x to a constant, and inequalities for y => linear inequality in one variable
                 LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(
                         b, y, a * xEquals + c, allowEquals);
-                return inequality.accept(expressionsInY);
+                return inequality.accept3(expressionsInY);
             }
             if (yEquals != null) {
                 LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(
                         a, x, b * yEquals + c, allowEquals);
-                return inequality.accept(expressionsInX);
+                return inequality.accept3(expressionsInX);
             }
             // at least one inequality on x, at least one on y; they can be expressed as intervals
-            Interval intervalX = Interval.extractInterval(expressionsInX);
-            Interval intervalY = Interval.extractInterval(expressionsInY);
+            Interval intervalX = Interval.extractInterval1(expressionsInX);
+            Interval intervalY = Interval.extractInterval1(expressionsInY);
             if (intervalX == null || intervalY == null) return null;
 
             if (intervalX.isClosed() && intervalY.isClosed()) {
                 // is a box
-                return accept(intervalX.left(), intervalY.left()) || accept(intervalX.right(), intervalY.left()) ||
-                        accept(intervalX.left(), intervalY.right()) || accept(intervalX.right(), intervalY.right());
+                return accept5(intervalX.left(), intervalY.left()) || accept5(intervalX.right(), intervalY.left()) ||
+                        accept5(intervalX.left(), intervalY.right()) || accept5(intervalX.right(), intervalY.right());
             }
             if (intervalX.isClosed()) {
                 if (intervalY.isOpenLeft()) { // looks like the capital letter PI
-                    return accept(intervalX.left(), intervalY.right()) || accept(intervalX.right(), intervalY.right()) ||
+                    return accept5(intervalX.left(), intervalY.right()) || accept5(intervalX.right(), intervalY.right()) ||
                             isOpenLeftY();
                 }
                 // looks like the letter U
-                return accept(intervalX.left(), intervalY.left()) || accept(intervalX.right(), intervalY.left()) ||
+                return accept5(intervalX.left(), intervalY.left()) || accept5(intervalX.right(), intervalY.left()) ||
                         isOpenRightY();
             }
             if (intervalY.isClosed()) {
                 if (intervalX.isOpenLeft()) { // looks like ]
-                    return accept(intervalX.right(), intervalY.left()) || accept(intervalX.right(), intervalY.right()) ||
+                    return accept5(intervalX.right(), intervalY.left()) || accept5(intervalX.right(), intervalY.right()) ||
                             isOpenLeftX();
                 }
                 // looks like [
-                return accept(intervalX.left(), intervalY.left()) || accept(intervalX.right(), intervalY.left()) ||
+                return accept5(intervalX.left(), intervalY.left()) || accept5(intervalX.right(), intervalY.left()) ||
                         isOpenRightX();
             }
             // neither are closed; look like 90 degrees rotations of L; first, try the corner point
-            if (accept(intervalX.isOpenLeft() ? intervalX.right() : intervalX.left(), intervalY.isOpenLeft() ? intervalY.right() : intervalY.left()))
+            if (accept5(intervalX.isOpenLeft() ? intervalX.right() : intervalX.left(), intervalY.isOpenLeft() ? intervalY.right() : intervalY.left()))
                 return true;
 
             return intervalX.isOpenRight() && isOpenRightX() || intervalX.isOpenLeft() && isOpenLeftX()
