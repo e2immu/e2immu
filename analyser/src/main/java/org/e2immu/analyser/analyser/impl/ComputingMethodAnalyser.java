@@ -204,6 +204,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            if (analysisStatus.isDone()) methodAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -285,6 +286,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (methodAnalysis.eventualIsSet()) return DONE;
         if (methodInfo.isConstructor) {
             // don't write to annotations
+            methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
             return DONE;
         }
 

@@ -102,6 +102,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+        if(analysisStatus.isDone()) methodAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
         List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterMethodAnalyserVisitors();

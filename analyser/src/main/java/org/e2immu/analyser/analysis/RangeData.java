@@ -31,4 +31,6 @@ public interface RangeData {
     void computeRange(StatementAnalysis statementAnalysis, EvaluationResult result);
 
     Stream<Message> messages();
+
+    void internalAllDoneCheck();
 }

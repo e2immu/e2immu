@@ -125,6 +125,16 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         private final EventuallyFinal<DV> isOfTransparentType = new EventuallyFinal<>();
 
+        @Override
+        public void internalAllDoneCheck() {
+            super.internalAllDoneCheck();
+            assert initializerValue.isFinal();
+            assert values.isSet();
+            assert value.isFinal();
+            assert linkedVariables.isFinal();
+            assert isOfTransparentType.isFinal();
+        }
+
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
             super(primitives, fieldInfo.name);
             this.typeAnalysisOfOwner = typeAnalysisOfOwner;

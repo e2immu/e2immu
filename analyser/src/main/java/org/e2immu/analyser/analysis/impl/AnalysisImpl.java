@@ -71,4 +71,9 @@ abstract class AnalysisImpl implements Analysis {
                                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         throw new UnsupportedOperationException("Only in builders!");
     }
+
+    @Override
+    public void internalAllDoneCheck() {
+        // nothing here, only in builder
+    }
 }

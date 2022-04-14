@@ -191,6 +191,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 callCounterForDebugging.incrementAndGet());
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+            if (analysisStatus.isDone()) typeAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                     .debugConfiguration().afterTypePropertyComputations()) {

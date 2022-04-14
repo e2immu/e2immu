@@ -80,6 +80,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     // a variable that changes from iteration to iteration... should be moved out at some point
     private final Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
 
+    @Override
+    public void internalAllDoneCheck() {
+        super.internalAllDoneCheck();
+        stateData.internalAllDoneCheck();
+        flowData.internalAllDoneCheck();
+        if(rangeData != null) rangeData.internalAllDoneCheck();
+        stateData.internalAllDoneCheck();
+        methodLevelData.internalAllDoneCheck();
+    }
+
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
                                  Statement statement,

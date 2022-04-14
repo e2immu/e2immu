@@ -53,6 +53,11 @@ public class RangeDataImpl implements RangeData {
     }
 
     @Override
+    public void internalAllDoneCheck() {
+        assert range.isFinal();
+    }
+
+    @Override
     public Stream<Message> messages() {
         Stream<Message> streamOfUselessAssignment = uselessAssignment.isSet() ? Stream.of(uselessAssignment.get()) : Stream.of();
         return Stream.concat(streamOfRangeObject(), streamOfUselessAssignment);

@@ -71,6 +71,11 @@ public class MethodLevelData {
         return combinedPrecondition.get();
     }
 
+    public void internalAllDoneCheck() {
+        assert combinedPrecondition.isFinal();
+        assert linksHaveBeenEstablished.isFinal();
+    }
+
     public record SharedState(AnalyserResult.Builder builder,
                               EvaluationResult context,
                               StatementAnalysis statementAnalysis,

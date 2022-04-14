@@ -58,6 +58,8 @@ public interface Analysis {
         throw new UnsupportedOperationException("Only in builder!");
     }
 
+    void internalAllDoneCheck();
+
     /*
     three states of computed:
     (1) present computed correctly

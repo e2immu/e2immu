@@ -199,6 +199,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final AnalysisMode analysisMode;
 
         @Override
+        public void internalAllDoneCheck() {
+            super.internalAllDoneCheck();
+            assert preconditionForEventual.isFinal();
+            assert eventual.isFinal();
+            assert singleReturnValue.isFinal();
+            assert precondition.isFinal();
+
+        }
+
+        @Override
         public String markLabelFromType() {
             // value1 should be present when the property value is EVENTUAL or EVENTUAL_BEFORE, but not with _AFTER (see e.g.
             // test EventuallyImmutableUtil_13)

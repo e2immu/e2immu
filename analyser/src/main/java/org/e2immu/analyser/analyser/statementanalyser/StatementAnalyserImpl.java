@@ -464,6 +464,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
+            if(overallStatus.isDone()) statementAnalysis.internalAllDoneCheck();
 
             AnalyserResult result = analyserResultBuilder
                     .addTypeAnalysers(localAnalysers.getOrDefault(List.of())) // unreachable statement...

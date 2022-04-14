@@ -74,7 +74,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     record SharedState(int iteration) {
     }
 
-    public final AnalyserComponents<String, SharedState> analyserComponents =
+    private final AnalyserComponents<String, SharedState> analyserComponents =
             new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
                     .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
                     .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
@@ -292,6 +292,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert !isUnreachable();
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration));
+            if(analysisStatus.isDone()) parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {

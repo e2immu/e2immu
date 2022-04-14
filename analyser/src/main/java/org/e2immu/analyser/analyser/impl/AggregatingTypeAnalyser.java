@@ -86,6 +86,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+        if(analysisStatus.isDone()) typeAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
         List<TypeAnalyserVisitor> visitors = analyserContext.getConfiguration()

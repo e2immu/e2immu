@@ -209,6 +209,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private CausesOfDelay approvedPreconditionsE1Delays;
         private CausesOfDelay approvedPreconditionsE2Delays;
 
+
+        @Override
+        public void internalAllDoneCheck() {
+            super.internalAllDoneCheck();
+            assert approvedPreconditionsE2.isFrozen();
+            assert approvedPreconditionsE1.isFrozen();
+            assert immutableCanBeIncreasedByTypeParameters.isSet();
+            assert hiddenContentTypes.isSet();
+            assert explicitTypes.isSet();
+        }
+
         private static CausesOfDelay initialDelay(TypeInfo typeInfo) {
             return typeInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }

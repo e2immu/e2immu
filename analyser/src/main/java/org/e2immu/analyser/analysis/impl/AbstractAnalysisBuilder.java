@@ -355,4 +355,13 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     protected void writeTypeEventualFields(String after) {
         throw new UnsupportedOperationException("Not implemented in " + getClass());
     }
+
+    @Override
+    public void internalAllDoneCheck() {
+        ensureNoDelayedPropertyValues();
+    }
+
+    public void ensureNoDelayedPropertyValues() {
+        assert properties.delays().isDone();
+    }
 }

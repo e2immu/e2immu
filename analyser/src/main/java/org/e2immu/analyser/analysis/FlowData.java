@@ -67,6 +67,16 @@ public class FlowData {
         blockExecution = new VariableFirstThen<>(initialDelay);
     }
 
+    public void internalAllDoneCheck() {
+        assert interruptsFlow.isSet();
+        assert blockExecution.isSet();
+        assert guaranteedToBeReachedInMethod.isSet();
+        assert guaranteedToBeReachedInCurrentBlock.isSet();
+        assert initialTime.isSet();
+        assert timeAfterEvaluation.isSet();
+        assert timeAfterSubBlocks.isSet();
+    }
+
     public void initialiseAssignmentIds(FlowData previous) {
         assignmentIdOfStatementTime.putAll(previous.assignmentIdOfStatementTime);
     }

@@ -61,6 +61,12 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public final Location location;
         private final AnalysisProvider analysisProvider;
 
+        @Override
+        public void internalAllDoneCheck() {
+            super.internalAllDoneCheck();
+            assert causesOfAssignedToFieldDelays.isFinal();
+        }
+
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
             super(primitives, parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;

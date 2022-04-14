@@ -38,6 +38,15 @@ import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEqu
 public class StateData {
     private static final Logger LOGGER = LoggerFactory.getLogger(StateData.class);
 
+    private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
+    private final SetOnceMap<VariableExpression, Expression> equalityAccordingToState = new SetOnceMap<>();
+    private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
+    // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
+    private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
+    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
+    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
+    public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
+
     public StateData(Location location, boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
@@ -45,7 +54,14 @@ public class StateData {
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
     }
 
-    private final SetOnceMap<VariableExpression, Expression> equalityAccordingToState = new SetOnceMap<>();
+    public void internalAllDoneCheck() {
+        assert conditionManagerForNextStatement.isFinal();
+        assert precondition.isFinal();
+        assert preconditionFromMethodCalls.isFinal();
+        assert valueOfExpression.isFinal();
+        assert statesOfInterrupts == null || statesOfInterrupts.stream().allMatch(e -> e.getValue().isFinal());
+        assert statesOfReturnInLoop == null || statesOfReturnInLoop.stream().allMatch(e -> e.getValue().isFinal());
+    }
 
     public boolean equalityAccordingToStateIsSet(VariableExpression variable) {
         return equalityAccordingToState.isSet(variable);
@@ -74,8 +90,6 @@ public class StateData {
 
      this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData
      */
-
-    private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
 
     public boolean preconditionNoInformationYet(MethodInfo currentMethod) {
         return precondition.isVariable() && precondition.get().isNoInformationYet(currentMethod);
@@ -121,7 +135,6 @@ public class StateData {
     the local condition manager of a subsequent statement in the same block needs to combine this value
     and the method level data's combined precondition.
      */
-    private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
 
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         try {
@@ -144,9 +157,6 @@ public class StateData {
         return conditionManagerForNextStatement.get();
     }
 
-    // used for transfer from SAApply / StatementAnalysis.applyPrecondition to SASubBlocks
-    private final EventuallyFinal<Precondition> preconditionFromMethodCalls = new EventuallyFinal<>();
-
     public Precondition getPreconditionFromMethodCalls() {
         return preconditionFromMethodCalls.get();
     }
@@ -164,8 +174,6 @@ public class StateData {
         }
     }
 
-    public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
-
     public void setValueOfExpression(Expression value) {
         if (value.isDelayed()) {
             assert valueOfExpression.isVariable()
@@ -173,9 +181,6 @@ public class StateData {
             valueOfExpression.setVariable(value);
         } else setFinalAllowEquals(valueOfExpression, value);
     }
-
-    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
-    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
 
     // mainly for testing
     public Stream<Map.Entry<String, EventuallyFinal<Expression>>> statesOfInterruptsStream() {
