@@ -694,7 +694,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     private AnalysisStatus analyseContainer() {
         DV container = typeAnalysis.getProperty(CONTAINER);
-        if (container.isDone()) return DONE;
+        if (container.isDone()) {
+            return DONE;
+        }
 
         Property ALT_CONTAINER;
         AnalysisStatus ALT_DONE;
@@ -705,6 +707,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 ALT_CONTAINER = Property.PARTIAL_CONTAINER;
                 ALT_DONE = AnalysisStatus.of(parentOrEnclosing.status.causesOfDelay());
             } else {
+                DV current = typeAnalysis.getProperty(CONTAINER);
+                assert current.isDone();
+                typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_CONTAINER, current);
                 return parentOrEnclosing.status;
             }
         } else {

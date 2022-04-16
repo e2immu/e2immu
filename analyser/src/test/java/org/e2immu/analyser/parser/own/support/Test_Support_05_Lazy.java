@@ -71,19 +71,18 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 4, "t$0");
+                    assertCurrentValue(d, 3, "t$0");
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
                         case 1 -> "<null-check>?<f:t>:<m:requireNonNull>";
                         case 2 -> "<wrapped:t>";
-                        case 3 -> "<null-check>?<f:t>:<s:T>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() >= 4, d.currentValue().isDone());
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals(d.iteration() >= 3, d.currentValue().isDone());
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
@@ -96,31 +95,29 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 assertEquals("this", t.scope.toString());
 
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 4, "nullable instance type T");
+                    assertCurrentValue(d, 3, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
-                    assertCurrentValue(d, 4, "nullable instance type T");
+                    assertCurrentValue(d, 3, "nullable instance type T");
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1 -> "<m:requireNonNull>";
                         case 2 -> "<wrapped:t>";
-                        case 3 -> "<s:T>";
                         default -> "nullable instance type T/*@NotNull*/";
                     };
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 4, DV.FALSE_DV, Property.IDENTITY);
+                    assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1 -> "<m:requireNonNull>";
-                        case 2,3 -> "<wrapped:t>";
-                     //   case 3 -> "<s:T>";
+                        case 2 -> "<wrapped:t>";
                         default -> "nullable instance type T/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         }
@@ -130,12 +127,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
-                String state = d.iteration() <= 3 ? "!<null-check>" : "true";
+                String state = d.iteration() <= 2 ? "!<null-check>" : "true";
                 assertEquals(state, d.state().toString());
             }
             if ("2".equals(d.statementId())) {
                 // important: if the state says something about t, then after assignment to t this should be removed!
-                String state = d.iteration() <= 3 ? "!<null-check>" : "true";
+                String state = d.iteration() <= 2 ? "!<null-check>" : "true";
                 assertEquals(state, d.state().toString());
                 assertEquals("", d.statementAnalysis().stateData().equalityAccordingToStateStream()
                         .map(Object::toString).collect(Collectors.joining(",")));
@@ -156,7 +153,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(d.iteration() > 1, d.fieldAnalysis().valuesDelayed().isDone());
 
             assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
@@ -170,10 +167,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
         if ("get".equals(d.methodInfo().name)) {
-            String expect = d.iteration() <= 3 ? "Precondition[expression=<precondition>, causes=[]]"
+            String expect = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
-            assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 

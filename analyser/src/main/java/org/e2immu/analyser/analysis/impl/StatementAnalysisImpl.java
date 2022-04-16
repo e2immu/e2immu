@@ -83,10 +83,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public void internalAllDoneCheck() {
         super.internalAllDoneCheck();
+        rawVariableStream()
+                .map(Map.Entry::getValue)
+                .filter(vic -> vic.hasEvaluation() || vic.hasMerge() || vic.isInitial())
+                .map(VariableInfoContainer::current)
+                .forEach(vi -> {
+                    assert vi.valueIsSet() : "Variable " + vi.variable().fullyQualifiedName() + " has value: "
+                            + vi.getValue().toString() + " in statement " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName;
+                });
         stateData.internalAllDoneCheck();
         flowData.internalAllDoneCheck();
         if (rangeData != null) rangeData.internalAllDoneCheck();
-        stateData.internalAllDoneCheck();
         methodLevelData.internalAllDoneCheck();
     }
 

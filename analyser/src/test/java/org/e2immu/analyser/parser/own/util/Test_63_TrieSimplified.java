@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -126,7 +127,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.1.1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "root.map:-1,this.root:0" : "this.root:0";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -142,9 +153,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:add>" : "/*inline add*/root";
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 2 ? "<m:add>" : "root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 3) {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof VariableExpression,
+                            "Got " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+            if ("addSynchronized".equals(d.methodInfo().name)) {
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -153,11 +172,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TrieSimplified_1_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
-        testClass("TrieSimplified_1_2", 7, 0, new DebugConfiguration.Builder()
+        testClass("TrieSimplified_1_2", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -307,7 +326,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("node".equals(d.variableName())) {
@@ -939,12 +958,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_5", 0, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

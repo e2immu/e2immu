@@ -265,7 +265,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         try {
             SharedState sharedState = new SharedState(iteration, closure);
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if(analysisStatus.isDone()) fieldAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone()) fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -1479,6 +1479,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             LOGGER.debug("Mark field {} as @NotModified", fqn);
             return DONE;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            methodsForModification().filter(m -> {
+                List<VariableInfo> variableInfoList = m.getMethodAnalysis().getFieldAsVariable(fieldInfo);
+                return variableInfoList.stream()
+                        .filter(VariableInfo::isRead)
+                        .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().isDelayed());
+            }).forEach(m -> LOGGER.debug("  cm problems in {}", m.getMethodInfo().fullyQualifiedName));
         }
         fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contextModifications);
         LOGGER.debug("Field @Modified delayed because of {}", contextModifications);

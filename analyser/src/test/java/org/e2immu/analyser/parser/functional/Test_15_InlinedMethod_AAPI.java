@@ -302,7 +302,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
             }
             if ("compareTo".equals(d.methodInfo().name)) {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
@@ -341,17 +341,17 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                     String expected = d.iteration() <= 2 ? "<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>"
                             : "new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}}";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 }
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 

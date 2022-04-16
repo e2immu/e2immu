@@ -31,8 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
 This is an example of a cyclic dependency on the ContextModified computation.
@@ -68,7 +67,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("c".equals(d.variableName())) {
@@ -77,27 +76,34 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
-                            case 2 -> "cm:localD.set@Method_example1_2-E;initial@Field_set;mom@Parameter_setC";
-                            case 3 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set;mom@Parameter_setC";
-                            default -> "mom@Parameter_setC";
+                            case 2 -> "cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;initial@Field_set;mom@Parameter_setC";
+                            case 3 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial@Field_set;mom@Parameter_setC";
+                            case 4 -> "mom@Parameter_setC";
+                            case 5, 6 -> "break_mom_delay@Parameter_setC;cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:this.s2@Method_example1_2-E;mom@Parameter_setC";
+                            default -> "";
                         };
-                        assertCurrentValue(d, 5, expectedDelay, expectValue);
+                        assertCurrentValue(d, 7, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "initial@Field_set";
-                            case 2 -> "cm:localD.set@Method_example1_2-E;initial@Field_set";
-                            default -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;initial@Field_set";
+                            case 2 -> "cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;initial@Field_set";
+                            case 3 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial@Field_set";
+                            case 4 -> "mom@Parameter_setC";
+                            case 5 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:this.s2@Method_example1_2-E;mom@Parameter_setC";
+                            default -> "";
                         };
-                        assertLinked(d, 4, linkDelay, "c:0,this.s2:2");
+                        assertLinked(d, 6, linkDelay, "c:0,this.s2:2");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 4 ? "<f:set>" : "nullable instance type Set<String>";
+                        String expectValue = d.iteration() <= 6 ? "<f:set>" : "nullable instance type Set<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertNotNull(fr.scopeVariable);
+                        assertEquals("c", fr.scopeVariable.toString());
+                        assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -113,7 +119,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 4, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 6, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 String expectAssigned = d.iteration() == 0 ? "[]" : "[set]";
@@ -137,7 +143,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertEquals("setC:0", d.fieldAnalysis().getLinkedVariables().toString());
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
-                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 5, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -145,9 +151,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
 
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;mom@Parameter_setC" : "mom@Parameter_setC";
-                assertDv(d, expectContainerDelay, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 

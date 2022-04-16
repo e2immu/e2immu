@@ -310,10 +310,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("packageName".equals(d.variableName())) {
@@ -323,10 +323,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<v:packageName>" : "typeInfo.packageName()";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "myPackage".equals(pi.name)) {
@@ -336,7 +336,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<p:myPackage>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -352,7 +352,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("doImport".equals(d.variableName())) {
@@ -531,7 +531,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_8", 3, 15, new DebugConfiguration.Builder()
+        testClass("VariableScope_8", 4, 15, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
@@ -591,8 +591,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // eval
                         String expected = switch (d.iteration()) {
                             case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
-                            case 1 -> "<vp:vn:cm:scope-vdol:1.previousVariableNature@Method_removeInSubBlockMerge_3-E;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
-                            case 2, 3 -> "<vp:vn:[11 delays]>/*(VariableDefinedOutsideLoop)*/";
+                            case 1 -> "<vp:vn:[11 delays]>/*(VariableDefinedOutsideLoop)*/";
+                            case 2 -> "<vp:vn:cm@Parameter_index;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature>/*(VariableDefinedOutsideLoop)*/";
+                            case 3 -> "<vp:vn:cm@Parameter_index;mom@Parameter_previousVariableNature>/*(VariableDefinedOutsideLoop)*/";
                             default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());

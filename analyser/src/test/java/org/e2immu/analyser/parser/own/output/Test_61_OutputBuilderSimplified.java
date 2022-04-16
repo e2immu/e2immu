@@ -364,7 +364,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);

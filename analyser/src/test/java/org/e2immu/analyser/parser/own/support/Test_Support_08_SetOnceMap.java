@@ -103,12 +103,9 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = switch (d.iteration()) {
-                            case 0 -> "<mmc:map>";
-                            default -> "instance type HashMap<K,V>";
-                        };
+                        String expectValue = d.iteration() == 0 ? "<mmc:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
@@ -132,7 +129,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         assertEquals("nullable instance type V", d.currentValue().toString());
@@ -161,7 +158,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

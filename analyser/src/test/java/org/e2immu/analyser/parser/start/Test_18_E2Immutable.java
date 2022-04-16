@@ -494,7 +494,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:firstEntry>" : "map.firstEntry()";
                 assertEquals(expectValue, v.toString());
-                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "this.map:3";
+                String expectLinked = "this.map:3";
                 assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
             }
 
@@ -502,7 +502,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
-                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "this.map:3";
+                String expectLinked = "this.map:3";
                 assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
             }
         };

@@ -508,9 +508,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            CausesOfDelay causesOfDelay,
                                            DV modified) {
         assert causesOfDelay.isDelayed();
-        LinkedVariables delayedLinkedVariables = linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay);
+        // NOTE: we do not convert the linked variables to blanket delay! this is not necessary and holds back Context Modified
+        LinkedVariables linkedVariables = linkedVariables(evaluationContext);
         builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                delayedLinkedVariables, causesOfDelay));
+                linkedVariables, causesOfDelay));
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
             // IMPORTANT: we change the value of the object variable, not the variable the object may be
@@ -518,7 +519,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             VariableExpression ve;
             if ((ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
                 Expression delayedObject = DelayedVariableExpression.forDelayedModificationInMethodCall(ve.variable(), causesOfDelay);
-                builder.modifyingMethodAccess(ve.variable(), delayedObject, delayedLinkedVariables);
+                builder.modifyingMethodAccess(ve.variable(), delayedObject, linkedVariables);
             }
         }
         return builder.build();

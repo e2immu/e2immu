@@ -135,7 +135,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String delayed = d.iteration() == 0
-                                ? "cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C"
+                                ? "cm:newSet@Method_copy_2-E;cm:return copy@Method_copy_2-E;cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C"
                                 : "mom@Parameter_setP";
                         assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

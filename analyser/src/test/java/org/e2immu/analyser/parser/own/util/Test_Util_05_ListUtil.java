@@ -70,9 +70,21 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:it2>"
-                                : "values1.isEmpty()?values2.iterator():<mmc:it2>";
+                                : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+            if ("joinLists".equals(d.methodInfo().name)) {
+                if ("it2".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<L>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<L>";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -86,9 +98,9 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
         };
 
         testSupportAndUtilClasses(List.of(ListUtil.class), 0, 0, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

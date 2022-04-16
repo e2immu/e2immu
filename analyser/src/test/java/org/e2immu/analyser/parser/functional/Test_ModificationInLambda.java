@@ -46,7 +46,7 @@ public class Test_ModificationInLambda extends CommonTestRunner {
                     if ("$1".equals(thisVar.typeInfo.simpleName)) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else if ("ModificationInLambda_0".equals(thisVar.typeInfo.simpleName)) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Have " + thisVar.typeInfo.fullyQualifiedName);
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {

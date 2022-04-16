@@ -49,7 +49,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
 
             EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
-            String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+            String expectedLv = "this.list:3";
             assertEquals(expectedLv, cdFirst.linkedVariables().toString());
         }
         if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
@@ -86,15 +86,13 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:list>" : fieldValue;
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getFirstC1:-1,this.list:0"
-                            : "return getFirstC1:3,this.list:0";
+                    String expectLv = "return getFirstC1:3,this.list:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0,this.list:-1"
-                            : "return getFirstC1:0,this.list:3";
+                    String expectLv = "return getFirstC1:0,this.list:3";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -108,7 +106,15 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 }
             }
             if ("test1".equals(d.methodInfo().name)) {
-
+                if ("i".equals(d.variableName())) {
+                    String expected = d.iteration() <= 1 ? "<mmc:i>" : "instance type I";
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
                 if ("list".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";

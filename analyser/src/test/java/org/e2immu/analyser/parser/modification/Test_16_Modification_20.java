@@ -59,13 +59,11 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "cm:this@Method_example1_0-E;initial:this.s2@Method_example1_0-C";
-                            case 1 -> "cm:this@Method_example1_0-E;initial@Field_set";
-                            case 2 -> "cm:c.set@Method_example1_2-E;cm:this@Method_example1_0-E;initial@Field_set";
-                            case 3 -> "cm:c.set@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:this@Method_example1_0-E;initial@Field_set";
+                            case 0 -> "cm@Parameter_setC;mom@Parameter_setC";
+                            case 1, 2 -> "mom@Parameter_setC";
                             default -> "";
                         };
-                        assertDv(d, expectedDelay, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, expectedDelay, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
@@ -84,9 +82,10 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 }
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 4 ? "<new:C1>" : "new C1(s2)";
+                        String expectValue = d.iteration() <= 6 ? "<new:C1>" : "new C1(s2)";
+                        mustSeeIteration(d, 7);
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLinked = d.iteration() <= 3 ? "c:0,this.s2:-1" : "c:0";
+                        String expectLinked = d.iteration() <= 5 ? "c:0,this.s2:-1" : "c:0";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -95,7 +94,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             // addAll will not modify its parameters
@@ -115,7 +114,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 // value from the constructor
                 assertEquals("setC", d.fieldAnalysis().getValue().toString());
 
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 // note that while the type of the field is transparent in C1, we do not verify that here
                 assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
@@ -138,7 +137,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.Set<java.lang.String>", d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Modification_20".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());

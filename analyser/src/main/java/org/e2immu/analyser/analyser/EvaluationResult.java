@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -571,6 +572,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     if (currentValue == null || !currentValue.valueIsTrue()) {
                         setProperty(variable, Property.CONTEXT_MODIFIED, modified);
                     }
+                }
+                if (variable instanceof FieldReference fr && fr.scopeVariable != null) {
+                    markContextModified(fr.scopeVariable, modified);
+                } else if (variable instanceof DependentVariable dv && dv.arrayVariable() != null) {
+                    markContextModified(dv.arrayVariable(), modified);
                 }
             }
         }

@@ -172,7 +172,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
+import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -23,6 +24,7 @@ import java.util.Map;
 /*
 Variant on _1; without getter and setter
  */
+@E1Container
 public class TrieSimplified_1_2<T> {
 
     @Modified

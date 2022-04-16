@@ -299,7 +299,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
@@ -308,7 +308,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
