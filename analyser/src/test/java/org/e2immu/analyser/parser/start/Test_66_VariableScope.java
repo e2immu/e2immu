@@ -420,7 +420,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.2".equals(d.statementId())) {
                         assertEquals("perPackage", fr.scope.toString());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:addTypeReturnImport>&&<f:allowStar>";
+                            case 0 -> "<f:allowStar>&&<m:addTypeReturnImport>";
                             case 1 -> "instance type boolean&&<m:addTypeReturnImport>";
                             default -> "instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo)";
                         };
@@ -432,7 +432,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         } else if ("scope-perPackage:1".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<null-check>&&!<m:equals>?<m:addTypeReturnImport>&&<f:allowStar>:<f:allowStar>";
+                                case 0 -> "<null-check>&&!<m:equals>?<f:allowStar>&&<m:addTypeReturnImport>:<f:allowStar>";
                                 case 1 -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
                                 default -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&(new QualificationImpl()).addTypeReturnImport(typeInfo):instance type boolean";
                             };

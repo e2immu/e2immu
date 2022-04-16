@@ -112,10 +112,12 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     String expectValue = d.iteration() <= 3 ? "<f:eventually>" : "instance type Eventually<String>";
                     assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("return getEventually:0,this.eventually:0",
+                            d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("return getEventually:0,this.eventually:0", d.variableInfo().getLinkedVariables().toString());
-
+                    assertEquals("return getEventually:0,this.eventually:0",
+                            d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }

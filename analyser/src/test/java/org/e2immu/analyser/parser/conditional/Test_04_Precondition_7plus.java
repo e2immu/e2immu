@@ -703,12 +703,12 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
 
         testClass("Precondition_11", 0, 16,
                 new DebugConfiguration.Builder()
-                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                      //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                      //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

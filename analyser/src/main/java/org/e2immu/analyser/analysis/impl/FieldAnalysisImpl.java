@@ -19,8 +19,10 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
@@ -146,9 +148,10 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             this.fieldInfo = fieldInfo;
             CausesOfDelay initialDelay = initialDelay(fieldInfo);
-            LinkedVariables delayedLinkedVariables = LinkedVariables.delayedEmpty(initialDelay);
-            setValue(DelayedExpression.forInitialFieldValue(fieldInfo, delayedLinkedVariables, initialDelay));
-            linkedVariables.setVariable(delayedLinkedVariables);
+            FieldReference fr = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
+            DelayedVariableExpression dve = DelayedVariableExpression.forField(fr, 0, initialDelay);
+            setValue(dve);
+            linkedVariables.setVariable(dve.linkedVariables(null));
             this.values = new VariableFirstThen<>(initialDelay);
             isOfTransparentType.setVariable(initialDelay);
         }

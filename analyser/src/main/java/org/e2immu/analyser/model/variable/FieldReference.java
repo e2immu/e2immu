@@ -153,7 +153,8 @@ public class FieldReference extends VariableWithConcreteReturnType {
         // we do not use FQN for equality, because then we should also use fully qualified names
         // in the #part, which makes them even more unreadable. There are potential clashes when translating
         // see e.g. ExplicitConstructorInvocation_6.
-        return fieldInfo.equals(that.fieldInfo) && scope.equals(that.scope);
+        return fieldInfo.equals(that.fieldInfo) && (scopeVariable == null && that.scopeVariable == null ||
+                scopeVariable != null && scopeVariable.equals(that.scopeVariable));
     }
 
     @Override
@@ -246,6 +247,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public CausesOfDelay causesOfDelay() {
-        return scope.causesOfDelay().merge(scopeVariable == null ? CausesOfDelay.EMPTY: scopeVariable.causesOfDelay());
+        return scope.causesOfDelay().merge(scopeVariable == null ? CausesOfDelay.EMPTY : scopeVariable.causesOfDelay());
     }
 }

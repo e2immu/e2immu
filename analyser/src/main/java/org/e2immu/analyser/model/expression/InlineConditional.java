@@ -327,4 +327,9 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (newState.isBoolValueFalse()) return ifFalse;
         return this;
     }
+
+    @Override
+    public boolean isNotYetAssigned() {
+        return ifTrue.isNotYetAssigned() && ifFalse.isNotYetAssigned();
+    }
 }

@@ -79,11 +79,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "lastOneWasSpace".equals(pi.name)) {
                     assertEquals("nullable instance type ElementarySpace/*@Identity*/", d.currentValue().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ParameterInfo pi && "elementarySpace".equals(pi.name)) {
                     assertEquals("nullable instance type ElementarySpace", d.currentValue().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("null==lastOneWasSpace?elementarySpace:lastOneWasSpace", d.currentValue().toString());
@@ -108,17 +108,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         fail("The variable 'string' should not exist here");
                     }
                 }
-                if ("chars".equals(d.variableName())) {
-                    if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "!<instanceOf:Space>&&!<instanceOf:Guide>&&<m:length>>=1&&<v:end>><v:pos>&&<f:NEWLINE>!=<m:get>?<v:chars>+<m:length>+(<v:wroteOnce>&&!<m:apply>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0):<vl:chars>";
-                            case 1 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)!=<f:RELAXED_NONE>&&<m:length>>=1&&<vp:NONE:container@Class_ElementarySpace>!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:container@Record_Space>?1:0):instance type int:instance type int";
-                            case 2 -> "!<s:boolean>&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?<s:boolean>?<vl:chars>:<m:length>>=1?<vl:chars>+<m:length>+(wroteOnce$8&&!<m:apply>&&!<s:boolean>&&!<s:boolean>&&<m:length>>=1&&ElementarySpace.NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&ElementarySpace.RELAXED_NONE!=(<s:boolean>?<m:combine>:nullable instance type ElementarySpace)&&end$8>pos$8&&list.get(pos$8)!=<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>?1:0):instance type int:instance type int";
-                            default -> "!(outputElement instanceof Guide guide)&&!(outputElement instanceof Space space)&&end$8>pos$8&&list.get(pos$8)!=Space.NEWLINE&&(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()>=1?nullable instance type Boolean?chars$8:(([end$8,lastOneWasSpace,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,Space.NEWLINE,list.get(pos$8)/*(Symbol)*/.symbol,list,outputElement,pos$8,wroteOnce$8,instance type boolean])?1:0)+(outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.symbol:outputElement instanceof Guide?\"\":\"abc\").length()+chars$8:instance type int";
-                        };
-                        assertEquals(expected, d.currentValue().toString());
-                    }
-                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -128,13 +117,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "CM{state=(<v:allowBreak>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(!<v:allowBreak>||!<v:wroteOnce>||<instanceOf:Guide>||<m:length><=0||-<v:chars>+maxChars-<m:length>>=(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0))&&(<v:wroteOnce>||<instanceOf:Guide>||!<m:apply>||<m:length><=0)&&(<instanceOf:Space>||!<m:apply>||!<instanceOf:Guide>||<v:chars>>=maxChars)&&(<instanceOf:Guide>||!<m:apply>||<m:length><=0||-1+<v:chars>-maxChars+<m:length>+(<v:wroteOnce>&&!<instanceOf:Guide>&&!<instanceOf:Space>&&<m:length>>=1&&<v:end>><v:pos>&&<v:lastOneWasSpace>!=<f:NONE>&&<v:lastOneWasSpace>!=<f:RELAXED_NONE>&&<f:NEWLINE>!=<m:get>?1:0)>=0)&&(<instanceOf:Space>||!<instanceOf:Guide>||-1-<v:chars>+maxChars>=0)&&(<v:pos>>=<v:end>||<f:NEWLINE>==<m:get>);parent=CM{}}";
-                        case 1 -> "CM{state=[chars,end$8,<vp:NONE:container@Class_ElementarySpace>,<vp:NEWLINE:container@Record_Space>,<f:<m:left>.split>,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
-                        case 2 -> "CM{state=[chars,end$8,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,<vp:NEWLINE:cm@Parameter_split;initial@Field_split;mom@Parameter_split>,<f:<m:left>.split>,Split.NEVER,list,maxChars,pos,wroteOnce,<vl:wroteOnce>,<too complex>];parent=CM{}}";
-                        default -> "CM{state=[chars,end,lastOneWasSpace,ElementarySpace.NONE,ElementarySpace.RELAXED_NONE,Space.NEWLINE,list.get(pos)/*(Symbol)*/.left().split,Split.NEVER,list.get(pos)/*(Symbol)*/.symbol,list,maxChars,outputElement,pos,wroteOnce,instance type boolean];parent=CM{}}";
-                    };
-                    assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                     assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
             }
@@ -146,10 +128,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        testClass("FormatterSimplified_2", 4, 7, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+        testClass("FormatterSimplified_2", 4, 6, new DebugConfiguration.Builder()
+                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

@@ -96,7 +96,7 @@ public class ExpandedVariable extends BaseExpression {
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_NEW_INSTANCE;
+        return ExpressionComparator.ORDER_EXPANDED_VARIABLE;
     }
 
     @Override

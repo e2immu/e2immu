@@ -1195,9 +1195,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
             LOGGER.debug("Delaying final value, have no values yet for field " + fqn);
-            fieldAnalysis.setValue(DelayedExpression.forInitialFieldValue(fieldInfo,
-                    fieldAnalysis.getLinkedVariables(),
-                    fieldAnalysis.valuesStatus()));
+            fieldAnalysis.setValue(DelayedVariableExpression.forField(new FieldReference(analyserContext, fieldInfo),
+                    0, fieldAnalysis.valuesStatus()));
             return valuesStatus; //DELAY EXIT POINT
         }
         List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();

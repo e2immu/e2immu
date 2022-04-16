@@ -47,19 +47,22 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:<m:right>.split>:<f:NEVER>"
-                        : "outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.right().split:Split.NEVER";
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-58:37:8.0.3.split>:<f:NEVER>";
+                    case 1 -> "outputElement instanceof Symbol symbol?<dv:scope-scope-58:37:8.0.3.split>:Split.NEVER";
+                    default -> "outputElement instanceof Symbol symbol?scope-scope-58:37:8.0.3.split:Split.NEVER";
+                };
                 assertEquals(expected, d.evaluationResult().value().toString());
-                assertEquals(d.iteration() == 0, d.evaluationResult().value().isDelayed());
-                assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                assertEquals(d.iteration() <= 1, d.evaluationResult().value().isDelayed());
+                assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
 
-                if (d.iteration() > 0) {
+                if (d.iteration() >= 2) {
                     assertEquals(5, d.evaluationResult().changeData().size());
                     String scopes = d.evaluationResult().changeData().keySet().stream()
                             .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
                             .map(v -> ((FieldReference) v).scope.toString())
                             .sorted().collect(Collectors.joining(", "));
-                    assertEquals("list.get(pos$8)/*(Symbol)*/.left(), list.get(pos$8)/*(Symbol)*/.right()", scopes);
+                    assertEquals("scope-scope-54:25:8.0.3, scope-scope-58:37:8.0.3", scopes);
                 }
             }
         };
@@ -75,10 +78,10 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 }
             }
             if ("split".equals(d.variableName())) {
-                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<f:<m:left>.split>:<vl:split>"
-                        : "outputElement instanceof Symbol symbol?list.get(pos$8)/*(Symbol)*/.left().split:nullable instance type Split";
+                String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
+                        : "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
                 if ("8.0.3.0.0".equals(d.statementId()) || "8.0.3.0.5".equals(d.statementId())) {
-                    String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "symbol.left().split";
+                    String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "`list.get(pos$8)/*(Symbol)*/.left`.split";
                     assertEquals(v, d.currentValue().toString());
                 }
                 // transitioning from 8.0.3.0.0->5 to 8.0.3, we see that symbol is expanded in the scope
@@ -87,15 +90,15 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
-                    assertEquals(expected, d.currentValue().toString());
+                    String v = d.iteration() <= 1 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
+                            : "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
+                    assertEquals(v, d.currentValue().toString());
                 }
             }
             if (d.variable() instanceof FieldReference fr && "split".equals(fr.fieldInfo.name)) {
                 if ("8.0.4".equals(d.statementId())) {
-                    assertTrue(Set.of("<m:right>", "<m:left>", "<out of scope:space:8.0.4>",
-                                    "list.get(pos$8)/*(Symbol)*/.left()",
-                                    "list.get(pos$8)/*(Symbol)*/.right()",
-                                    "list.get(pos$8)/*(Space)*/").contains(fr.scope.toString()),
+                    assertTrue(Set.of("scope-scope-54:25:8.0.3", "scope-space:8.0.4", "scope-scope-58:37:8.0.3")
+                                    .contains(fr.scope.toString()),
                             "Scope " + fr.scope + "; should definitely not be symbol.left() or symbol.right()");
                 }
                 if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
@@ -113,7 +116,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "!<m:apply>" : "!nullable instance type Boolean";
+                String expected = d.iteration() <= 1 ? "!<m:apply>" : "!nullable instance type Boolean";
                 assertEquals(expected, d.state().toString());
             }
         };
@@ -121,10 +124,10 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                         CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                5, 18, new DebugConfiguration.Builder()
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                5, 16, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

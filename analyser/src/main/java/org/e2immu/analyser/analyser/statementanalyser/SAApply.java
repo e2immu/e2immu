@@ -274,6 +274,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         for (Map.Entry<Variable, VariableInfoContainer> e : localVariablesNotVisited.entrySet()) {
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
                     e.getValue(), e.getValue().best(EVALUATION));
+            if(loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());
             delay = delay.merge(loopResult.delays);
         }
 
@@ -295,9 +296,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // idea: variables which already have an evaluation, but do not feature (anymore) in the evaluation result
         // or where the eval was created in contextProperties() in an earlier iteration (e.g. InstanceOf_9)
         for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
-            if (!localVariablesNotVisited.containsKey(e.getKey())
-                    // TODO cleanup ECI
-                    && !(statement() instanceof ExplicitConstructorInvocation && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
+            if (!(statement() instanceof ExplicitConstructorInvocation && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
                 CausesOfDelay causes = e.getValue().copyFromPreviousOrInitialIntoEvaluation();
                 delay = delay.merge(causes);
             }

@@ -159,7 +159,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                 }
             }
             if ("expandSum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+`i`*k";
+                String expect = d.iteration() == 0 ? "<m:expandSum>" : "/*inline expandSum*/3*k+k*`i`";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
 

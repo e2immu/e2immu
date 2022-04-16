@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.start.testexample.Fluent_1;
 import org.e2immu.analyser.parser.start.testexample.a.IFluent_1;
@@ -58,11 +59,11 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "instanceCopy".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("instanceCopy:0,return copyOf:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("instanceCopy:0,return copyOf:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
@@ -122,6 +123,15 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if (d.variable() instanceof This) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("return from:0,this:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
             if ("equals".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "another".equals(p.name)) {
@@ -176,8 +186,16 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d, 3, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+            }
+
+            if ("value".equals(d.methodInfo().name)) {
+                if ("Builder".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                } else {
+                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                }
             }
         };
 
