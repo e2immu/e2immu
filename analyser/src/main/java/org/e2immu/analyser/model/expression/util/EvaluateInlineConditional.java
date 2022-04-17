@@ -30,7 +30,8 @@ public class EvaluateInlineConditional {
                                                                 Expression conditionBeforeState,
                                                                 Expression ifTrue,
                                                                 Expression ifFalse) {
-        Expression condition = context.evaluationContext().getConditionManager().evaluate(context, conditionBeforeState);
+        Expression condition = context.evaluationContext().getConditionManager()
+                .evaluate(context, conditionBeforeState, false);
         return conditionalValueConditionResolved(context, condition, ifTrue, ifFalse, false, null);
     }
 

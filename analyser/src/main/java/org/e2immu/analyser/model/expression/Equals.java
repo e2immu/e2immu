@@ -52,6 +52,11 @@ public class Equals extends BinaryOperator {
                 l, r, true, ForwardEvaluationInfo.DEFAULT);
     }
 
+    public static Expression equals(EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+        return equals(Identifier.joined("equals", List.of(l.getIdentifier(), r.getIdentifier())), context,
+                l, r, checkForNull, ForwardEvaluationInfo.DEFAULT);
+    }
+
     public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r,
                                     ForwardEvaluationInfo forwardEvaluationInfo) {
         return equals(identifier, context, l, r, true, forwardEvaluationInfo);
@@ -267,6 +272,7 @@ public class Equals extends BinaryOperator {
 
     // see test ConditionalChecks_7; TestEqualsConstantInline
     public static Expression tryToRewriteConstantEqualsInlineNegative(EvaluationResult context,
+                                                                      boolean doingNullChecks,
                                                                       Expression c,
                                                                       InlineConditional inlineConditional) {
         if (c instanceof InlineConditional inline2) {
@@ -292,11 +298,12 @@ public class Equals extends BinaryOperator {
         if (ifTrueGuaranteedEqual) {
             Expression notCondition = Negation.negate(context, inlineConditional.condition);
             return And.and(context,
-                    notCondition, Negation.negate(context, Equals.equals(context, inlineConditional.ifFalse, c)));
+                    notCondition, Negation.negate(context, Equals.equals(context, inlineConditional.ifFalse, c,
+                            !doingNullChecks)));
         }
         if (ifFalseGuaranteedEqual) {
             return And.and(context, inlineConditional.condition,
-                    Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, c)));
+                    Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, c, !doingNullChecks)));
         }
         return null;
     }

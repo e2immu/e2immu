@@ -53,6 +53,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     public static Expression negate(EvaluationResult context, @NotNull Expression v) {
+        return negate(context, false, v);
+    }
+
+    public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
         Objects.requireNonNull(v);
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
@@ -84,12 +88,14 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (v instanceof Equals equals) {
             if (equals.lhs instanceof InlineConditional inlineConditional) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
-                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.rhs, inlineConditional);
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
+                        doingNullChecks, equals.rhs, inlineConditional);
                 if (result != null) return result;
             }
             if (equals.rhs instanceof InlineConditional inlineConditional) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
-                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext, equals.lhs, inlineConditional);
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
+                        doingNullChecks, equals.lhs, inlineConditional);
                 if (result != null) return result;
             }
         }

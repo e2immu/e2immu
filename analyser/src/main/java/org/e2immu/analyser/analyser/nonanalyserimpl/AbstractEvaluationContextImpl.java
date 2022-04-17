@@ -68,7 +68,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     @Override
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
-        Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull);
+        Expression inCm = conditionManager.evaluate(EvaluationResult.from(this), valueIsNull, true);
         DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
         DV nneToTF;
@@ -92,9 +92,9 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
                 return DV.FALSE_DV;
             }
             if (isNull.isDelayed()) return isNull.causesOfDelay();
-            return conditionManager.evaluate(context, isNull).invertTrueFalse();
+            return conditionManager.evaluate(context, isNull, true).invertTrueFalse();
         }
-        return conditionManager.evaluate(context, expression).invertTrueFalse();
+        return conditionManager.evaluate(context, expression, false).invertTrueFalse();
     }
 
     /*

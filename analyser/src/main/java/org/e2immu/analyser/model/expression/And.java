@@ -63,8 +63,23 @@ public class And extends ExpressionCanBeTooComplex {
         return and(id, context, values);
     }
 
+    /**
+     * @param context         the context to create new evaluated expression
+     * @param doingNullChecks a boolean to prevent a stackoverflow, repeatedly trying to determine whether something is not null or not. (See e.g. Store_0.)
+     * @param values          the clauses of the and
+     * @return the result of the conjunction
+     */
+    public static Expression and(EvaluationResult context, boolean doingNullChecks, Expression... values) {
+        Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
+        return and(id, context, doingNullChecks, values);
+    }
+
     public static Expression and(Identifier identifier, EvaluationResult context, Expression... values) {
-        Expression expression = new And(identifier, context.getPrimitives()).append(context, values);
+        return and(identifier, context, false, values);
+    }
+
+    public static Expression and(Identifier identifier, EvaluationResult context, boolean doingNullChecks, Expression... values) {
+        Expression expression = new And(identifier, context.getPrimitives()).append(context, doingNullChecks, values);
         if (expression.isDone()) {
             CausesOfDelay causes = Arrays.stream(values).map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (causes.isDelayed()) {
@@ -75,7 +90,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     // we try to maintain a CNF
-    private Expression append(EvaluationResult context, Expression... values) {
+    private Expression append(EvaluationResult context, boolean doingNullChecks, Expression... values) {
 
         // STEP 1: check that all values return boolean!
         int complexity = 0;
@@ -131,7 +146,7 @@ public class And extends ExpressionCanBeTooComplex {
             int pos = 0;
             for (Expression value : concat) {
 
-                Action action = analyse(context, pos, newConcat, prev, value);
+                Action action = analyse(context, doingNullChecks, pos, newConcat, prev, value);
                 switch (action) {
                     case FALSE:
                         return new BooleanConstant(primitives, false);
@@ -174,7 +189,9 @@ public class And extends ExpressionCanBeTooComplex {
         return res;
     }
 
-    private Action analyse(EvaluationResult evaluationContext, int pos, ArrayList<Expression> newConcat,
+    private Action analyse(EvaluationResult evaluationContext,
+                           boolean doingNullChecks,
+                           int pos, ArrayList<Expression> newConcat,
                            Expression prev, Expression value) {
         // A && A
         if (value.equals(prev)) return Action.SKIP;
@@ -208,7 +225,7 @@ public class And extends ExpressionCanBeTooComplex {
             boolean changed = false;
             while (iterator.hasNext()) {
                 Expression value1 = iterator.next();
-                Expression negated1 = Negation.negate(evaluationContext, value1);
+                Expression negated1 = Negation.negate(evaluationContext, doingNullChecks, value1);
                 boolean found = false;
                 for (int pos2 = 0; pos2 < newConcat.size(); pos2++) {
                     if (pos2 != pos && negated1.equals(newConcat.get(pos2))) {
@@ -287,11 +304,11 @@ public class And extends ExpressionCanBeTooComplex {
         }
 
         // x.equals(y)
-        Action actionEqualsEquals = analyseEqualsEquals(evaluationContext, prev, value, newConcat);
+        Action actionEqualsEquals = analyseEqualsEquals(evaluationContext, doingNullChecks, prev, value, newConcat);
         if (actionEqualsEquals != null) return actionEqualsEquals;
 
         // x == y
-        Action actionEqEq = analyseEqEq(evaluationContext, prev, value, newConcat);
+        Action actionEqEq = analyseEqEq(evaluationContext, doingNullChecks, prev, value, newConcat);
         if (actionEqEq != null) return actionEqEq;
 
         Action actionGeNotEqual = analyseGeNotEq(evaluationContext, newConcat, prev, value);
@@ -317,6 +334,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private Action analyseEqualsEquals(EvaluationResult evaluationContext,
+                                       boolean doingNullChecks,
                                        Expression prev,
                                        Expression value,
                                        ArrayList<Expression> newConcat) {
@@ -325,7 +343,7 @@ public class And extends ExpressionCanBeTooComplex {
             Action a = equalsRhs(ev1, value);
             if (a != null) return a;
 
-            return equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs());
+            return equalsAndOr(evaluationContext, doingNullChecks, prev, value, newConcat, ev1.rhs());
         }
         return null;
     }
@@ -350,9 +368,10 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseEqEq(EvaluationResult evaluationContext, Expression prev, Expression value, ArrayList<Expression> newConcat) {
+    private Action analyseEqEq(EvaluationResult evaluationContext, boolean doingNullChecks,
+                               Expression prev, Expression value, ArrayList<Expression> newConcat) {
         if (prev instanceof Equals ev1) {
-            Action skip = equalsAndOr(evaluationContext, prev, value, newConcat, ev1.rhs);
+            Action skip = equalsAndOr(evaluationContext, doingNullChecks, prev, value, newConcat, ev1.rhs);
             if (skip != null) return skip;
             if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a
@@ -406,6 +425,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private Action equalsAndOr(EvaluationResult evaluationContext,
+                               boolean doingNullChecks,
                                Expression prev,
                                Expression value,
                                ArrayList<Expression> newConcat,
@@ -417,7 +437,7 @@ public class And extends ExpressionCanBeTooComplex {
                 boolean foundTrue = false;
                 for (Expression clause : or.expressions()) {
                     Expression and = new And(Identifier.joined("and", List.of(prev.getIdentifier(), clause.getIdentifier())),
-                            evaluationContext.getPrimitives()).append(evaluationContext, prev, clause);
+                            evaluationContext.getPrimitives()).append(evaluationContext, doingNullChecks, prev, clause);
                     if (and.isBoolValueTrue()) {
                         foundTrue = true;
                         break;

@@ -54,20 +54,21 @@ public class Test_56_Fluent extends CommonTestRunner {
      */
     @Test
     public void test_0() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("copyOf".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "instanceCopy".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
@@ -128,8 +129,9 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("return from:0,this:0", d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = "return from:-1,this:0";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -181,13 +183,13 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() <= 2 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() <= BIG ? "<m:from>" : "this/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 3, DV.TRUE_DV, Property.FLUENT);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, BIG, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("value".equals(d.methodInfo().name)) {

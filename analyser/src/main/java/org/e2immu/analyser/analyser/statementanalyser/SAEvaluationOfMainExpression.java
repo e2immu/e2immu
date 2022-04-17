@@ -487,7 +487,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         switchStatement.labels().forEach(label -> {
             Expression labelEqualsSwitchExpression = Equals.equals(sharedState.context(), label, switchExpression);
             Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(),
-                    labelEqualsSwitchExpression);
+                    labelEqualsSwitchExpression, false);
             if (evaluated.isBoolValueTrue()) {
                 always.add(label.toString());
             } else if (evaluated.isBoolValueFalse()) {
@@ -518,7 +518,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         }
 
-        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(), value);
+        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(), value, false);
 
         if (evaluated.isConstant()) {
             Message.Label message;

@@ -198,7 +198,8 @@ public class InlineConditional extends BaseExpression implements Expression {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
         }
-        Expression conditionAfterState = context.evaluationContext().getConditionManager().evaluate(context, condition);
+        Expression conditionAfterState = context.evaluationContext().getConditionManager()
+                .evaluate(context, condition, false);
 
         boolean tooComplex = conditionAfterState.getComplexity() *
                 Math.max(ifTrue.getComplexity(), ifFalse.getComplexity()) >= 1000;

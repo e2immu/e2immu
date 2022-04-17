@@ -154,20 +154,24 @@ public record ConditionManager(Expression condition,
     }
 
     public Expression absoluteState(EvaluationResult evaluationContext) {
+        return absoluteState(evaluationContext, false);
+    }
+
+    private Expression absoluteState(EvaluationResult evaluationContext, boolean doingNullCheck) {
         Expression[] expressions;
         int complexity;
         if (parent == null) {
             expressions = new Expression[]{state};
             complexity = state.getComplexity();
         } else {
-            Expression parentAbsolute = parent.absoluteState(evaluationContext);
+            Expression parentAbsolute = parent.absoluteState(evaluationContext, doingNullCheck);
             expressions = new Expression[]{condition, state, parentAbsolute};
             complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
             return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
         }
-        return And.and(evaluationContext, expressions);
+        return And.and(evaluationContext, doingNullCheck, expressions);
     }
 
     public Identifier getIdentifier() {
@@ -198,7 +202,7 @@ public record ConditionManager(Expression condition,
         assert !value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         Expression conditionalPart = value.extractConditions(context.getPrimitives());
         if (conditionalPart.isBoolValueTrue()) return value;
-        Expression absoluteState = absoluteState(context);
+        Expression absoluteState = absoluteState(context, false);
         if (absoluteState.isEmpty() || absoluteState.isBoolValueTrue()) return value;
         Expression newState = And.and(context, absoluteState, conditionalPart);
         if (newState.equals(conditionalPart) || newState.equals(absoluteState)) {
@@ -213,41 +217,34 @@ public record ConditionManager(Expression condition,
     /**
      * computes a value in the context of the current condition manager.
      *
+     * @param doingNullCheck a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
+     *                       (see e.g. Store_0)
      * @return a value without the precondition attached
      */
-    public Expression evaluate(EvaluationResult context, Expression value) {
-        return evaluate(context, value, false);
-    }
-
-    public Expression evaluate(EvaluationResult context, Expression value, boolean negate) {
+    public Expression evaluate(EvaluationResult context, Expression value, boolean doingNullCheck) {
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         if (value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
-        Expression absoluteState = absoluteState(context);
+        Expression absoluteState = absoluteState(context, doingNullCheck);
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
          */
-        boolean reallyNegate = negate && !absoluteState.isBoolValueTrue();
-        Expression negated = reallyNegate
-                ? Negation.negate(context, absoluteState)
-                : absoluteState;
-
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
-            combinedWithPrecondition = negated;
+            combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = And.and(context, negated, precondition.expression());
+            combinedWithPrecondition = And.and(context, doingNullCheck, absoluteState, precondition.expression());
         }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = And.and(context, combinedWithPrecondition, value);
+        Expression resultWithPrecondition = And.and(context, doingNullCheck, combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(context.getPrimitives(), true);
         }
         // return the result without precondition
-        Expression result = reallyNegate ? Or.or(context, negated, value) : And.and(context, negated, value);
+        Expression result = And.and(context, doingNullCheck, absoluteState, value);
         if (result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
             return value;
         }
@@ -285,7 +282,7 @@ public record ConditionManager(Expression condition,
         if (context.evaluationContext().preventAbsoluteStateComputation()) {
             state = this.state;
         } else {
-            state = absoluteState(context);
+            state = absoluteState(context, false);
         }
         return findIndividualNull(state, context, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
@@ -320,7 +317,7 @@ public record ConditionManager(Expression condition,
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationResult evaluationContext) {
-        Expression absoluteState = absoluteState(evaluationContext);
+        Expression absoluteState = absoluteState(evaluationContext, false);
         if (absoluteState.isEmpty()) throw new UnsupportedOperationException();
         Expression negated = Negation.negate(evaluationContext, absoluteState);
 
@@ -343,7 +340,7 @@ public record ConditionManager(Expression condition,
      */
     public Expression individualStateInfo(EvaluationResult evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Expression absoluteState = absoluteState(evaluationContext);
+        Expression absoluteState = absoluteState(evaluationContext, false);
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;

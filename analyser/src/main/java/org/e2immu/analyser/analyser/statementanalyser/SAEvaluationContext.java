@@ -363,7 +363,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
                     context, value, NullConstant.NULL_CONSTANT, false, ForwardEvaluationInfo.DEFAULT);
-            Expression evaluation = conditionManager.evaluate(context, valueIsNull);
+            Expression evaluation = conditionManager.evaluate(context, valueIsNull, true);
             if (evaluation.isBoolValueFalse()) {
                 // IMPROVE should not necessarily be ENN, could be ContentNN depending
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(directNN);

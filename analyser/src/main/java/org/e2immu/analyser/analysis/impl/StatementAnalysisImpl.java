@@ -2181,7 +2181,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Precondition pc = new Precondition(translated, precondition.causes());
                     stateData.setPrecondition(pc);
                     EvaluationResult context = EvaluationResult.from(evaluationContext);
-                    Expression result = localConditionManager.evaluate(context, translated);
+                    Expression result = localConditionManager.evaluate(context, translated, false);
                     if (result.isBoolValueFalse()) {
                         ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
                     }

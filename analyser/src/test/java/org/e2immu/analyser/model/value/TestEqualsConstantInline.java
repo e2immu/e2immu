@@ -112,7 +112,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
         InlineConditional inlineConditional2 = inline(
                 a, s, new StringConstant(analyserContext.getPrimitives(), "y"));
-        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context,
+        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context, false,
                 inlineConditional1, inlineConditional2);
         assertNotNull(result);
         assertEquals("\"x\"!=s||\"y\"!=s", result.toString());
@@ -124,7 +124,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
         InlineConditional inlineConditional2 = inline(
                 a, s, p);
-        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context,
+        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context, false,
                 inlineConditional1, inlineConditional2);
         assertNotNull(result);
         assertEquals("\"x\"!=s||s!=p", result.toString());
@@ -134,7 +134,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
     public void test9() {
         InlineConditional inlineConditional1 = inline(
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
-        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context,
+        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context, false,
                 inlineConditional1, inlineConditional1);
         assertNotNull(result);
         assertEquals("false", result.toString());
@@ -146,7 +146,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
     public void test10() {
         InlineConditional inlineConditional = inline(
                 a, new StringConstant(analyserContext.getPrimitives(), "x"), s);
-        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context,
+        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context, false,
                 new StringConstant(analyserContext.getPrimitives(), "x"), inlineConditional);
         assertNotNull(result);
         assertEquals("!a&&\"x\"!=s", result.toString());
@@ -157,7 +157,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
     public void test11() {
         InlineConditional inlineConditional = inline(
                 a, s, new StringConstant(analyserContext.getPrimitives(), "x"));
-        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context,
+        Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(context, false,
                 new StringConstant(analyserContext.getPrimitives(), "x"), inlineConditional);
         assertNotNull(result);
         assertEquals("a&&\"x\"!=s", result.toString());
