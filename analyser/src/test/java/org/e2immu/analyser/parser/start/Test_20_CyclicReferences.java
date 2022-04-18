@@ -191,9 +191,9 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             }
         };
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -212,7 +212,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             }
         };
         testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

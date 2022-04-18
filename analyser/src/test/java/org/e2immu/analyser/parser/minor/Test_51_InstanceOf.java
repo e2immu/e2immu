@@ -443,11 +443,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+        //        .addEvaluationResultVisitor(evaluationResultVisitor)
+        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addTypeMapVisitor(typeMapVisitor)
+          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -942,11 +942,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         // TODO these 2 errors are dubious, as part of the state in the return statement in stmt 4 (see test)
         testClass("InstanceOf_11", 2, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

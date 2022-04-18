@@ -18,7 +18,6 @@ import org.e2immu.annotation.*;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -110,22 +109,41 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    public Set<T> removeAsManyAsPossible(Set<T> set) {
-        AtomicBoolean changed = new AtomicBoolean(true);
-        while (changed.get()) {
-            changed.set(false);
-            set.removeIf(t -> {
-                Node<T> node = nodeMap.get(t);
-                assert node != null;
-                boolean remove = node.dependsOn == null || node.dependsOn.isEmpty() ||
-                        node.dependsOn.stream().noneMatch(set::contains);
-                if (remove) {
-                    changed.set(true);
-                }
-                return remove;
-            });
+    private void removeAsManyAsPossible(Set<T> set) {
+        boolean changed = true;
+        while (changed) {
+            changed = singleRemoveStep(set);
+            DependencyGraph<T> reverse = reverse(set);
+            changed |= reverse.singleRemoveStep(set);
         }
-        return set;
+    }
+
+    private boolean singleRemoveStep(Set<T> set) {
+        return set.removeIf(t -> {
+            Node<T> node = nodeMap.get(t);
+            assert node != null;
+            return node.dependsOn == null || node.dependsOn.isEmpty() ||
+                    node.dependsOn.stream().noneMatch(set::contains);
+        });
+    }
+
+    /*
+    create a reverse graph, based on the nodes in the set
+     */
+    private DependencyGraph<T> reverse(Set<T> set) {
+        DependencyGraph<T> dg = new DependencyGraph<>();
+        for (T t : set) {
+            dg.addNode(t, Set.of());
+            Node<T> node = nodeMap.get(t);
+            if (node.dependsOn != null) {
+                for (T d : node.dependsOn) {
+                    if (set.contains(d)) {
+                        dg.addNode(d, Set.of(t));
+                    }
+                }
+            }
+        }
+        return dg;
     }
 
     public List<T> getDependsOn(T t) {
@@ -153,22 +171,6 @@ public class DependencyGraph<T> extends Freezable {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
-    public void visitBidirectionalGroups(Consumer<List<T>> consumer) {
-        Set<T> done = new HashSet<>();
-        for (Map.Entry<T, Node<T>> e : nodeMap.entrySet()) {
-            T t = e.getKey();
-            if (!done.contains(t)) {
-                Set<T> dependencies = dependencies(t);
-                List<T> list = new ArrayList<>(dependencies.size() + 1);
-                list.add(t);
-                list.addAll(dependencies);
-                done.addAll(list);
-                consumer.accept(list);
-            }
-        }
-    }
-
-
     @Only(before = "frozen")
     @Modified
     public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn) {
@@ -183,8 +185,8 @@ public class DependencyGraph<T> extends Freezable {
         for (T d : dependsOn) {
             if (node.dependsOn == null) node.dependsOn = new LinkedList<>();
             node.dependsOn.add(d);
+            Node<T> n = getOrCreate(d);
             if (bidirectional) {
-                Node<T> n = getOrCreate(d);
                 if (n.dependsOn == null) n.dependsOn = new LinkedList<>();
                 n.dependsOn.add(t);
             }
@@ -207,7 +209,7 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @Independent
-    public List<T> sorted(Consumer<T> reportPartOfCycle,
+    public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
@@ -217,21 +219,32 @@ public class DependencyGraph<T> extends Freezable {
             List<T> keys = new LinkedList<>();
             for (Map.Entry<T, Node<T>> entry : toDo.entrySet()) {
                 List<T> dependencies = entry.getValue().dependsOn;
-                if (dependencies == null || dependencies.isEmpty() || done.containsAll(dependencies)) {
+                boolean safe;
+                if (dependencies == null || dependencies.isEmpty()) {
+                    safe = true;
+                } else {
+                    Set<T> copy = new HashSet<>(dependencies);
+                    copy.removeAll(done);
+                    copy.remove(entry.getKey());
+                    safe = copy.isEmpty();
+                }
+                if (safe) {
                     keys.add(entry.getKey());
                     done.add(entry.getKey());
                     if (reportIndependent != null) reportIndependent.accept(entry.getKey());
                 }
             }
             if (keys.isEmpty()) {
-                // we have a cycle, break by taking one with a minimal number of dependencies
-                Map.Entry<T, Node<T>> toRemove = toDo.entrySet().stream()
-                        .min(comparator(backupComparator)).orElseThrow();
-                T key = toRemove.getKey();
+                // find the core of the cycle
+                Map<T, Node<T>> cycle = new HashMap<>(toDo);
+                removeAsManyAsPossible(cycle.keySet());
+                assert !cycle.isEmpty();
+                List<T> sortedCycle = cycle.entrySet().stream().sorted(comparator(backupComparator)).map(Map.Entry::getKey).toList();
+                T key = sortedCycle.get(0);
                 toDo.remove(key);
                 done.add(key);
                 result.add(key);
-                if (reportPartOfCycle != null) reportPartOfCycle.accept(key);
+                if (reportPartOfCycle != null) reportPartOfCycle.accept(sortedCycle);
             } else {
                 keys.forEach(toDo.keySet()::remove);
                 result.addAll(keys);

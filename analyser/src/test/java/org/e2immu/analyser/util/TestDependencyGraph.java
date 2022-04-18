@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestDependencyGraph {
 
-    private static final Consumer<Character> NO_CYCLES = c -> {
+    private static final Consumer<List<Character>> NO_CYCLES = c -> {
         throw new UnsupportedOperationException(c + " participates in cycle");
     };
 
@@ -84,8 +84,8 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of('c'));
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of('a'));
-        List<Character> sorted = graph.sorted(c -> {
-            if ('b' == c) throw new UnsupportedOperationException();
+        List<Character> sorted = graph.sorted(cs -> {
+            if (cs.contains('b')) throw new UnsupportedOperationException();
         }, null, null);
         assertEquals("[a, c, b]", sorted.toString());
 

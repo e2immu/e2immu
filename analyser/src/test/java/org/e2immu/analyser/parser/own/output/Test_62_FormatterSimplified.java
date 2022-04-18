@@ -129,9 +129,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
         testClass("FormatterSimplified_2", 4, 6, new DebugConfiguration.Builder()
-                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

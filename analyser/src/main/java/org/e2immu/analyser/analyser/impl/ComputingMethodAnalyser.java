@@ -844,7 +844,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         // wait
         if (modified.valueIsFalse()) {
-            LOGGER.debug("Delaying @Modified of method {}, cycle", methodInfo.fullyQualifiedName);
+            LOGGER.debug("Delaying @Modified of method {}, cycle: {} out of {}", methodInfo.fullyQualifiedName, cycleInfo,
+                    cycle);
             return methodInfo.delay(CauseOfDelay.Cause.MODIFIED_CYCLE);
         }
         LOGGER.debug("Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
