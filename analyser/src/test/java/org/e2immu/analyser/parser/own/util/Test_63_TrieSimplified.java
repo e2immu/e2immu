@@ -850,17 +850,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String condition = switch (d.iteration()) {
                         case 0 -> "<null-check>";
                         case 1 -> "null==<f:node.map>";
-                        default -> "null==node.map$0";
+                        default -> "null==node$1.map$0";
                     };
                     assertEquals(condition, d.condition().toString());
                 }
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String equality = d.iteration() <= 1 ? "" : "node.map$0=null";
+                    String equality = d.iteration() <= 1 ? "" : "node$1.map$0=null";
                     assertEquals(equality, eqAccordingToState);
                     String condition = switch (d.iteration()) {
                         case 0 -> "<null-check>";
                         case 1 -> "null==<f:node.map>";
-                        default -> "null==node.map$0";
+                        default -> "null==node$1.map$0";
                     };
                     assertEquals(condition, d.condition().toString());
                     assertEquals(1, d.statementAnalysis().statementTime(Stage.EVALUATION));
@@ -874,7 +874,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_add_1.0.1.0.0-C";
-                        case 1 -> "initial@Field_data;initial@Field_map"; // Trail 11... where does this come from? try node
+                        case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -883,8 +883,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type TrieNode<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node.map@Method_add_1.0.1.0.2-C;initial:node@Method_add_1.0.1.0.2-C"; // Trail 10 ... still this cnn on "strings"
-                        case 1 -> "initial@Field_data;initial@Field_map";
+                        case 0 -> "initial:node@Method_add_1.0.1.0.2-C";
+                        case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                         default -> "";
                     };
                     assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
@@ -893,8 +893,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = "new LinkedList<>()/*0==this.size()*/";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expectedDelay = switch (d.iteration()) {
-                        case 0 -> "initial:node.data@Method_add_2-C;initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1.0.2-C";
-                        case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
+                        case 0 -> "initial:node@Method_add_1.0.1-C";
+                        case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                         default -> "";
                     };
                     assertEquals(expectedDelay, d.evaluationResult().causesOfDelay().toString());
@@ -903,7 +903,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = switch (d.iteration()) {
                         case 0 -> "<null-check>";
                         case 1 -> "null==<f:node.data>";
-                        default -> "null==node.data$3";
+                        // TODO isn't this too complicated?
+                        default -> "null==(strings.length>0?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(instance type String)?new TrieNode<>():node$1.map$0.get(instance type String):nullable instance type TrieNode<T>).data$3";
                     };
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
@@ -933,8 +934,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 String linked = d.iteration() <= 1 ? "" : "node.data:2,this.root:2";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 String expected = switch (d.iteration()) {
-                    case 0 -> "cnn:strings@Method_add_1-E"; // Trail 3 --> node.map in add, links delay
-                    case 1 -> "initial:node.map@Method_add_1.0.1-C;initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
+                    case 0 -> "immutable@Class_TrieNode";
+                    case 1 -> "initial@Field_data;initial@Field_map";
                     default -> "";
                 };
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());
@@ -958,12 +959,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_5", 0, 0, new DebugConfiguration.Builder()
-                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                        //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

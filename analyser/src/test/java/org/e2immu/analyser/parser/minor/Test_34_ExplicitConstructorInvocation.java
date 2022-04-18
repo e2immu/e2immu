@@ -221,7 +221,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         // unused parameter "structure"
         testClass("ExplicitConstructorInvocation_9", 0, 1, new DebugConfiguration.Builder()
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }

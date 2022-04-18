@@ -116,10 +116,10 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
             }
         };
         testClass("ExternalContainer_1", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

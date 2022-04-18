@@ -148,6 +148,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
                 return eciDelay;
             }
+            // IMPORTANT: quasi identical code in emptyExpression
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
                 EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
@@ -155,6 +156,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 statusPost = assignmentResult.status().merge(causes);
                 ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
                 result = reResult;
+            } else {
+                // we have to write the precondition from method (there is no precondition in "assignments")
+                statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
+                        sharedState.localConditionManager());
             }
         }
         if (ennStatus.isDelayed()) {
@@ -246,6 +251,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 // FIXME clean up, AnalysisStatus -> Causes
                 AnalysisStatus applyResult = apply.apply(sharedState, result, false).combinedStatus();
                 return applyResult.causesOfDelay().merge(causes);
+            } else {
+                // we have to write the precondition from method (there is no precondition in "assignments")
+                statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
+                        sharedState.localConditionManager());
             }
         }
         return causes;

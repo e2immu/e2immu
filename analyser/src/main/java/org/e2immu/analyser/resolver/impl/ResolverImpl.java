@@ -598,7 +598,7 @@ public class ResolverImpl implements Resolver {
                 if (e instanceof org.e2immu.analyser.model.Expression ex &&
                         (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                     if (ve.variable() instanceof FieldReference fieldReference &&
-                            fieldReference.fieldInfo.owner.hasAsParentClass(inspectionProvider, topType)) {
+                            fieldReference.fieldInfo.owner.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
                         methodsAndFields.add(fieldReference.fieldInfo);
                     }
                     methodInfo = null;
@@ -616,7 +616,7 @@ public class ResolverImpl implements Resolver {
                     methodInfo = null;
                 }
                 if (methodInfo != null) {
-                    if (methodInfo.typeInfo.hasAsParentClass(inspectionProvider, topType)) {
+                    if (methodInfo.typeInfo.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
                         methodsAndFields.add(methodInfo);
                     }
                     if (caller != null) {

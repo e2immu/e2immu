@@ -139,7 +139,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {
                 assertEquals("org.e2immu.analyser.parser.failing.testexample", typeInfo.packageNameOrEnclosingType.getLeft());
@@ -147,10 +147,10 @@ public class Test_16_Modification_12 extends CommonTestRunner {
         };
 
         testClass("Modification_12", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

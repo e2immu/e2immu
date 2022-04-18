@@ -393,6 +393,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
     }
 
+    // FIXME this needs a better implementation: we want exactly those types that are equal to or subtypes of the argument,
+    // but not appearing in the statements of methods or initializers of fields (they have a different primary type)
+    public boolean isEnclosedInStopAtLambdaOrAnonymous(TypeInfo typeInfo) {
+        if (typeInfo == this) return true;
+        if (packageNameOrEnclosingType.isLeft()) return false;
+        if (simpleName.startsWith("$") || simpleName.contains("$KV$")) return false;
+        return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
+    }
+
     public boolean isPrivateNested() {
         return isNestedType() && isPrivate();
     }
@@ -642,45 +651,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
             if (res != null) return res;
         }
         return null;
-    }
-
-    /*
-    this and otherSubType share the same primary type; we know nothing more than that
-     */
-    public boolean hasAccessToFieldsOf(InspectionProvider inspectionProvider, TypeInfo otherSubType) {
-        if (this == otherSubType) return true;
-        List<TypeInfo> parentClasses = parentClasses(inspectionProvider);
-        if (parentClasses.contains(otherSubType)) return true;
-        List<TypeInfo> otherParentClasses = otherSubType.parentClasses(inspectionProvider);
-        return otherParentClasses.contains(this);
-    }
-
-    private List<TypeInfo> parentClasses(InspectionProvider inspectionProvider) {
-        TypeInfo start = this;
-        List<TypeInfo> result = new ArrayList<>();
-        while (true) {
-            TypeInspection inspection = inspectionProvider.getTypeInspection(start);
-            ParameterizedType parent = inspection.parentClass();
-            if (parent != null && !parent.isJavaLangObject()) {
-                result.add(parent.typeInfo);
-                start = parent.typeInfo;
-            } else break;
-        }
-        return result;
-    }
-
-    public boolean hasAsParentClass(InspectionProvider inspectionProvider, TypeInfo target) {
-        if (target == this) return true;
-        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        ParameterizedType parent = inspection.parentClass();
-        if (parent != null) {
-            if (parent.isJavaLangObject()) {
-                return target == parent.typeInfo;
-            } else {
-                return parent.typeInfo.hasAsParentClass(inspectionProvider, target);
-            }
-        }
-        return false;
     }
 
     public boolean parentalHierarchyContains(TypeInfo target, InspectionProvider inspectionProvider) {
