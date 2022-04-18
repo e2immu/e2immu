@@ -366,7 +366,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public void setPropertyIfAbsentOrDelayed(Property property, DV finalValue) {
-        assert finalValue.isDone();
         DV dv = properties.getOrDefaultNull(property);
         if (dv == null || dv.isDelayed()) properties.put(property, finalValue);
     }

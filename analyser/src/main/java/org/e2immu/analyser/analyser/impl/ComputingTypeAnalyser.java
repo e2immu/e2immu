@@ -920,11 +920,15 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
      */
     private AnalysisStatus analyseEffectivelyEventuallyE2Immutable() {
         DV typeImmutable = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (typeImmutable.isDone()) return DONE; // we have a decision already
+        if (typeImmutable.isDone()) {
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, typeImmutable);
+            return DONE; // we have a decision already
+        }
 
         // effectively E1
         DV allMyFieldsFinal = allMyFieldsFinal();
         if (allMyFieldsFinal.isDelayed()) {
+            typeAnalysis.setProperty(PARTIAL_IMMUTABLE, allMyFieldsFinal);
             typeAnalysis.setProperty(Property.IMMUTABLE, allMyFieldsFinal);
             return allMyFieldsFinal.causesOfDelay();
         }
@@ -943,13 +947,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Property ALT_IMMUTABLE;
         AnalysisStatus ALT_DONE;
 
-        DV altImmutable = typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
+        DV partialImmutable = typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
         DV fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
                 .map(typeAnalysis -> typeAnalysis.getProperty(Property.IMMUTABLE))
                 .reduce(Property.IMMUTABLE.bestDv, DV::min);
         if (fromParentOrEnclosing.isDelayed()) {
             typeAnalysis.setProperty(Property.IMMUTABLE, fromParentOrEnclosing);
-            if (altImmutable.isDone()) {
+            if (partialImmutable.isDone()) {
                 LOGGER.debug("We've done what we can, waiting for parent-enclosing now");
                 return AnalysisStatus.of(fromParentOrEnclosing);
             }
@@ -962,11 +966,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (fromParentOrEnclosing.equals(MultiLevel.MUTABLE_DV)) {
                 LOGGER.debug("{} is not an E1Immutable, E2Immutable class, because parent or enclosing is Mutable",
                         typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
-                return DONE;
+                return doneImmutable(IMMUTABLE, MultiLevel.MUTABLE_DV, DONE);
             }
-            if (altImmutable.isDone()) {
-                DV min = fromParentOrEnclosing.min(altImmutable);
+            if (partialImmutable.isDone()) {
+                DV min = fromParentOrEnclosing.min(partialImmutable);
                 typeAnalysis.setProperty(Property.IMMUTABLE, min);
                 LOGGER.debug("We had already done the work without parent/enclosing, now its there: {}", min);
                 return DONE;
@@ -985,8 +988,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(ALT_IMMUTABLE, approvedDelays);
-                return approvedDelays;
+                return delayImmutable(approvedDelays);
             }
             List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
                     .filter(fa -> DV.FALSE_DV.equals(fa.getFieldAnalysis().getProperty(Property.FINAL)))
@@ -1017,8 +1019,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(ALT_IMMUTABLE, approvedDelays);
-                return approvedDelays;
+                return delayImmutable(approvedDelays);
             }
             myWhenEXFails = MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
             // it is possible that all fields are final, yet some field's content is used as the precondition
@@ -1033,8 +1034,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (approvedDelays.isDelayed()) {
             LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
                     " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(ALT_IMMUTABLE, approvedDelays);
-            return approvedDelays;
+            return delayImmutable(approvedDelays);
         }
 
         int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
@@ -1143,10 +1143,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         if (causesFields.isDelayed()) {
-            typeAnalysis.setProperty(Property.IMMUTABLE, causesFields);
-            if (ALT_IMMUTABLE != Property.IMMUTABLE) typeAnalysis.setProperty(ALT_IMMUTABLE, causesFields);
             LOGGER.debug("Delaying immutable of {} because of fields, delays: {}", typeInfo.fullyQualifiedName, causesFields);
-            return causesFields;
+            return delayImmutable(causesFields);
         }
 
         CausesOfDelay causesConstructor = CausesOfDelay.EMPTY;
@@ -1173,9 +1171,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         if (causesConstructor.isDelayed()) {
-            typeAnalysis.setProperty(Property.IMMUTABLE, causesConstructor);
-            if (ALT_IMMUTABLE != Property.IMMUTABLE) typeAnalysis.setProperty(ALT_IMMUTABLE, causesConstructor);
-            return causesConstructor;
+            return delayImmutable(causesConstructor);
         }
 
         CausesOfDelay causesMethods = CausesOfDelay.EMPTY;
@@ -1267,9 +1263,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             } else throw new UnsupportedOperationException("?");
         }
         if (causesMethods.isDelayed()) {
-            typeAnalysis.setProperty(Property.IMMUTABLE, causesMethods);
-            if (ALT_IMMUTABLE != Property.IMMUTABLE) typeAnalysis.setProperty(ALT_IMMUTABLE, causesMethods);
-            return causesMethods;
+            return delayImmutable(causesMethods);
         }
 
         if (!fieldsThatMustBeGuarded.isEmpty()) {
@@ -1301,12 +1295,22 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return doneImmutable(ALT_IMMUTABLE, finalValue, ALT_DONE);
     }
 
-    private AnalysisStatus doneImmutable(Property ALT_IMMUTABLE, DV whenEXFails, AnalysisStatus ALT_DONE) {
-        typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-        if (ALT_IMMUTABLE == IMMUTABLE) {
-            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, whenEXFails);
+    /*
+    property == IMMUTABLE -> also write PARTIAL_IMMUTABLE
+    property == PARTIAL_IMMUTABLE -> only write partial
+     */
+    private AnalysisStatus doneImmutable(Property property, DV value, AnalysisStatus analysisStatus) {
+        typeAnalysis.setProperty(property, value);
+        if (property == IMMUTABLE) {
+            typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, value);
         }
-        return ALT_DONE;
+        return analysisStatus;
+    }
+
+    private CausesOfDelay delayImmutable(CausesOfDelay delays) {
+        typeAnalysis.setProperty(IMMUTABLE, delays);
+        typeAnalysis.setPropertyIfAbsentOrDelayed(PARTIAL_IMMUTABLE, delays);
+        return delays;
     }
 
     /*

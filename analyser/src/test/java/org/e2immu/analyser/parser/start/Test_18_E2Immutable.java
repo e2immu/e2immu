@@ -607,10 +607,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if ("VariableDefinedOutsideLoop".equals(d.methodInfo().typeInfo.simpleName)) {
                     if (d.variable() instanceof ReturnVariable) {
                         if ("0".equals(d.statementId())) {
-                            assertEquals("<new:Suffix>", d.currentValue().toString());
-                            // FIXME @ERImmutable from iteration 0
+                            String expected = d.iteration() <= 1 ? "<new:Suffix>" : "new Suffix(){}";
+                            assertEquals(expected, d.currentValue().toString());
                             assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
-                            //         assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+                            assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                         }
                     }
                 } else if ("E2Immutable_15".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -642,7 +642,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
             } else fail("type " + d.typeInfo());
         };
-        testClass("E2Immutable_15", 2, 13, new DebugConfiguration.Builder()
+        testClass("E2Immutable_15", 0, 0, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),

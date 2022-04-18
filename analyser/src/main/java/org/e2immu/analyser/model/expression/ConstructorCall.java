@@ -273,7 +273,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }
         // this is the value for use in the statement analyser, for inner classes (non-static nested classes)
-        if (dv.isDelayed() && anonymousClass != null) {
+        if (anonymousClass != null) {
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(anonymousClass);
             return typeAnalysis.getProperty(Property.PARTIAL_IMMUTABLE);
         }
