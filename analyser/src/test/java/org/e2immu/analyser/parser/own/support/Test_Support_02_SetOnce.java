@@ -150,7 +150,11 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
-                        String expectValue = d.iteration() <= 1 ? "<s:T>" : T0;
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:t>";
+                            case 1 -> "<s:T>";
+                            default -> T0;
+                        };
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -652,6 +653,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // see FirstThen_0 and Singleton_7
             Expression value = stateIsDelayed.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
+                    && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)
                     ? DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
                     resultOfExpression.returnType(),
                     resultOfExpression.linkedVariables(EvaluationResult.from(evaluationContext)).changeAllToDelay(stateIsDelayed),

@@ -361,11 +361,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
+                        String expected = d.iteration() == 0 ? "<p:object>/*(Integer)*/" : "object/*(Integer)*/";
                         assertEquals(expected, prev.getValue().toString());
-
-                        String expect = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
                     }
                 }
