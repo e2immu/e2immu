@@ -868,7 +868,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .map(vi -> connectedToMyTypeHierarchy((FieldReference) vi.variable()))
                 .reduce(CausesOfDelay.EMPTY, DV::max);
         if (scopeDelays.isDelayed()) {
-            methodAnalysis.setProperty(MODIFIED_METHOD, scopeDelays);
+            methodAnalysis.setProperty(property, scopeDelays);
             LOGGER.debug("Delaying @Modified of method {}, scope is delayed", methodInfo.fullyQualifiedName);
             return scopeDelays.causesOfDelay();
         }
@@ -904,6 +904,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 if (thisModified.isDelayed()) {
                     LOGGER.debug("In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
+                    methodAnalysis.setProperty(property, thisModified);
                     return thisModified.causesOfDelay();
                 }
                 contextModified = thisModified;
@@ -917,6 +918,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
                     LOGGER.debug("Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
+                    methodAnalysis.setProperty(property, maxModified);
                     return maxModified.causesOfDelay();
                 }
                 contextModified = maxModified;
