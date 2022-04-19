@@ -329,4 +329,118 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
+    @Test
+    public void test_2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("reverse".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 5 ? "<m:addNode>" : "<no return value>";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    String delay = switch (d.iteration()) {
+                        case 0 -> "cm:dependsOn@Method_addNode_0-E;cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t;initial:dg@Method_reverse_1.0.0-C";
+                        case 1 -> "[14 delays]";
+                        case 2 -> "[15 delays]";
+                        case 3, 4 -> "cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t";
+                        case 5 -> "cm@Parameter_t";
+                        default -> "";
+                    };
+                    assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("reverse".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 5 ? "<m:addNode>" : "<no return value>";
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                }
+            }
+        };
+        testClass("DGSimplified_2", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("reverse".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("set", d.evaluationResult().value().toString());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<null-check>";
+                        case 1, 2, 3 -> "null!=<f:node.dependsOn>";
+                        default -> "null!=(nodeMap.get(t)).dependsOn";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    String delays = switch (d.iteration()) {
+                        case 0 -> "initial:this.nodeMap@Method_reverse_0.0.0-C";
+                        case 1 -> "initial@Field_dependsOn;initial@Field_t";
+                        case 2 -> "cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial@Field_dependsOn;initial@Field_t";
+                        case 3 -> "cm:node.dependsOn@Method_reverse_0.0.1-E;cm:node@Method_reverse_0.0.0-E;cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial@Field_dependsOn;initial@Field_t";
+                        default -> "";
+                    };
+                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                }
+                if ("0.0.1.0.0.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 3 ? "<m:contains>" : "set.contains(d)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    String delays = switch (d.iteration()) {
+                        case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C";
+                        case 1 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        case 2 -> "cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        case 3 -> "cm:node.dependsOn@Method_reverse_0.0.1-E;cm:node@Method_reverse_0.0.0-E;cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        default -> "";
+                    };
+                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("reverse".equals(d.methodInfo().name)) {
+
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertNotNull(fr.scopeVariable);
+                        assertEquals("node", fr.scopeVariable.toString());
+                        assertEquals("node", fr.scope.toString());
+
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
+                        String expected = d.iteration() == 0 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                        assertEquals(expected, initial.getValue().toString());
+
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        String expectedEM = d.iteration() <= 3 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                        assertEquals(expectedEM, eval.getValue().toString());
+
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertEquals(expectedEM, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("dependsOn".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
+                // value of the parameter
+                assertEquals("dependsOn", d.fieldAnalysis().getValue().toString());
+            }
+        };
+        testClass("DGSimplified_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("DGSimplified_4", 0, 2, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
 }

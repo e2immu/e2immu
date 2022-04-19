@@ -2091,7 +2091,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // we want to avoid a particular value on EVAL for the loop variable
             return delays;
         }
-        DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
+        DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, true, false);
         return nne.isDelayed() || nne.lt(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)
                 ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
     }

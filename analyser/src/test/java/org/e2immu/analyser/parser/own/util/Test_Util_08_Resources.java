@@ -51,30 +51,29 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
                 if ("1.0.1.0.0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<m:recursivelyAddFiles>";
+                        case 0 -> "<m:recursivelyAddFiles>";
                         default -> "<no return value>";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                        case 1 -> "wait_for_assignment:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-E";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.3.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:getPath>" : "dirRelativeToBase.getPath()";
+                    String expected = d.iteration() == 0 ? "<m:getPath>" : "dirRelativeToBase.getPath()";
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
-                        case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
+                        case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.3.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<m:isEmpty>?new String[](0):<m:split>";
+                        case 0 -> "<m:isEmpty>?new String[](0):<m:split>";
                         default -> "dirRelativeToBase.getPath().isEmpty()?new String[](0):(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -82,13 +81,12 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 if ("1.0.3.0.2.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<m:endsWith>&&0==<delayed array length>";
-                        case 1 -> "file.getName().endsWith(\".annotated_api\")&&0==<delayed array length>";
                         default -> "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() <= 1 ? "<m:add>" : "instance type TrieNode<URL>";
+                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<URL>";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }
@@ -122,13 +120,13 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:getName>" : "file.getName()";
+                        String expected = d.iteration() == 0 ? "<m:getName>" : "file.getName()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("partsFromFile".equals(d.variableName())) {
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:split>" : "file.getName().split(\"\\\\.\")";
+                        String expected = d.iteration() == 0 ? "<m:split>" : "file.getName().split(\"\\\\.\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -146,22 +144,21 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "!<loopIsNotEmptyCondition>||null==(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)?nullable instance type File:<p:dirRelativeToBase>";
-                            case 1 -> "subDirs$1.0.1.0.0.length<=0||null==(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)?nullable instance type File:<p:dirRelativeToBase>";
                             default -> "nullable instance type File";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String delays = switch (d.iteration()) {
-                            case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
+                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                             default -> "";
                         };
                         assertEquals(delays, d.currentValue().causesOfDelay().toString());
                     }
                     if ("1.0.1.0.0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:dirRelativeToBase>" : "nullable instance type File";
+                        String expected = d.iteration() == 0 ? "<p:dirRelativeToBase>" : "nullable instance type File";
 
                         assertEquals(expected, d.currentValue().toString());
                         String delays = switch (d.iteration()) {
-                            case 0, 1 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
+                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
                             default -> "";
                         };
                         assertEquals(delays, d.currentValue().causesOfDelay().toString());

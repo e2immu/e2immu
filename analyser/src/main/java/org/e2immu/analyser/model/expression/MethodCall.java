@@ -331,7 +331,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed()) {
+        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed() || modified.isDelayed()) {
             CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer);
             return delayedMethod(context, builder, causes, modified);
         }

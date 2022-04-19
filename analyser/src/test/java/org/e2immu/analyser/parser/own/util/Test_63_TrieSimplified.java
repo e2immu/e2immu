@@ -893,8 +893,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = "new LinkedList<>()/*0==this.size()*/";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expectedDelay = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_add_1.0.1-C";
-                        case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
+                        case 0 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E";
+                        case 1 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial@Field_data;initial@Field_map";
                         default -> "";
                     };
                     assertEquals(expectedDelay, d.evaluationResult().causesOfDelay().toString());
@@ -904,7 +904,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 0 -> "<null-check>";
                         case 1 -> "null==<f:node.data>";
                         // TODO isn't this too complicated?
-                        default -> "null==(strings.length>0?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(instance type String)?new TrieNode<>():node$1.map$0.get(instance type String):nullable instance type TrieNode<T>).data$3";
+                        default -> "null==(strings.length>0?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(nullable instance type String)?new TrieNode<>():node$1.map$0.get(nullable instance type String):nullable instance type TrieNode<T>).data$3";
                     };
                     assertEquals(value, d.evaluationResult().value().toString());
                 }

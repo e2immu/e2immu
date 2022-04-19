@@ -440,7 +440,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delays.isDelayed()) {
-            LOGGER.debug("Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
+                assigningMethods.stream().filter(m -> m.getMethodAnalysis().getPreconditionForEventual().isDelayed())
+                        .forEach(m -> LOGGER.debug("--> {}: {}", m.getMethodInfo().fullyQualifiedName,
+                                m.getMethodAnalysis().getPreconditionForEventual().causesOfDelay()));
+            }
             typeAnalysis.setApprovedPreconditionsE1Delays(delays);
             return delays;
         }

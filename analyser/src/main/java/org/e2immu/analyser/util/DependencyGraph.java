@@ -146,12 +146,6 @@ public class DependencyGraph<T> extends Freezable {
         return dg;
     }
 
-    public List<T> getDependsOn(T t) {
-        Node<T> node = nodeMap.get(t);
-        assert node != null;
-        return node.dependsOn;
-    }
-
     @NotNull
     @Modified
     @Only(before = "frozen")

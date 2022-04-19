@@ -65,7 +65,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
                             case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                            default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(instance type String)?new TrieNode<>():node$2.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                            default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -85,7 +85,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     }
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                        default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(instance type String)?new TrieNode<>():node$2.map$0.get(instance type String):nullable instance type TrieNode<T>";
+                        default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
                     };
                     if ("3".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
