@@ -333,4 +333,9 @@ public class InlineConditional extends BaseExpression implements Expression {
     public boolean isNotYetAssigned() {
         return ifTrue.isNotYetAssigned() && ifFalse.isNotYetAssigned();
     }
+
+    @Override
+    public boolean isBasedOnAParameter() {
+        return ifTrue.isBasedOnAParameter() && ifFalse.isBasedOnAParameter();
+    }
 }

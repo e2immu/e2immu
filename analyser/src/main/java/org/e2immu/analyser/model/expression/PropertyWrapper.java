@@ -311,7 +311,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                 && Objects.equals(linkedVariables, pw.linkedVariables);
     }
 
-   // @Override
+    // @Override
     public boolean equalstt(Object o) {
         if (this == o) return true;
         if (!(o instanceof Expression oUnboxed)) return false;
@@ -367,4 +367,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return castType;
     }
 
+    @Override
+    public DV hardCodedPropertyOrNull(Property property) {
+        DV inMap = properties == null ? null : properties.getOrDefault(property, null);
+        if (inMap != null) return inMap;
+        return expression.hardCodedPropertyOrNull(property);
+    }
 }

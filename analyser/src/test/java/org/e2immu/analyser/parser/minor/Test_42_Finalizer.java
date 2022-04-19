@@ -50,6 +50,10 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("done".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
             }
+            if ("set".equals(d.methodInfo().name)) {
+                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -64,9 +68,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("testLinking".equals(d.methodInfo().name)) {
                 if ("ff".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:statically_assigned:0}*/",
-                                d.currentValue().toString());
-                        String expected =  "f:1,ff:0";
+                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:statically_assigned:0}*//*@NotNull*/", d.currentValue().toString());
+                        String expected = "f:1,ff:0";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

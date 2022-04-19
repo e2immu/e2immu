@@ -245,7 +245,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             pt = parameterizedType;
         }
         return switch (property) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+            case NOT_NULL_EXPRESSION -> notNullValue();
             case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
             case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
             case CONTAINER -> analyserContext.defaultContainer(pt);
@@ -253,6 +253,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
+    }
+
+    private DV notNullValue() {
+        if(parameterizedType.arrays<=1) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        if(parameterizedType.arrays==2) return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+        return MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV;
     }
 
     private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {

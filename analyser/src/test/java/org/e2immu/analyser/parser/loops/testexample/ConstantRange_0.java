@@ -21,7 +21,7 @@ public class ConstantRange_0 {
     @Constant(absent = true)
     public static boolean method(String[] input) {
         for (String s : input) {
-            if (s.equals("c")) return true;
+            if ("c".equals(s)) return true;
         }
         return false;
     }

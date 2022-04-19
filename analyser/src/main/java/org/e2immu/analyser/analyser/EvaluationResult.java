@@ -392,14 +392,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             if (variable instanceof This) return; // nothing to be done here
 
-            if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
-                    (evaluationContext.notNullAccordingToConditionManager(variable).valueIsTrue()
-                            || evaluationContext.notNullAccordingToConditionManager(value).valueIsTrue())) {
+            CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
+            if (cmDelays.isDelayed()) {
+                setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
+                return;
+            }
+            boolean effectivelyNotNull = (evaluationContext.notNullAccordingToConditionManager(variable).valueIsTrue()
+                    || evaluationContext.notNullAccordingToConditionManager(value).valueIsTrue());
+
+            if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) && effectivelyNotNull) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
-            if (contextNotNull.equals(MultiLevel.NULLABLE_DV) && complain) {
-                setProperty(variable, Property.IN_NOT_NULL_CONTEXT, DV.TRUE_DV); // so we can raise an error
+            if (contextNotNull.isDone() && contextNotNull.lt(notNullRequired) && complain) {
+                DV nnc = effectivelyNotNull ? notNullRequired : MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
         }

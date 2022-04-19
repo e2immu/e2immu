@@ -23,10 +23,10 @@ public enum Property {
     /*
     "short-lived" properties of the EvaluationResult
      */
-    // purpose: goes to true when all methods involved in the computation have been "evaluated"
 
     // only lives in change map
-    IN_NOT_NULL_CONTEXT("in not-null context", CauseOfDelay.Cause.IN_NN_CONTEXT),
+    IN_NOT_NULL_CONTEXT("in not-null context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.IN_NN_CONTEXT, false),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning", CauseOfDelay.Cause.CANDIDATE_NULL_PTR),
 
     /*

@@ -117,6 +117,9 @@ public class JavaUtilStream {
         Stream<T> sorted();
 
         @NotNull
+        Stream<T> sorted(@NotNull Comparator<? super T> comparator);
+
+        @NotNull
         Optional<T> findAny();
 
         @NotNull

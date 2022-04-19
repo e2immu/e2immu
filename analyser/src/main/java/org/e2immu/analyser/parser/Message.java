@@ -76,6 +76,7 @@ public record Message(Location location, Label message, String extra) {
         PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
         PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT,
         POTENTIAL_NULL_POINTER_EXCEPTION(Severity.WARN),
+        POTENTIAL_CONTENT_NOT_NULL(Severity.WARN),
         PRECONDITION_ABSENT,
         PRIVATE_FIELD_NOT_READ,
         TRIVIAL_CASES_IN_SWITCH,

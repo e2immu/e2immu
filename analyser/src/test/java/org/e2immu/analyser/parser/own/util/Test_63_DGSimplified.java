@@ -440,7 +440,38 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("DGSimplified_4", 0, 2, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("sorted".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "reportIndependent".equals(pi.name)) {
+                    if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+            if ("dependencies".equals(d.variableName())) {
+                if ("3.0.1.0.2.1.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<f:entry.getValue().dependsOn>"
+                            : "(entry.getValue()).dependsOn$0";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("sorted".equals(d.methodInfo().name)) {
+                if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<c:boolean>" : "null!=reportIndependent";
+                    assertEquals(expected, d.condition().toString());
+                }
+                if ("3.0.1.0.2.1.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "!<null-check>&&!<m:isEmpty>"
+                            : "!(entry.getValue()).dependsOn$0.isEmpty()&&null!=(entry.getValue()).dependsOn$0";
+                    assertEquals(expected, d.condition().toString());
+                }
+            }
+        };
+        testClass("DGSimplified_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

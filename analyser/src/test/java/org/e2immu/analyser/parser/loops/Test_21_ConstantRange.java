@@ -38,14 +38,14 @@ public class Test_21_ConstantRange extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("<return value>||s.equals(\"c\")", d.currentValue().toString());
+                        assertEquals("<return value>||\"c\".equals(s)", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = "input.length>0?<return value>||(nullable instance type String).equals(\"c\"):<return value>";
+                        String expected = "input.length>0?<return value>||\"c\".equals(nullable instance type String):<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "(nullable instance type String).equals(\"c\")&&input.length>0";
+                        String expected = "\"c\".equals(nullable instance type String)&&input.length>0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -54,7 +54,7 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = "!(nullable instance type String).equals(\"c\")||input.length<=0";
+                    String expected = "!\"c\".equals(nullable instance type String)||input.length<=0";
                     assertEquals(expected, d.state().toString());
                 }
             }

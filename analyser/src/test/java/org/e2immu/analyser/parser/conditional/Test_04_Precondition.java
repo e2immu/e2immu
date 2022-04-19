@@ -175,7 +175,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     // TODO I'd expect "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<=-1" : "j2<=-1&&i$0>=0";
+                    String expect = d.iteration() == 0 ? "<simplification>&&<f:i>>=0" : "j2<=-1&&i$0>=0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }

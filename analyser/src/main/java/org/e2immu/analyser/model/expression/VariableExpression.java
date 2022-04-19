@@ -503,4 +503,20 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             variable.visit(predicate);
         }
     }
+
+    @Override
+    public boolean isBasedOnAParameter() {
+        if (variable instanceof ParameterInfo) return true;
+        if (variable instanceof FieldReference fr) return fr.scope.isBasedOnAParameter();
+        if (variable instanceof DependentVariable dv) return dv.arrayExpression().isBasedOnAParameter();
+        return false;
+    }
+
+    @Override
+    public DV hardCodedPropertyOrNull(Property property) {
+        if (variable instanceof This && property == Property.NOT_NULL_EXPRESSION) {
+            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        }
+        return null;
+    }
 }

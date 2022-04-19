@@ -47,6 +47,7 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
+
     public static Expression forUnspecifiedCondition(Identifier identifier, Primitives primitives) {
         return new Instance(identifier, primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
@@ -189,7 +190,7 @@ public final class Instance extends BaseExpression implements Expression {
                 .noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
         assert !parameterizedType.isJavaLangString() || valueProperties.get(Property.CONTAINER).equals(MultiLevel.CONTAINER_DV);
         // FIXME currently gone for InstanceOf_11 -- need to put back
-       // assert !parameterizedType.isPrimitiveExcludingVoid() || valueProperties.get(Property.NOT_NULL_EXPRESSION).equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        // assert !parameterizedType.isPrimitiveExcludingVoid() || valueProperties.get(Property.NOT_NULL_EXPRESSION).equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return true;
     }
 
@@ -340,4 +341,8 @@ public final class Instance extends BaseExpression implements Expression {
         return valueProperties;
     }
 
+    @Override
+    public DV hardCodedPropertyOrNull(Property property) {
+        return valueProperties.getOrDefaultNull(property);
+    }
 }

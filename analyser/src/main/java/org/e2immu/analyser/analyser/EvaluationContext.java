@@ -235,7 +235,7 @@ public interface EvaluationContext {
                     CONTAINER, CONTAINER.falseDv,
                     IDENTITY, IDENTITY.falseDv,
                     IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
-                    NOT_NULL_EXPRESSION, NOT_NULL_EXPRESSION.falseDv));
+                    NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
         }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());

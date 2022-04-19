@@ -2102,20 +2102,33 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     that is only "leveled out" using the dependency graph of static assignments
 
     the presence of the IN_NOT_NULL_CONTEXT flag implies that CNN was 0
+
+    FIXME the check for Pattern is a hack!
+    but at the moment, the not-null sits in the state, rather than in the variable, or property wrapper
      */
     @Override
     public void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
         for (Map.Entry<Variable, EvaluationResult.ChangeData> e : changeDataMap.entrySet()) {
             Variable variable = e.getKey();
             EvaluationResult.ChangeData changeData = e.getValue();
-            if (changeData.getProperty(IN_NOT_NULL_CONTEXT).valueIsTrue()) {
+            DV inNotNullContext = changeData.getProperty(IN_NOT_NULL_CONTEXT);
+            if (inNotNullContext.ge(EFFECTIVELY_NOT_NULL_DV)) {
                 VariableInfoContainer vic = findOrNull(variable);
-                VariableInfo vi = vic.best(EVALUATION);
-                if (vi != null && !(vi.variable() instanceof ParameterInfo)) {
+                VariableInfo vi = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
+                if (vi != null
+                        && vi.valueIsSet()
+                        && !(vic.variableNature() instanceof VariableNature.Pattern) // FIXME HACK!
+                        && !(vi.variable() instanceof ParameterInfo)
+                        && !(vi.getValue().isBasedOnAParameter())) {
                     DV externalNotNull = vi.getProperty(Property.EXTERNAL_NOT_NULL);
                     DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
-                    if (vi.valueIsSet() && externalNotNull.equals(MultiLevel.NULLABLE_DV)
-                            && notNullExpression.equals(MultiLevel.NULLABLE_DV)) {
+                    DV max = externalNotNull.max(notNullExpression);
+                    if (inNotNullContext.equals(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
+                        if (max.lt(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
+                            ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_CONTENT_NOT_NULL,
+                                    "Variable: " + variable.simpleName()));
+                        }
+                    } else if (max.equals(MultiLevel.NULLABLE_DV)) {
                         ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Variable: " + variable.simpleName()));
                     }

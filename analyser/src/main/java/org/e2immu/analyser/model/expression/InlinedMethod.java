@@ -242,12 +242,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     /*
-     We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
+         We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
 
-     x*y -> variableExpressions = x param 0, y param 1; parameters = new values
+         x*y -> variableExpressions = x param 0, y param 1; parameters = new values
 
-     variablesOfExpression have been properly filtered already!
-     */
+         variablesOfExpression have been properly filtered already!
+         */
     public TranslationMap translationMap(EvaluationResult evaluationContext,
                                          List<Expression> parameters,
                                          Expression scope,

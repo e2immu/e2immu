@@ -258,4 +258,12 @@ public interface Expression extends Element, Comparable<Expression> {
     default Expression applyCondition(Expression newState) {
         return this;
     }
+
+    default boolean isBasedOnAParameter() {
+        return false;
+    }
+
+    default DV hardCodedPropertyOrNull(Property property) {
+        return null;
+    }
 }

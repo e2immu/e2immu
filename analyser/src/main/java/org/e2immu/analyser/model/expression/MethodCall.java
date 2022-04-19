@@ -360,13 +360,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
-                    forwardEvaluationInfo);
+                    forwardEvaluationInfo, modifiedInstance);
             builder.compose(mv);
-            if (mv.value() == objectValue && modifiedInstance != null) {
-                result = modifiedInstance;
-            } else {
-                result = mv.value();
-            }
+            result = mv.value();
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
         }

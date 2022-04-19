@@ -86,7 +86,21 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("Lambda_1", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("list".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:computeIfAbsent>"
+                                : "map.computeIfAbsent(k,/*inline apply*/new LinkedList<>())";
+                        assertEquals(expected, d.currentValue().toString());
+                        // !! no annotated APIs !!
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+        };
+        testClass("Lambda_1", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -311,8 +325,8 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
 
         testClass("Lambda_8", 0, 0, new DebugConfiguration.Builder()
-               .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

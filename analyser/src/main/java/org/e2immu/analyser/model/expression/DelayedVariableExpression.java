@@ -298,4 +298,12 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression(msg, variable, statementTime, this.causesOfDelay.merge(causesOfDelay));
     }
+
+    @Override
+    public boolean isBasedOnAParameter() {
+        if(variable instanceof ParameterInfo) return true;
+        if(variable instanceof FieldReference fr) return fr.scope.isBasedOnAParameter();
+        if(variable instanceof DependentVariable dv) return dv.arrayExpression().isBasedOnAParameter();
+        return false;
+    }
 }

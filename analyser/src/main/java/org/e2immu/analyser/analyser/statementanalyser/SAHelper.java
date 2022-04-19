@@ -104,11 +104,13 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     private static void handleInNotNullContext(Map<Property, DV> previous, Map<Property, DV> res) {
         DV prev = previous.getOrDefault(IN_NOT_NULL_CONTEXT, null);
-        assert prev == null || prev.equals(DV.TRUE_DV);
+        assert prev == null || prev.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         DV change = res.getOrDefault(IN_NOT_NULL_CONTEXT, null);
         if (change != null) {
-            assert change.equals(DV.TRUE_DV);
-            // leave things as they are
+            assert change.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            if(prev != null) {
+                res.put(IN_NOT_NULL_CONTEXT, prev.min(change));
+            }
         } else {
             if (prev != null) res.put(IN_NOT_NULL_CONTEXT, prev);
         }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -160,24 +161,44 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
     public void test_8() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<mmc:set>" : "instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<vl:set>"
                                 : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    }
+                }
+                if ("s".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        /*
+                        there is no way, at the moment (April 2022), to have the CNN=not_null travel to the loop source "set"
+                        so that it can become CONTENT_NOT_NULL: the linking system is made for modification, not to trace
+                        the origin of a value.
+                         */
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
         };
-        testClass("Loops_8", 0, 0, new DebugConfiguration.Builder()
+        // potential null pointer on the use of 's'
+        testClass("Loops_8", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
@@ -252,11 +273,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -271,7 +292,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLv = "result:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
@@ -299,8 +320,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
 
-        // potential null pointer exception
-        testClass("Loops_11", 0, 1, new DebugConfiguration.Builder()
+        // potential null pointer exception: both "now" and the result of the "now()" call
+        testClass("Loops_11", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
@@ -633,6 +654,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("plusMillis".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("0", d.statementId());
+                    String expected = d.iteration() == 0 ? "<new:Date>" : "new Date(time+t)";
+                    assertEquals(expected, d.currentValue().toString());
+                    if (d.iteration() > 0) assertTrue(d.currentValue() instanceof ConstructorCall);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                }
+            }
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "readWithinMillis".equals(p.name)) {
                     if ("1.0.1".equals(d.statementId())) {
@@ -657,10 +687,17 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
             }
         };
-
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("plusMillis".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:plusMillis>" : "/*inline plusMillis*/new Date(time+t)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+            }
+        };
         testClass("Loops_19", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

@@ -16,7 +16,9 @@
 package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -80,11 +82,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<v:array[i]>/*{DL array:initial@Class_Loops_21,array[i]:assigned:1}*/"
-                                : "nullable instance type String[]/*{L array:independent:805,array[i]:assigned:1}*/";
+                                : "instance type String[]/*{L array:independent:805,array[i]:assigned:1}*/";
                         assertEquals(expected, d.currentValue().toString());
                     } else if (!"2.0.1".equals(d.statementId())) fail();
                 }
                 if ("array".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());

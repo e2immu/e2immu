@@ -154,7 +154,7 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
         //WARN in Method org.e2immu.analyser.parser.start.testexample.Container_0.setS(java.util.Set<java.lang.String>,java.lang.String) (line 36, pos 9): Potential null pointer exception: Variable: s
-        testClass("Container_0", 0, 1, new DebugConfiguration.Builder()
+        testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

@@ -68,7 +68,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableInLoop_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("VariableInLoop_0", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
@@ -106,7 +106,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
+        // includes a EffectivelyContentNotNull warning on sa
+        testClass("VariableInLoop_1", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

@@ -57,7 +57,8 @@ public class EvaluateMethodCall {
                                         Expression objectValue,
                                         ParameterizedType concreteReturnType,
                                         List<Expression> parameters,
-                                        ForwardEvaluationInfo forwardEvaluationInfo) {
+                                        ForwardEvaluationInfo forwardEvaluationInfo,
+                                        Expression modifiedInstance) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
         if (recursiveCall) {
@@ -183,7 +184,8 @@ public class EvaluateMethodCall {
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(concreteReturnType, methodAnalysis, objectValue, linkedVariablesForDelay);
+        Expression fluent = computeFluent(concreteReturnType, methodAnalysis, objectValue, modifiedInstance,
+                linkedVariablesForDelay);
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
@@ -464,6 +466,7 @@ public class EvaluateMethodCall {
     private Expression computeFluent(ParameterizedType concreteReturnType,
                                      MethodAnalysis methodAnalysis,
                                      Expression scope,
+                                     Expression modifiedInstance,
                                      Function<CausesOfDelay, LinkedVariables> linkedVariables) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
@@ -472,7 +475,12 @@ public class EvaluateMethodCall {
                     fluent.causesOfDelay());
         }
         if (!fluent.valueIsTrue()) return null;
-        return scope;
+        Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
+        DV hardCoded = toReturn.hardCodedPropertyOrNull(NOT_NULL_EXPRESSION);
+        if (hardCoded != null && hardCoded.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+            return toReturn;
+        }
+        return PropertyWrapper.propertyWrapper(toReturn, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
     }
 
 

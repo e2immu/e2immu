@@ -50,6 +50,7 @@ public class Basics_23 {
         }
     }
 
+    // special code in Expression.isBasedOnParameter to have the @NotNull travel to b
     public static void method2(int k, A a, A c) {
         A b = k < 3 ? a : c;
         if (k >= 3) {

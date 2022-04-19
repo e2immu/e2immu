@@ -80,7 +80,7 @@ public class DGSimplified_4<T> {
         return dg;
     }
 
-    public List<T> sorted() {
+    public List<T> sorted1() {
         return sorted(null, null, null);
     }
 
