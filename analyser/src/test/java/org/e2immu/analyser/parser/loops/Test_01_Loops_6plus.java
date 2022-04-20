@@ -157,13 +157,20 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 .build());
     }
 
+    /*
+     We have implemented a simple system to make sure that CNN ENN on 's' travels to 'list',
+     and the null-pointer warning is not thrown.
+     */
     @Test
     public void test_8() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if ("set".equals(d.variableName())) {
@@ -186,19 +193,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        /*
-                        there is no way, at the moment (April 2022), to have the CNN=not_null travel to the loop source "set"
-                        so that it can become CONTENT_NOT_NULL: the linking system is made for modification, not to trace
-                        the origin of a value.
-                         */
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
         };
-        // potential null pointer on the use of 's'
-        testClass("Loops_8", 0, 1, new DebugConfiguration.Builder()
+        testClass("Loops_8", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

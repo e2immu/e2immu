@@ -220,7 +220,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
                     vic.setValue(changeData.value(), removed, Properties.of(merged), EVALUATION);
                 } else {
-                    LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, variable, vic, vi);
+                    LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState,
+                            variable, vic, vi, changeData, groupPropertyValues);
                     delay = delay.merge(loopResult.delays);
                     if (!loopResult.wroteValue) {
                         if (variable instanceof This
@@ -273,8 +274,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         for (Map.Entry<Variable, VariableInfoContainer> e : localVariablesNotVisited.entrySet()) {
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
-                    e.getValue(), e.getValue().best(EVALUATION));
-            if(loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());
+                    e.getValue(), e.getValue().best(EVALUATION), null, groupPropertyValues);
+            if (loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());
             delay = delay.merge(loopResult.delays);
         }
 
@@ -323,7 +324,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private LoopResult setValueForVariablesInLoopDefinedOutsideAssignedInside(StatementAnalyserSharedState sharedState,
                                                                               Variable variable,
                                                                               VariableInfoContainer vic,
-                                                                              VariableInfo vi) {
+                                                                              VariableInfo vi,
+                                                                              EvaluationResult.ChangeData changeData,
+                                                                              GroupPropertyValues groupPropertyValues) {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside
                 && outside.statementIndex().equals(index())) {
             // we're at the start of the loop for this variable
@@ -336,6 +339,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
                 vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
                 vic.setValue(delayedValue, LinkedVariables.delayedEmpty(causes), delayedVPs, EVALUATION);
+                if (changeData != null) {
+                    changeData.properties().forEach((p, dv) -> {
+                        if (GroupPropertyValues.PROPERTIES.contains(p)) {
+                            groupPropertyValues.set(p, variable, dv);
+                        }
+                    });
+                }
                 return new LoopResult(true, causes);
             }
             // is the variable assigned inside the loop, but not in -E ?
@@ -353,6 +363,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
                     }
                     vic.setValue(value, LinkedVariables.EMPTY, properties, EVALUATION);
+                    // FIXME clean up, duplicate code
+                    if (changeData != null) {
+                        changeData.properties().forEach((p, dv) -> {
+                            if (GroupPropertyValues.PROPERTIES.contains(p)) {
+                                groupPropertyValues.set(p, variable, dv);
+                            }
+                        });
+                    }
                     return new LoopResult(true, causes);
                 }
             }

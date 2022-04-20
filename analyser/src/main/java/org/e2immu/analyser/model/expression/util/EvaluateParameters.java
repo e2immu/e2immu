@@ -126,7 +126,7 @@ public class EvaluateParameters {
             }
 
             ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().setNotAssignmentTarget()
-                    .setComplainInlineConditional().addProperties(map).build();
+                    .addProperties(map).build();
             parameterResult = parameterExpression.evaluate(context, forward);
             parameterValue = parameterResult.value();
         } else {

@@ -385,12 +385,22 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             assert value != null;
             if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
+            if (variable instanceof This) return; // nothing to be done here
+
+
+            Variable sourceOfLoop = evaluationContext.sourceOfLoop(variable);
+            if (sourceOfLoop != null) {
+                markRead(sourceOfLoop);  // TODO not correct, but done to trigger merge (no mechanism for that a t m)
+                Expression sourceValue = evaluationContext.currentValue(sourceOfLoop);
+                DV higher = MultiLevel.composeOneLevelMoreNotNull(notNullRequired);
+                variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, complain);
+            }
+
             if (notNullRequired.isDelayed()) {
                 // simply set the delay
                 setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
                 return;
             }
-            if (variable instanceof This) return; // nothing to be done here
 
             CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
             if (cmDelays.isDelayed()) {

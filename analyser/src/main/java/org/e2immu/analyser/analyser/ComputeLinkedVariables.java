@@ -263,7 +263,7 @@ public class ComputeLinkedVariables {
             /* context modified needs all linking to be done */
             if (Property.CONTEXT_MODIFIED == property) {
                 CausesOfDelay clusterDelays = removeMyself(cluster.delays, cluster.variables);
-                if(clusterDelays.isDelayed()) {
+                if (clusterDelays.isDelayed()) {
                     // a delay on clustering can be caused by a delay on the value to be linked
                     // replace @CM values by those delays, and inject a dedicated variable delay.
                     propertyValues = propertyValuesIn.entrySet().stream()
@@ -288,17 +288,19 @@ public class ComputeLinkedVariables {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
                     VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                    if (vi.getProperty(property).isDelayed()) {
+                    DV current = vi.getProperty(property);
+                    if (current.isDelayed()) {
                         try {
                             vic.setProperty(property, summary, stage);
                         } catch (IllegalStateException ise) {
                             LOGGER.error("Current cluster: {}", cluster);
                             throw ise;
                         }
-                    } /*
-                         else: local copies make it hard to get all values on the same line
-                         The principle is: once it gets a value, that's the one it keeps
-                         */
+                    } else if (summary.isDone() && !summary.equals(current)) {
+                        LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
+                        LOGGER.error("Property {}, current {}, new {}", property, current, summary);
+                     // FIXME   throw new UnsupportedOperationException("Overwriting value");
+                    }
                 }
             }
         }

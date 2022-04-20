@@ -16,8 +16,11 @@
 package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -43,10 +46,37 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
+            if ("immutableConcat".equals(d.methodInfo().name)) {
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    assertEquals(4, d.evaluationResult().changeData().size());
+                    // contains list, lists
+                }
+            }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("immutableConcat".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "lists".equals(pi.name)) {
+                    if ("1.0.0.0.0".equals(d.statementId()) || "1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if ("list".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        if (d.iteration() > 0) {
+                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
+                        }
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
                 if ("t".equals(d.variableName())) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:t>" : "nullable instance type T";
                         assertEquals(expected, d.currentValue().toString());
@@ -97,7 +127,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(ListUtil.class), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(ListUtil.class), 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

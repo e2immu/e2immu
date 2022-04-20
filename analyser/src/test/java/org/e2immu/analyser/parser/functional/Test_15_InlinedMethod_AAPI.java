@@ -433,7 +433,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testClass("InlinedMethod_15", 0, 2, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_15", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

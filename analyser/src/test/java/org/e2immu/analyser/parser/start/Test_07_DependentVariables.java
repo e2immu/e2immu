@@ -269,7 +269,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
-        testClass("DependentVariables_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("DependentVariables_2", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

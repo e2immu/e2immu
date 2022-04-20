@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -162,7 +163,7 @@ public interface VariableNature {
 
     Only stored in the VIC, because the LocalVariable has been created before we know statement IDs.
      */
-    record LoopVariable(String statementIndex) implements VariableNature {
+    record LoopVariable(String statementIndex, StatementAnalysis statementAnalysis) implements VariableNature {
 
         @Override
         public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {

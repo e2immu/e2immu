@@ -243,7 +243,10 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, cycleInfo.nonModified.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", ")));
             }
         };
-        testClass("Precondition_7", 6, 11,
+
+        // TODO one of the null pointer problems is that "from" is nullable, which it is clearly not
+        // the other 3 null pointer issues are valid
+        testClass("Precondition_7", 6, 13,
                 new DebugConfiguration.Builder()
                       //  .addEvaluationResultVisitor(evaluationResultVisitor)
                      //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -400,11 +403,11 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
-        testClass("Precondition_10", 0, 4,
+        testClass("Precondition_10", 0, 6,
                 new DebugConfiguration.Builder()
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

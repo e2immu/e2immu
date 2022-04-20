@@ -119,7 +119,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         LocalVariableReference lvr = new LocalVariableReference(declaration.localVariable());
                         VariableNature variableNature;
                         if (statement() instanceof LoopStatement) {
-                            variableNature = new VariableNature.LoopVariable(index());
+                            variableNature = new VariableNature.LoopVariable(index(), statementAnalysis);
                         } else if (statement() instanceof TryStatement) {
                             variableNature = new VariableNature.TryResource(index());
                         } else {

@@ -194,7 +194,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
-        if (condition instanceof NullConstant) {
+        if (condition instanceof NullConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
         }

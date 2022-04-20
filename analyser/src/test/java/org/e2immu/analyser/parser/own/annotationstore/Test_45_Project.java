@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 // IMPORTANT: without Annotated APIs! Methods are non-modifying by default
 
@@ -60,7 +59,7 @@ public class Test_45_Project extends CommonTestRunner {
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
-                    assertFalse(changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
+                    assertEquals(d.iteration() <= 2, changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -80,7 +79,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if ((CONTAINER + ".value#prev").equals(d.variable().fullyQualifiedName())) {
                     if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
@@ -153,7 +152,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        testClass("Project_0", 2, 14, new DebugConfiguration.Builder()
+        testClass("Project_0", 2, 18, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -177,7 +176,7 @@ public class Test_45_Project extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 40, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 String linked = switch (d.iteration()) {
                     case 0, 1, 2 -> "";
                     default -> "previousRead:0,scope-container:2.0.1.updated:2,this.kvStore:3";
@@ -216,6 +215,17 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                if ("prev".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<null-check>?<new:Container>:<m:get>" : "null==kvStore.get(key)?new Container(value):kvStore.get(key)";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+        };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
@@ -234,6 +244,7 @@ public class Test_45_Project extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

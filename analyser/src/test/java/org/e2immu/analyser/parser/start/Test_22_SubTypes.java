@@ -367,7 +367,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_12() throws IOException {
-        testClass("SubTypes_12", 1, 10,
+        testClass("SubTypes_12", 1, 11,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

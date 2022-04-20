@@ -452,7 +452,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         if (!ifTrue.isDelayed() && ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifFalse)) {
             return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
         }
-        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(EvaluationResult.from(evaluationContext),
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 condition, ifTrue.getValue(), ifFalse.getValue(), false, vi.variable()));
         // 2nd check (safe.isDelayed) because safe could be "true" even if the condition is delayed
         if (condition.isDelayed() && safe.isDelayed()) {
@@ -480,13 +481,33 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         boolean compute2 = ifFalse.getValue().isComputeProperties();
         Properties properties;
         if (compute1 && compute2) {
-            properties = ifTrue.valueProperties().merge(ifFalse.valueProperties());
+            Properties p = overwriteNotNull(condition, ifTrue, ifFalse);
+            properties = ifTrue.valueProperties().merge(ifFalse.valueProperties()).combineSafely(p);
         } else if (compute1) {
             properties = ifTrue.valueProperties();
         } else {
             properties = ifFalse.valueProperties();
         }
         return new Merge.ExpressionAndProperties(safe, properties);
+    }
+
+    // x==null?y:x should avoid the nullable on x
+    private Properties overwriteNotNull(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {
+        boolean negate = condition instanceof Negation;
+        Expression conditionNoNegate = condition instanceof Negation neg ? neg.expression : condition;
+        Properties properties = Properties.writable();
+        if (conditionNoNegate instanceof Equals eq) {
+            if (eq.lhs instanceof NullConstant && !negate && eq.rhs.equals(ifFalse.getValue())) {
+                // null == x ? y : x
+                properties.overwrite(NOT_NULL_EXPRESSION, ifTrue.getProperty(NOT_NULL_EXPRESSION));
+            }
+            if (eq.lhs instanceof NullConstant && negate && eq.rhs.equals(ifTrue.getValue())) {
+                // null != x ? x : y
+                DV max = ifFalse.getProperty(NOT_NULL_EXPRESSION).max(ifTrue.getProperty(NOT_NULL_EXPRESSION));
+                properties.overwrite(NOT_NULL_EXPRESSION, max);
+            }
+        }
+        return properties;
     }
 
     private boolean conditionsMetForBreakingInitialisationDelay(VariableInfo vi) {

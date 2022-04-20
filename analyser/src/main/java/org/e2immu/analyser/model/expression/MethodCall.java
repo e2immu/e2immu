@@ -293,7 +293,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // null scope
         Expression objectValue = objectResult.value();
-        if (objectValue.isInstanceOf(NullConstant.class)) {
+        if (objectValue.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
 
@@ -806,7 +806,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                    MethodInspection methodInspection,
                                                    ForwardEvaluationInfo forwardEvaluationInfo,
                                                    boolean contentNotNullRequired) {
-        if (!contentNotNullRequired) {
+        if (!contentNotNullRequired && forwardEvaluationInfo.isComplainInlineConditional()) {
             DV requiredNotNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
                 DV methodNotNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);

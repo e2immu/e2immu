@@ -625,7 +625,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         } else if ("scope-vdol:1".equals(fr.scope.toString())) {
                             assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
                                     "is " + d.variableInfoContainer().variableNature().getClass());
-                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         } else fail("Have scope " + fr.scope);
                     }
                     if ("2".equals(d.statementId())) {
@@ -682,7 +682,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
-                                ? "xs.isEmpty()||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
+                                ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
                         assertEquals(expected, d.currentValue().toString());
                     }

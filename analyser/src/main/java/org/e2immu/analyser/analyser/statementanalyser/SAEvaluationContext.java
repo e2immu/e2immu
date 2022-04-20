@@ -867,4 +867,20 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
         return false;
     }
+
+    @Override
+    public Variable sourceOfLoop(Variable variable) {
+        VariableInfoContainer vic = statementAnalysis.findOrNull(variable);
+        if (vic != null) {
+            VariableNature vn = vic.variableNature();
+            while (vn instanceof VariableNature.VariableDefinedOutsideLoop outsideLoop) {
+                vn = outsideLoop.previousVariableNature();
+            }
+            if (vn instanceof VariableNature.LoopVariable lv
+                    && lv.statementAnalysis().statement().getStructure().expression() instanceof VariableExpression ve) {
+                return ve.variable();
+            }
+        }
+        return null;
+    }
 }

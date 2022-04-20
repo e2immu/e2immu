@@ -32,7 +32,7 @@ public class ListUtil {
 
     @SafeVarargs
     @NotNull1
-    public static <T> List<T> immutableConcat(@NotNull @NotModified Iterable<? extends T>... lists) {
+    public static <T> List<T> immutableConcat(@NotNull1 @NotModified Iterable<? extends T>... lists) {
         List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
             for (T t : list) {

@@ -28,7 +28,7 @@ public interface InlinedMethod_15 {
 
     @SafeVarargs
     @NotNull1
-    static <T> List<T> immutableConcat(@NotNull @NotModified Iterable<? extends T>... lists) {
+    static <T> List<T> immutableConcat(@NotNull1 @NotModified Iterable<? extends T>... lists) {
         List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
             for (T t : list) {

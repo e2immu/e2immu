@@ -90,6 +90,14 @@ public class Properties implements Comparable<Properties> {
         return this;
     }
 
+    public Properties combineSafely(Properties other) {
+        if (map.isEmpty()) return other;
+        if (other.map.isEmpty()) return this;
+        Map<Property, DV> newMap = new HashMap<>(map);
+        newMap.putAll(other.map);
+        return Properties.of(newMap);
+    }
+
     public CausesOfDelay delays() {
         return map.values().stream().map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }

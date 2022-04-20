@@ -418,6 +418,10 @@ public interface EvaluationContext {
         return v.variableNature() instanceof VariableNature.Pattern pvn && index.equals(pvn.definedInBlock());
     }
 
+    default Variable sourceOfLoop(Variable variable) {
+        return null;
+    }
+
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,

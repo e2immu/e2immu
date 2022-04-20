@@ -875,8 +875,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(expected, d.localConditionManager().absoluteState(d.context()).toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    long expectCount = d.iteration() <= 3 ? 0 : 2;
-                    assertEquals(expectCount, d.statementAnalysis().messageStream().count());
+                    assertEquals(0, d.statementAnalysis().messageStream().count());
                 }
             }
         };
@@ -940,8 +939,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
             }
         };
-        // TODO these 2 errors are dubious, as part of the state in the return statement in stmt 4 (see test)
-        testClass("InstanceOf_11", 2, 2, new DebugConfiguration.Builder()
+        testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -1047,7 +1045,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("InstanceOf_16", 0, 8, new DebugConfiguration.Builder()
+        testClass("InstanceOf_16", 0, 5, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

@@ -2119,7 +2119,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         && vi.valueIsSet()
                         && !(vic.variableNature() instanceof VariableNature.Pattern) // FIXME HACK!
                         && !(vi.variable() instanceof ParameterInfo)
-                        && !(vi.getValue().isBasedOnAParameter())) {
+                        && !(vi.getValue().isBasedOnAParameter())
+                        && !isLoopVariableLinkedToParameter(vic)) {
                     DV externalNotNull = vi.getProperty(Property.EXTERNAL_NOT_NULL);
                     DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
                     DV max = externalNotNull.max(notNullExpression);
@@ -2138,6 +2139,22 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 ensureCandidateVariableForNullPtrWarning(variable);
             }
         }
+    }
+
+    private boolean isLoopVariableLinkedToParameter(VariableInfoContainer vic) {
+        VariableNature vn = vic.variableNature();
+        while (vn instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+            vn = outside.previousVariableNature();
+        }
+        if (vn instanceof VariableNature.LoopVariable lv) {
+            Expression e = lv.statementAnalysis().statement().getStructure().expression();
+            if (e.isBasedOnAParameter()) return true;
+            if (e instanceof VariableExpression ve) {
+                VariableInfoContainer vic2 = findOrNull(ve.variable());
+                if (vic2 != null) return isLoopVariableLinkedToParameter(vic2);
+            }
+        }
+        return false;
     }
 
     /*
