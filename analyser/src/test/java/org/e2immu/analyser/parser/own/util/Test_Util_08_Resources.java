@@ -175,7 +175,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                6, 5, new DebugConfiguration.Builder()
+                5, 5, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

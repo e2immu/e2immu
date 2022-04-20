@@ -131,7 +131,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type X[]";
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {

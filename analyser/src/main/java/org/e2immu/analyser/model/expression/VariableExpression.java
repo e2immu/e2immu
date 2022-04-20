@@ -369,7 +369,9 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             return new EvaluationResult.Builder(context).setExpression(expression).build();
         }
         if (expression instanceof VariableExpression ve) {
-            return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment().build());
+           DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
+           DV higher = MultiLevel.composeOneLevelMoreNotNull(cnn);
+            return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
         assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
         ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
@@ -506,10 +508,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public boolean isBasedOnAParameter() {
-        if (variable instanceof ParameterInfo) return true;
-        if (variable instanceof FieldReference fr) return fr.scope.isBasedOnAParameter();
-        if (variable instanceof DependentVariable dv) return dv.arrayExpression().isBasedOnAParameter();
-        return false;
+       return variable.isBasedOnAParameter();
     }
 
     @Override

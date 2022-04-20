@@ -177,6 +177,13 @@ public class ForwardEvaluationInfo {
             return this;
         }
 
+        public Builder notNullNotAssignment(DV notNull) {
+            properties.clear();
+            addProperty(Property.CONTEXT_NOT_NULL, notNull);
+            isAssignmentTarget = false;
+            return this;
+        }
+
         public void setCnnNotNull() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }

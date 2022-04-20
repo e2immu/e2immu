@@ -433,7 +433,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, property);
         }
 
-        public Builder markRead(Variable variable) {
+        public void markRead(Variable variable) {
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
@@ -453,7 +453,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
                 markRead(ve.variable());
             }
-            return this;
         }
 
         public void raiseError(Identifier identifier, Message.Label messageLabel) {

@@ -96,10 +96,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (asExpression != this) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
         Expression translatedObject = object.translate(inspectionProvider, translationMap);
+        ParameterizedType translatedReturnType = translationMap.translateType(concreteReturnType);
         List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
                 parameterExpressions.stream().map(e -> e.translate(inspectionProvider, translationMap))
                         .collect(TranslationCollectors.toList(parameterExpressions));
-        if (translatedMethod == methodInfo && translatedObject == object && translatedParameters == parameterExpressions) {
+        if (translatedMethod == methodInfo && translatedObject == object
+                && translatedReturnType == concreteReturnType
+                && translatedParameters == parameterExpressions) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameters.stream()
@@ -113,7 +116,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 objectIsImplicit,
                 translatedObject,
                 translatedMethod,
-                translatedMethod.returnType(),
+                translatedReturnType,
                 translatedParameters);
     }
 

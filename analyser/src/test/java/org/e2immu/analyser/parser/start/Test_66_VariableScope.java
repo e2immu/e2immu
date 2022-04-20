@@ -491,7 +491,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_7", 0, 9, new DebugConfiguration.Builder()
+        testClass("VariableScope_7", 0, 8, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

@@ -2118,7 +2118,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (vi != null
                         && vi.valueIsSet()
                         && !(vic.variableNature() instanceof VariableNature.Pattern) // FIXME HACK!
-                        && !(vi.variable() instanceof ParameterInfo)
+                        && !(vi.variable().isBasedOnAParameter())
                         && !(vi.getValue().isBasedOnAParameter())
                         && !isLoopVariableLinkedToParameter(vic)) {
                     DV externalNotNull = vi.getProperty(Property.EXTERNAL_NOT_NULL);

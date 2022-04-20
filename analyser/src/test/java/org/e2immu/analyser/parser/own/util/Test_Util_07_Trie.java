@@ -19,8 +19,10 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -45,13 +47,15 @@ public class Test_Util_07_Trie extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("2.0.1".equals(d.statementId())) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "<null-check>";
-                    case 1 -> "null==<f:node.map>";
-                    default -> "null==node$2.map$0";
-                };
-                assertEquals(expected, d.evaluationResult().value().toString());
+            if ("goTo".equals(d.methodInfo().name) && 2 == d.methodInfo().methodInspection.get().getParameters().size()) {
+                if ("2".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
+                        case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_data;initial@Field_map>:upToPosition><oos:i>?<m:get>:<vl:node>";
+                        default -> "upToPosition>instance type int&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
+                    };
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -136,6 +140,36 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     }
                 }
             }
+            if ("goTo".equals(d.methodInfo().name) && 2 == d.methodInfo().methodInspection.get().getParameters().size()) {
+                if ("node".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:get>";
+                            case 1 -> "<s:TrieNode<T>>";
+                            default -> "null==node$1.map$0?node$1:node$1.map$0.get(strings[i])";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<loopIsNotEmptyCondition>?<m:get>:<vl:node>";
+                            default -> "upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertEquals("<return value>", d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -164,6 +198,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int params = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
@@ -176,13 +211,14 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                                 inlinedMethod.variablesOfExpressionSorted());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 1, 0,
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 1,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

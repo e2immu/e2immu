@@ -403,7 +403,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
-        testClass("Precondition_10", 0, 6,
+        testClass("Precondition_10", 0, 5,
                 new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

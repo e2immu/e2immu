@@ -301,9 +301,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public boolean isBasedOnAParameter() {
-        if(variable instanceof ParameterInfo) return true;
-        if(variable instanceof FieldReference fr) return fr.scope.isBasedOnAParameter();
-        if(variable instanceof DependentVariable dv) return dv.arrayExpression().isBasedOnAParameter();
-        return false;
+        return variable.isBasedOnAParameter();
     }
 }
