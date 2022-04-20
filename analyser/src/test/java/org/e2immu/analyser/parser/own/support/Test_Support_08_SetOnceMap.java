@@ -136,7 +136,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
+                        String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }

@@ -242,7 +242,7 @@ public abstract class CommonAbstractValue {
                                        Expression scopeValue,
                                        Expression indexValue,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
-            return new VariableExpression(variable, null, null, scopeValue);
+            return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, null);
         }
 
         @Override

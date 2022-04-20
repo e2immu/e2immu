@@ -378,7 +378,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
                 // because not @Final, we get NOT_INVOLVED
                 assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
 
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {

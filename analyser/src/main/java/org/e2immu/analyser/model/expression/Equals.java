@@ -261,6 +261,17 @@ public class Equals extends BinaryOperator {
             return Or.or(context, And.and(context, inlineConditional.condition, recursively1),
                     And.and(context, notCondition, recursively2));
         }
+
+        if(c.isNull()) {
+            if(inlineConditional.ifTrue.isNull()) {
+                // null == (a ? null: b) --> a || (b == null)
+                return Or.or(context, inlineConditional.condition, Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifFalse));
+            }
+            if(inlineConditional.ifFalse.isNull()) {
+                // null== (a ? b : null) --> !a || (b == null)
+                return Or.or(context, Negation.negate(context, inlineConditional.condition), Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifTrue));
+            }
+         }
         return null;
     }
 

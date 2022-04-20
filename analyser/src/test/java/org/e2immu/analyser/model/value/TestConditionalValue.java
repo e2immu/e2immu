@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.e2immu.analyser.model.expression.NullConstant.NULL_CONSTANT;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestConditionalValue extends CommonAbstractValue {
@@ -57,50 +58,6 @@ public class TestConditionalValue extends CommonAbstractValue {
     }
 
     @Test
-    public void test3() {
-        TypeInfo annotatedAPI = new TypeInfo("org.e2immu.annotatedapi", "AnnotatedAPI");
-        ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
-        MethodInfo isFact = new MethodInfo(Identifier.generate("isFact"),
-                annotatedAPI, "isFact", TypeInfo.IS_FACT_FQN, TypeInfo.IS_FACT_FQN, false);
-        isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI)
-                .setStatic(true)
-                .setReturnType(PRIMITIVES.booleanParameterizedType()).build(InspectionProvider.DEFAULT));
-        Expression isFactA = new MethodCall(Identifier.generate("isFactA"),
-                new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(a));
-        assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
-        Expression isFactB = new MethodCall(Identifier.generate("isFactB"),
-                new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(b));
-        assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
-
-        assertTrue(context.evaluationContext().getConditionManager().state().isBoolValueTrue());
-        Expression cv1 = inline(isFactA, a, b);
-        assertSame(b, cv1);
-
-        EvaluationResult child = context.child(a);
-        assertTrue(child.evaluationContext().getConditionManager().state().isBoolValueTrue());
-        assertEquals("a", child.evaluationContext().getConditionManager().condition().toString());
-        Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, true, null).value();
-        assertSame(a, cv2);
-
-        EvaluationResult child2 = context.child(And.and(context, a, b));
-        assertEquals("a&&b", child2.evaluationContext().getConditionManager().condition().toString());
-        assertTrue(child2.evaluationContext().getConditionManager().state().isBoolValueTrue());
-        assertEquals("a&&b", child2.evaluationContext().getConditionManager().absoluteState(child2).toString());
-
-        Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, true, null).value();
-        assertSame(a, cv3);
-
-        Expression cv3b = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactB, a, b, true, null).value();
-        assertSame(a, cv3b);
-
-        EvaluationResult child3 = context.child(
-                Or.or(context, c, And.and(context, a, b)));
-        assertEquals("(a||c)&&(b||c)", child3.evaluationContext().getConditionManager().absoluteState(child3).toString());
-        Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, true, null).value();
-        assertSame(b, cv4);
-    }
-
-    @Test
     public void test4() {
         Expression cv1 = inline(a, b, c);
         assertEquals("a?b:c", cv1.toString());
@@ -122,12 +79,13 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test6() {
-        Expression cv1 = inline(a, p, NullConstant.NULL_CONSTANT);
+        Expression cv1 = inline(a, p, NULL_CONSTANT);
         assertEquals("a?p:null", cv1.toString());
-        Expression eq = Equals.equals(context, NullConstant.NULL_CONSTANT, cv1);
-        assertEquals("null==(a?p:null)", eq.toString());
-        Expression eq2 = negate(Equals.equals(context, NullConstant.NULL_CONSTANT, cv1));
+        Expression eq = Equals.equals(context, NULL_CONSTANT, cv1);
+        assertEquals("!a||null==p", eq.toString());
+        Expression eq2 = negate(Equals.equals(context, NULL_CONSTANT, cv1));
         assertEquals("a&&null!=p", eq2.toString());
+        assertTrue(newAndAppend(eq, eq2).isBoolValueFalse());
     }
 
     @Test
@@ -256,7 +214,36 @@ public class TestConditionalValue extends CommonAbstractValue {
     // just to check that s==null ? null: s === s
     @Test
     public void aIsNull() {
-        Expression inline = inline(equals(s, NullConstant.NULL_CONSTANT), NullConstant.NULL_CONSTANT, s);
+        Expression inline = inline(equals(s, NULL_CONSTANT), NULL_CONSTANT, s);
         assertEquals("s", inline.toString());
+    }
+
+    @Test
+    public void equalsNull() {
+        Expression e = equals(NULL_CONSTANT, inline(a, s1, NULL_CONSTANT));
+        assertEquals("!a||null==s1", e.toString());
+        Expression e2 = equals(NULL_CONSTANT, inline(a, NULL_CONSTANT, s1));
+        assertEquals("a||null==s1", e2.toString());
+    }
+
+    @Test
+    public void testComplex() {
+        Expression nmGetIsNull = equals(NULL_CONSTANT, s1);
+        Expression nmIsNull = equals(NULL_CONSTANT, s2);
+        Expression condition = newAndAppend(a, newOrAppend(nmGetIsNull, nmIsNull));
+        Expression ifFalse = inline(a, s1, s3);
+        Expression base = inline(condition, NULL_CONSTANT, ifFalse);
+        assertEquals("a&&(null==s1||null==s2)?null:a?s1:s3", base.toString());
+
+        Expression baseNotNull = negate(equals(NULL_CONSTANT, base));
+        assertEquals("null!=(a?s1:s3)&&(!a||null!=s1)&&(!a||null!=s2)", baseNotNull.toString());
+
+        Expression baseNull = equals(NULL_CONSTANT, base);
+        assertEquals("(a||null==(a?s1:s3))&&(null==s1||null==s2||null==(a?s1:s3))", baseNull.toString());
+
+        Expression and = newAndAppend(baseNotNull, baseNull);
+        assertTrue(and.isBoolValueFalse());
+        Expression and2 = newAndAppend(baseNull, baseNotNull);
+        assertTrue(and2.isBoolValueFalse());
     }
 }
