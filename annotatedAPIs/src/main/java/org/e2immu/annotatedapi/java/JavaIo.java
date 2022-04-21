@@ -18,6 +18,8 @@ import org.e2immu.annotation.*;
 
 import java.io.OutputStream;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URL;
 
 public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
@@ -159,5 +161,19 @@ public class JavaIo {
     interface InputStream$ {
         @Modified
         long transferTo(@Modified OutputStream out);
+    }
+
+    interface File$ {
+        @NotNull
+        String getName();
+
+        @NotNull
+        String getPath();
+
+        @NotNull
+        URI toURI();
+
+        @NotNull
+        URL toURL();
     }
 }

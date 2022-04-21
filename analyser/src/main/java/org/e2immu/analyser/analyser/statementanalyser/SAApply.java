@@ -116,7 +116,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
-        Map<Variable, VariableInfoContainer> localVariablesNotVisited = statementAnalysis.rawVariableStream()
+        Map<Variable, VariableInfoContainer> variablesDefinedOutsideLoop = statementAnalysis.rawVariableStream()
                 .filter(e -> e.getValue().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
@@ -141,7 +141,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
-            localVariablesNotVisited.remove(variable);
+            variablesDefinedOutsideLoop.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
 
             // we're now guaranteed to find the variable
@@ -272,7 +272,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
-        for (Map.Entry<Variable, VariableInfoContainer> e : localVariablesNotVisited.entrySet()) {
+        for (Map.Entry<Variable, VariableInfoContainer> e : variablesDefinedOutsideLoop.entrySet()) {
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
                     e.getValue(), e.getValue().best(EVALUATION), null, groupPropertyValues);
             if (loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());

@@ -50,23 +50,14 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.1.0.0.0.0".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "<m:recursivelyAddFiles>";
-                        default -> "<no return value>";
-                    };
-                    assertEquals(expected, d.evaluationResult().value().toString());
-                    String delays = switch (d.iteration()) {
-                        case 0 -> "initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                        default -> "";
-                    };
-                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                    assertEquals("<no return value>", d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<m:getPath>" : "dirRelativeToBase.getPath()";
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
-                        case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
+                        case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -131,37 +122,22 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     }
                 }
                 if ("subDirs".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "null==(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)?(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory):<vl:subDirs>"
-                            : "(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)";
                     if ("1.0.1".equals(d.statementId())) {
+                        String expected = "(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.3.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:subDirs>"
+                                : "(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "dirRelativeToBase".equals(pi.name)) {
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "!<loopIsNotEmptyCondition>||null==(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)?nullable instance type File:<p:dirRelativeToBase>";
-                            default -> "nullable instance type File";
-                        };
-                        assertEquals(expected, d.currentValue().toString());
-                        String delays = switch (d.iteration()) {
-                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                            default -> "";
-                        };
-                        assertEquals(delays, d.currentValue().causesOfDelay().toString());
+                        assertEquals("nullable instance type File", d.currentValue().toString());
                     }
                     if ("1.0.1.0.0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:dirRelativeToBase>" : "nullable instance type File";
-
-                        assertEquals(expected, d.currentValue().toString());
-                        String delays = switch (d.iteration()) {
-                            case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.1.0.0.0.0-E;initial:subDirs@Method_recursivelyAddFiles_1.0.1.0.0-C";
-                            default -> "";
-                        };
-                        assertEquals(delays, d.currentValue().causesOfDelay().toString());
+                        assertEquals("nullable instance type File", d.currentValue().toString());
                     }
                 }
             }
@@ -175,7 +151,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                5, 5, new DebugConfiguration.Builder()
+                0, 6, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

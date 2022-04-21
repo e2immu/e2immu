@@ -527,10 +527,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic, navigationData.hasSubBlocks(), newValue);
         } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
-        } else if (conditionsToMoveVariableInsideLoop(variable)) {
+        } else if (conditionsToMoveVariableInsideLoop(vic, variable, copyFrom, previousIsParent)) {
             // move a local variable, not defined in this loop, inside the loop
-            // the result is a va
-            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
+            // for all loops except forEach, the expression of the loop serves as the entry point
+            // for forEach, the expression is outside, but the loop variable is inside. this complicates the code somewhat
+            if (copyFrom.statement() instanceof ForEachStatement && previousIsParent) {
+                newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, copyFrom.index(), true);
+            } else {
+                newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
+            }
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
@@ -556,9 +561,30 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return false;
     }
 
-    private boolean conditionsToMoveVariableInsideLoop(Variable variable) {
-        if (!(statement instanceof LoopStatement)) return false; // we must move inside a loop
-        return variable.isLocal();
+    /*
+    normal situation: statement instanceof LoopStatement && variable.isLocal()
+    this means: any local variable will transition, at the loop statement, into a VariableDefinedOutsideLoop,
+    at the evaluation level already.
+
+    the problem is that this also happens to the forEach loop source, which should, ONLY for eval at the loop statement,
+    stay outside. (see e.g. ResourcesSimplified_0). The loop source should only become VDOL inside the loop.
+
+     */
+    private boolean conditionsToMoveVariableInsideLoop(VariableInfoContainer vic,
+                                                       Variable variable,
+                                                       StatementAnalysis previous,
+                                                       boolean previousIsParent) {
+        if (!variable.isLocal()) return false;
+        if (statement instanceof ForEachStatement forEach) {
+            // fine for all, except the loop source
+            // TODO what if the loop source is an expression? should we take all variables?
+            return !(forEach.expression instanceof VariableExpression ve && ve.variable().equals(variable));
+        }
+        if (previous.statement() instanceof ForEachStatement forEach && previousIsParent) {
+            // only for the loop source
+            return forEach.expression instanceof VariableExpression ve && ve.variable().equals(variable);
+        }
+        return statement instanceof LoopStatement;
     }
 
     /**

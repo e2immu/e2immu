@@ -133,9 +133,14 @@ public class BinaryOperator extends BaseExpression implements Expression {
             return shortCircuit(context, forwardEvaluationInfo, true);
         }
 
-        ForwardEvaluationInfo forward = allowsForNullOperands(primitives)
-                ? new ForwardEvaluationInfo.Builder(forwardEvaluationInfo).setCnnNullable().build()
-                : new ForwardEvaluationInfo.Builder(forwardEvaluationInfo).notNullNotAssignment().build();
+        ForwardEvaluationInfo.Builder forwardBuilder = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo);
+        if (allowsForNullOperands(primitives)) {
+            forwardBuilder.setCnnNullable();
+        } else {
+            forwardBuilder.notNullNotAssignment();
+        }
+        ForwardEvaluationInfo forward = forwardBuilder.removeContextContainer().build();
+
         EvaluationResult leftResult = lhs.evaluate(context, forward);
         EvaluationResult rightResult = rhs.evaluate(context, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context).compose(leftResult, rightResult);

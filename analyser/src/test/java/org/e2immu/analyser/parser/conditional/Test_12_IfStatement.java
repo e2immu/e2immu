@@ -361,8 +361,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>)";
-                            case 1 -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()?instance type int:min$4.0.3.0.0><m:size>?<m:size>:<vl:min>)";
-                            default -> "8+(targetTypeBounds$4.0.3.isEmpty()?instance type int:fromTypeBounds$4.0.3.0.0.isEmpty()||`otherBound.typeInfo`.length()>=min$4.0.3.0.0?instance type int:`otherBound.typeInfo`.length())";
+                            case 1 -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?instance type int:min$4.0.3><m:size>?<m:size>:<vl:min>)";
+                            default -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=min$4.0.3?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -375,14 +375,16 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         if ("4.0.4".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<vl:fromTypeBounds>";
-                                case 1 -> "fromTypeBounds$4.0.3.0.0.isEmpty()||targetTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 1 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-                        if (d.statementId().startsWith("4.0.3.0.0")) {
+                        if (d.statementId().startsWith("4.0.3.0.0.0.")) {
                             assertEquals("4.0.3.0.0", outside.statementIndex(), "In " + d.statementId());
+                        } else if (d.statementId().equals("4.0.3.0.0")) {
+                            assertEquals("4.0.3", outside.statementIndex(), "In " + d.statementId());
                         } else {
                             assertEquals("4.0.3", outside.statementIndex(), "In " + d.statementId());
                             assertTrue(outside.previousVariableNature() instanceof VariableNature.NormalLocalVariable);

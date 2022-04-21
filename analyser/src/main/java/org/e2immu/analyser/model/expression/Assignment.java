@@ -391,6 +391,26 @@ public class Assignment extends BaseExpression implements Expression {
                             fieldReference.fieldInfo.isStatic(context.getAnalyserContext()))) {
                 builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
             }
+
+            if (fieldReference.scopeVariable != null && !fieldReference.scopeIsThis()) {
+                // set the variable's value to instance, much like calling a modifying method
+                // see Basics_24 as a fine example
+                // note: this one will overwrite the value of the scope, even if it is currently delayed
+                ParameterizedType returnType = fieldReference.scopeVariable.parameterizedType();
+                Properties valueProperties = context.getAnalyserContext().defaultValueProperties(returnType,
+                        MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                CausesOfDelay causesOfDelay = valueProperties.delays();
+                Expression instance;
+                if (causesOfDelay.isDelayed()) {
+                    instance = DelayedExpression.forDelayedValueProperties(identifier, returnType,
+                            LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+                } else {
+                    instance = Instance.forGetInstance(identifier, returnType, valueProperties);
+                }
+                LinkedVariables lvs = fieldReference.scope.linkedVariables(context);
+                builder.modifyingMethodAccess(fieldReference.scopeVariable, instance, lvs);
+
+            }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }

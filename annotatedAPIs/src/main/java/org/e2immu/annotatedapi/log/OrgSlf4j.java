@@ -42,6 +42,9 @@ public class OrgSlf4j {
         void error(@NotNull String s, Object... objects);
 
         @NotModified
+        void debug(@NotNull String s, Object object);
+
+        @NotModified
         void debug(@NotNull String s, Object object1, Object object2);
 
         @NotModified

@@ -51,15 +51,13 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     // return statement
                     if ("1.0.0.0.1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:toByteArray>" : "byteArrayOutputStream.toByteArray()";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("byteArrayOutputStream.toByteArray()", d.currentValue().toString());
                         assertEquals("return loadBytes:0", d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // try statement
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:toByteArray>"
-                                : "(instance type ByteArrayOutputStream).toByteArray()";
+                        String expect = "(instance type ByteArrayOutputStream).toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = "return loadBytes:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -67,9 +65,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
 
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
-                                ? "<loopIsNotEmptyCondition>?<m:toByteArray>:<return value>"
-                                : "prefix$1.length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
+                        String expect = "path.split(\"/\").length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = "return loadBytes:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -77,8 +73,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                 }
             }
         };
-        // expect one potential null pointer warning
-        testClass("Basics_22", 0, 1, new DebugConfiguration.Builder()
+        testClass("Basics_22", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

@@ -57,7 +57,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             if ("immutableConcat".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "lists".equals(pi.name)) {
                     if ("1.0.0.0.0".equals(d.statementId()) || "1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("list".equals(d.variableName())) {
@@ -67,19 +67,18 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                         }
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("t".equals(d.variableName())) {
                     if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:t>" : "nullable instance type T";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("nullable instance type T", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
                     }
                     if ("1".equals(d.statementId())) {

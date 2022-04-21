@@ -274,6 +274,11 @@ public class ForwardEvaluationInfo {
             properties.clear();
             return this;
         }
+
+        public Builder removeContextContainer() {
+            properties.remove(Property.CONTEXT_CONTAINER);
+            return this;
+        }
     }
 
     private static Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {

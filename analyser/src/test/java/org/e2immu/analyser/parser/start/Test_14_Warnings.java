@@ -128,7 +128,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().variableIsSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 1, FlowData.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 0, FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
