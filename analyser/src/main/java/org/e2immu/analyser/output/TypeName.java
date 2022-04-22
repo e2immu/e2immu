@@ -30,6 +30,13 @@ public record TypeName(String simpleName,
         this(simpleName, simpleName, simpleName, Required.SIMPLE);
     }
 
+    public TypeName {
+        assert simpleName != null;
+        assert fullyQualifiedName != null;
+        assert fromPrimaryTypeDownwards != null;
+        assert required != null;
+    }
+
     @Override
     public String minimal() {
         return switch (required) {

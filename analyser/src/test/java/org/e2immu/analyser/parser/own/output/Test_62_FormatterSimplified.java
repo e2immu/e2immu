@@ -104,12 +104,39 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                 }
                 if ("string".equals(d.variableName())) {
+                    if ("8.0.3.0.2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2 -> "<m:symbol>";
+                            default -> "`list.get(pos$8)/*(Symbol)*/.symbol`";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("8.0.3.1.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<instanceOf:Guide>?\"\":<m:write>";
+                            case 1, 2 -> "<s:boolean>?\"\":\"abc\"";
+                            default -> "outputElement instanceof Guide?\"\":\"abc\"";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("8.0.3".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
+                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
+                            default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
                     if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
                         fail("The variable 'string' should not exist here");
                     }
                 }
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("combine".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
@@ -121,6 +148,21 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("symbol".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:symbol>" : "/*inline symbol*/symbol";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("symbol".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ElementarySpace".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -129,11 +171,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
         // 2 errors: overwriting a previous value; valid, I'd say
-
-        testClass("FormatterSimplified_2", 2, 6, new DebugConfiguration.Builder()
-                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+        // 2 re-assignment warnings, ok given the null returned by elementarySpace
+        testClass("FormatterSimplified_2", 2, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

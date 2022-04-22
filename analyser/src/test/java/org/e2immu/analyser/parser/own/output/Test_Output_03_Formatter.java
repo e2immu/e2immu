@@ -44,7 +44,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
     public void test_0() throws IOException {
         testSupportAndUtilClasses(List.of(ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                4, 11, new DebugConfiguration.Builder()
+                0, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -194,7 +194,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                14, 44, new DebugConfiguration.Builder()
+                0, 29, new DebugConfiguration.Builder()
                  //       .addEvaluationResultVisitor(evaluationResultVisitor)
                  //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                  //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

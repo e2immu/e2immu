@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.output;
 
+import java.util.Objects;
+
 public enum ElementarySpace {
     ONE(" "), NICE(" "), NONE(""), RELAXED_NONE(""), NEWLINE("\n"),
     ;
@@ -21,7 +23,7 @@ public enum ElementarySpace {
     private final String space;
 
     ElementarySpace(String space) {
-        this.space = space;
+        this.space = Objects.requireNonNull(space);
     }
 
     public String write() {

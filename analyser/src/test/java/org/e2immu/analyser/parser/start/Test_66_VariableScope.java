@@ -532,8 +532,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8", 4, 15, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
 
     }
@@ -551,8 +551,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&this!=(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>)";
-                        case 1, 2, 3 -> "<null-check>&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10)";
-                        default -> "this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&(scope-vdol:1.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(vn$1 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
+                        case 1, 2, 3 -> "<null-check>&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10)";
+                        default -> "this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&(scope-vdol:1.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -571,8 +571,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = switch (d.iteration()) {
                             case 0 -> "<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>";
-                            case 1, 2, 3 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10";
-                            default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10";
+                            case 1, 2, 3 -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10";
+                            default -> "scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10";
                         };
                         assertEquals(merge, d.currentValue().toString());
                         List<Variable> variables = d.currentValue().variables(true);
@@ -620,9 +620,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "previousVariableNature".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        if ("vdol".equals(fr.scope.toString())) {
-
-                        } else if ("scope-vdol:1".equals(fr.scope.toString())) {
+                         if ("scope-vdol:1".equals(fr.scope.toString())) {
                             assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
                                     "is " + d.variableInfoContainer().variableNature().getClass());
                             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -645,8 +643,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||this==(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>));parent=CM{}}";
-                        case 1, 2, 3 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
-                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&vn$1 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||!(vn$1 instanceof VariableDefinedOutsideLoop)&&null==nullable instance type VariableScope_10);parent=CM{}}";
+                        case 1, 2, 3 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
+                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||!(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop)&&null==nullable instance type VariableScope_10);parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }

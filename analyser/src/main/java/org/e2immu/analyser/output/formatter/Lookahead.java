@@ -63,6 +63,7 @@ public class Lookahead {
 
             if (forwardInfo.isGuide()) {
                 Guide guide = forwardInfo.guide();
+                assert guide != null;
                 switch (guide.position()) {
                     case START -> {
                         // priority split: when the first one we encounter is a priority one
@@ -77,14 +78,16 @@ public class Lookahead {
                         if (startOfGuides.isEmpty()) {
                             return true; // stop
                         }
-                        assert startOfGuides.peek().forwardInfo.guide().index() == guide.index();
-                        startOfGuides.peek().increment();
+                        GuideOnStack guideOnStack = startOfGuides.peek();
+                        assert guideOnStack != null;
+                        assert guideOnStack.forwardInfo.guide().index() == guide.index();
+                        guideOnStack.increment();
                     }
                     case END -> {
                         if (startOfGuides.isEmpty()) {
                             return true; // stop
                         }
-                        assert startOfGuides.peek().forwardInfo.guide().index() == guide.index();
+                        assert startOfGuides.peek() != null && startOfGuides.peek().forwardInfo.guide().index() == guide.index();
                         startOfGuides.pop();
                     }
                 }

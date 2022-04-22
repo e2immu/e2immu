@@ -382,7 +382,13 @@ public class InlinedMethod extends BaseExpression implements Expression {
         AnalyserContext analyserContext = context.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
 
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        Properties valueProperties ;
+        if(variable instanceof FieldReference fr) {
+            FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+            valueProperties = fieldAnalysis.getValueProperties();
+        } else {
+            valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        }
         CausesOfDelay merged = valueProperties.delays()
                 .merge(variable.causesOfDelay())
                 .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay());

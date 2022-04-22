@@ -14,16 +14,14 @@
 
 package org.e2immu.analyser.output.formatter;
 
+import java.util.Objects;
+
 public class GuideOnStack {
    public final ForwardInfo forwardInfo;
    private int countMid;
 
     GuideOnStack(ForwardInfo forwardInfo) {
-        this.forwardInfo = forwardInfo;
-    }
-
-    public void setCountMid(int countMid) {
-        this.countMid = countMid;
+        this.forwardInfo = Objects.requireNonNull(forwardInfo);
     }
 
     public int getCountMid() {

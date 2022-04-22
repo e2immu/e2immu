@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.output;
 
+import java.util.Objects;
+
 import static org.e2immu.analyser.output.Split.*;
 
 public enum Space implements OutputElement {
@@ -48,9 +50,9 @@ public enum Space implements OutputElement {
     public final Split split;
 
     Space(ElementarySpace minimal, ElementarySpace nice, Split split) {
-        this.minimal = minimal;
-        this.nice = nice;
-        this.split = split;
+        this.minimal = Objects.requireNonNull(minimal);
+        this.nice = Objects.requireNonNull(nice);
+        this.split = Objects.requireNonNull(split);
     }
 
     @Override

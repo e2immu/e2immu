@@ -16,6 +16,7 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.output.formatter.CurrentExceeds;
 import org.e2immu.analyser.output.formatter.Forward;
+import org.e2immu.analyser.output.formatter.ForwardInfo;
 import org.e2immu.analyser.output.formatter.Lookahead;
 
 import java.io.IOException;
@@ -26,6 +27,10 @@ import java.util.List;
 import java.util.Stack;
 
 public record Formatter(FormattingOptions options) {
+
+    public Formatter {
+        assert options != null;
+    }
 
     public String write(OutputBuilder outputBuilder) {
         try (StringWriter stringWriter = new StringWriter()) {
@@ -42,7 +47,7 @@ public record Formatter(FormattingOptions options) {
     // guideIndex -1 is used for no tabs at all
     // guideIndex == -2 is for line split without guides
     // endWithNewline forces a newline at the end of the guide
-    static class Tab {
+    private static class Tab {
         final int indent;
         final int guideIndex;
         final boolean allowNewLineBefore;
@@ -117,6 +122,7 @@ public record Formatter(FormattingOptions options) {
                 pop(tabs, !tabs.isEmpty() && tabs.peek().previousWriteNewLineBefore ? "\n" : "", writer);
             } else if (newLineDouble.swapWriter) {
                 Tab tab = tabs.peek();
+                assert tab != null;
                 swap(tabs, newLineDouble.writeNewLineBefore || tab.previousWriteNewLineBefore ? "\n" : "", writer);
                 tab.previousWriteNewLineBefore = newLineDouble.writeNewLineBefore;
             }
@@ -153,12 +159,14 @@ public record Formatter(FormattingOptions options) {
             tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
                     LINE_SPLIT, false));
         }
+        ForwardInfo exceeds = lookAhead.exceeds();
+        assert exceeds != null;
         if (lookAhead.current() != null) {
             writeLine(list, writer, pos, lookAhead.current().pos());
-            return lookAhead.exceeds().pos();
+            return exceeds.pos();
         } else {
-            writeLine(list, writer, pos, lookAhead.exceeds().pos());
-            return lookAhead.exceeds().pos() + 1;
+            writeLine(list, writer, pos, exceeds.pos());
+            return exceeds.pos() + 1;
         }
     }
 
@@ -226,7 +234,7 @@ public record Formatter(FormattingOptions options) {
         }
     }
 
-    void indent(int spaces, Writer writer) throws IOException {
+    static void indent(int spaces, Writer writer) throws IOException {
         for (int i = 0; i < spaces; i++) writer.write(" ");
     }
 }

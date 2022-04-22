@@ -26,6 +26,11 @@ public record Guide(int index, Position position,
                     boolean startWithNewLine,
                     boolean endWithNewLine,
                     boolean allowNewLineBefore) implements OutputElement {
+
+    public Guide {
+        assert position != null;
+    }
+
     private static final AtomicInteger generator = new AtomicInteger();
 
     public enum Position {
@@ -37,9 +42,12 @@ public record Guide(int index, Position position,
             this.msg = msg;
         }
 
-        public String msg() { return msg; }
+        public String msg() {
+            return msg;
+        }
 
     }
+
     public static GuideGenerator generatorForBlock() {
         return new GuideGenerator(1, true, true, true, true);
     }

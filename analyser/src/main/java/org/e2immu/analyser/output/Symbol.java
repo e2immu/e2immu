@@ -20,6 +20,12 @@ import static org.e2immu.analyser.output.Space.*;
 
 public record Symbol(String symbol, Space left, Space right, String constant) implements OutputElement {
 
+    public Symbol {
+        assert symbol != null;
+        assert left != null;
+        assert right != null;
+    }
+
     public static final Symbol INSTANCE_OF = new Symbol("instanceof", ONE, ONE, "INSTANCE_OF");
     public static final Symbol UNARY_BOOLEAN_NOT = new Symbol("!", RELAXED_NO_SPACE_SPLIT_ALLOWED, NONE, "UNARY_BOOLEAN_NOT");
     public static final Symbol UNARY_MINUS = new Symbol("-", RELAXED_NO_SPACE_SPLIT_ALLOWED, NONE, "UNARY_MINUS");
