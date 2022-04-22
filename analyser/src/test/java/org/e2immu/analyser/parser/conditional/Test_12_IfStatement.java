@@ -63,7 +63,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==(null==a?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==a?nullable instance type String/*@Identity*/:<p:a>"
+                                ? "null==(null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>)?\"b\":null==nullable instance type String/*@Identity*/?nullable instance type String/*@Identity*/:<p:a>"
                                 : "null==a?\"b\":a";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -362,7 +362,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>)";
                             case 1 -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?instance type int:min$4.0.3><m:size>?<m:size>:<vl:min>)";
-                            default -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=min$4.0.3?instance type int:`otherBound.typeInfo`.length())";
+                            default -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=instance type int?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -411,11 +412,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     return new Merge.ExpressionAndProperties(And.and(context, stateOfParent, vi1value),
                             EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
                 }
-                return inlineConditional(stateOfParent, vi1, vi);
+                return inlineConditionalIfFalseIsExisting(stateOfParent, vi1);
             }
             return valueProperties(vi1); // so we by-pass the "safe" in inlineConditional
         }
-        return inlineConditional(condition, vi1, vi);
+        return inlineConditionalIfFalseIsExisting(condition, vi1);
     }
 
     public Merge.ExpressionAndProperties twoComplementary(VariableInfo e1,
@@ -429,7 +430,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                 if (stateOfParent.isBoolValueTrue()) return valueProperties(two);
                 if (stateOfParent.isBoolValueFalse())
                     throw new UnsupportedOperationException(); // unreachable statement
-                return inlineConditional(stateOfParent, two, vi);
+                return inlineConditionalIfFalseIsExisting(stateOfParent, two);
             }
 
             Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2);
@@ -437,12 +438,32 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
             VariableInfoImpl vii = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                     vi.variable(), two.expression(), two.valueProperties()); // exact variable not relevant
-            return inlineConditional(stateOfParent, vii, vi);
+            return inlineConditionalIfFalseIsExisting(stateOfParent, vii);
         }
 
         if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"
         if (firstCondition.isBoolValueFalse()) return valueProperties(e2);
         return inlineConditional(firstCondition, e1, e2);
+    }
+
+    /* condition and ifFalse have been evaluated in the same expression
+       if(condition) {
+         ifTrue
+       } // else keep what we had: ifFalse
+
+       if ifFalse is an Instance, and the condition contains the actual variable expression, we have to make sure that
+       they are joined as the same expression. We prefer the instance at the moment.
+       See e.g. TrieSimplified_5, StaticSideEffects_1, ConditionalInitialization_0, ...
+    */
+    private Merge.ExpressionAndProperties inlineConditionalIfFalseIsExisting(Expression condition, VariableInfo ifTrue) {
+        Expression c;
+        if (vi.getValue().isInstanceOf(Instance.class)) {
+            TranslationMap translationMap = new TranslationMapImpl.Builder().addVariableExpression(vi.variable(), vi.getValue()).build();
+            c = condition.translate(evaluationContext.getAnalyserContext(), translationMap);
+        } else {
+            c = condition;
+        }
+        return inlineConditional(c, ifTrue, vi);
     }
 
     private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {

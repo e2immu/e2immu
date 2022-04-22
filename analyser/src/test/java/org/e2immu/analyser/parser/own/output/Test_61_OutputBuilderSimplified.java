@@ -271,7 +271,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<p:start>";
-                            case 2, 3, 4 -> "Space.NONE==start?nullable instance type OutputElement:<p:start>";
+                            case 2, 3, 4 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -294,7 +294,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<p:end>";
-                            case 2, 3, 4 -> "Space.NONE==end?nullable instance type OutputElement:<p:end>";
+                            case 2, 3, 4 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());

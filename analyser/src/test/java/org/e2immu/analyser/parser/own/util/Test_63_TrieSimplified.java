@@ -730,7 +730,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new LinkedList<>()/*0==this.size()*/:<f:data>";
                                 case 1 -> "null==<f:node.data>?new LinkedList<>()/*0==this.size()*/:<f:data>";
-                                default -> "null==(strings.length>0?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(nullable instance type String)?new TrieNode<>():node$1.map$0.get(nullable instance type String):nullable instance type TrieNode<T>).data$3?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
+                                default -> "null==nullable instance type List<T>?new LinkedList<>()/*0==this.size()*/:nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION); // FIXME this is wrong

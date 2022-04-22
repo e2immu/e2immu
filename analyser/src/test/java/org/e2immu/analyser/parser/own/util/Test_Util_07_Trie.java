@@ -79,7 +79,11 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.statementId().equals("2.0.1")) {
-                        String value = d.iteration() <= 1 ? "<vl:node>" : "nullable instance type TrieNode<T>";
+                        String value = switch (d.iteration()) {
+                            case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
+                            case 1 -> "null==<f:node.map>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
+                            default -> "null==node$2.map$0?instance type TrieNode<T>:nullable instance type TrieNode<T>";
+                        };
                         assertEquals(value, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0, 1 -> "newTrieNode:-1,node.map:-1,node:0,this.root:-1";
@@ -87,14 +91,19 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    String expected = switch (d.iteration()) {
-                        case 0, 1 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
-                        default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
-                    };
                     if ("3".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
+                            case 1 -> "null==<f:node.data>?<vp:TrieNode<T>:initial@Field_data;initial@Field_map>:strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
+                            default -> "null==(strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>).data$3?instance type TrieNode<T>:strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
+                            default -> "null==(strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>).data$3?instance type TrieNode<T>:strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):nullable instance type TrieNode<T>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -218,7 +227,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 1,
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

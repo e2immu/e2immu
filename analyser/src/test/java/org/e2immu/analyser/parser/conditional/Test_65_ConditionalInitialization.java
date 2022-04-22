@@ -54,7 +54,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?<vp:Set<String>:initial@Class_ConditionalInitialization_0>:<f:set>";
                             case 1 -> "<wrapped:set>";// result of breaking init delay
-                            default -> "ConditionalInitialization_0.set.isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
+                            default -> "(instance type Set<String>).isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }

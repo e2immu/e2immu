@@ -99,7 +99,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                     if ("8.0.5".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
@@ -128,10 +128,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
-        testClass("FormatterSimplified_2", 4, 6, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+        // 2 errors: overwriting a previous value; valid, I'd say
+
+        testClass("FormatterSimplified_2", 2, 6, new DebugConfiguration.Builder()
+                   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -209,20 +211,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
         };
 
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("apply".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
-                    if ("1".equals(d.statementId())) {
-                        DV expectCnn = switch (d.variableName()) {
-                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.$1.apply(org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo):0:forwardInfo" -> MultiLevel.NULLABLE_DV;
-                            case "org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.ForwardInfo.guide#org.e2immu.analyser.parser.own.output.testexample.FormatterSimplified_6.GuideOnStack.forwardInfo#scope-49:20" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                            default -> fail("? " + d.variableName());
-                        };
-                        assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL), d.variableName());
-                    }
-                }
-            }
-        };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("guide".equals(d.fieldInfo().name)) {
@@ -234,7 +222,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         testClass("FormatterSimplified_6", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

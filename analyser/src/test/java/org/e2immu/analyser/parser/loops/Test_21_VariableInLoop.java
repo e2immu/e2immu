@@ -48,17 +48,17 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         } else fail();
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                         String expected = d.iteration() == 0 ? "<vl:found>" : "instance type boolean";
-                    //    assertEquals(expected, vi1.getValue().toString());
+                        assertEquals(expected, vi1.getValue().toString());
 
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(expected, eval.getValue().toString());
-                        String expectMerge = d.iteration() == 0 ? "<simplification>" : "instance type boolean||!found$1";
+                        String expectMerge = d.iteration() == 0 ? "<simplification>" : "true";
                         assertEquals(expectMerge, d.currentValue().toString()); // result of merge, should always be "true"
                     }
                     if ("1.0.0.0.0.0.0".equals(d.statementId())) {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                         String expected = d.iteration() == 0 ? "<vl:found>" : "instance type boolean";
-                  //      assertEquals(expected, vi1.getValue().toString());
+                        assertEquals(expected, vi1.getValue().toString());
                         assertEquals("true", d.currentValue().toString());
                     }
                 }
@@ -91,7 +91,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
-                                : "(((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==nullable instance type StatementAnalyser)&&(((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==sa$1)&&(null==nullable instance type StatementAnalyser||null!=((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))&&(null==sa$1||null!=((null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))?null:null==sa$1?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                                : "(((null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==nullable instance type StatementAnalyser)&&(null==nullable instance type StatementAnalyser||null!=((null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))?null:null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

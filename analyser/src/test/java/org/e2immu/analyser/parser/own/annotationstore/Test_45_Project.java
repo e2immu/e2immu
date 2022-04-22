@@ -271,9 +271,10 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NOT_CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
             assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
-        testClass("Project_4", 1, 0, new DebugConfiguration.Builder()
+        testClass("Project_4", 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
 }

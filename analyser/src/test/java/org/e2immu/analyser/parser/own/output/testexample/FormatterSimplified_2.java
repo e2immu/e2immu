@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.own.output.testexample;
 
 
+import org.e2immu.annotation.NotNull;
+
 import java.util.List;
 import java.util.function.Function;
 
@@ -24,6 +26,7 @@ public class FormatterSimplified_2 {
     }
 
     interface OutputElement {
+        @NotNull // contracted
         default String write() {
             return "abc";
         }
@@ -33,7 +36,7 @@ public class FormatterSimplified_2 {
         static final Space NEWLINE = new Space(Split.NEVER);
         static final Space NONE = new Space(Split.NEVER);
 
-        ElementarySpace elementarySpace() {
+        static ElementarySpace elementarySpace() {
             return null;
         }
     }
@@ -49,6 +52,11 @@ public class FormatterSimplified_2 {
     }
 
     record Symbol(String symbol, Space left, Space right, String constant) implements OutputElement {
+        public Symbol {
+            assert symbol != null;
+            assert left != null;
+            assert right != null;
+        }
     }
 
     interface Guide extends OutputElement {
