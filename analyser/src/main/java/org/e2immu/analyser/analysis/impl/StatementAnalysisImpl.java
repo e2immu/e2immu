@@ -1156,7 +1156,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 newScopeVar = variables.get(lvr.fullyQualifiedName());
             }
             Properties propertiesOfLvr = evaluationContext.getValueProperties(lvr.assignmentExpression);
-            newScopeVar.setValue(lvr.assignmentExpression, LinkedVariables.EMPTY, propertiesOfLvr, MERGE);
+            Expression scopeValue;
+            CausesOfDelay causesOfDelay = propertiesOfLvr.delays();
+            if (causesOfDelay.isDelayed() && lvr.assignmentExpression.isDone()) {
+                scopeValue = DelayedExpression.forDelayedValueProperties(lvr.assignmentExpression.getIdentifier(),
+                        lvr.assignmentExpression.returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+            } else {
+                scopeValue = lvr.assignmentExpression;
+            }
+            newScopeVar.setValue(scopeValue, LinkedVariables.EMPTY, propertiesOfLvr, MERGE);
             groupPropertyValues.setDefaultsForScopeVariable(lvr);
             linkedVariablesMap.put(lvr, LinkedVariables.EMPTY);
         }

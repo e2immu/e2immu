@@ -48,7 +48,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String expected = switch (d.iteration()) {
                     case 0, 1, 4 -> "ext_imm:this@Method_comparator_0-E";
                     case 2 -> "initial@Field_nodeMap";
-                    case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3.0.2.0.0-C;srv@Method_sorted";
+                    case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;srv@Method_sorted";
                     default -> "";
                 };
                 assertEquals(expected, d.externalStatus().toString());
@@ -59,7 +59,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         case 0, 5 -> "ext_imm:this@Method_test_0-E";
                         case 1 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E";
                         case 2 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E;initial@Field_dependsOn;initial@Field_nodeMap;initial@Field_t";
-                        case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3.0.2.0.0-C;initial@Field_nodeMap;srv@Method_sorted";
+                        case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;initial@Field_nodeMap;srv@Method_sorted";
                         case 4 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3.0.2.0.0-C;srv@Method_sorted";
                         default -> "";
                     };
@@ -119,7 +119,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("comparator".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() == 0 ? "<m:compare>"
+                    String expected = d.iteration() <= 1 ? "<m:compare>"
                             : "/*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -162,7 +162,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("copy".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("nullable instance type DGSimplified_0<T>", eval.getValue().toString());
+                        assertEquals("instance type DGSimplified_0<T>", eval.getValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -207,7 +207,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:comparator>"
+                String expected = d.iteration() <= 1 ? "<m:comparator>"
                         : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -221,7 +221,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String delay = switch (d.iteration()) {
                     case 0 -> "final@Field_nodeMap";
                     case 1 -> "initial@Field_nodeMap";
-                    case 2 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3.0.2.0.0-C;srv@Method_sorted";
+                    case 2 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;srv@Method_sorted";
                     case 3 -> "assign_to_field@Parameter_t";
                     default -> "";
                 };

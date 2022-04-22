@@ -55,41 +55,42 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("write".equals(d.methodInfo().name)) {
                 if ("6.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:pop>" : "<no return value>";
+                    String expected = d.iteration() <= 4 ? "<m:pop>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 4, d.status().isDone());
-                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
+                    assertEquals(d.iteration() >= 5, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 5, d.status().isDone());
+                    assertEquals(d.iteration() >= 4, d.externalStatus().isDone());
                 }
                 if ("7.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:write>" : "<no return value>";
+                    String expected = d.iteration() <= 4 ? "<m:write>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 4, d.status().isDone());
-                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
+                    assertEquals(d.iteration() >= 5, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 5, d.status().isDone());
+                    assertEquals(d.iteration() >= 4, d.externalStatus().isDone());
                     assertTrue(d.iteration() < 6);
                 }
                 if ("7".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<vl:writeNewLine>";
-                        case 1, 2, 3 -> "!(end$5>pos$5?(<dv:scope-newLineDouble:5.writeNewLine>||<null-check>||!<null-check>)&&(<null-check>||!<null-check>):instance type boolean)";
-                        default -> "!(end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`):instance type boolean)";
+                        case 1, 2, 3 -> "!(end$5>pos$5?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):instance type boolean)";
+                        default -> "!(end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 4, d.status().isDone());
-                    assertEquals(d.iteration() >= 6, d.externalStatus().isDone());
+                    assertEquals(d.iteration() >= 5, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= 5, d.status().isDone());
+                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
                 }
             }
         };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("write".equals(d.methodInfo().name)) {
                 if ("writeNewLine".equals(d.variableName())) {
                     if ("5".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<v:end>><v:pos>?(<dv:scope-newLineDouble:5.writeNewLine>||<null-check>||!<null-check>)&&(<null-check>||!<null-check>):<vl:writeNewLine>";
-                            case 1, 2, 3 -> "end$5>pos$5?(<dv:scope-newLineDouble:5.writeNewLine>||<null-check>||!<null-check>)&&(<null-check>||!<null-check>):instance type boolean";
-                            default -> "end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`):instance type boolean";
+                            case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):<vl:writeNewLine>";
+                            case 1, 2, 3 -> "end$5>pos$5?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):instance type boolean";
+                            default -> "end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals(d.iteration() >= 4, d.currentValue().isDone());
@@ -129,7 +130,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                             fail();
                         }
                         if ("0.0.3".equals(d.statementId())) {
-                            String expected = d.iteration() < 2 ? "<f:writer>" : "nullable instance type Writer";
+                            String expected = d.iteration() < 2 ? "<f:writer>" : "instance type Writer";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("tabs.peek()".equals(fr.scope.toString())) {
@@ -144,15 +145,32 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:writer>";
-                                case 1 -> "tabs.isEmpty()?nullable instance type Writer:<f:writer>";
-                                default -> "nullable instance type Writer";
+                                case 1 -> "tabs.isEmpty()?instance type Writer:<f:writer>";
+                                default -> "instance type Writer";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else fail("scope " + fr.scope);
                 }
             }
+            if ("handleExceeds".equals(d.methodInfo().name)) {
+                if ("exceeds".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("`lookAhead.exceeds`", d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("handleExceeds".equals(d.methodInfo().name)) {
+                if ("3.0.0".equals(d.statementId())) {
+                    assertEquals("null!=`lookAhead.current`", d.condition().toString());
+                }
+            }
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NOT_END".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
@@ -163,6 +181,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertTrue(d.fieldAnalysis().valuesDelayed().isDone());
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name) && "Formatter".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
@@ -185,21 +204,24 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("NewLineDouble".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
         testSupportAndUtilClasses(List.of(Formatter.class,
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                0, 29, new DebugConfiguration.Builder()
-                 //       .addEvaluationResultVisitor(evaluationResultVisitor)
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                0, 19, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

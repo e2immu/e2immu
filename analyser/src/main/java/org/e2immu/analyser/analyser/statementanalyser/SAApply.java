@@ -209,6 +209,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             } else {
                 if (changeData.value() != null && (changeData.value().isDone() || !(vi1.getValue() instanceof DelayedWrappedExpression))) {
                     // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
+                    // see e.g. UpgradableBooleanMap, E2InContext_0, _2
                     //assert changeData.value().isDone();
                     // we cannot let DWEs be changed into other delays... they must be passed on (e.g. StaticSideEffects_1)
 
@@ -216,9 +217,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             variable, vi1.getProperties(),
                             changeData.properties(), groupPropertyValues, true);
 
+                    Properties properties = Properties.of(merged);
+                    CausesOfDelay causesOfDelay = properties.delays();
+                    Expression toWrite;
+                    if (changeData.value().isDone() && causesOfDelay.isDelayed()) {
+                        // cannot yet change to changeData.value()...
+                        toWrite = DelayedExpression.forDelayedValueProperties(changeData.value().getIdentifier(), changeData.value().returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+                    } else {
+                        toWrite = changeData.value();
+                    }
                     LinkedVariables removed = vi1.getLinkedVariables()
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
-                    vic.setValue(changeData.value(), removed, Properties.of(merged), EVALUATION);
+                    vic.setValue(toWrite, removed, properties, EVALUATION);
                 } else {
                     LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState,
                             variable, vic, vi, changeData, groupPropertyValues);

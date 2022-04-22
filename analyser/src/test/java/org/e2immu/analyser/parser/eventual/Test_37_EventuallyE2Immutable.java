@@ -195,7 +195,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
                 String pc = switch (d.iteration()) {
                     case 0, 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    default -> "Precondition[expression=null==`other.t`&&null!=`t`, causes=[methodCall:getT, methodCall:setT]]";
+                    default -> "Precondition[expression=null!=`t`&&null==`other.t`, causes=[methodCall:getT, methodCall:setT]]";
                 };
                 assertEquals(pc, d.evaluationResult().precondition().toString());
             }

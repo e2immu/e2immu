@@ -100,6 +100,14 @@ public class ExpandedVariable extends BaseExpression {
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        if(v instanceof ExpandedVariable ev) {
+            return variable.compareTo(ev.variable);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void visit(Predicate<Expression> predicate) {
         predicate.test(this);
     }

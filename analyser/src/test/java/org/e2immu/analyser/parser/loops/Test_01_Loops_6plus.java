@@ -649,7 +649,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = d.iteration() <= 2 ? "<null-check>&&<m:isAfter>&&<m:isBefore>"
-                            : "`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&null!=(entry.getValue()).read";
+                            : "`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&null!=(entry.getValue()).read";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }

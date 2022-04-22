@@ -60,8 +60,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
-                        FormattingOptions.class, Guide.class, Space.class, TypeName.class),
-                4, 4, new DebugConfiguration.Builder()
+                        FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
+                0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
@@ -100,7 +100,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(FormattingOptions.class, TypeName.class),
-                2, 1, new DebugConfiguration.Builder()
+                0, 0, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
