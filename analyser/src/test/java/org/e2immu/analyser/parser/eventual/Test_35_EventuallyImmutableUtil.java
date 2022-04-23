@@ -182,7 +182,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 }
             }
             if ("isTReady".equals(d.methodInfo().name)) {
-                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "/*inline isTReady*/`s1.bool`.isSet()&&`s1.string`.isSet()&&`s2.bool`.isSet()&&`s2.string`.isSet()";
+                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "/*inline isTReady*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 if (d.iteration() >= 3) {

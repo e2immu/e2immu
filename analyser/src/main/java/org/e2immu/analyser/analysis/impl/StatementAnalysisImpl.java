@@ -2143,41 +2143,51 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     @Override
     public void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
-        for (Map.Entry<Variable, EvaluationResult.ChangeData> e : changeDataMap.entrySet()) {
-            Variable variable = e.getKey();
-            EvaluationResult.ChangeData changeData = e.getValue();
-            DV inNotNullContext = changeData.getProperty(IN_NOT_NULL_CONTEXT);
-            if (inNotNullContext.ge(EFFECTIVELY_NOT_NULL_DV)) {
-                VariableInfoContainer vic = findOrNull(variable);
-                VariableInfo previousOrInitial = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
-                VariableInfo eval = vic.best(EVALUATION);
-                DV cnnTravelsToPc = eval.getProperty(CNN_TRAVELS_TO_PRECONDITION);
-                if (previousOrInitial != null && previousOrInitial.valueIsSet() && !cnnTravelsToPc.valueIsTrue()) {
-                    DV externalNotNull = previousOrInitial.getProperty(Property.EXTERNAL_NOT_NULL);
-                    DV notNullExpression;
-                    // a bit of an exception: the not-null of the pattern variable sits in the expression, and
-                    // cannot be read from the initial value at the point of definition of a pattern variable
-                    if (vic.variableNature() instanceof VariableNature.Pattern p && p.scope().equals(index)) {
-                        notNullExpression = eval.getProperty(NOT_NULL_EXPRESSION);
-                    } else {
-                        notNullExpression = previousOrInitial.getProperty(NOT_NULL_EXPRESSION);
-                    }
-                    DV max = externalNotNull.max(notNullExpression);
-                    if (inNotNullContext.equals(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
-                        if (max.lt(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
-                            ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_CONTENT_NOT_NULL,
-                                    "Variable: " + variable.simpleName()));
+        Set<Variable> alreadyRaised = new HashSet<>();
+        changeDataMap.entrySet().stream()
+                .filter(e -> e.getValue().getProperty(IN_NOT_NULL_CONTEXT).ge(EFFECTIVELY_NOT_NULL_DV))
+                .sorted(Comparator.comparing(e -> -e.getValue().getProperty(IN_NOT_NULL_CONTEXT).value()))
+                .forEach(e -> {
+                    Variable variable = e.getKey();
+                    EvaluationResult.ChangeData changeData = e.getValue();
+                    DV inNotNullContext = changeData.getProperty(IN_NOT_NULL_CONTEXT);
+
+                    VariableInfoContainer vic = findOrNull(variable);
+                    VariableInfo previousOrInitial = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
+                    VariableInfo eval = vic.best(EVALUATION);
+                    DV cnnTravelsToPc = eval.getProperty(CNN_TRAVELS_TO_PRECONDITION);
+                    if (previousOrInitial.valueIsSet() && !cnnTravelsToPc.valueIsTrue()) {
+                        DV externalNotNull = previousOrInitial.getProperty(Property.EXTERNAL_NOT_NULL);
+                        DV notNullExpression;
+                        // a bit of an exception: the not-null of the pattern variable sits in the expression, and
+                        // cannot be read from the initial value at the point of definition of a pattern variable
+                        if (vic.variableNature() instanceof VariableNature.Pattern p && p.scope().equals(index)) {
+                            notNullExpression = eval.getProperty(CONTEXT_NOT_NULL);
+                        } else {
+                            notNullExpression = previousOrInitial.getProperty(NOT_NULL_EXPRESSION);
                         }
-                    } else if (max.equals(MultiLevel.NULLABLE_DV)) {
-                        ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Variable: " + variable.simpleName()));
+                        DV max = externalNotNull.max(notNullExpression);
+                        if (inNotNullContext.equals(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
+                            if (max.lt(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
+                                ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_CONTENT_NOT_NULL,
+                                        "Variable: " + variable.simpleName()));
+                                alreadyRaised.add(variable);
+                            }
+                        } else if (max.equals(MultiLevel.NULLABLE_DV)) {
+                            Set<Variable> linked = recursivelyLinkedToParameterOrField(variable, true);
+                            if (Collections.disjoint(linked, alreadyRaised)) {
+                                ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                        "Variable: " + variable.simpleName()));
+                                alreadyRaised.add(variable);
+                            }
+                        } // else: TODO content 2 etc.
                     }
-                }
+                });
+        changeDataMap.forEach((v, cd) -> {
+            if (cd.getProperty(CANDIDATE_FOR_NULL_PTR_WARNING).valueIsTrue()) {
+                ensureCandidateVariableForNullPtrWarning(v);
             }
-            if (changeData.getProperty(CANDIDATE_FOR_NULL_PTR_WARNING).valueIsTrue()) {
-                ensureCandidateVariableForNullPtrWarning(variable);
-            }
-        }
+        });
     }
 
     /*
@@ -2457,5 +2467,28 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private static String key(VariableInfo vi) {
         return (vi.getAssignmentIds().hasNotYetBeenAssigned() ? "~" : vi.getAssignmentIds().getLatestAssignment()) + "|" + vi.variable().fullyQualifiedName();
+    }
+
+    @Override
+    public Set<Variable> recursivelyLinkedToParameterOrField(Variable v, boolean cnnTravelsToFields) {
+        if (v instanceof ParameterInfo
+                || cnnTravelsToFields && v instanceof FieldReference) return Set.of(v);
+        VariableInfoContainer vic = findOrNull(v);
+        if (vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION).valueIsTrue())
+            return Set.of(v);
+        if (v instanceof DependentVariable dv) {
+            return recursivelyLinkedToParameterOrField(dv.arrayVariable(), cnnTravelsToFields);
+        }
+        VariableNature vn = vic.variableNature();
+        while (vn instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+            vn = outside.previousVariableNature();
+        }
+        if (vn instanceof VariableNature.LoopVariable lv) {
+            Expression e = lv.statementAnalysis().statement().getStructure().expression();
+            return e.loopSourceVariables().stream()
+                    .flatMap(source -> recursivelyLinkedToParameterOrField(source, cnnTravelsToFields).stream())
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+        return Set.of();
     }
 }

@@ -35,6 +35,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
+import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
+
 @E2Container
 public final class VariableExpression extends BaseExpression implements IsVariableExpression {
 
@@ -220,8 +223,22 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                     }
                     return new VariableExpression(newFr, suffix, translated, null);
                 }
-            } else if (variable instanceof DependentVariable) {
-                throw new UnsupportedOperationException("NYI");
+            } else if (variable instanceof DependentVariable dv) {
+                Expression translatedScope = dv.arrayExpression().translate(inspectionProvider, translationMap);
+                Expression translatedIndex = dv.indexExpression().translate(inspectionProvider, translationMap);
+                if (translatedScope != dv.arrayExpression() || translatedIndex != dv.indexExpression()) {
+                    Variable arrayVariable = ArrayAccess.makeVariable(translatedScope, translatedScope.getIdentifier(),
+                            ARRAY_VARIABLE, dv.getOwningType());
+                    assert arrayVariable != null;
+                    Variable indexVariable = ArrayAccess.makeVariable(translatedIndex, translatedIndex.getIdentifier(),
+                            INDEX_VARIABLE, dv.getOwningType());
+                    DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedScope,
+                            arrayVariable, translatedIndex, indexVariable, dv.parameterizedType(), dv.statementIndex);
+                    if (newDv.causesOfDelay().isDelayed()) {
+                        return DelayedVariableExpression.forDependentVariable(newDv, newDv.causesOfDelay());
+                    }
+                    return new VariableExpression(newDv, suffix, translatedScope, translatedIndex);
+                }
             }
         }
         return this;

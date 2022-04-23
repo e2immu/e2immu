@@ -64,7 +64,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
         dependentVariable = new DependentVariable(identifier, expression, arrayVariable, index, indexVariable, returnType, "");
     }
 
-    private Variable makeVariable(Expression expression, Identifier identifier, String variablePrefix, TypeInfo owningType) {
+    public static Variable makeVariable(Expression expression, Identifier identifier, String variablePrefix, TypeInfo owningType) {
         if (expression instanceof ConstantExpression<?>) return null;
         if (expression instanceof VariableExpression ve) {
             return ve.variable();

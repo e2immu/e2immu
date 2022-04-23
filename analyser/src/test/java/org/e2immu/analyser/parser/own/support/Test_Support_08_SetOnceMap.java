@@ -202,7 +202,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         };
 
         // 1 potential null pointer warning accepted
-        testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 1,
+        testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

@@ -373,7 +373,11 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable lv) {
                         assertEquals("4", lv.parentBlockIndex);
                         if ("4.0.4".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<vl:fromTypeBounds>" : "List.of()";
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<vl:fromTypeBounds>";
+                                case 1 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
+                                default -> "List.of()";
+                            };
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {

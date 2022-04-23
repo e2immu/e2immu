@@ -29,6 +29,7 @@ import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface StatementAnalysis extends Analysis,
@@ -176,6 +177,8 @@ public interface StatementAnalysis extends Analysis,
                                                                   ForwardEvaluationInfo forwardEvaluationInfo);
 
     void makeUnreachable();
+
+    Set<Variable> recursivelyLinkedToParameterOrField(Variable v, boolean cnnTravelsToFields);
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
