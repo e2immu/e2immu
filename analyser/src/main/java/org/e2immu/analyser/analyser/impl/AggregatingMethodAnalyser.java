@@ -35,6 +35,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingMethodAnalyser.class);
@@ -102,7 +103,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
-        if(analysisStatus.isDone()) methodAnalysis.internalAllDoneCheck();
+        if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) methodAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
         List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterMethodAnalyserVisitors();

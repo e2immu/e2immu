@@ -128,6 +128,9 @@ public class JavaUtilStream {
         @NotNull
         @NotModified
         void forEach(@Independent1 @NotNull Consumer<? super T> action);
+
+        @NotNull
+        List<T> toList();
     }
 
     @E2Container

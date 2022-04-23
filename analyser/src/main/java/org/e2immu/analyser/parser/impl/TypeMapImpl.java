@@ -392,6 +392,7 @@ public class TypeMapImpl implements TypeMap {
                 try {
                     inspectWithJavaParser.inspect(typeInfo, typeInspection);
                 } catch (ParseException e) {
+                    e.printStackTrace();
                     throw new UnsupportedOperationException("Caught parse exception inspecting " + typeInfo.fullyQualifiedName + ": " + e);
                 }
                 if (typeInspection.getInspectionState().lt(FINISHED_JAVA_PARSER)) {

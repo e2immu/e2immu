@@ -131,7 +131,7 @@ public class TestByteCodeInspector {
         assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.output());
 
-        MethodInfo forDebug = typeInfo.findUniqueMethod("debug", 0);
+        MethodInfo forDebug = typeInfo.findUniqueMethod("length", 1);
         assertTrue(forDebug.methodInspection.get().isDefault());
     }
 }

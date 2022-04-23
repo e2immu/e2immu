@@ -41,8 +41,7 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
@@ -292,7 +291,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         assert !isUnreachable();
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration));
-            if(analysisStatus.isDone()) parameterAnalysis.internalAllDoneCheck();
+            if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {

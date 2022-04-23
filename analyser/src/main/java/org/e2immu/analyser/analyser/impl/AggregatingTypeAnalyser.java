@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
 public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingTypeAnalyser.class);
@@ -88,7 +89,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
-        if(analysisStatus.isDone()) typeAnalysis.internalAllDoneCheck();
+        if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) typeAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
         List<TypeAnalyserVisitor> visitors = analyserContext.getConfiguration()

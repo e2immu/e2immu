@@ -46,7 +46,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test2() {
+    public void test_2() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
         // b -> c -> a
         graph.addNode('a', List.of());
@@ -61,7 +61,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test3() {
+    public void test_3() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
         // a -> c, b -> c
         graph.addNode('a', List.of('c'));
@@ -76,7 +76,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test4() {
+    public void test_4() {
         // cycle: a<->c, b->c
         DependencyGraph<Character> graph = new DependencyGraph<>();
         assertTrue(graph.isEmpty());
@@ -99,7 +99,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test5() {
+    public void test_5() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
 
         // b -> d, c -> a, b, d -> a, b, c
@@ -138,7 +138,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test7Circular() {
+    public void test_6_Circular() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
 
         // d -> c -> b -> a -> d, a -> e
@@ -163,25 +163,7 @@ public class TestDependencyGraph {
     }
 
     @Test
-    public void test8Undefined() {
-        DependencyGraph<Character> graph = new DependencyGraph<>();
-
-        graph.addNode('a', List.of('a', 'b'));
-        // we have NOT added b -> {}
-
-        // the result is a cycle, because b -> {} does not exist
-        AtomicInteger countCycles = new AtomicInteger();
-        List<Character> sorted = graph.sorted(c -> {
-            System.out.println("Breaking a cycle with " + c);
-            countCycles.incrementAndGet();
-        }, null, null);
-        assertEquals("[a]", sorted.toString());
-        assertEquals("[a, b]", graph.dependencies('a').toString());
-        assertEquals(1, countCycles.get());
-    }
-
-    @Test
-    public void test9Bidirectional() {
+    public void test_7_Bidirectional() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
 
         graph.addNode('a', List.of('b', 'c'), true);

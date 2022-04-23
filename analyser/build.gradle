@@ -48,12 +48,12 @@ dependencies {
     implementation 'org.e2immu:e2immu-support:0.3.0'      // LGPL 3.0
 
    // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
-    implementation 'ch.qos.logback:logback-classic:1.2.10' // EPL v1.0 and the LGPL 2.1
+    implementation 'ch.qos.logback:logback-classic:1.2.11' // EPL v1.0 and the LGPL 2.1
 
     implementation 'com.github.javaparser:javaparser-core:3.24.1-SNAPSHOT'
 
     // LGPL or Apache License 2.0
-    implementation 'org.ow2.asm:asm:9.2'                  // 3-clause BSD permissive license
+    implementation 'org.ow2.asm:asm:9.3'                  // 3-clause BSD permissive license
 
     // TEST
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'                    // EPL v2.0

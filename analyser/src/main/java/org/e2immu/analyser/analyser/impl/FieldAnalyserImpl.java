@@ -265,7 +265,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         try {
             SharedState sharedState = new SharedState(iteration, closure);
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone()) fieldAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
