@@ -19,12 +19,15 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
 
 public interface ValueAndPropertyProxy {
+
     enum Origin {
         // Field field = someValue;
         INITIALISER,
@@ -86,5 +89,11 @@ public interface ValueAndPropertyProxy {
         public String toString() {
             return origin + ":" + getValue();
         }
+    }
+
+    default boolean isLinkedToParameter(DV requiredLevel) {
+        DV acceptLv = requiredLevel.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV) ? LinkedVariables.ASSIGNED_DV : LinkedVariables.INDEPENDENT1_DV;
+        return getLinkedVariables().variables().entrySet().stream().anyMatch(e ->
+                e.getKey() instanceof ParameterInfo && e.getValue().ge(LinkedVariables.STATICALLY_ASSIGNED_DV) && e.getValue().le(acceptLv));
     }
 }

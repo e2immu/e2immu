@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser.own.annotationstore.testexample;
 
+import org.e2immu.annotation.NotNull1;
+
 import java.util.Map;
 
 /*
@@ -23,7 +25,7 @@ This is another example where the link between variable and loop copy plays a ro
  */
 public class Store_2 {
 
-    public static int handleMultiSet(Map<String, Object> body) {
+    public static int handleMultiSet(@NotNull1 Map<String, Object> body) {
         int countRemoved = 0;
         try { // 1
             for (Map.Entry<String, Object> entry : body.entrySet()) { // 1.0.0

@@ -73,7 +73,8 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                 }
             }
         };
-        testClass("Basics_22", 0, 0, new DebugConfiguration.Builder()
+        // potential null pointer on url, because prefix is not statically assigned to field or parameter
+        testClass("Basics_22", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

@@ -1132,7 +1132,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
             } // else: See e.g. Loops_3: block not executed
         }
-        TranslationMap instances = outOfScopeBuilder.build();
+        TranslationMap instances = outOfScopeBuilder.setRecurseIntoScopeVariables(true).build();
         for (Map.Entry<Variable, Expression> entry : afterFiltering.entrySet()) {
             Expression expression = entry.getValue();
             Variable toRemove = entry.getKey();
@@ -2126,19 +2126,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             return delays;
         }
         DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, true, false);
-        return nne.isDelayed() || nne.lt(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)
-                ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
+        return nne.isDelayed() ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
     }
 
 
     /*
-    not directly in EvaluationResult, because we could have ENN = 0 on a local field copy, and ENN = 1 on the field itself.
-    that is only "leveled out" using the dependency graph of static assignments
+    Initially triggered by the presence of the IN_NOT_NULL_CONTEXT flag, which marks the transition of CNN from NULLABLE
+    to a higher value.
 
-    the presence of the IN_NOT_NULL_CONTEXT flag implies that CNN was 0
+    Not directly in EvaluationResult.variableOccursInNotNullContext, because we could have ENN = 0 on a local field copy,
+    and ENN = 1 on the field itself.
+    this is only "leveled out" using the dependency graph of static assignments.
 
-    FIXME the check for Pattern is a hack!
-    but at the moment, the not-null sits in the state, rather than in the variable, or property wrapper
+    The property CNN_TRAVELS_TO_PRECONDITION is computed in SAApply to decide whether an error should be raised, or not.
+    if not, the restriction moves to the parameter or field.
      */
     @Override
     public void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
@@ -2148,15 +2149,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             DV inNotNullContext = changeData.getProperty(IN_NOT_NULL_CONTEXT);
             if (inNotNullContext.ge(EFFECTIVELY_NOT_NULL_DV)) {
                 VariableInfoContainer vic = findOrNull(variable);
-                VariableInfo vi = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
-                if (vi != null
-                        && vi.valueIsSet()
-                        && !(vic.variableNature() instanceof VariableNature.Pattern) // FIXME HACK!
-                        && !(vi.variable().isBasedOnAParameter())
-                        && !(vi.getValue().isBasedOnAParameter())
-                        && !isLoopVariableLinkedToParameter(vic)) {
-                    DV externalNotNull = vi.getProperty(Property.EXTERNAL_NOT_NULL);
-                    DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
+                VariableInfo previousOrInitial = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
+                VariableInfo eval = vic.best(EVALUATION);
+                DV cnnTravelsToPc = eval.getProperty(CNN_TRAVELS_TO_PRECONDITION);
+                if (previousOrInitial != null && previousOrInitial.valueIsSet() && !cnnTravelsToPc.valueIsTrue()) {
+                    DV externalNotNull = previousOrInitial.getProperty(Property.EXTERNAL_NOT_NULL);
+                    DV notNullExpression;
+                    // a bit of an exception: the not-null of the pattern variable sits in the expression, and
+                    // cannot be read from the initial value at the point of definition of a pattern variable
+                    if (vic.variableNature() instanceof VariableNature.Pattern p && p.scope().equals(index)) {
+                        notNullExpression = eval.getProperty(NOT_NULL_EXPRESSION);
+                    } else {
+                        notNullExpression = previousOrInitial.getProperty(NOT_NULL_EXPRESSION);
+                    }
                     DV max = externalNotNull.max(notNullExpression);
                     if (inNotNullContext.equals(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
                         if (max.lt(EFFECTIVELY_CONTENT_NOT_NULL_DV)) {
@@ -2173,22 +2178,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 ensureCandidateVariableForNullPtrWarning(variable);
             }
         }
-    }
-
-    private boolean isLoopVariableLinkedToParameter(VariableInfoContainer vic) {
-        VariableNature vn = vic.variableNature();
-        while (vn instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-            vn = outside.previousVariableNature();
-        }
-        if (vn instanceof VariableNature.LoopVariable lv) {
-            Expression e = lv.statementAnalysis().statement().getStructure().expression();
-            if (e.isBasedOnAParameter()) return true;
-            if (e instanceof VariableExpression ve) {
-                VariableInfoContainer vic2 = findOrNull(ve.variable());
-                if (vic2 != null) return isLoopVariableLinkedToParameter(vic2);
-            }
-        }
-        return false;
     }
 
     /*

@@ -32,6 +32,7 @@ public class VariableScope_7 {
     }
 
     private VariableScope_7(Set<Message> set) {
+        assert set != null;
         this.messages = set;
     }
 

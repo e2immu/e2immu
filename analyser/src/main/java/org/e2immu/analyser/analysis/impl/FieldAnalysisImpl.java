@@ -356,5 +356,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                 this.linkedVariables.setFinal(linkedVariables);
             }
         }
+
+        public boolean valuesAreLinkedToParameters(DV requiredLevel) {
+            return getValues().stream().allMatch(proxy -> proxy.isLinkedToParameter(requiredLevel));
+        }
     }
 }

@@ -241,7 +241,7 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
             }
         };
 

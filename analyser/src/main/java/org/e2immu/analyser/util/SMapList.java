@@ -90,7 +90,7 @@ public class SMapList {
 
     @NotNull
     @E2Container
-    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull Map<A, List<B>> map) {
+    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1 Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> is = List.copyOf(e.getValue());
@@ -101,7 +101,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    public static <A, B> Map<A, List<B>> copy(@NotNull @NotModified Map<A, List<B>> map) {
+    public static <A, B> Map<A, List<B>> copy(@NotNull1 @NotModified Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> set = new LinkedList<>(e.getValue());

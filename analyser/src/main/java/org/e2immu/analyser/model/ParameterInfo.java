@@ -272,9 +272,4 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
         return DelayFactory.createDelay(newLocation(), cause);
     }
-
-    @Override
-    public boolean isBasedOnAParameter() {
-        return true;
-    }
 }

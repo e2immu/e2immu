@@ -15,6 +15,8 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -114,6 +116,11 @@ public class Test_00_Basics_23 extends CommonTestRunner {
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("b".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        // direct assignment variables (see Assignment, Expression.directAssignmentVariables)
+                        assertEquals("a:0,b:0,c:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
+                    }
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<v:b>" : "k<=2?a:c";
                         assertEquals(expected, d.currentValue().toString());
@@ -125,8 +132,6 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                         if ("c".equals(fr.scopeVariable.simpleName())) {
                             String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
-                        } else if ("b".equals(fr.scopeVariable.simpleName())) {
-
                         }
                     }
                 }

@@ -388,8 +388,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
 
 
-            Variable sourceOfLoop = evaluationContext.sourceOfLoop(variable);
-            if (sourceOfLoop != null) {
+            for (Variable sourceOfLoop : evaluationContext.loopSourceVariables(variable)) {
                 markRead(sourceOfLoop);  // TODO not correct, but done to trigger merge (no mechanism for that a t m)
                 Expression sourceValue = evaluationContext.currentValue(sourceOfLoop);
                 DV higher = MultiLevel.composeOneLevelMoreNotNull(notNullRequired);
@@ -403,7 +402,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
-            if (cmDelays.isDelayed()) {
+            if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsNoValue(cmDelays, variable)) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
                 return;
             }
@@ -419,6 +418,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
+        }
+
+        // e.g. Loops_23_1
+        private boolean causeOfConditionManagerDelayIsNoValue(CausesOfDelay cmDelays, Variable variable) {
+            return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                    c -> c instanceof VariableCause vc && vc.variable().equals(variable));
         }
 
         /*

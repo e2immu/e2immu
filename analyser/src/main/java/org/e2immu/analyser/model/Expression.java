@@ -259,8 +259,12 @@ public interface Expression extends Element, Comparable<Expression> {
         return this;
     }
 
-    default boolean isBasedOnAParameter() {
-        return false;
+    default Set<Variable> loopSourceVariables() {
+        return Set.of();
+    }
+
+    default Set<Variable> directAssignmentVariables() {
+        return Set.of();
     }
 
     default DV hardCodedPropertyOrNull(Property property) {

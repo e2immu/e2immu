@@ -130,11 +130,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("e", d.currentValue().toString());
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -146,6 +148,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
+                        assertEquals("ioe:0,return writeLine:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -483,15 +486,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("m".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = d.iteration() == 0 ? "<mmc:messages>"
-                                    // FIXME why nullable?
-                                    : "nullable instance type Set<Message>/*this.size()>=other.messages.size()*/";
+                                    : "instance type Set<Message>/*this.size()>=other.messages.size()*/";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     }
                 }
             }
         };
-        testClass("VariableScope_7", 0, 8, new DebugConfiguration.Builder()
+        testClass("VariableScope_7", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -552,7 +554,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&this!=(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>)";
                         case 1, 2, 3 -> "<null-check>&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10)";
-                        default -> "this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&(scope-vdol:1.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
+                        default -> "null!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -620,10 +622,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "previousVariableNature".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                         if ("scope-vdol:1".equals(fr.scope.toString())) {
+                        if ("scope-vdol:1".equals(fr.scope.toString())) {
                             assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
                                     "is " + d.variableInfoContainer().variableNature().getClass());
-                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         } else fail("Have scope " + fr.scope);
                     }
                     if ("2".equals(d.statementId())) {
@@ -644,7 +646,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||this==(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>));parent=CM{}}";
                         case 1, 2, 3 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
-                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||!(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop)&&null==nullable instance type VariableScope_10);parent=CM{}}";
+                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(null==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10));parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }

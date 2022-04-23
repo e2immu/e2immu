@@ -259,9 +259,8 @@ public class VariableInfoImpl implements VariableInfo {
     /*
     things to set for a new variable
      */
-    public void newVariable(boolean notNull) {
-        setProperty(Property.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
-                .max(AnalysisProvider.defaultNotNull(variable.parameterizedType())));
+    public void newVariable() {
+        setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
         setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...

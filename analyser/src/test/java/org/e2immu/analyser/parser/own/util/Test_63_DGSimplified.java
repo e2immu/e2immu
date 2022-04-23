@@ -60,7 +60,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         case 1 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E";
                         case 2 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E;initial@Field_dependsOn;initial@Field_nodeMap;initial@Field_t";
                         case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;initial@Field_nodeMap;srv@Method_sorted";
-                        case 4 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3.0.2.0.0-C;srv@Method_sorted";
+                        case 4 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;srv@Method_sorted";
                         default -> "";
                     };
                     assertEquals(expected, d.externalStatus().toString());
@@ -253,16 +253,6 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     assertEquals("", d.evaluationResult().causesOfDelay().toString());
                 }
             }
-            if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                if ("3.0.0".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C";
-                        case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
-                        default -> "";
-                    };
-                    assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
-                }
-            }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
@@ -283,12 +273,6 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         if ("3.0.0".equals(d.statementId())) { // forEach() call
                             String expected = d.iteration() <= 1 ? "<f:dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
-                            String delays = switch (d.iteration()) {
-                                case 0 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn";
-                                case 1 -> "initial:node.dependsOn@Method_recursivelyComputeDependencies_3-C;initial:this.nodeMap@Method_recursivelyComputeDependencies_1-C;initial@Field_dependsOn;initial@Field_t";
-                                default -> "";
-                            };
-                            assertEquals(delays, d.currentValue().causesOfDelay().toString());
                         }
                     } else if ("nodeMap.get(t)".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
@@ -308,7 +292,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("accept".equals(d.methodInfo().name)) {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
-                    assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
@@ -320,12 +304,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        // TODO too many errors
         testClass("DGSimplified_1", 8, 2, new DebugConfiguration.Builder()
-                //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      .addEvaluationResultVisitor(evaluationResultVisitor)
+                     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -389,7 +372,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String expected = d.iteration() <= 3 ? "<m:contains>" : "set.contains(d)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C";
+                        case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C";
                         case 1 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
                         case 2 -> "cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
                         case 3 -> "cm:node.dependsOn@Method_reverse_0.0.1-E;cm:node@Method_reverse_0.0.0-E;cm:scope-node:0.dependsOn@Method_reverse_0:M;cm:scope-node:0@Method_reverse_0:M;cm:this.nodeMap@Method_reverse_0:M;initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
@@ -431,7 +414,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals("dependsOn", d.fieldAnalysis().getValue().toString());
             }
         };
-        testClass("DGSimplified_3", 0, 0, new DebugConfiguration.Builder()
+        testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -469,7 +452,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("DGSimplified_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

@@ -16,11 +16,17 @@
 package org.e2immu.analyser.parser.loops;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -128,6 +134,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     }
 
     // similar topic
+    // note that the CNN on "x" does not travel to the field, given the analyser configuration. See _23_1.
     @Test
     public void test_23() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -141,9 +148,56 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
             }
         };
-        testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
+        testClass("Loops_23", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    // the not-null on x travels to xes as ContentNotNull, and on to the parameter
+    @Test
+    public void test_23_1() throws IOException {
+        int BIG = 10;
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "xes".equals(fr.fieldInfo.name)) {
+                    if ("4".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if ("x".equals(d.variableName())) {
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertEquals("x:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("xes".equals(d.fieldInfo().name)) {
+                assertEquals("xesIn:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Loops_23".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "{}" : "{xes=assigned:1}";
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals(expected, p0.getAssignedToField().toString());
+                assertEquals(d.iteration() > 0, p0.assignedToFieldDelays().isDone());
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
+        testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
 }

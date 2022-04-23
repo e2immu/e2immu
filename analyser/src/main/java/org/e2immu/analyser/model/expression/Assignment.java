@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class Assignment extends BaseExpression implements Expression {
     private static final Logger LOGGER = LoggerFactory.getLogger(Assignment.class);
@@ -417,10 +419,12 @@ public class Assignment extends BaseExpression implements Expression {
 
         // may already be linked to others
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+        Set<Variable> directAssignment = value.directAssignmentVariables();
         LinkedVariables linkedVariables;
-        IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
-        if (ive != null) {
-            linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV)));
+        if (!directAssignment.isEmpty()) {
+            Map<Variable, DV> map = directAssignment.stream()
+                    .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
+            linkedVariables = lvExpression.merge(new LinkedVariables(map));
         } else {
             linkedVariables = lvExpression;
         }

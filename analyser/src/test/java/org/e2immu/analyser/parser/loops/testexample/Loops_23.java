@@ -22,9 +22,9 @@ public class Loops_23<X> {
 
     public final Collection<X> xes;
 
-    public Loops_23(Collection<X> xes) {
-        assert xes != null;
-        this.xes = xes;
+    public Loops_23(Collection<X> xesIn) {
+        assert xesIn != null;
+        this.xes = xesIn;
     }
 
     public String method() {

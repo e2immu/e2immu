@@ -32,6 +32,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 @E2Container
@@ -349,7 +350,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
             return assignment.evaluate(context, forward);
         }
         if (variable instanceof DependentVariable dv) {
-            return evaluateForArray(context, forwardEvaluationInfo, dv.arrayExpression(), dv.arrayVariable());
+            return evaluateForArray(context, forwardEvaluationInfo, dv.arrayExpression(), dv.arrayVariable(), true);
         }
         return null;
     }
@@ -357,20 +358,22 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     private EvaluationResult evaluateIndex(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (variable instanceof DependentVariable dv) {
             // there is an index variable
-            return evaluateForArray(context, forwardEvaluationInfo, dv.indexExpression(), dv.indexVariable());
+            return evaluateForArray(context, forwardEvaluationInfo, dv.indexExpression(), dv.indexVariable(),
+                    false);
         }
         return null;
     }
 
     // also used by ArrayAccess
     public static EvaluationResult evaluateForArray(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo,
-                                                    Expression expression, Variable variable) {
+                                                    Expression expression, Variable variable,
+                                                    boolean increaseCnn) {
         if (expression instanceof ConstantExpression<?>) {
             return new EvaluationResult.Builder(context).setExpression(expression).build();
         }
         if (expression instanceof VariableExpression ve) {
-           DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-           DV higher = MultiLevel.composeOneLevelMoreNotNull(cnn);
+            DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
+            DV higher = increaseCnn ? MultiLevel.composeOneLevelMoreNotNull(cnn) : cnn;
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
         assert variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable;
@@ -507,8 +510,13 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     }
 
     @Override
-    public boolean isBasedOnAParameter() {
-       return variable.isBasedOnAParameter();
+    public Set<Variable> loopSourceVariables() {
+        return Set.of(variable);
+    }
+
+    @Override
+    public Set<Variable> directAssignmentVariables() {
+        return Set.of(variable);
     }
 
     @Override

@@ -152,7 +152,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        testClass("Project_0", 2, 18, new DebugConfiguration.Builder()
+        testClass("Project_0", 2, 19, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -250,7 +250,7 @@ public class Test_45_Project extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        testClass("Project_3", 1, 3, new DebugConfiguration.Builder()
+        testClass("Project_3", 1, 4, new DebugConfiguration.Builder()
                 .build());
     }
 

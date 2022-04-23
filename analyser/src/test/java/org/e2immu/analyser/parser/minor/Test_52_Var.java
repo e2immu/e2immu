@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -74,8 +75,16 @@ public class Test_52_Var extends CommonTestRunner {
     // for (var x : xes) { ... } indirect child
     @Test
     public void test_3() throws IOException {
-        testClass("Var_3", 0, 0, new DebugConfiguration.Builder()
+        // x potential null pointer warning
+        testClass("Var_3", 0, 1, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_3_0() throws IOException {
+        testClass("Var_3", 0, 0, new DebugConfiguration.Builder()
+                .build(),
+                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
     // lambda

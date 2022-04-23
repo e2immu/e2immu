@@ -30,6 +30,7 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 @E2Container
@@ -299,8 +300,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         return new DelayedVariableExpression(msg, variable, statementTime, this.causesOfDelay.merge(causesOfDelay));
     }
 
+
     @Override
-    public boolean isBasedOnAParameter() {
-        return variable.isBasedOnAParameter();
+    public Set<Variable> loopSourceVariables() {
+        return Set.of(variable);
+    }
+
+    @Override
+    public Set<Variable> directAssignmentVariables() {
+        return Set.of(variable);
     }
 }

@@ -19,13 +19,11 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.util.WeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +58,7 @@ public class ComputeLinkedVariables {
     private final StatementAnalysis statementAnalysis;
     private final List<Cluster> clusters;
     private final WeightedGraph<Variable, DV> weightedGraph;
+
 
     private record Cluster(Set<Variable> variables, CausesOfDelay delays) {
     }
@@ -299,7 +298,7 @@ public class ComputeLinkedVariables {
                     } else if (summary.isDone() && !summary.equals(current)) {
                         LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
                         LOGGER.error("Property {}, current {}, new {}", property, current, summary);
-                     // FIXME   throw new UnsupportedOperationException("Overwriting value");
+                        // FIXME   throw new UnsupportedOperationException("Overwriting value");
                     }
                 }
             }
@@ -358,5 +357,53 @@ public class ComputeLinkedVariables {
                         vic.setLinkedVariables(linkedVariables, stage);
                     }
                 });
+    }
+
+    /*
+    clusters which contain parameters (or fields), get the CNN_TRAVELS_TO_PC flag set
+
+    we have to try multiple times, because the nature of variableLinkedToLoopVariable(),
+    which may connect one cluster to another, potentially not yet processed.
+     */
+    public void writeCnnTravelsToFields(boolean cnnTravelsToFields) {
+        boolean change = true;
+        while (change) {
+            change = false;
+            for (Cluster cluster : clusters) {
+                boolean activate = cluster.variables.stream().anyMatch(v ->
+                        recursivelyLinkedToParameterOrField(v, cnnTravelsToFields));
+                if (activate) {
+                    for (Variable variable : cluster.variables) {
+                        VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
+                        DV current = vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION, null);
+                        if (current == null) {
+                            vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.TRUE_DV, Stage.EVALUATION);
+                            change = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean recursivelyLinkedToParameterOrField(Variable v, boolean cnnTravelsToFields) {
+        if (v instanceof ParameterInfo
+                || cnnTravelsToFields && v instanceof FieldReference) return true;
+        VariableInfoContainer vic = statementAnalysis.findOrNull(v);
+        if (vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION).valueIsTrue()) return true;
+        if (v instanceof DependentVariable dv) {
+            return recursivelyLinkedToParameterOrField(dv.arrayVariable(), cnnTravelsToFields);
+        }
+        VariableNature vn = vic.variableNature();
+        while (vn instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+            vn = outside.previousVariableNature();
+        }
+        if (vn instanceof VariableNature.LoopVariable lv) {
+            Expression e = lv.statementAnalysis().statement().getStructure().expression();
+            for (Variable source : e.loopSourceVariables()) {
+                if (recursivelyLinkedToParameterOrField(source, cnnTravelsToFields)) return true;
+            }
+        }
+        return false;
     }
 }

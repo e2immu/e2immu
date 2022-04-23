@@ -52,7 +52,7 @@ public record Message(Location location, Label message, String extra) {
         EMPTY_LOOP,
         EVENTUAL_AFTER_REQUIRED,
         EVENTUAL_BEFORE_REQUIRED,
-        FIELD_INITIALIZATION_NOT_NULL_CONFLICT(Severity.WARN),
+        FIELD_INITIALIZATION_NOT_NULL_CONFLICT(Severity.WARN), // only when not all field's values linked to parameter
         FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER,
         FINALIZER_METHOD_CALLED_ON_PARAMETER,
         IGNORING_RESULT_OF_METHOD_CALL(Severity.WARN),

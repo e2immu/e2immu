@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.conditional.testexample;
 
 
+import org.e2immu.annotation.NotNull;
+
 import java.util.List;
 
 public interface Precondition_10 {
@@ -127,6 +129,7 @@ public interface Precondition_10 {
         return dynamicBaseValue;
     }
 
+    @NotNull
     TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo bestType);
 
     boolean isAtLeastE2Immutable(DV dynamicBaseValue);

@@ -335,7 +335,12 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public boolean isBasedOnAParameter() {
-        return ifTrue.isBasedOnAParameter() && ifFalse.isBasedOnAParameter();
+    public Set<Variable> loopSourceVariables() {
+        return SetUtil.immutableUnion(ifTrue.loopSourceVariables(), ifFalse.loopSourceVariables());
+    }
+
+    @Override
+    public Set<Variable> directAssignmentVariables() {
+        return SetUtil.immutableUnion(ifTrue.directAssignmentVariables(), ifFalse.directAssignmentVariables());
     }
 }

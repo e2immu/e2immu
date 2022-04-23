@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -110,8 +111,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
-        // includes a EffectivelyContentNotNull warning on sa
-        testClass("VariableInLoop_1", 0, 3, new DebugConfiguration.Builder()
+        // sa.navigationData(), x2
+        testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -131,8 +132,29 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("loadBytes".equals(d.methodInfo().name)) {
+                if ("urls".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if ("url".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<vl:url>" : "nullable instance type URL";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
         // content not null problem
-        testClass("VariableInLoop_2", 0, 1, new DebugConfiguration.Builder()
+        // TODO would be nicer if this was just 1 error, rather than 2
+        testClass("VariableInLoop_2", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -869,18 +870,18 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public Variable sourceOfLoop(Variable variable) {
+    public Set<Variable> loopSourceVariables(Variable variable) {
         VariableInfoContainer vic = statementAnalysis.findOrNull(variable);
         if (vic != null) {
             VariableNature vn = vic.variableNature();
             while (vn instanceof VariableNature.VariableDefinedOutsideLoop outsideLoop) {
                 vn = outsideLoop.previousVariableNature();
             }
-            if (vn instanceof VariableNature.LoopVariable lv
-                    && lv.statementAnalysis().statement().getStructure().expression() instanceof VariableExpression ve) {
-                return ve.variable();
+            if (vn instanceof VariableNature.LoopVariable lv) {
+                Expression e = lv.statementAnalysis().statement().getStructure().expression();
+                return e.loopSourceVariables();
             }
         }
-        return null;
+        return Set.of();
     }
 }

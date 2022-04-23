@@ -91,7 +91,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, Set.of(), newValue, outside.variable().statementTime());
-        initial.newVariable(false);
+        initial.newVariable();
         initial.setValue(newValue);
         initial.setLinkedVariables(outside.getLinkedVariables());
 
@@ -133,7 +133,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Stage.INITIAL),
                 index + Stage.EVALUATION, Set.of(), null, NOT_A_FIELD);
-        initial.newVariable(true);
+        initial.newVariable();
         initial.setValue(value);
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
         initial.setLinkedVariables(LinkedVariables.EMPTY);

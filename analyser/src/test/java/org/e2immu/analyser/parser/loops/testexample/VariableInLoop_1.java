@@ -16,14 +16,19 @@ package org.e2immu.analyser.parser.loops.testexample;
 
 // debugging part of ComputingMethodAnalyser
 
+import org.e2immu.annotation.Nullable;
+
 import java.util.Optional;
 
 public class VariableInLoop_1 {
 
     record NavigationData(Optional<Optional<StatementAnalyser>> next) {
-
+        public NavigationData {
+            assert next != null;
+        }
     }
     interface StatementAnalyser {
+        @Nullable
         NavigationData navigationData();
     }
 

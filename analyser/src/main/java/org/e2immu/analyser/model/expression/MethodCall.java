@@ -358,8 +358,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression result;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
-            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo,
-                    contentNotNullRequired);
+            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
@@ -807,9 +806,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private void complianceWithForwardRequirements(EvaluationResult.Builder builder,
                                                    MethodAnalysis methodAnalysis,
                                                    MethodInspection methodInspection,
-                                                   ForwardEvaluationInfo forwardEvaluationInfo,
-                                                   boolean contentNotNullRequired) {
-        if (!contentNotNullRequired && forwardEvaluationInfo.isComplainInlineConditional()) {
+                                                   ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (forwardEvaluationInfo.isComplainInlineConditional()) {
             DV requiredNotNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
                 DV methodNotNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
@@ -1055,5 +1053,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return returnType().isBooleanOrBoxedBoolean() ? new BooleanConstant(primitives, true) : null;
         }
         return this;
+    }
+
+    @Override
+    public Set<Variable> loopSourceVariables() {
+        if (methodInfo.methodInspection.get().getParameters().size() == 0
+                && object instanceof VariableExpression ve) {
+            return Set.of(ve.variable());
+        }
+        return Set.of();
     }
 }

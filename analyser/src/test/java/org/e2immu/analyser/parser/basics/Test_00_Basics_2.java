@@ -96,7 +96,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
-
+                    assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
                     assertEquals("collection:0", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -107,9 +107,9 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                             "initial:this.string@Method_add_0-C;initial@Field_string", "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
-
+                    assertFalse(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                 }
             }
             if ("setString".equals(d.methodInfo().name)) {
@@ -233,9 +233,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
         };
 
-        // 2 warnings now:
-        // conflicting @NotNull, null in a POJO + potential null pointer exception on collection
-        testClass("Basics_2", 0, 2, new DebugConfiguration.Builder()
+        // conflicting @NotNull requirements
+        testClass("Basics_2", 0, 1, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)

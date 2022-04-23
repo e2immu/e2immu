@@ -265,7 +265,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         try {
             SharedState sharedState = new SharedState(iteration, closure);
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) fieldAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
+                fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -650,7 +651,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV worstOverValues;
         DV worst = fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
-                .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION)
+                .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION ||
+                        !proxy.isLinkedToParameter(bestOverContext))
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (worst != DV.MAX_INT_DV) {
@@ -659,7 +661,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // see Basics_2b; we need the setter to run before the add-method can be called
                 // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
                 analyserResultBuilder.add(Message.newMessage(fieldAnalysis.location(null),
-                        Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
+                        Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT, "field " + fieldInfo.name));
             }
         } else {
             worstOverValues = worstOverValuesUnfiltered;

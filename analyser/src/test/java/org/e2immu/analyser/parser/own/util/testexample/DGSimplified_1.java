@@ -186,7 +186,7 @@ public class DGSimplified_1<T> extends Freezable {
         return sorted(null, null, null);
     }
 
-    Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
+    static <T> Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
         return (e1, e2) -> {
             int c = e1.getValue().dependsOn.size() - e2.getValue().dependsOn.size();
             if (c == 0) {
@@ -229,18 +229,5 @@ public class DGSimplified_1<T> extends Freezable {
         }
         return result;
     }
-/*
-    public DGSimplified_0<T> copyRemove(Predicate<T> accept) {
-        DGSimplified_0<T> copy = new DGSimplified_0<>();
-        nodeMap.forEach((t, node) -> {
-            if (accept.test(t)) {
-                List<T> newDependsOn = node.dependsOn == null ? null :
-                        node.dependsOn.stream().filter(accept).toList();
-                copy.nodeMap.put(t, new Node<>(t, newDependsOn));
-            }
-        });
-        copy.freeze();
-        return copy;
-    }*/
 }
     

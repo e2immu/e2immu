@@ -555,6 +555,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // 2
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
+        if (sharedState.evaluationContext().getIteration() == 0) {
+            boolean cnnTravelsToFields = analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods();
+            computeLinkedVariables.writeCnnTravelsToFields(cnnTravelsToFields);
+        } // else: static linking takes place in the first iteration
         statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
         // the following statement is necessary to keep this statement from disappearing if it still has to process

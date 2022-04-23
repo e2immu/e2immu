@@ -46,7 +46,7 @@ public class Test_48_Store extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("Project_0", "Store_0"), 2, 19, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_0"), 2, 12, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -73,7 +73,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass("Store_1", 0, 1, new DebugConfiguration.Builder()
+        testClass("Store_1", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -155,7 +155,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass(List.of("Project_0", "Store_3"), 4, 14, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_3"), 4, 10, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -175,7 +175,7 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
         };
-        testClass("Store_4", 0, 1, new DebugConfiguration.Builder()
+        testClass("Store_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
@@ -202,7 +202,7 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
         };
-        testClass("Store_5", 0, 1, new DebugConfiguration.Builder()
+        testClass("Store_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
@@ -281,7 +281,7 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
         };
-        testClass(List.of("Project_0", "Store_8"), 3, 15, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_8"), 3, 10, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }

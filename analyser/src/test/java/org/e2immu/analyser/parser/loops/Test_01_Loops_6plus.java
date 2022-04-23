@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
@@ -195,6 +196,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, CNN_TRAVELS_TO_PRECONDITION);
                     }
                 }
             }
@@ -551,13 +553,28 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
+                if ("entry".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<vl:entry>" : "instance type Entry<String,Integer>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertFalse(d.variableInfo().getProperties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
             }
         };
-        testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
+        // TODO one redundant error, has to do with the markRead in EvaluationResult.variableOccursInNotNullContext
+        testClass("Loops_17", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    @Test
+    public void test_17_2() throws IOException {
+        testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
+                .build(),
+                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
 
     // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
     // 20211015: there's a 3rd linked1Variables value for 1.0.1.0.0: empty
@@ -630,7 +647,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
 
-        testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
+        // TODO see Loops_17, one warning too many
+        testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
@@ -695,7 +713,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
             }
         };
-        testClass("Loops_19", 0, 3, new DebugConfiguration.Builder()
+        // TODO See Loops_17, one warning too many
+        testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

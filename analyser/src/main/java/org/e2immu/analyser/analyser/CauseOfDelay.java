@@ -35,6 +35,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         BREAK_MOM_DELAY("break_mom_delay", "break a content modified - mom delay", HIGH),
         CANDIDATE_NULL_PTR("candidate_null_ptr", ""),
         CNN_PARENT("context_not_null_parent", "Context not null for parent"),
+        CNN_TRAVELS_TO_PC("cnn_travels_to_pc", "Context not null travels to precondition, does not result in warning"),
         CONDITION("condition", "condition in inline merge"),
         CONSTANT("constant", ""),
         CONTAINER("container", "container property not yet determined"),

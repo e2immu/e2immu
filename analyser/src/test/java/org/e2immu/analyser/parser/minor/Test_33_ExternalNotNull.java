@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -30,8 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_33_ExternalNotNull extends CommonTestRunner {
 
@@ -42,6 +42,12 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("upperCaseO".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "o".equals(fr.fieldInfo.name)) {
+                    assertDv(d, DV.TRUE_DV, CNN_TRAVELS_TO_PRECONDITION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                }
+            }
             if ("upperCaseR".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "r".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:r>" : "instance type String";
@@ -72,15 +78,15 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 }
             }
             if ("upperCaseO".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() == 0,
-                        null == d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
+                // because CNN travels to precondition, causes error on the field
             }
             if ("upperCaseP".equals(d.methodInfo().name)) {
                 assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
             if ("upperCaseQ".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() == 0,
-                        null == d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
+                // because CNN travels to precondition, causes error on the field
             }
             if ("upperCaseR".equals(d.methodInfo().name)) {
                 assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
@@ -113,23 +119,27 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             DV enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
             DV effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
+            FieldAnalysisImpl.Builder fai = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
 
             if ("o".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, enn);
                 assertEquals(DV.TRUE_DV, effFinal);
                 assertEquals("[null,\"hello\"]", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
             }
             if ("p".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
                 assertEquals(DV.TRUE_DV, effFinal);
                 assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
-
+                assertEquals("p1:0,p2:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertTrue(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
             }
             if ("q".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, enn);
                 assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
             }
             if ("r".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
@@ -137,7 +147,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
-        testClass("ExternalNotNull_0", 0, 5, new DebugConfiguration.Builder()
+        testClass("ExternalNotNull_0", 0, 4, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -208,7 +218,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             }
         };
 
-        testClass("ExternalNotNull_1", 0, 4, new DebugConfiguration.Builder()
+        testClass("ExternalNotNull_1", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
