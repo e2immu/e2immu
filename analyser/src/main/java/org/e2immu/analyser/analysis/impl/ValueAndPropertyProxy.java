@@ -16,8 +16,8 @@ package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -61,9 +61,10 @@ public interface ValueAndPropertyProxy {
     Comparator<ValueAndPropertyProxy> COMPARATOR =
             (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
 
-    record ValueAndPropertyProxyBasedOnVariableInfo(Expression value,
-                                                    VariableInfo variableInfo,
-                                                    Origin origin) implements ValueAndPropertyProxy {
+    record ProxyData(Expression value,
+                     Properties properties,
+                     LinkedVariables linkedVariables,
+                     Origin origin) implements ValueAndPropertyProxy {
 
         @Override
         public Origin getOrigin() {
@@ -77,12 +78,12 @@ public interface ValueAndPropertyProxy {
 
         @Override
         public DV getProperty(Property property) {
-            return variableInfo.getProperty(property);
+            return properties.get(property);
         }
 
         @Override
         public LinkedVariables getLinkedVariables() {
-            return variableInfo.getLinkedVariables();
+            return linkedVariables;
         }
 
         @Override

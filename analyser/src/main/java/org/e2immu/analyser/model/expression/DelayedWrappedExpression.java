@@ -40,20 +40,29 @@ See ConditionalInitialization_1.
 public final class DelayedWrappedExpression extends BaseExpression implements Expression {
     private static final Logger LOGGER = LoggerFactory.getLogger(DelayedWrappedExpression.class);
 
-    private final VariableInfo variableInfo;
+    private final Properties properties;
+    private final LinkedVariables linkedVariables;
     private final CausesOfDelay causesOfDelay;
     private final Expression expression;
+    private final Variable variable;
 
     public DelayedWrappedExpression(Identifier identifier,
+                                    Variable variable,
                                     Expression expression,
-                                    VariableInfo variableInfo,
+                                    Properties properties,
+                                    LinkedVariables linkedVariables,
                                     CausesOfDelay causesOfDelay) {
         super(identifier);
-        this.variableInfo = variableInfo;
+        this.properties = properties;
+        this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;
         this.expression = expression;
+        this.variable = variable;
         assert expression.isDone();
         assert causesOfDelay.isDelayed();
+        // we need all value properties to be done, and possibly IMMUTABLE_BREAK, NOT_NULL_BREAK
+        assert expression instanceof NullConstant ||
+                properties.stream().filter(e -> e.getKey().valueProperty).allMatch(e -> e.getValue().isDone());
     }
 
     /*
@@ -68,7 +77,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public int hashCode() {
-        return Objects.hash(variableInfo, causesOfDelay);
+        return Objects.hash(properties, linkedVariables, causesOfDelay);
     }
 
     @Override
@@ -87,12 +96,12 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     private String msg() {
-        return "<wrapped:" + variableInfo.variable().simpleName() + ">";
+        return "<wrapped:" + variable.simpleName() + ">";
     }
 
     @Override
     public ParameterizedType returnType() {
-        return variableInfo.variable().parameterizedType();
+        return variable.parameterizedType();
     }
 
     @Override
@@ -137,20 +146,17 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return variableInfo.getLinkedVariables();
+        return linkedVariables;
     }
 
     public CausesOfDelay causesOfDelay() {
         return causesOfDelay;
     }
 
-    public VariableInfo getVariableInfo() {
-        return variableInfo;
-    }
-
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedWrappedExpression(identifier, expression, variableInfo, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedWrappedExpression(identifier, variable,
+                expression, properties, linkedVariables, this.causesOfDelay.merge(causesOfDelay));
     }
 
     public static Expression moveDelayedWrappedExpressionToFront(InspectionProvider inspectionProvider, Expression value) {
@@ -162,12 +168,13 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
                 }
                 TranslationMap tm = new TranslationMapImpl.Builder().setExpandDelayedWrapperExpressions(true).build();
                 Expression translated = value.translate(inspectionProvider, tm);
-                if(translated.isDelayed()) {
+                if (translated.isDelayed()) {
                     return x.get(0); // no need to proceed, will not be picked up by FieldAnalyserImpl.values
                 }
                 DelayedWrappedExpression dwe = x.get(0);
                 DelayedWrappedExpression newDwe = new DelayedWrappedExpression(dwe.getIdentifier(),
-                        translated, dwe.variableInfo, dwe.causesOfDelay());
+                        dwe.variable,
+                        translated, dwe.properties, dwe.linkedVariables, dwe.causesOfDelay());
                 assert newDwe.isDelayed();
                 return newDwe;
             }
@@ -177,5 +184,13 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     public Expression getExpression() {
         return expression;
+    }
+
+    public Properties getProperties() {
+        return properties;
+    }
+
+    public LinkedVariables getLinkedVariables() {
+        return linkedVariables;
     }
 }

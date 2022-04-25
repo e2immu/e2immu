@@ -173,6 +173,12 @@ public class VariableInfoImpl implements VariableInfo {
                 Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
     }
 
+
+    @Override
+    public Properties properties() {
+        return properties;
+    }
+
     @Override
     public DV getProperty(Property property, DV defaultValue) {
         if (defaultValue == null) return properties.getOrDefaultNull(property);

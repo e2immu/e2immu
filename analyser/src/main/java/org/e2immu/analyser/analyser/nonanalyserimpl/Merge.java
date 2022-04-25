@@ -97,11 +97,10 @@ public record Merge(EvaluationContext evaluationContext,
                     // TODO explicitly not passing the properties -- is this ok?
                 }
                 assert instance.isDone();
+
                 Expression wrapped = new DelayedWrappedExpression(Identifier.generate("wrapped in merge"),
-                        instance,
-                        vii, DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
-                vii.setProperty(Property.IMMUTABLE_BREAK, properties.get(Property.IMMUTABLE));
-                vii.setProperty(Property.NOT_NULL_BREAK, properties.get(Property.NOT_NULL_EXPRESSION));
+                        vii.variable(), instance, properties, vii.getLinkedVariables(),
+                        DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.BREAK_INIT_DELAY_IN_MERGE));
                 vii.setValue(wrapped);
             }
         }

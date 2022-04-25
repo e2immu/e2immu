@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -189,15 +188,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         combined = merged;
                     }
 
-                    Expression possiblyIntroduceDVE = detectBreakDelayInAssignment(variable, vi, changeData, valueToWrite,
-                            valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext());
-                    if (possiblyIntroduceDVE instanceof DelayedWrappedExpression) {
-                        // trying without setting properties -- too dangerous to set value properties
-                        // however, without IMMUTABLE there is little we can do, so we offer a temporary value for the field analyser
-                        // (this hack is needed for Lazy, and speeds up, among many others, Basics 14, 18, 21)
-                        Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, combined.get(IMMUTABLE)));
-                        vic.setValue(possiblyIntroduceDVE, LinkedVariables.EMPTY, map, EVALUATION);
-                    } else {
+                    if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
+                            valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
                         // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
                         // evaluation context
                         vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, EVALUATION);
@@ -408,13 +400,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return valueToWrite;
     }
 
-    private Expression detectBreakDelayInAssignment(Variable variable,
-                                                    VariableInfo vi,
-                                                    EvaluationResult.ChangeData changeData,
-                                                    Expression valueToWrite,
-                                                    Expression valueToWritePossiblyDelayed,
-                                                    Properties combined,
-                                                    InspectionProvider inspectionProvider) {
+    private boolean detectBreakDelayInAssignment(Variable variable,
+                                                 VariableInfoContainer vic,
+                                                 EvaluationResult.ChangeData changeData,
+                                                 Expression valueToWrite,
+                                                 Expression valueToWritePossiblyDelayed,
+                                                 Properties combined,
+                                                 InspectionProvider inspectionProvider) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
                 if (valueToWrite instanceof NullConstant) {
@@ -422,8 +414,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     The null constant may have delayed value properties, but it is not useful to delay the whole evaluation
                     for that reason. We cannot simply keep "null" and delayed properties at the same time, so we wrap.
                     See E2Immutable_1 as the primary case; and FieldReference_3 as an example of why wrapping is needed.
+
+                    DWE accepts delayed value properties only for the NullConstant
                     */
-                    return new DelayedWrappedExpression(Identifier.generate("dwe null constant"), valueToWrite, vi, valueToWritePossiblyDelayed.causesOfDelay());
+                    vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe null constant"),
+                            valueToWrite, combined, valueToWritePossiblyDelayed.causesOfDelay());
+                    return true;
                 }
                 Set<CauseOfDelay> breaks = extractBreakInitCause(valueToWritePossiblyDelayed.causesOfDelay(), target);
                 if (!breaks.isEmpty()) {
@@ -442,18 +438,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
                                 target.parameterizedType, combinedOrPrimitive);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
-                        CausesOfDelay causes = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
-                        if (causes.isDone()) {
-                            //just making sure that we are delayed
-                            causes = DelayFactory.createDelay(getLocation(), CauseOfDelay.Cause.SA_APPLY_DUMMY_DELAY);
-                        }
-                        VariableInfo viCombinedOrPrimitive;
-                        if (combinedOrPrimitive == EvaluationContext.PRIMITIVE_VALUE_PROPERTIES) {
-                            viCombinedOrPrimitive = new VariableInfoImpl(getLocation(), vi.variable(), vi.getValue(), combinedOrPrimitive);
-                        } else {
-                            viCombinedOrPrimitive = vi;
-                        }
-                        return new DelayedWrappedExpression(Identifier.generate("dwe break init delay"), instance, viCombinedOrPrimitive, causes);
+                        CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
+                        vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),
+                                instance, combinedOrPrimitive, causes);
+                        return true;
                     }
                 }
             } else {
@@ -461,18 +449,34 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     // we have a perfectly good value, but the current state is delayed, so eventually we'll have to revisit
                     Set<CauseOfDelay> breaks = extractBreakInitCause(changeData.stateIsDelayed(), target);
                     if (!breaks.isEmpty()) {
-                        // works in tandem with EvaluationResult.breakSelfReferenceDelay; also requires code at end of SASubBlocks.subBlocks
-                        Expression res = new DelayedWrappedExpression(Identifier.generate("dwe break delayed state"), valueToWritePossiblyDelayed,
-                                vi, changeData.stateIsDelayed());
-                        assert res.isDelayed();
+                        vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break delayed state"),
+                                valueToWritePossiblyDelayed,
+                                combined, changeData.stateIsDelayed());
                         LOGGER.debug("Return wrapped expression to break state delay on {} in {}", target, index());
-                        return res;
+                        return true;
                     }
                 }
             }
         }
         // move DWE to the front, if it is hidden somewhere deeper inside the expression
-        return DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(inspectionProvider, valueToWritePossiblyDelayed);
+        Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(inspectionProvider, valueToWritePossiblyDelayed);
+        if (e instanceof DelayedWrappedExpression) {
+            vic.setValue(e, LinkedVariables.EMPTY, combined, EVALUATION);
+            return true;
+        }
+        return false;
+    }
+
+    private CausesOfDelay removeBreakButKeepDelayed(Expression valueToWritePossiblyDelayed, Set<CauseOfDelay> breaks) {
+        CausesOfDelay causesBreakRemoved = valueToWritePossiblyDelayed.causesOfDelay().removeAll(breaks);
+        CausesOfDelay causes;
+        if (causesBreakRemoved.isDone()) {
+            //just making sure that we are delayed
+            causes = DelayFactory.createDelay(getLocation(), CauseOfDelay.Cause.SA_APPLY_DUMMY_DELAY);
+        } else {
+            causes = causesBreakRemoved;
+        }
+        return causes;
     }
 
     private Set<CauseOfDelay> extractBreakInitCause(CausesOfDelay valueToWritePossiblyDelayed, FieldReference target) {

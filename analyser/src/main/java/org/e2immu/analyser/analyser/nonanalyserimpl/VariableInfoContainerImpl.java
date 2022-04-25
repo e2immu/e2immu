@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.expression.DelayedWrappedExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -28,10 +30,13 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
+import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
+import static org.e2immu.analyser.analyser.Property.IMMUTABLE_BREAK;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -545,5 +550,22 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     public boolean previousIsRemoved() {
         return previousOrInitial.isLeft() && !previousOrInitial.getLeft().isNotRemoved();
+    }
+
+    @Override
+    public void createAndWriteDelayedWrappedExpressionForEval(Identifier dweId,
+                                                              Expression expression,
+                                                              Properties properties,
+                                                              CausesOfDelay causesOfDelay) {
+        VariableInfoImpl vii = getToWrite(Stage.EVALUATION);
+
+        DV immBreakCurr = properties.getOrDefaultNull(IMMUTABLE_BREAK);
+        DV immBreak = immBreakCurr == null || immBreakCurr.isDelayed() ? properties.get(IMMUTABLE) : immBreakCurr;
+        Properties map = Properties.of(Map.of(IMMUTABLE_BREAK, immBreak));
+        Properties merged = properties.merge(map);
+
+        DelayedWrappedExpression dwe = new DelayedWrappedExpression(dweId, vii.variable(),
+                expression, merged, vii.getLinkedVariables(), causesOfDelay);
+        vii.setValue(dwe);
     }
 }

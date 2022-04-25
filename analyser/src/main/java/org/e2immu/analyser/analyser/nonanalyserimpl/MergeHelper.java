@@ -225,7 +225,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         CausesOfDelay causes = DelayFactory.createDelay(evaluationContext.getLocation(MERGE), CauseOfDelay.Cause.VALUES);
         Map<Property, DV> delayedProperties = EvaluationContext.delayedValueProperties(causes);
         Expression value = new DelayedWrappedExpression(Identifier.generate("dwe break init value props"),
-                vi.getValue(), vi, causes);
+                vi.variable(),
+                vi.getValue(), vi.valueProperties(), vi.getLinkedVariables(), causes);
         return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
     }
 

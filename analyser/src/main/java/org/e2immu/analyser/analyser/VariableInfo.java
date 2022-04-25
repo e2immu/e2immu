@@ -117,6 +117,8 @@ public interface VariableInfo {
         return getAssignmentIds().getLatestAssignmentIndex().equals(index);
     }
 
+    Properties properties();
+
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }
