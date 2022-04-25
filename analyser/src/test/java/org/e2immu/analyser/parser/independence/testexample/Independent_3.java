@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.independence.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.stream.Stream;
 
@@ -28,6 +29,7 @@ public class Independent_3 {
 
     interface HasSwitchLabels {
         // will be @E3Container
+        @NotNull1
         Stream<Expression> labels();
     }
 

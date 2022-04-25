@@ -56,6 +56,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
+    // the result of the method call causes CNN EffContentNotNull on writer, so no error should be thrown!
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -79,16 +80,15 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "lastOneWasSpace".equals(pi.name)) {
                     assertEquals("nullable instance type ElementarySpace/*@Identity*/", d.currentValue().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ParameterInfo pi && "elementarySpace".equals(pi.name)) {
                     assertEquals("nullable instance type ElementarySpace", d.currentValue().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("null==lastOneWasSpace?elementarySpace:lastOneWasSpace", d.currentValue().toString());
-                    String expected = d.iteration() == 0 ? "elementarySpace:-1,lastOneWasSpace:-1,return combine:0"
-                            : "elementarySpace:1,lastOneWasSpace:1,return combine:0";
+                    String expected = "elementarySpace:0,lastOneWasSpace:0,return combine:0";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -99,7 +99,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     }
                     if ("8.0.5".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
@@ -115,7 +115,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3.1.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?\"\":\"abc\"";
+                            case 1, 2 -> "<s:boolean>?\"\":<m:write>";
                             default -> "outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -124,7 +124,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
+                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":<m:write>";
                             default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -140,7 +140,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("combine".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
@@ -307,7 +307,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<instanceOf:Guide>" :
+                    String expect = d.iteration() <= 2 ? "<instanceOf:Guide>" :
                             "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());

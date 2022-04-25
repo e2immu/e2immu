@@ -211,6 +211,9 @@ class JavaLang {
             return false;
         }
 
+        @NotNull // could have been @NN1
+        byte[] getBytes() { return null; }
+
         boolean isEmpty$Value$Len(int l) {
             return l == 0;
         }

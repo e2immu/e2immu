@@ -246,7 +246,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
 
         // TODO one of the null pointer problems is that "from" is nullable, which it is clearly not
         // the other 3 null pointer issues are valid
-        testClass("Precondition_7", 6, 13,
+        testClass("Precondition_7", 6, DONT_CARE,
                 new DebugConfiguration.Builder()
                       //  .addEvaluationResultVisitor(evaluationResultVisitor)
                      //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

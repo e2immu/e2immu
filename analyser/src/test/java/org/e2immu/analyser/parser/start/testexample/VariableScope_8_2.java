@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class VariableScope_8 {
+public class VariableScope_8_2 {
 
     interface OutputElement {
 
@@ -158,7 +158,7 @@ public class VariableScope_8 {
                     } else {
                         gg = guideGenerator;
                     }
-                    outputBuilder.add(methodCall.output2(qualification, gg)); // recursive call
+                    //outputBuilder.add(methodCall.output2(qualification, gg)); // recursive call
                     outputBuilder.add(gg.mid());
                 }
             }

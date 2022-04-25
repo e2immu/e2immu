@@ -73,7 +73,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass("Store_1", 0, 1, new DebugConfiguration.Builder()
+        testClass("Store_1", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -102,7 +102,7 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
         };
-        testClass("Store_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("Store_2", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

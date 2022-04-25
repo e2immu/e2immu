@@ -330,10 +330,10 @@ public class Test_57_Lambda extends CommonTestRunner {
                 .build());
     }
 
-    // no A API -> 2 potential null pointer warnings (IMPROVE should be 4?)
+    // no A API -> 4 potential null pointer warnings
     @Test
     public void test_9() throws IOException {
-        testClass("Lambda_9", 0, 2, new DebugConfiguration.Builder()
+        testClass("Lambda_9", 0, 4, new DebugConfiguration.Builder()
                 .build());
     }
 

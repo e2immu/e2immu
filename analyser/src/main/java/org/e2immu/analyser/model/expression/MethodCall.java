@@ -334,8 +334,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed() || modified.isDelayed()) {
-            CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer);
+        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed() || modified.isDelayed() || objectResult.causesOfDelay().isDelayed()) {
+            CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
+                    .merge(objectResult.causesOfDelay());
             return delayedMethod(context, builder, causes, modified);
         }
 
@@ -358,13 +359,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression result;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
-            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
                     forwardEvaluationInfo, modifiedInstance);
             builder.compose(mv);
             result = mv.value();
+
+            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
         }

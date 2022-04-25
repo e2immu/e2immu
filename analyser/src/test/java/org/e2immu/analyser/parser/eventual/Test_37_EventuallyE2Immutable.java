@@ -398,7 +398,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "<m:isEmpty>&&!<s:boolean>" : "!data.isEmpty()&&set.isEmpty()";
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>&&!<m:isEmpty>" : "!data.isEmpty()&&set.isEmpty()";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
@@ -486,7 +486,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "!<simplification>&&<m:size><=0" : "data.size()>=1&&set.size()<=0";
+                    String expected = d.iteration() == 0 ? "<m:size>>=1&&<m:size><=0" : "data.size()>=1&&set.size()<=0";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
@@ -534,7 +534,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "!<simplification>&&0==<m:size>" : "0!=data.size()&&0==set.size()";
+                    String expected = d.iteration() == 0 ? "0==<m:size>&&0!=<m:size>" : "0!=data.size()&&0==set.size()";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }

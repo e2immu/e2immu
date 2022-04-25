@@ -94,7 +94,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other>";
+                        case 0 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:ext_not_null@Parameter_other>";
+                        case 1 -> "<vp:BiFunction<UpgradableBooleanMap,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>:cnn@Parameter_other>";
                         default -> "UpgradableBooleanMap::putAll";
                     };
                     assertEquals(expected, d.currentValue().toString());

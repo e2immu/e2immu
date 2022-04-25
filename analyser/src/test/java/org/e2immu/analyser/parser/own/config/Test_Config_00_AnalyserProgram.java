@@ -47,7 +47,9 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+                new AnalyserConfiguration.Builder()
+                        .setComputeContextPropertiesOverAllMethods(true)
+                        .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
 }
