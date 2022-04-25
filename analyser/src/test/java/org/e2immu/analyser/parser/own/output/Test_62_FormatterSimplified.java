@@ -56,7 +56,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
-    // the result of the method call causes CNN EffContentNotNull on writer, so no error should be thrown!
+    // the result of the method call causes CNN EffContentNotNull on writer, so no warning should be thrown
+    // for the Boolean which has to be boolean
     @Test
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {

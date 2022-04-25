@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
@@ -33,7 +34,7 @@ public class TrieSimplified_3<T> {
         return goTo(strings, strings.length);
     }
 
-    @Nullable
+    @NotNull // because the null return is not reachable
     @NotModified
     private TrieNode<T> goTo(String[] strings, int upToPosition) {
         TrieNode<T> node = root;

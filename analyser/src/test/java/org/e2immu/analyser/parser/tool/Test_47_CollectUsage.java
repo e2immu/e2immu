@@ -68,6 +68,7 @@ public class Test_47_CollectUsage extends CommonTestRunner {
                 """, namesCsv);
 
         Path testDir = Path.of("build/test_47");
+        testDir.toFile().mkdirs();
         try (Stream<Path> walk = Files.walk(testDir)) {
             walk.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)

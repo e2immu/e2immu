@@ -47,16 +47,14 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.07".equals(d.statementId())) {
-                String expected = switch (d.iteration()) {
-                    case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-58:37:8.0.3.split>:<f:NEVER>";
-                    case 1 -> "outputElement instanceof Symbol symbol?<dv:scope-scope-58:37:8.0.3.split>:Split.NEVER";
-                    default -> "outputElement instanceof Symbol symbol?scope-scope-58:37:8.0.3.split:Split.NEVER";
-                };
+                String expected = d.iteration() == 0
+                        ? "<instanceOf:Symbol>?<dv:scope-scope-58:37:8.0.3.split>:<f:NEVER>"
+                        : "outputElement instanceof Symbol symbol?scope-scope-58:37:8.0.3.split:Split.NEVER";
                 assertEquals(expected, d.evaluationResult().value().toString());
-                assertEquals(d.iteration() <= 1, d.evaluationResult().value().isDelayed());
-                assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().value().isDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
 
-                if (d.iteration() >= 2) {
+                if (d.iteration() >= 1) {
                     assertEquals(5, d.evaluationResult().changeData().size());
                     String scopes = d.evaluationResult().changeData().keySet().stream()
                             .filter(v -> v instanceof FieldReference fr && "split".equals(fr.fieldInfo.name))
@@ -90,7 +88,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
-                    String v = d.iteration() <= 1 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
+                    String v = d.iteration() == 0 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
                             : "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
                     assertEquals(v, d.currentValue().toString());
                 }
@@ -116,7 +114,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
-                String expected = d.iteration() <= 1 ? "!<m:apply>" : "!nullable instance type Boolean";
+                String expected = d.iteration() == 0 ? "!<m:apply>" : "!nullable instance type Boolean";
                 assertEquals(expected, d.state().toString());
             }
         };

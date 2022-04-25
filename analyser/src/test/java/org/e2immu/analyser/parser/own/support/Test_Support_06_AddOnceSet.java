@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
@@ -86,18 +83,27 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
-            if("add".equals(d.methodInfo().name)) {
-                if(d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo.name)) {
-                    fail("In statement: "+d.statementId());
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "frozen".equals(fr.fieldInfo.name)) {
+                    fail("In statement: " + d.statementId());
                 }
             }
         };
 
-        testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.state().toString());
+                }
+            }
+        };
+        // IMPROVE the warning could go if we use companions with "contains"? (instead of the "true")
+        testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

@@ -103,7 +103,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<mmc:map>" : "instance type HashMap<K,V>";
+                        String expectValue = d.iteration() <= 1 ? "<mmc:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

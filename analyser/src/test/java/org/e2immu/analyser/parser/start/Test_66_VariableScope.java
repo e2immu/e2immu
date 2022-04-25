@@ -399,7 +399,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("VariableScope_5", 2, 2, new DebugConfiguration.Builder()
+        testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

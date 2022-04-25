@@ -815,7 +815,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 DV methodNotNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
                 if (methodNotNull.isDone()) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
-                    if (!isNotNull && !builder.isNotNull(this).valueIsTrue()) {
+
+                    // see FormatterSimplified_1, write.apply( ... ) is the method call, write is a parameter, and write becomes @NotNull1
+                    Set<Variable> objectVars = object.directAssignmentVariables();
+                    boolean scopeIsFunctionalInterfaceLinkedToParameter = !objectVars.isEmpty() && objectVars.stream()
+                            .allMatch(v -> v instanceof ParameterInfo pi && pi.parameterizedType.isFunctionalInterface());
+                    if (!isNotNull && !builder.isNotNull(this).valueIsTrue() && !scopeIsFunctionalInterfaceLinkedToParameter) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
                     }

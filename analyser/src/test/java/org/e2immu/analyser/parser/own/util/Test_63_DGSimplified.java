@@ -56,11 +56,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 5 -> "ext_imm:this@Method_test_0-E";
+                        case 0 -> "ext_not_null:this.nodeMap@Method_test_0-E;ext_not_null@Field_nodeMap";
                         case 1 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E";
                         case 2 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E;initial@Field_dependsOn;initial@Field_nodeMap;initial@Field_t";
                         case 3 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;initial@Field_nodeMap;srv@Method_sorted";
                         case 4 -> "cm:return sorted@Method_sorted_0-E;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M;cm:this@Method_sorted_0-E;cm@Parameter_backupComparator;initial:done@Method_sorted_3.0.2.0.3-C;initial:toDo@Method_sorted_3-C;srv@Method_sorted";
+                        case 5 -> "ext_imm:this@Method_test_0-E";
                         default -> "";
                     };
                     assertEquals(expected, d.externalStatus().toString());
@@ -71,7 +72,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type Node<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:copy.nodeMap@Method_accept_0.0.1-C;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
+                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;ext_not_null@Parameter_dependsOn;ext_not_null@Parameter_t;initial:copy.nodeMap@Method_accept_0.0.1-C;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };

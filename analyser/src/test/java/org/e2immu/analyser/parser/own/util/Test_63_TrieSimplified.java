@@ -186,7 +186,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
     @Test
     public void test_1_2bis() throws IOException {
-        testClass("TrieSimplified_1_2", 4, 1,
+        testClass("TrieSimplified_1_2", 6, 0,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -646,7 +646,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String current = switch (d.iteration()) {
                             case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
                             case 1 -> "null==<f:node.map>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
@@ -656,7 +656,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String val = switch (d.iteration()) {
                             case 0 -> "<vp:TrieNode<T>:container@Class_TrieNode>";
                             case 1 -> "<vp:TrieNode<T>:initial@Field_data;initial@Field_map>";
@@ -665,7 +665,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(val, d.currentValue().toString());
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
@@ -868,7 +868,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_add_1.0.1-C";
+                        case 0 -> "initial:node@Method_add_1.0.1.0.0-C";
                         case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map";
                         default -> "";
                     };
