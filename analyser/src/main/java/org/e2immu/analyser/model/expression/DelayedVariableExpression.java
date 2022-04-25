@@ -227,7 +227,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
         DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (cnn.gt(MultiLevel.NULLABLE_DV)) {
-            builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo.isComplainInlineConditional());
+            builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo);
         }
 
         if (!forwardEvaluationInfo.isAssignmentTarget()) {

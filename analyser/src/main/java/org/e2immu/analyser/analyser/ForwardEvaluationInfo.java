@@ -115,6 +115,10 @@ public class ForwardEvaluationInfo {
         return ignoreValueFromState;
     }
 
+    public Variable getAssignmentTarget() {
+        return assignmentTarget;
+    }
+
     public static class Builder {
         private final Map<Property, DV> properties = new HashMap<>();
         private boolean doNotReevaluateVariableExpressions;

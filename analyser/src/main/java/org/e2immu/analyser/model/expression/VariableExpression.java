@@ -312,7 +312,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo.isComplainInlineConditional());
+        builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo);
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         builder.markContextModified(variable, modified);

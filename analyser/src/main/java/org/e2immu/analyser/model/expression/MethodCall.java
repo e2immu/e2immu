@@ -366,7 +366,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.compose(mv);
             result = mv.value();
 
-            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
+            complianceWithForwardRequirements(context, builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
         }
@@ -805,7 +805,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private void complianceWithForwardRequirements(EvaluationResult.Builder builder,
+    private void complianceWithForwardRequirements(EvaluationResult context,
+                                                   EvaluationResult.Builder builder,
                                                    MethodAnalysis methodAnalysis,
                                                    MethodInspection methodInspection,
                                                    ForwardEvaluationInfo forwardEvaluationInfo) {
@@ -818,8 +819,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
                     // see FormatterSimplified_1, write.apply( ... ) is the method call, write is a parameter, and write becomes @NotNull1
                     Set<Variable> objectVars = object.directAssignmentVariables();
+                    boolean cnnTravelsToFields = context.getAnalyserContext().getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods();
                     boolean scopeIsFunctionalInterfaceLinkedToParameter = !objectVars.isEmpty() && objectVars.stream()
-                            .allMatch(v -> v instanceof ParameterInfo pi && pi.parameterizedType.isFunctionalInterface());
+                            .allMatch(v -> v.parameterizedType().isFunctionalInterface() && (v instanceof ParameterInfo ||
+                                    cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo.owner.primaryType() == context.getCurrentType()));
                     if (!isNotNull && !builder.isNotNull(this).valueIsTrue() && !scopeIsFunctionalInterfaceLinkedToParameter) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());

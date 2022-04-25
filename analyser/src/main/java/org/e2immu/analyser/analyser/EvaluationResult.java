@@ -381,18 +381,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * @param value           the variable's value. This can be a variable expression again (redirect).
          * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
          */
-        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, boolean complain) {
+        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, ForwardEvaluationInfo forwardEvaluationInfo) {
             assert evaluationContext != null;
             assert value != null;
             if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
             if (variable instanceof This) return; // nothing to be done here
 
-
             for (Variable sourceOfLoop : evaluationContext.loopSourceVariables(variable)) {
                 markRead(sourceOfLoop);  // TODO not correct, but done to trigger merge (no mechanism for that a t m)
                 Expression sourceValue = evaluationContext.currentValue(sourceOfLoop);
                 DV higher = MultiLevel.composeOneLevelMoreNotNull(notNullRequired);
-                variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, complain);
+                variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, forwardEvaluationInfo);
             }
 
             if (notNullRequired.isDelayed()) {
@@ -402,7 +401,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
-            if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsNoValue(cmDelays, variable)) {
+            if (cmDelays.isDelayed() &&  !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
+                    forwardEvaluationInfo.getAssignmentTarget(), variable)) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
                 return;
             }
@@ -413,6 +413,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
+            boolean complain = forwardEvaluationInfo.isComplainInlineConditional();
             if (contextNotNull.isDone() && contextNotNull.lt(notNullRequired) && complain) {
                 DV nnc = effectivelyNotNull ? notNullRequired : MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
@@ -420,10 +421,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
         }
 
-        // e.g. Loops_23_1
-        private boolean causeOfConditionManagerDelayIsNoValue(CausesOfDelay cmDelays, Variable variable) {
-            return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
-                    c -> c instanceof VariableCause vc && vc.variable().equals(variable));
+        private static final Set<CauseOfDelay.Cause> CM_CAUSES = Set.of(CauseOfDelay.Cause.BREAK_INIT_DELAY, CauseOfDelay.Cause.INITIAL_VALUE);
+
+        // e.g. Lazy, Loops_23_1
+        private boolean causeOfConditionManagerDelayIsAssignmentTarget(CausesOfDelay cmDelays,
+                                                                       Variable assignmentTarget,
+                                                                       Variable variable) {
+            return cmDelays.containsCausesOfDelay(CM_CAUSES, c -> c instanceof VariableCause vc &&
+                    (vc.variable().equals(assignmentTarget) || vc.variable().equals(variable)));
         }
 
         /*
