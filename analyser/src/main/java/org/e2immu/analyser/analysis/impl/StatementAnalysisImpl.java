@@ -527,7 +527,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     vic, navigationData.hasSubBlocks(), newValue);
         } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
-        } else if (conditionsToMoveVariableInsideLoop(vic, variable, copyFrom, previousIsParent)) {
+        } else if (conditionsToMoveVariableInsideLoop(variable, copyFrom, previousIsParent)) {
             // move a local variable, not defined in this loop, inside the loop
             // for all loops except forEach, the expression of the loop serves as the entry point
             // for forEach, the expression is outside, but the loop variable is inside. this complicates the code somewhat
@@ -570,8 +570,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     stay outside. (see e.g. ResourcesSimplified_0). The loop source should only become VDOL inside the loop.
 
      */
-    private boolean conditionsToMoveVariableInsideLoop(VariableInfoContainer vic,
-                                                       Variable variable,
+    private boolean conditionsToMoveVariableInsideLoop(Variable variable,
                                                        StatementAnalysis previous,
                                                        boolean previousIsParent) {
         if (!variable.isLocal()) return false;
@@ -1428,8 +1427,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .merge(externalDelaysOnIgnoredVariables));
     }
 
-    private VariableInfoContainer ensureDestination(Variable renamed, VariableInfoContainer vic,
-                                                    EvaluationContext evaluationContext, int statementTime) {
+    private void ensureDestination(Variable renamed,
+                                   VariableInfoContainer vic,
+                                   EvaluationContext evaluationContext,
+                                   int statementTime) {
         if (!variables.isSet(renamed.fullyQualifiedName())) {
             VariableNature variableNature;
             if (renamed instanceof FieldReference fr) {
@@ -1441,11 +1442,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 variableNature = vic.variableNature();
             }
-            return createVariable(evaluationContext, renamed, statementTime, variableNature);
+            createVariable(evaluationContext, renamed, statementTime, variableNature);
         }
-        return variables.get(renamed.fullyQualifiedName());
     }
-
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
                                                           VariableInfo initial,

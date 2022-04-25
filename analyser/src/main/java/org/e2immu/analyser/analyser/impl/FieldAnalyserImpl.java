@@ -590,10 +590,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     CausesOfDelay causes = vi.getProperty(CONTEXT_NOT_NULL).causesOfDelay();
                     // are the delays on CNN directly linked to the variables that we are linked to?
                     // see Project_0bis
-                    return causes.causesStream().noneMatch(c -> {
-                        if (c.cause() != CauseOfDelay.Cause.EXTERNAL_NOT_NULL) return false;
+                    return !causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
                         if (c instanceof VariableCause vc) return filter.contains(vc.variable());
                         if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
+                        if (c.location().getInfo() instanceof FieldInfo fi) return fieldInfo.equals(fi);
                         return false;
                     });
                 })
@@ -601,7 +601,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV bestOverContext = StreamUtil.reduceWithCancel(cnnStream, MultiLevel.NULLABLE_DV, DV::max, DV::isDelayed);
         if (bestOverContext.isDelayed()) {
             LOGGER.debug("Delay @NotNull on {}, waiting for CNN; filter {}", fqn, filter);
-            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
+            CausesOfDelay inject = fieldInfo.delay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext.causesOfDelay().merge(inject));
             return bestOverContext.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
         }
         // the null constant places a hard limit on things, as does e.g. a string constant "abc"

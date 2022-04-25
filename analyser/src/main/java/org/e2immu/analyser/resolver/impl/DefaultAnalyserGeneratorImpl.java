@@ -44,12 +44,14 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
     private final String name;
 
 
+    // NOTE: we use LinkedHashMaps to preserve the sorting order
+
     public DefaultAnalyserGeneratorImpl(List<SortedType> sortedTypes, Configuration configuration, AnalyserContext analyserContext) {
         name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
         primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
 
         // do the types first, so we can pass on a TypeAnalysis objects
-        Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
+        Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new LinkedHashMap<>();
         sortedTypes.forEach(sortedType ->
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
@@ -62,13 +64,13 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
                         typeAnalysersBuilder.put(typeInfo, typeAnalyser);
                     }
                 }));
-        typeAnalysers = Map.copyOf(typeAnalysersBuilder);
+        typeAnalysers = Collections.unmodifiableMap(typeAnalysersBuilder);
 
         // then methods
         // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
-        Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
-        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
+        Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new LinkedHashMap<>();
+        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new LinkedHashMap<>();
         sortedTypes.forEach(sortedType -> {
             List<WithInspectionAndAnalysis> analyses = sortedType.methodsFieldsSubTypes();
             analyses.forEach(analysis -> {
@@ -90,8 +92,8 @@ public class DefaultAnalyserGeneratorImpl implements AnalyserGenerator {
             });
         });
 
-        parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
-        methodAnalysers = Map.copyOf(methodAnalysersBuilder);
+        parameterAnalysers = Collections.unmodifiableMap(parameterAnalysersBuilder);
+        methodAnalysers = Collections.unmodifiableMap(methodAnalysersBuilder);
 
         // finally, we deal with fields, and wire everything together
         Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();

@@ -35,6 +35,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
     public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
+    public static final int DONT_CARE = -1;
 
     public final boolean withAnnotatedAPIs;
 
@@ -186,10 +187,12 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .filter(message -> message.message().severity != Message.Severity.INFO)
                 .sorted(Message::SORT)
                 .forEach(message -> LOGGER.info(message.toString()));
-        assertEquals(errorsToExpect, (int) filteredMessages.stream()
-                .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");
-        assertEquals(warningsToExpect, (int) filteredMessages.stream()
-                .filter(m -> m.message().severity == Message.Severity.WARN).count(), "WARNINGS: ");
+        if (errorsToExpect != DONT_CARE)
+            assertEquals(errorsToExpect, (int) filteredMessages.stream()
+                    .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");
+        if (warningsToExpect != DONT_CARE)
+            assertEquals(warningsToExpect, (int) filteredMessages.stream()
+                    .filter(m -> m.message().severity == Message.Severity.WARN).count(), "WARNINGS: ");
         return parser.getTypeContext();
     }
 }

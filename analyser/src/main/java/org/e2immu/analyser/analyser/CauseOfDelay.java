@@ -50,7 +50,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         EXT_CONTAINER("ext_container", "Variable's EXTERNAL_CONTAINER not yet determined"),
         EXT_IGNORE_MODS("ext_ign_mod", "Variable's EXTERNAL_IGNORE_MODIFICATIONS not yet determined"),
         EXTENSION_CLASS("extension_class", ""),
-        EXTERNAL_NOT_NULL("ext_not_null", "Variable's EXTERNAL_NOT_NULL value not yet determined"),
+        EXTERNAL_NOT_NULL("ext_not_null", "Variable's EXTERNAL_NOT_NULL value not yet determined", HIGH),
         FIELD_FINAL("final", "Effectively final has not yet been determined for this field"),
         FINALIZER("finalizer", ""),
         FIRST_ITERATION("it0", "Certain actions cannot be done in the first iteration"),
