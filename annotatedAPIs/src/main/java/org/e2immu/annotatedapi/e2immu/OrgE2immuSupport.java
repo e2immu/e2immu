@@ -14,15 +14,41 @@
 
 package org.e2immu.annotatedapi.e2immu;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Only;
+import org.e2immu.annotation.*;
 import org.e2immu.support.SetOnce;
 
 public class OrgE2immuSupport {
 
     final static String PACKAGE_NAME = "org.e2immu.support";
+
+    @ERContainer(after = "frozen")
+    public static class Freezable$ {
+
+        @Mark("frozen")
+        public void freeze() {
+        }
+
+        @TestMark("frozen")
+        public boolean isFrozen() {
+            return false;
+        }
+
+        private boolean ensureNotFrozen$Precondition() {
+            return !isFrozen();
+        }
+
+        @NotModified
+        public void ensureNotFrozen() {
+        }
+
+        private boolean ensureFrozen$Precondition() {
+            return isFrozen();
+        }
+
+        @NotModified
+        public void ensureFrozen() {
+        }
+    }
 
     @E2Container(after = "isFinal")
     interface EventuallyFinal$<T> {
