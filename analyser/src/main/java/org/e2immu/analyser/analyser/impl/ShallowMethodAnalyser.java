@@ -188,7 +188,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             Precondition pce = new Precondition(translated, List.of(companionCause));
             methodAnalysis.setPreconditionForEventual(pce);
 
-            boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation(); // TODO this is very hardcoded
+            // TODO this is very hardcoded, and corresponds to code in Precondition.expressionIsPossiblyNegatedMethodCall
+            boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation();
             Set<FieldInfo> fields = translated.variables(true).stream()
                     .filter(v -> v instanceof FieldReference)
                     .map(v -> ((FieldReference) v).fieldInfo)
@@ -200,6 +201,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     // currently, only accepts normal test marks
+    // translates every normal @TestMark's method call into the corresponding field
+    // TODO this code is very hardcoded, tailored to ensure(Not)Frozen, see Trie, DependencyGraph
     private TranslationMap testMarkTranslationMap() {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         for (MethodInfo m : methodInfo.typeInfo.typeInspection.get().methods(TypeInspection.Methods.THIS_TYPE_ONLY)) {

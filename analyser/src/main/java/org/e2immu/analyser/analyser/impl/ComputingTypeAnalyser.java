@@ -1340,7 +1340,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     private Set<MethodInfo> methodsOf(FieldInfo fieldInfo) {
         return myMethodAnalysers.stream()
-                .filter(ma -> ma.getFieldAsVariableStream(fieldInfo).anyMatch(ComputingTypeAnalyser::isModified))
+                .filter(ma -> ma.getFieldAsVariableStream(fieldInfo).anyMatch(ComputingTypeAnalyser::isModified) ||
+                        ma.getMethodAnalysis().getPreconditionForEventual().guardsField(analyserContext, fieldInfo))
                 .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());
     }

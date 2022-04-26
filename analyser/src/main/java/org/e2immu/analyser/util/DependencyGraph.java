@@ -44,7 +44,7 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Modified
+    @NotModified(after = "frozen")
     private final Map<T, Node<T>> nodeMap = new HashMap<>();
 
     @NotModified

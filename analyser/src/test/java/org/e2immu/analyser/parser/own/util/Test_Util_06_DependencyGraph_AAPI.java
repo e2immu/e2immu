@@ -71,9 +71,9 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 MethodInfo companion = ensureNotFrozen.methodInspection.get().getCompanionMethods()
                         .get(CompanionMethodName.extract("ensureNotFrozen$Precondition"));
                 assertNotNull(companion);
-                assertEquals("Precondition[expression=!this.isFrozen(), causes=[escape]]",
+                assertEquals("Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]",
                         ensureNotFrozenAna.getPrecondition().toString());
-                assertEquals("Precondition[expression=!frozen, causes=[escape]]",
+                assertEquals("Precondition[expression=!frozen, causes=[companionMethod:ensureNotFrozen$Precondition]]",
                         ensureNotFrozenAna.getPreconditionForEventual().toString());
                 assertEquals("@Only before: [frozen]", ensureNotFrozenAna.getEventual().toString());
             }
@@ -84,9 +84,9 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 MethodInfo companion2 = ensureFrozen.methodInspection.get().getCompanionMethods()
                         .get(CompanionMethodName.extract("ensureFrozen$Precondition"));
                 assertNotNull(companion2);
-                assertEquals("Precondition[expression=this.isFrozen(), causes=[escape]]",
+                assertEquals("Precondition[expression=this.isFrozen(), causes=[companionMethod:ensureFrozen$Precondition]]",
                         ensureFrozenAna.getPrecondition().toString());
-                assertEquals("Precondition[expression=frozen, causes=[escape]]",
+                assertEquals("Precondition[expression=frozen, causes=[companionMethod:ensureFrozen$Precondition]]",
                         ensureFrozenAna.getPreconditionForEventual().toString());
                 assertEquals("@Only after: [frozen]", ensureFrozenAna.getEventual().toString());
             }
@@ -96,6 +96,6 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

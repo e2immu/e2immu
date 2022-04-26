@@ -2239,7 +2239,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     return preconditionExpression.causesOfDelay();
                 }
                 Expression translated;
-                if (precondition.causes().size() == 1 && precondition.causes().get(0) instanceof Precondition.CompanionCause) {
+                if (precondition.singleCompanionCauseOrNull() != null) {
                     translated = precondition.expression(); // keep as is
                 } else {
                     translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression().getIdentifier(), precondition.expression());

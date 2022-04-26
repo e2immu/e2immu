@@ -29,7 +29,14 @@ public class CheckEventual {
     public static Message checkOnly(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
-        if (annotationExpression == null) return null; // nothing to verify
+        if (annotationExpression == null) {
+            if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isOnly()) {
+                // make sure the @Only(...) annotation gets printed
+                AnnotationExpression ae = methodAnalysis.findAnnotation(Only.class.getCanonicalName()).getKey();
+                methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
+            }
+            return null; // nothing to verify
+        }
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
         boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || eventual.mark()
@@ -86,7 +93,14 @@ public class CheckEventual {
     public static Message checkMark(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
-        if (annotationExpression == null) return null; // nothing to verify
+        if (annotationExpression == null) {
+            if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isMark()) {
+                // make sure the @Mark(...) annotation gets printed
+                AnnotationExpression ae = methodAnalysis.findAnnotation(Mark.class.getCanonicalName()).getKey();
+                methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
+            }
+            return null; // nothing to verify
+        }
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
         boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || !eventual.mark();
@@ -119,7 +133,14 @@ public class CheckEventual {
     public static Message checkTestMark(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(TestMark.class).orElse(null);
-        if (annotationExpression == null) return null; // nothing to verify
+        if (annotationExpression == null) {
+            if (eventual != MethodAnalysis.NOT_EVENTUAL && eventual.isTestMark()) {
+                // make sure the @TestMark(...) annotation gets printed
+                AnnotationExpression ae = methodAnalysis.findAnnotation(TestMark.class.getCanonicalName()).getKey();
+                methodAnalysis.putAnnotationCheck(ae, Analysis.AnnotationCheck.COMPUTED);
+            }
+            return null; // nothing to verify
+        }
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
         boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || eventual.test() == null;

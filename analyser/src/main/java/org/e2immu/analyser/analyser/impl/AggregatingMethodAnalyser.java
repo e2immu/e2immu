@@ -119,7 +119,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private AnalysisStatus aggregateMethodValue() {
-        if (!methodAnalysis.singleReturnValueIsFinal()) {
+        if (methodAnalysis.singleReturnValueIsVariable()) {
             CausesOfDelay delays = implementingAnalyses.get().stream()
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);

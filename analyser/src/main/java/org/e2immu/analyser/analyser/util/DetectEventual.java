@@ -72,6 +72,11 @@ public record DetectEventual(MethodInfo methodInfo,
             return eventualFromEventuallyImmutableFields(context, modified);
         }
 
+        MethodAnalysis.Eventual fromCompanion = eventualFromCompanion(precondition);
+        if(fromCompanion != null) {
+            return fromCompanion;
+        }
+
         FieldsAndBefore fieldsAndBefore = analyseExpression(context, e2, precondition.expression(), false);
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
 
@@ -127,7 +132,7 @@ public record DetectEventual(MethodInfo methodInfo,
         Map<FieldInfo, MultiLevel.Effective> map = new HashMap<>();
         for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-            if(bestType == null) continue; // unbound type parameter, is never eventual
+            if (bestType == null) continue; // unbound type parameter, is never eventual
             TypeAnalysis bestTypeAnalysis = context.getAnalyserContext().getTypeAnalysis(bestType);
             DV immutableType = bestTypeAnalysis.getProperty(Property.IMMUTABLE);
             if (immutableType.isDelayed()) {
@@ -315,10 +320,31 @@ public record DetectEventual(MethodInfo methodInfo,
     private record FieldsAndBefore(Set<FieldInfo> fields, boolean before) {
     }
 
+    private MethodAnalysis.Eventual eventualFromCompanion(Precondition precondition) {
+        Precondition.CompanionCause cc = precondition.singleCompanionCauseOrNull();
+        if (cc != null) {
+           Precondition.MethodCallAndNegation mc = precondition.expressionIsPossiblyNegatedMethodCall();
+            if (mc != null) {
+                MethodAnalysis analysis = analyserContext.getMethodAnalysis(mc.methodCall().methodInfo);
+                MethodAnalysis.Eventual eventual = analysis.getEventual();
+                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                    LOGGER.debug("Precondition for eventual copied from precondition: companion cause: {}", methodInfo.fullyQualifiedName);
+                    // isFrozen == @TestMark, but then in a precondition... so we return a before
+                    if (eventual.mark() == Boolean.FALSE && eventual.test() != null) {
+                        boolean after = eventual.test() != mc.negation();
+                        return new MethodAnalysis.Eventual(eventual.fields(), false, after, null);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private FieldsAndBefore analyseExpression(EvaluationResult context,
                                               boolean e2,
                                               Expression expression,
                                               boolean allowLocalCopies) {
+
         Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(expression,
                 filter.individualFieldClause(context.getAnalyserContext(), allowLocalCopies));

@@ -171,6 +171,18 @@ public interface MethodAnalysis extends Analysis {
         public boolean consistentWith(Eventual other) {
             return fields.equals(other.fields);
         }
+
+        public boolean isOnly() {
+            return !mark && test == null;
+        }
+
+        public boolean isMark() {
+            return mark;
+        }
+
+        public boolean isTestMark() {
+            return test != null;
+        }
     }
 
     default List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {

@@ -95,7 +95,7 @@ public class EvaluatePreconditionFromMethod {
 
             // the companion cause is passed on verbatim, all others are updated to the correct scope object
             List<Precondition.PreconditionCause> preconditionCauses;
-            if (precondition.causes().size() == 1 && precondition.causes().get(0) instanceof Precondition.CompanionCause) {
+            if (precondition.singleCompanionCauseOrNull() != null) {
                 preconditionCauses = precondition.causes();
             } else {
                 preconditionCauses = List.of(new Precondition.MethodCallCause(methodInfo, scopeObject));

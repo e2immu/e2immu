@@ -20,22 +20,20 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.CompanionMethodName;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.annotation.Only;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
@@ -70,7 +68,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
                 String pce = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
-                        : "Precondition[expression=true, causes=[]]";
+                        : "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
 
                 String eventual = switch (d.iteration()) {
@@ -81,6 +79,11 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     default -> "@Only before: [frozen]";
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
+                if (d.iteration() >= 4) {
+                    Map.Entry<AnnotationExpression, Boolean> ae = d.methodAnalysis().findAnnotation(Only.class.getCanonicalName());
+                    assertEquals("@Only(before=\"frozen\")", ae.getKey().toString());
+                    assertTrue(ae.getValue());
+                }
             }
         };
 

@@ -15,11 +15,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -57,6 +55,57 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
 
     public interface PreconditionCause {
 
+
+    }
+
+    /* ********************************
+       support code for CompanionCauses
+
+       code used in AnnotatedAPI of OrgE2ImmuSupport, Freezable$
+       the ensure(Not)Frozen methods each have a precondition.
+       At the moment this code is very limited, tailored to exactly this situation,
+       to be able to use an Annotated API of Freezable in Trie, DependencyGraph
+       ********************************/
+
+    public CompanionCause singleCompanionCauseOrNull() {
+        return causes.size() == 1 && causes.get(0) instanceof CompanionCause cc ? cc : null;
+    }
+
+    public record MethodCallAndNegation(MethodCall methodCall, boolean negation) {
+    }
+
+    // catches "isFrozen()", "!isFrozen()"
+    public MethodCallAndNegation expressionIsPossiblyNegatedMethodCall() {
+        Expression e;
+        boolean negated;
+        if (expression instanceof UnaryOperator ua && ua.isNegation()) {
+            e = ua.expression;
+            negated = true;
+        } else if (expression instanceof Negation negation) {
+            e = negation.expression;
+            negated = true;
+        } else {
+            e = expression;
+            negated = false;
+        }
+        if (e instanceof MethodCall methodCall) {
+            return new MethodCallAndNegation(methodCall, negated);
+        }
+        return null;
+    }
+
+    // translates the "!isFrozen()" into "@Only(before="frozen"), and checks that fieldInfo == frozen
+    public boolean guardsField(AnalyserContext analyserContext, FieldInfo fieldInfo) {
+        CompanionCause cc = singleCompanionCauseOrNull();
+        if (cc != null) {
+            MethodCallAndNegation mc = expressionIsPossiblyNegatedMethodCall();
+            if (mc != null) {
+                MethodAnalysis analysis = analyserContext.getMethodAnalysis(mc.methodCall.methodInfo);
+                MethodAnalysis.Eventual ev = analysis.getEventual();
+                return ev.isTestMark() && ev.fields().contains(fieldInfo);
+            }
+        }
+        return false;
     }
 
     public record CompanionCause(MethodInfo companion) implements PreconditionCause {
@@ -65,6 +114,10 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
             return "companionMethod:" + companion.name;
         }
     }
+
+      /* **********************************
+       end support code for CompanionCauses
+       ************************************/
 
     /**
      * Precondition is inherited from a method with a precondition itself

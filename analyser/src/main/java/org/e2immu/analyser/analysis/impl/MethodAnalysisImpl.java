@@ -18,10 +18,8 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.UnknownExpression;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -250,7 +248,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             assert precondition != null;
             if (precondition.isDelayed()) {
                 preconditionForEventual.setVariable(precondition);
-            } else {
+            } else if(!precondition.equals(preconditionForEventual.get())) {
                 preconditionForEventual.setFinal(precondition);
             }
         }
@@ -494,8 +492,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (!eventual.isFinal()) setEventual(MethodAnalysis.NOT_EVENTUAL);
         }
 
-        public boolean singleReturnValueIsFinal() {
-            return singleReturnValue.isFinal();
+        public boolean singleReturnValueIsVariable() {
+            return !singleReturnValue.isFinal();
         }
     }
 

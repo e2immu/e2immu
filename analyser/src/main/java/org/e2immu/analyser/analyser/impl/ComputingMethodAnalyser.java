@@ -414,41 +414,23 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Precondition precondition = methodAnalysis.precondition.get();
         EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext);
 
+        // situation of Lazy
         if (precondition.isEmpty()) {
+            return preconditionAsInLazy(primitives, context);
+        }
 
-            // code to detect the situation as in Lazy
-            Precondition combinedPrecondition = Precondition.empty(methodAnalysis.primitives);
-            for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
-                if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
-                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
-                    StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
-                    if (beforeAssignment != null) {
-                        ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
-                        if (cm.state().isDelayed()) {
-                            LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
-                                    methodInfo.fullyQualifiedName);
-                            methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                                    cm.state().causesOfDelay(), primitives));
-                            return cm.state().causesOfDelay();
-                        }
-                        Expression state = cm.state();
-                        if (!state.isBoolValueTrue()) {
-                            Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
-                            Filter.FilterResult<FieldReference> filterResult = filter.filter(state,
-                                    filter.individualFieldClause(analyserContext, true));
-                            Expression inResult = filterResult.accepted().get(fr);
-                            if (inResult != null) {
-                                Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
-                                combinedPrecondition = combinedPrecondition.combine(context, pc);
-                            }
-                        }
-                    }
+        // situation of ensureNotFrozen/ensureFrozen in Freezable, as used in a.o. Trie
+        Precondition.CompanionCause cc = precondition.singleCompanionCauseOrNull();
+        if (cc != null) {
+            Precondition.MethodCallAndNegation mc = precondition.expressionIsPossiblyNegatedMethodCall();
+            if (mc != null) {
+                MethodAnalysis analysis = analyserContext.getMethodAnalysis(mc.methodCall().methodInfo);
+                if (analysis.getEventual() != MethodAnalysis.NOT_EVENTUAL) {
+                    LOGGER.debug("Precondition for eventual copied from precondition: companion cause: {}", methodInfo.fullyQualifiedName);
+                    methodAnalysis.setPreconditionForEventual(precondition);
+                    return DONE;
                 }
             }
-            LOGGER.debug("No @Mark @Only annotation in {} from precondition, found {} from assignment",
-                    methodInfo.distinguishingName(), combinedPrecondition);
-            methodAnalysis.setPreconditionForEventual(combinedPrecondition);
-            return DONE;
         }
 
         /*
@@ -473,6 +455,42 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return DONE;
     }
 
+    private AnalysisStatus preconditionAsInLazy(Primitives primitives, EvaluationResult context) {
+        // code to detect the situation as in Lazy
+        Precondition combinedPrecondition = Precondition.empty(methodAnalysis.primitives);
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
+            if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
+                FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
+                StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
+                if (beforeAssignment != null) {
+                    ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
+                    if (cm.state().isDelayed()) {
+                        LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
+                                methodInfo.fullyQualifiedName);
+                        methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                                cm.state().causesOfDelay(), primitives));
+                        return cm.state().causesOfDelay();
+                    }
+                    Expression state = cm.state();
+                    if (!state.isBoolValueTrue()) {
+                        Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
+                        Filter.FilterResult<FieldReference> filterResult = filter.filter(state,
+                                filter.individualFieldClause(analyserContext, true));
+                        Expression inResult = filterResult.accepted().get(fr);
+                        if (inResult != null) {
+                            Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
+                            combinedPrecondition = combinedPrecondition.combine(context, pc);
+                        }
+                    }
+                }
+            }
+        }
+        LOGGER.debug("No @Mark @Only annotation in {} from precondition, found {} from assignment",
+                methodInfo.distinguishingName(), combinedPrecondition);
+        methodAnalysis.setPreconditionForEventual(combinedPrecondition);
+        return DONE;
+    }
+
     private static final Pattern INDEX_PATTERN = Pattern.compile("(\\d+)(-C|-E|:M)");
 
     private StatementAnalysis statementBeforeAssignment(FieldReference fieldReference) {
@@ -494,7 +512,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue() {
-        assert !methodAnalysis.singleReturnValueIsFinal();
+        assert methodAnalysis.singleReturnValueIsVariable();
 
         // some immediate short-cuts.
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
