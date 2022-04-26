@@ -500,23 +500,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return evaluationContext.currentValue(variable, scopeValue, indexValue, forwardEvaluationInfo);
         }
 
-        // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
-        // an instance yet. Not called upon assignment.
-        private void assignInstanceToVariable(Variable variable, Expression instance, LinkedVariables linkedVariables) {
-            ChangeData current = valueChanges.get(variable);
-            ChangeData newVcd;
-            if (current == null) {
-                CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
-                newVcd = new ChangeData(instance, stateIsDelayed, stateIsDelayed, false, Set.of(),
-                        linkedVariables, LinkedVariables.EMPTY,
-                        Map.of());
-            } else {
-                newVcd = new ChangeData(instance, current.delays, current.stateIsDelayed, current.markAssignment,
-                        current.readAtStatementTime, linkedVariables, current.toRemoveFromLinkedVariables, current.properties);
-            }
-            valueChanges.put(variable, newVcd);
-        }
-
         /*
         idea: EXT_IMM goes from statement to statement, starting with the value of field analyser (fields, params linked to fields) / type analyser (this)
         we modify along the way if the variable calls a method that changes from BEFORE to AFTER
@@ -798,8 +781,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public void modifyingMethodAccess(Variable variable, Expression newInstance, LinkedVariables linkedVariables) {
-            assignInstanceToVariable(variable, newInstance, linkedVariables);
+        public void modifyingMethodAccess(Variable variable, Expression instance, LinkedVariables linkedVariables) {
+            ChangeData current = valueChanges.get(variable);
+            ChangeData newVcd;
+            if (current == null) {
+                assert linkedVariables != null;
+                CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
+                newVcd = new ChangeData(instance, stateIsDelayed, stateIsDelayed, false, Set.of(),
+                        linkedVariables, LinkedVariables.EMPTY,
+                        Map.of());
+            } else {
+                LinkedVariables lvs = linkedVariables == null ? current.linkedVariables : linkedVariables;
+                newVcd = new ChangeData(instance, current.delays, current.stateIsDelayed, current.markAssignment,
+                        current.readAtStatementTime, lvs, current.toRemoveFromLinkedVariables, current.properties);
+            }
+            valueChanges.put(variable, newVcd);
         }
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {

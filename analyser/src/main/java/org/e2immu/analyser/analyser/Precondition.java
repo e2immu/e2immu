@@ -59,6 +59,13 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
 
     }
 
+    public record CompanionCause(MethodInfo companion) implements PreconditionCause {
+        @Override
+        public String toString() {
+            return "companionMethod:" + companion.name;
+        }
+    }
+
     /**
      * Precondition is inherited from a method with a precondition itself
      */

@@ -68,14 +68,14 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedValue = d.iteration() == 0 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
                         assertEquals(expectedValue, d.currentValue().toString());
 
-                        String expectedLinked = d.iteration() == 0 ? "o1:0" : "o1.list:2,o1:0";
+                        String expectedLinked = "o1:0";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
-                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
 
                 if (d.variable() instanceof ParameterInfo p && "o2".equals(p.name)) {
@@ -91,7 +91,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedValue = d.iteration() == 0 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
 
-                        String expectedLinked = d.iteration() == 0 ? "o2:0,return go:0" : "o2.list:2,o2:0,return go:0";
+                        String expectedLinked =  "o2:0,return go:0";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -132,9 +132,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
 
         testClass("OutputBuilderSimplified_2", 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -143,7 +143,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:isEmpty>" : "a.list.isEmpty()";
+                    String expectValue = d.iteration() == 0 ? "<m:isEmpty>" : "`a.list`.isEmpty()";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }
@@ -167,12 +167,12 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:isEmpty>?b:<return value>"
-                                : "a.list.isEmpty()?b:<return value>";
+                                : "`a.list`.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:isEmpty>?<p:a>:<m:isEmpty>?b:<return value>"
-                                : "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
+                                : "`b.list`.isEmpty()?a:`a.list`.isEmpty()?b:<return value>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -192,8 +192,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         // the warning is correct but not particularly useful, because we have no way of ensuring that "new LinkedList"
         // will become content not null
         testClass("OutputBuilderSimplified_3", 0, 1, new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -224,7 +224,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_5", 0, 0, new DebugConfiguration.Builder()
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -364,7 +364,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -524,7 +524,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -569,10 +569,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals("$2", d.methodInfo().typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 // combiner!
                 String expected = d.iteration() <= 2 ? "<m:apply>"
-                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()&&!bb.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:statically_assigned:0}*/";
+                        : "bb.list.isEmpty()?aa:aa.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:statically_assigned:0}*//*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -609,10 +609,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 

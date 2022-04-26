@@ -20,15 +20,13 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Trie;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -106,6 +104,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+
+                        String lvs = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:-1,node:0,this.root:-1"
+                                : "data:3,node.data:2,node.map:2,node:0,this.root:0";
+                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("newTrieNode".equals(d.variableName())) {
@@ -123,6 +125,9 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     if ("node".equals(fr.scope.toString())) {
                         if ("4".equals(d.statementId())) {
                             assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            String lvs = d.iteration() <= 1 ? "data:3,node.data:0,node.map:-1,node:-1,this.root:-1"
+                                    : "data:3,node.data:0,node.map:2,node:2,this.root:2";
+                            assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else {
                         fail("Have scope " + fr.scope);
@@ -146,6 +151,13 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "data".equals(pi.name)) {
+                    if ("4".equals(d.statementId())) {
+                        String lvs = d.iteration() <= 1 ? "data:0,node.data:-1,node.map:-1,node:-1,this.root:-1"
+                                : "data:0,node.data:3,node.map:3,node:3,this.root:3";
+                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -224,6 +236,26 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
             if ("add".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(1), 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+
+                String eventual = switch (d.iteration()) {
+                    case 0 -> "[DelayedEventual:initial@Class_Trie]";
+                    case 1 -> "[DelayedEventual:final@Field_root]";
+                    case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
+                    case 3 -> "[DelayedEventual:initial@Field_data;initial@Field_map]";
+                    default -> "@Only before: [frozen]";
+                };
+                assertEquals(eventual, d.methodAnalysis().getEventual().toString());
+                if(d.iteration()>=4) {
+                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]", d.methodAnalysis().getPrecondition().toString());
+                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]", d.methodAnalysis().getPreconditionForEventual().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("data".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -233,6 +265,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

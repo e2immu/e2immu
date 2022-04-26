@@ -292,7 +292,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "external".equals(fr.fieldInfo.name)) {
                     assertEquals("0", d.statementId());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

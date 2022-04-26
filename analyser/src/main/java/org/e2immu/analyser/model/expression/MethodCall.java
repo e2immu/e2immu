@@ -270,7 +270,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
-        boolean contentNotNullRequired = notNullForward.equals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
 
         ImmutableData immutableData = recursiveCall || breakCallCycleDelay ? NOT_EVENTUAL :
                 computeContextImmutable(context);
@@ -519,7 +518,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             VariableExpression ve;
             if ((ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
                 Expression delayedObject = DelayedVariableExpression.forDelayedModificationInMethodCall(ve.variable(), causesOfDelay);
-                builder.modifyingMethodAccess(ve.variable(), delayedObject, linkedVariables);
+                // we pass on null to ensure that the linked variables that are already in the changeData, are not overwritten
+                // (see e.g. Basics_20, TrieSimplified)
+                builder.modifyingMethodAccess(ve.variable(), delayedObject, null);
             }
         }
         return builder.build();
@@ -644,10 +645,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
         }
 
-        LinkedVariables linkedVariables = objectValue.linked1VariablesScope(context);
         VariableExpression ve;
         if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
-            builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
+            builder.modifyingMethodAccess(ve.variable(), modifiedInstance, null);
         }
         return modifiedInstance;
     }

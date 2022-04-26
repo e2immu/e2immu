@@ -178,13 +178,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private void handlePrecondition(MethodInfo precondition) {
         LOGGER.debug("Handle precondition {}", precondition.fullyQualifiedName);
         Expression expression = precondition.extractSingleReturnExpression();
-        Precondition pc = new Precondition(expression, List.of(new Precondition.EscapeCause()));
+        Precondition.CompanionCause companionCause = new Precondition.CompanionCause(precondition);
+        Precondition pc = new Precondition(expression, List.of(companionCause));
         methodAnalysis.setPrecondition(pc);
 
         TranslationMap allKnownTestMarks = testMarkTranslationMap();
         Expression translated = expression.translate(analyserContext, allKnownTestMarks);
         if (translated != expression) {
-            Precondition pce = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+            Precondition pce = new Precondition(translated, List.of(companionCause));
             methodAnalysis.setPreconditionForEventual(pce);
 
             boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation(); // TODO this is very hardcoded

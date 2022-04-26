@@ -92,7 +92,15 @@ public class EvaluatePreconditionFromMethod {
                     builder.setProperty(nullClauseEntry.getKey(), Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 }
             }
-            return new Precondition(filterResult.rest(), List.of(new Precondition.MethodCallCause(methodInfo, scopeObject)));
+
+            // the companion cause is passed on verbatim, all others are updated to the correct scope object
+            List<Precondition.PreconditionCause> preconditionCauses;
+            if (precondition.causes().size() == 1 && precondition.causes().get(0) instanceof Precondition.CompanionCause) {
+                preconditionCauses = precondition.causes();
+            } else {
+                preconditionCauses = List.of(new Precondition.MethodCallCause(methodInfo, scopeObject));
+            }
+            return new Precondition(filterResult.rest(), preconditionCauses);
         }
         return Precondition.empty(context.getPrimitives());
     }

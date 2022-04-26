@@ -689,7 +689,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertDv(d, BIG, MultiLevel.CONTAINER_DV, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
