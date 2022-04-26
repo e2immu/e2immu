@@ -21,6 +21,8 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.impl.LocationImpl;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -386,5 +388,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public Set<MethodInfo> getImplementations() {
         return implementations.toImmutableSet();
+    }
+
+    public Expression extractSingleReturnExpression() {
+        MethodInspection inspection = methodInspection.get();
+        Block block = inspection.getMethodBody();
+        if (block.isEmpty()) return null;
+        Statement statement = block.getStructure().statements().get(block.structure.statements().size() - 1);
+        if (statement instanceof ReturnStatement rs) {
+            return rs.expression;
+        }
+        return null;
     }
 }

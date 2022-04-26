@@ -205,7 +205,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) methodAnalysis.internalAllDoneCheck();
+            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
+                methodAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -493,7 +494,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue() {
-        assert !methodAnalysis.singleReturnValue.isFinal();
+        assert !methodAnalysis.singleReturnValueIsFinal();
 
         // some immediate short-cuts.
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
@@ -521,7 +522,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             // and no SRV
             if (noReturnStatementReachable()) {
                 UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
-                methodAnalysis.singleReturnValue.setFinal(ue);
+                methodAnalysis.setSingleReturnValue(ue);
                 methodAnalysis.setProperty(Property.IDENTITY, IDENTITY.falseDv);
                 methodAnalysis.setProperty(IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
@@ -588,7 +589,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         methodAnalysis.setProperty(CONTAINER, container);
                 } else {
                     Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay(), true);
-                    methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                    methodAnalysis.setSingleReturnValue(delayedExpression);
                     return delayedExpression.causesOfDelay();
                 }
             } else {
@@ -604,7 +605,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 Expression delayedExpression = delayedSrv(modified.causesOfDelay(), false);
-                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                methodAnalysis.setSingleReturnValue(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
@@ -617,7 +618,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
                     Expression delayedExpression = delayedSrv(value.causesOfDelay(), true);
-                    methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                    methodAnalysis.setSingleReturnValue(delayedExpression);
                     return delayedExpression.causesOfDelay();
                 }
             }
@@ -629,7 +630,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (contextNotNull.isDelayed()) {
             LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
             Expression delayedExpression = delayedSrv(contextNotNull.causesOfDelay(), false);
-            methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+            methodAnalysis.setSingleReturnValue(delayedExpression);
             return delayedExpression.causesOfDelay();
         }
         assert contextNotNull.isDone();
@@ -644,7 +645,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
                 Expression delayedExpression = delayedSrv(externalNotNull.causesOfDelay(), false);
-                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                methodAnalysis.setSingleReturnValue(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
         } else {
@@ -666,7 +667,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
                 Expression delayedExpression = delayedSrv(constantField.causesOfDelay(), false);
-                methodAnalysis.singleReturnValue.setVariable(delayedExpression);
+                methodAnalysis.setSingleReturnValue(delayedExpression);
                 return delayedExpression.causesOfDelay();
             }
             valueIsConstantField = constantField.valueIsTrue();
@@ -674,7 +675,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         boolean isConstant = value.isConstant() || valueIsConstantField;
 
-        methodAnalysis.singleReturnValue.setFinal(value);
+        methodAnalysis.setSingleReturnValue(value);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (isConstant) {
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
@@ -733,11 +734,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeContainerValue() {
-        if (!methodAnalysis.singleReturnValue.isFinal()) {
+        Expression expression = methodAnalysis.getSingleReturnValue();
+        if (expression.isDelayed()) {
             LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo.fullyQualifiedName);
-            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
+            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
         }
-        Expression expression = methodAnalysis.singleReturnValue.get();
         if (expression.isConstant()) {
             return MultiLevel.CONTAINER_DV;
         }
@@ -754,11 +755,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return formalImmutable;
         }
 
-        if (!methodAnalysis.singleReturnValue.isFinal()) {
+        Expression expression = methodAnalysis.getSingleReturnValue();
+        if (expression.isDelayed()) {
             LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
-            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
+            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
         }
-        Expression expression = methodAnalysis.singleReturnValue.get();
         if (expression.isConstant()) {
             return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
         }

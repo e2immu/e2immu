@@ -101,7 +101,12 @@ public class ExpandedVariable extends BaseExpression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof ExpandedVariable ev) {
+        InlineConditional ic;
+        Expression e;
+        if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
+            e = ic.condition;
+        } else e = v;
+        if(e instanceof ExpandedVariable ev) {
             return variable.compareTo(ev.variable);
         }
         throw new UnsupportedOperationException();

@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
     public Test_Support_08_SetOnceMap() {
-        super(true);
+        super(false);
     }
 
     @Test

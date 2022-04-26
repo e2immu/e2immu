@@ -204,4 +204,8 @@ public class UnaryOperator extends BaseExpression implements Expression {
         return DelayFactory.createDelay(context.evaluationContext().getLocation(duringEvaluation?Stage.EVALUATION: Stage.MERGE),
                 CauseOfDelay.Cause.VALUE);
     }
+
+    public boolean isNegation() {
+        return "!".equals(operator.name) && operator.returnType().isBooleanOrBoxedBoolean();
+    }
 }

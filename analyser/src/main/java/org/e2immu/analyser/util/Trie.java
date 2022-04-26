@@ -14,12 +14,14 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
 
+@E2Container(after = "frozen")
 public class Trie<T> extends Freezable {
 
     private final TrieNode<T> root = new TrieNode<>();

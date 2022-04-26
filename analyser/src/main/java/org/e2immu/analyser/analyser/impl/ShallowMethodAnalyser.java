@@ -24,6 +24,10 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -37,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // field and types have been done already!
@@ -100,8 +105,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, annotations, e2));
 
-        // IMPROVE reading preconditions from AnnotatedAPIs...
-        methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
         CausesOfDelay causes;
         if (explicitlyEmpty) {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
@@ -131,6 +134,19 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             checkMethodIndependent();
             causes = c1.merge(c2).merge(c3).merge(c4).merge(c5);
         }
+
+        CompanionMethodName pre = new CompanionMethodName(methodInfo.name, CompanionMethodName.Action.PRECONDITION, null);
+        MethodInfo precondition = methodInspection.getCompanionMethods().get(pre);
+        if (precondition != null) {
+            handlePrecondition(precondition);
+        }
+        methodAnalysis.ensureIsNotEventualUnlessOtherwiseAnnotated();
+
+        if (methodInfo.hasReturnValue()) {
+            Expression srv = UnknownExpression.forShallowReturnValue(methodInfo.identifier, methodInfo.returnType());
+            methodAnalysis.setSingleReturnValue(srv);
+        }
+
         if (enableVisitors) {
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterMethodAnalyserVisitors();
@@ -143,6 +159,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
         }
+
         if (causes.isDelayed()) {
             assert causes.causesStream().noneMatch(c -> c.cause() == CauseOfDelay.Cause.MIN_INT);
             // we cannot really measure progress, because we're dependent on the analysis of other types
@@ -151,6 +168,52 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             return new AnalyserResult(status, Messages.EMPTY, VariableAccessReport.EMPTY, List.of());
         }
         return AnalyserResult.EMPTY;
+    }
+
+    /*
+    for now, preconditions can only be expressed in terms of other non-modifying boolean methods (@TestMark)
+    the code is tailored towards Freezable.ensure(Not)Frozen.
+
+     */
+    private void handlePrecondition(MethodInfo precondition) {
+        LOGGER.debug("Handle precondition {}", precondition.fullyQualifiedName);
+        Expression expression = precondition.extractSingleReturnExpression();
+        Precondition pc = new Precondition(expression, List.of(new Precondition.EscapeCause()));
+        methodAnalysis.setPrecondition(pc);
+
+        TranslationMap allKnownTestMarks = testMarkTranslationMap();
+        Expression translated = expression.translate(analyserContext, allKnownTestMarks);
+        if (translated != expression) {
+            Precondition pce = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+            methodAnalysis.setPreconditionForEventual(pce);
+
+            boolean negation = pce.expression() instanceof Negation || pce.expression() instanceof UnaryOperator uo && uo.isNegation(); // TODO this is very hardcoded
+            Set<FieldInfo> fields = translated.variables(true).stream()
+                    .filter(v -> v instanceof FieldReference)
+                    .map(v -> ((FieldReference) v).fieldInfo)
+                    .collect(Collectors.toUnmodifiableSet());
+            assert !fields.isEmpty();
+            MethodAnalysis.Eventual eventual = new MethodAnalysis.Eventual(fields, false, !negation, null);
+            methodAnalysis.setEventual(eventual);
+        }
+    }
+
+    // currently, only accepts normal test marks
+    private TranslationMap testMarkTranslationMap() {
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        for (MethodInfo m : methodInfo.typeInfo.typeInspection.get().methods(TypeInspection.Methods.THIS_TYPE_ONLY)) {
+            if (m.methodAnalysis.isSet()) {
+                MethodAnalysis.Eventual eventual = m.methodAnalysis.get().getEventual();
+                if (eventual != null && eventual.test() == Boolean.TRUE) {
+                    FieldInfo fieldInfo = eventual.fields().stream().findFirst().orElseThrow();
+                    VariableExpression ve = new VariableExpression(new FieldReference(analyserContext, fieldInfo));
+                    Expression thisExpression = new VariableExpression(new This(analyserContext, m.typeInfo));
+                    MethodCall mc = new MethodCall(thisExpression, m, List.of());
+                    builder.put(mc, ve);
+                }
+            }
+        }
+        return builder.build();
     }
 
     private CausesOfDelay computeParameterProperties(ParameterAnalysisImpl.Builder builder) {

@@ -186,7 +186,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private final EventuallyFinal<Precondition> preconditionForEventual = new EventuallyFinal<>();
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
-        public final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
+        private final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
 
         // ************** PRECONDITION
 
@@ -338,6 +338,14 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return singleReturnValue.get();
         }
 
+        public void setSingleReturnValue(Expression expression) {
+            if (expression.isDelayed()) {
+                singleReturnValue.setVariable(expression);
+            } else if (!expression.equals(singleReturnValue.get())) {
+                singleReturnValue.setFinal(expression);
+            }
+        }
+
         @Override
         public Location location(Stage stage) {
             return methodInfo.newLocation();
@@ -484,6 +492,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (!precondition.isFinal()) setPrecondition(Precondition.empty(primitives));
             if (!preconditionForEventual.isFinal()) setPreconditionForEventual(Precondition.empty(primitives));
             if (!eventual.isFinal()) setEventual(MethodAnalysis.NOT_EVENTUAL);
+        }
+
+        public boolean singleReturnValueIsFinal() {
+            return singleReturnValue.isFinal();
         }
     }
 

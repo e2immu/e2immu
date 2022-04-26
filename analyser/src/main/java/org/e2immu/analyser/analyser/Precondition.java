@@ -49,7 +49,7 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
 
     public Precondition translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = expression.translate(inspectionProvider, translationMap);
-        if(translated != expression) {
+        if (translated != expression) {
             return new Precondition(translated, causes);
         }
         return this;

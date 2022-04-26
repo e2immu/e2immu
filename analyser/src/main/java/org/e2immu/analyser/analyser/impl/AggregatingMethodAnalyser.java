@@ -119,12 +119,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private AnalysisStatus aggregateMethodValue() {
-        if (!methodAnalysis.singleReturnValue.isFinal()) {
+        if (!methodAnalysis.singleReturnValueIsFinal()) {
             CausesOfDelay delays = implementingAnalyses.get().stream()
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                methodAnalysis.singleReturnValue.setVariable(delayedSrv(delays, true));
+                methodAnalysis.setSingleReturnValue(delayedSrv(delays, true));
                 return delays;
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
@@ -137,7 +137,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                 value = UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
                         methodInfo.returnType(), "interface method");
             }
-            methodAnalysis.singleReturnValue.setFinal(value);
+            methodAnalysis.setSingleReturnValue(value);
             LOGGER.debug("Set single value of {} to aggregate {}", methodInfo.fullyQualifiedName, singleValue);
         }
         return DONE;

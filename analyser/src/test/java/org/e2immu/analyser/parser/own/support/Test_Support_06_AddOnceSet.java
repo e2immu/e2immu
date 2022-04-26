@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
     public Test_Support_06_AddOnceSet() {
-        super(true);
+        super(false);
     }
 
     @Test

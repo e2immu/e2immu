@@ -17,15 +17,11 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -36,10 +32,56 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
-    @Test
-    public void test() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, 2,
-                new DebugConfiguration.Builder().build());
+    public Test_Util_06_DependencyGraph() {
+        super(false); // important for this to be false, we'll be parsing Freezable
     }
 
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("ensureNotFrozen".equals(d.methodInfo().name)) {
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
+            String pc = d.iteration() == 0
+                    ? "Precondition[expression=<precondition>, causes=[]]"
+                    : "Precondition[expression=!frozen, causes=[escape]]";
+            assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().toString());
+            String expected = switch (d.iteration()) {
+                case 0 -> "[DelayedEventual:initial@Class_Freezable]";
+                case 1 -> "[DelayedEventual:final@Field_frozen]";
+                default -> "@Only before: [frozen]";
+            };
+            assertEquals(expected, d.methodAnalysis().getEventual().toString());
+        }
+        if ("ensureFrozen".equals(d.methodInfo().name)) {
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
+            String pc = d.iteration() == 0
+                    ? "Precondition[expression=<precondition>, causes=[]]"
+                    : "Precondition[expression=frozen, causes=[escape]]";
+            assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().toString());
+            String expected = switch (d.iteration()) {
+                case 0 -> "[DelayedEventual:initial@Class_Freezable]";
+                case 1 -> "[DelayedEventual:final@Field_frozen]";
+                default -> "@Only after: [frozen]";
+            };
+            assertEquals(expected, d.methodAnalysis().getEventual().toString());
+        }
+    };
+
+    @Test
+    public void test_0() throws IOException {
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, 2,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, 2,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
 }

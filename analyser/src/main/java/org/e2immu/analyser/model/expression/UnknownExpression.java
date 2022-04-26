@@ -52,6 +52,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
         return new UnknownExpression(identifier, parameterizedType, RETURN_VALUE);
     }
 
+    public static UnknownExpression forShallowReturnValue(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, RETURN_VALUE);
+    }
+
     public static UnknownExpression forNotYetAssigned(Identifier identifier, ParameterizedType parameterizedType) {
         return new UnknownExpression(identifier, parameterizedType, NOT_YET_ASSIGNED);
     }

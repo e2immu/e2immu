@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class Test_Util_07_Trie extends CommonTestRunner {
 
     public Test_Util_07_Trie() {
-        super(true);
+        super(false);
     }
 
     @Test
