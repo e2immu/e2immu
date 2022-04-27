@@ -85,7 +85,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() <= 5 ? "<m:freeze>" : "<no return value>";
+                    String expected = d.iteration() <= 1 ? "<m:freeze>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -137,7 +137,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<mmc:copy>" : "instance type DGSimplified_0<T>";
+                        String expected = d.iteration() <= 1 ? "<mmc:copy>" : "instance type DGSimplified_0<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -331,7 +331,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 5 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 4 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delay = switch (d.iteration()) {
                         case 0 -> "cm:dependsOn@Method_addNode_0-E;cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t;initial:dg@Method_reverse_1.0.0-C";
@@ -339,7 +339,6 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         case 2 -> "[15 delays]";
                         case 3 -> "cm:node.dependsOn@Method_addNode_1:M;cm:node@Method_addNode_1:M;cm:scope-n:1.dependsOn@Method_addNode_1:M;cm:scope-n:1@Method_addNode_1:M;cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t";
                         case 4 -> "cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t";
-                        case 5 -> "cm@Parameter_t";
                         default -> "";
                     };
                     assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
@@ -349,7 +348,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 5 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 4 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }

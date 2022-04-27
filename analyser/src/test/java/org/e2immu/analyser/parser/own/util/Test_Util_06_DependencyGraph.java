@@ -147,6 +147,28 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
+            if ("reverse".equals(d.methodInfo().name)) {
+                if ("dg".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new DependencyGraph<>()", d.currentValue().toString());
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
+                        assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 5 ? "<mmc:dg>" : "instance type DependencyGraph<T>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
+                        assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 5 ? "<vl:dg>"
+                                : "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 6, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    }
+                }
+            }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("nodeMap".equals(d.fieldInfo().name)) {
@@ -168,10 +190,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name) && 3 == n) {
                 assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String srv = d.iteration() <= BIG ? "<m:sorted>" : "";
+                assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
                 assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
-//                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT); // FIXME dep in it 1?
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("reverse".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

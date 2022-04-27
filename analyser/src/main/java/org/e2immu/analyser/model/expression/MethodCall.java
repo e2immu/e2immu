@@ -632,8 +632,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
-                return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
-                        objectValue.linkedVariables(context).changeAllToDelay(causesOfDelay), causesOfDelay);
+                if (context.evaluationContext().isMyself(returnType)) {
+                    valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                } else {
+                    return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
+                            objectValue.linkedVariables(context).changeAllToDelay(causesOfDelay), causesOfDelay);
+                }
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }

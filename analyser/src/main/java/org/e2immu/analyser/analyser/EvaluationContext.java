@@ -229,14 +229,9 @@ public interface EvaluationContext {
             assert formalType != null : "Use other call!";
             return valuePropertiesOfNullConstant(formalType);
         }
-        if (value instanceof ConstructorCall cc && cc.constructor() != null && isMyself(cc.returnType()) && getCurrentMethod() != null && !getCurrentMethod().getMethodInspection().isStatic()) {
-            return Properties.ofWritable(Map.of(
-                    IMMUTABLE, IMMUTABLE.falseDv,
-                    INDEPENDENT, INDEPENDENT.falseDv,
-                    CONTAINER, CONTAINER.falseDv,
-                    IDENTITY, IDENTITY.falseDv,
-                    IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv,
-                    NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+        if (value instanceof ConstructorCall cc && cc.constructor() != null &&
+                isMyself(cc.returnType()) && getCurrentMethod() != null && !getCurrentMethod().getMethodInspection().isStatic()) {
+            return valuePropertiesOfFormalType(cc.returnType(), MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
@@ -245,11 +240,17 @@ public interface EvaluationContext {
     }
 
     default Properties valuePropertiesOfFormalType(ParameterizedType formalType) {
+        DV nne = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
+        return valuePropertiesOfFormalType(formalType, nne);
+    }
+
+    default Properties valuePropertiesOfFormalType(ParameterizedType formalType, DV notNullExpression) {
+        assert notNullExpression.isDone();
         AnalyserContext analyserContext = getAnalyserContext();
         Properties properties = Properties.ofWritable(Map.of(
                 IMMUTABLE, analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv),
                 INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
-                NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
+                NOT_NULL_EXPRESSION, notNullExpression,
                 CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
