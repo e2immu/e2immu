@@ -331,8 +331,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 };
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
 
-                assertEquals(d.iteration() >= 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() >= 3) {

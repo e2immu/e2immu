@@ -66,7 +66,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    String expectLv = d.iteration() == 0 ? "other:-1" : "other:3";
+                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
@@ -89,10 +89,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
+                        String expectLinked = d.iteration() <= 1 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
                                 .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
@@ -109,10 +109,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
-                        String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
+                        String expectLinked = d.iteration() <= 1 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -134,10 +134,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copy".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 1,
+                assertEquals(d.iteration() >= 2,
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
-                assertDv(d.p(0), 2, DV.FALSE_DV, CONTEXT_MODIFIED);
-                assertDv(d.p(0), 2, DV.FALSE_DV, MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, MODIFIED_VARIABLE);
             }
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
@@ -164,7 +164,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
         };
 

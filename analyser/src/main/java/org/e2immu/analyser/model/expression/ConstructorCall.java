@@ -223,7 +223,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             }
             i++;
         }
-        return result;
+        return result  .minimum(LinkedVariables.ASSIGNED_DV);
     }
 
     @Override

@@ -1002,13 +1002,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 2: @Identity links to the 1st parameter
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
-            return parameterExpressions.get(0).linkedVariables(context);
+            return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         }
         if (identity.isDelayed()) {
             // temporarily link to both the object and the parameter, in a delayed way
             if (parameterExpressions.isEmpty()) return LinkedVariables.delayedEmpty(identity.causesOfDelay());
             return object.linkedVariables(context)
-                    .merge(parameterExpressions.get(0).linkedVariables(context)).changeAllToDelay(identity);
+                    .merge(parameterExpressions.get(0).linkedVariables(context))
+                    .minimum(LinkedVariables.ASSIGNED_DV)
+                    .changeAllToDelay(identity);
         }
 
         // RULE 3: in a factory method, the result links to the parameters, directly
@@ -1019,7 +1021,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
-        LinkedVariables linkedVariablesOfScope = object.linkedVariables(context);
+        // note the minimum() call: 0 is only used for static, direct assignments
+        LinkedVariables linkedVariablesOfScope = object.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
 
         DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         if (methodIndependent.isDelayed()) {

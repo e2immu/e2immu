@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Test_Util_08_Resources extends CommonTestRunner {
 
     public Test_Util_08_Resources() {
-        super(true);
+        super(false);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                0, 8, new DebugConfiguration.Builder()
+                0, 15, new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

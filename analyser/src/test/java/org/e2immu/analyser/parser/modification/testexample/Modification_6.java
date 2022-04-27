@@ -32,7 +32,7 @@ public class Modification_6 {
         this.set6 = in6;
     }
 
-    @Modified
+    @NotModified
     public static void add6(@NotNull @Modified Modification_6 example6, @NotNull1 @NotModified Set<String> values6) {
         example6.set6.addAll(values6);
     }

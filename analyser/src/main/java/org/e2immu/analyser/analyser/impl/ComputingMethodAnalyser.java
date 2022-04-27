@@ -145,7 +145,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED,
                         (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
-                .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
+                .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer())
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
@@ -511,7 +511,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus computeReturnValue() {
+    private AnalysisStatus computeReturnValue(SharedState sharedState) {
         assert methodAnalysis.singleReturnValueIsVariable();
 
         // some immediate short-cuts.
@@ -588,7 +588,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     // see e.g. InstanceOf_16, ExplicitConstructorInvocation_10
                     ParameterizedType formalType = methodInfo.returnType();
                     DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
-                    DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
+                    if (!methodAnalysis.properties.isDone(IMMUTABLE))
+                        methodAnalysis.setProperty(IMMUTABLE, immutable);
+                    // now that we have a value for immutable, we give independent another go
+                    computeIndependent(sharedState);
+                    DV independent;
+                    if (methodAnalysis.properties.isDone(INDEPENDENT)) {
+                        independent = methodAnalysis.getProperty(INDEPENDENT);
+                    } else {
+                        independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
+                        methodAnalysis.setProperty(INDEPENDENT, independent);
+                    }
                     DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
                     notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
                     Properties properties = Properties.ofWritable(Map.of(
@@ -599,10 +609,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                             IDENTITY, IDENTITY.falseDv,
                             IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
                     value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
-                    if (!methodAnalysis.properties.isDone(IMMUTABLE))
-                        methodAnalysis.setProperty(IMMUTABLE, immutable);
-                    if (!methodAnalysis.properties.isDone(INDEPENDENT))
-                        methodAnalysis.setProperty(INDEPENDENT, independent);
                     if (!methodAnalysis.properties.isDone(CONTAINER))
                         methodAnalysis.setProperty(CONTAINER, container);
                 } else {
@@ -958,11 +964,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     - scope is recursively "this"
     - static scope, pointing to a type in my primary type
      */
-    private DV connectedToMyTypeHierarchy(FieldReference fr) {
+    static DV connectedToMyTypeHierarchy(FieldReference fr) {
         if (fr.scopeIsThis()) return DV.TRUE_DV;
         IsVariableExpression ive;
         if ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null) {
-            if (methodInfo.typeInfo.isMyself(ive.returnType(), analyserContext)) return DV.TRUE_DV;
             if (ive.variable() instanceof FieldReference fr2) {
                 return connectedToMyTypeHierarchy(fr2);
             }
@@ -1007,9 +1012,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         ParameterizedType type = methodInspection.getReturnType();
         DV independent = computeIndependent(variableInfo, immutable, type, sharedState.evaluationContext().getCurrentType(),
                 analyserContext);
-        if (independent.isDelayed()) return independent.causesOfDelay();
         methodAnalysis.setProperty(INDEPENDENT, independent);
-        return DONE;
+        return AnalysisStatus.of(independent);
     }
 
     static DV computeIndependent(VariableInfo variableInfo,

@@ -644,6 +644,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return myMethodAnalysers.stream()
                 .filter(ma -> !ma.getMethodInfo().inConstruction())
                 .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream()
+                        .filter(vi -> ComputingMethodAnalyser.connectedToMyTypeHierarchy((FieldReference) vi.variable()).valueIsTrue())
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue()))
                 .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());
@@ -652,7 +653,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private Set<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
         return myMethodAnalysers.stream()
                 .filter(ma -> !ma.getMethodInfo().inConstruction())
-                .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream().anyMatch(VariableInfo::isAssigned))
+                .filter(ma -> ma.getMethodAnalysis().getFieldAsVariable(fieldInfo).stream()
+                        .filter(vi -> ComputingMethodAnalyser.connectedToMyTypeHierarchy((FieldReference) vi.variable()).valueIsTrue())
+                        .anyMatch(VariableInfo::isAssigned))
                 .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());
     }
