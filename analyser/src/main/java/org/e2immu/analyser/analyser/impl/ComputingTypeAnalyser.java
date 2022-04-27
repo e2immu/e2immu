@@ -515,24 +515,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     all non-private methods which assign a field, or can reach a method that assigns a field
      */
     private Set<MethodAnalyser> determineAssigningMethods() {
-        Set<MethodInfo> assigningMethods = myMethodAnalysersExcludingSAMs.stream()
+        return myMethodAnalysersExcludingSAMs.stream()
+                .filter(ma -> !ma.getMethodInspection().isPrivate())
                 .filter(ma -> {
                     StatementAnalysis statementAnalysis = ma.getMethodAnalysis().getLastStatement();
                     return statementAnalysis != null && statementAnalysis.assignsToFields() &&
                             statementAnalysis.noIncompatiblePrecondition();
                 })
-                .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());
-
-        return myMethodAnalysersExcludingSAMs.stream()
-                .filter(ma -> !ma.getMethodInspection().isPrivate())
-                .filter(ma -> {
-                    StatementAnalysis statementAnalysis = ma.getMethodAnalysis().getLastStatement();
-                    return statementAnalysis != null && statementAnalysis.noIncompatiblePrecondition();
-                })
-                .filter(ma -> assigningMethods.contains(ma.getMethodInfo()) ||
-                        !Collections.disjoint(ma.getMethodInfo().methodResolution.get().methodsOfOwnClassReached(), assigningMethods))
-                .collect(Collectors.toSet());
     }
 
     /*

@@ -18,9 +18,9 @@ import org.e2immu.annotation.*;
 
 /*
 Like EventuallyE2Immutable_3, with different types of errors.
-The two "error" methods break the eventually immutable type restrictions, as they are modifying without precondition.
+The two "error" methods currently do not stop the type from becoming eventually E2Container.
  */
-@Container
+@E2Container(after = "t")
 public class EventuallyE2Immutable_11<T> {
 
     private T t;

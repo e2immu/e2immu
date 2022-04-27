@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
@@ -44,8 +46,42 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
         super(true);
     }
 
+    public static final String PC = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
+    public static final String PC2 = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition, companionMethod:ensureNotFrozen$Precondition]]";
+
     @Test
     public void test() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("addNode".equals(d.methodInfo().name) && 3 == n) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(PC, d.statementAnalysis().stateData().getPrecondition().toString());
+                    assertEquals(PC, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    // also call to getOrCreate...?
+                    assertEquals("Precondition[expression=true, causes=[]]", d.statementAnalysis().stateData().getPrecondition().toString());
+                    assertEquals(PC, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+                if ("2.0.2".equals(d.statementId())) {
+                    assertEquals(PC, d.statementAnalysis().stateData().getPrecondition().toString()); // call to getOrCreate
+                    assertEquals(PC, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    assertEquals(PC2,
+                            d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("addNode".equals(d.methodInfo().name) && 3 == n) {
+                assertEquals(PC2, d.methodAnalysis().getPrecondition().toString());
+            }
+            if ("getOrCreate".equals(d.methodInfo().name)) {
+                assertEquals(PC, d.methodAnalysis().getPrecondition().toString());
+            }
+        };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo freezable = typeMap.get(Freezable.class);
 
@@ -71,8 +107,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
                 MethodInfo companion = ensureNotFrozen.methodInspection.get().getCompanionMethods()
                         .get(CompanionMethodName.extract("ensureNotFrozen$Precondition"));
                 assertNotNull(companion);
-                assertEquals("Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]",
-                        ensureNotFrozenAna.getPrecondition().toString());
+                assertEquals(PC, ensureNotFrozenAna.getPrecondition().toString());
                 assertEquals("Precondition[expression=!frozen, causes=[companionMethod:ensureNotFrozen$Precondition]]",
                         ensureNotFrozenAna.getPreconditionForEventual().toString());
                 assertEquals("@Only before: [frozen]", ensureNotFrozenAna.getEventual().toString());
@@ -95,6 +130,8 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(DependencyGraph.class), 7, 2,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

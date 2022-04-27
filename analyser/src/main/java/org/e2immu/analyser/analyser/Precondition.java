@@ -68,7 +68,9 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
        ********************************/
 
     public CompanionCause singleCompanionCauseOrNull() {
-        return causes.size() == 1 && causes.get(0) instanceof CompanionCause cc ? cc : null;
+        if (causes.isEmpty()) return null;
+        PreconditionCause pc = causes.get(0);
+        return causes.stream().allMatch(c -> c instanceof CompanionCause && c.equals(pc)) ? (CompanionCause) pc : null;
     }
 
     public record MethodCallAndNegation(MethodCall methodCall, boolean negation) {

@@ -192,7 +192,7 @@ public class DependencyGraph<T> extends Freezable {
         return sorted(null, null, null);
     }
 
-    Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
+    static <T> Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
         return (e1, e2) -> {
             int c = e1.getValue().dependsOn.size() - e2.getValue().dependsOn.size();
             if (c == 0) {
