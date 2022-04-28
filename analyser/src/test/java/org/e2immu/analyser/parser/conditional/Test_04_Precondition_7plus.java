@@ -442,7 +442,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
         };
-        testClass("Precondition_10_2", 0, 16,
+        testClass("Precondition_10_2", 0, 6,
                 new DebugConfiguration.Builder()
                  //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
@@ -700,7 +700,7 @@ public class Test_04_Precondition_7plus extends CommonTestRunner {
                     //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                      //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                      //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                     //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

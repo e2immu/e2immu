@@ -297,10 +297,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("qualification".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = "<new:QualificationImpl>";
+                        String expected = d.iteration()<=2? "<new:QualificationImpl>":"new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                        assertTrue(d.iteration() <= 2);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         VariableInfo previous = d.variableInfoContainer().getPreviousOrInitial();

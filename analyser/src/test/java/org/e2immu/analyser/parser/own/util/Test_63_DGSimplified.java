@@ -48,7 +48,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String expected = switch (d.iteration()) {
                     case 0, 1 -> "ext_imm:this@Method_comparator_0-E";
                     case 2 -> "initial@Field_nodeMap";
-                    case 3 -> "[18 delays]";
+                    case 3 -> "[22 delays]";
                     case 4 -> "cm:node.dependsOn@Method_addNode_2:M;cm:node@Method_addNode_2:M;cm:scope-n:2.0.2.dependsOn@Method_addNode_2:M;cm:scope-n:2.0.2@Method_addNode_2:M;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M";
                     case 5 -> "ext_imm:this@Method_comparator_0-E";
                     default -> "";
@@ -61,8 +61,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         case 0 -> "ext_not_null:this.nodeMap@Method_test_0-E;ext_not_null@Field_nodeMap";
                         case 1 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E";
                         case 2 -> "cm:node.dependsOn@Method_test_2-E;cm:node@Method_test_2-E;cm:this.nodeMap@Method_test_2-E;initial@Field_dependsOn;initial@Field_nodeMap;initial@Field_t";
-                        case 3 -> "[19 delays]";
-                        case 4 -> "[18 delays]";
+                        case 3 -> "[23 delays]";
+                        case 4 -> "[22 delays]";
                         case 5 -> "cm:node.dependsOn@Method_addNode_2:M;cm:node@Method_addNode_2:M;cm:scope-n:2.0.2.dependsOn@Method_addNode_2:M;cm:scope-n:2.0.2@Method_addNode_2:M;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M";
                         case 6 -> "ext_imm:this@Method_test_0-E";
                         default -> "";
@@ -94,9 +94,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M";
-                        case 1 -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
-                        default -> "copy.nodeMap=true:1, copy=true:1, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=true:1";
+                        case 0 -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, this=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M";
+                        case 1 -> "copy.nodeMap=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, copy=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, this=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
+                        default -> "copy.nodeMap=true:1, copy=true:1, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=true:1, this=false:0";
                     };
                     assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Object::toString).sorted().collect(Collectors.joining(", ")));
                 }
@@ -223,10 +223,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String expected = d.iteration() <= 1 ? "<m:comparator>"
                         : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -234,7 +234,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 String delay = switch (d.iteration()) {
                     case 0 -> "final@Field_nodeMap";
                     case 1 -> "initial@Field_nodeMap";
-                    case 2 -> "[18 delays]";
+                    case 2 -> "[22 delays]";
                     case 3 -> "cm:node.dependsOn@Method_addNode_2:M;cm:node@Method_addNode_2:M;cm:scope-n:2.0.2.dependsOn@Method_addNode_2:M;cm:scope-n:2.0.2@Method_addNode_2:M;cm:t@Method_addNode_2:M;cm:this@Method_addNode_2:M";
                     case 4 -> "assign_to_field@Parameter_t";
                     default -> "";

@@ -74,6 +74,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("addNode".equals(d.methodInfo().name) && 3 == n) {
@@ -144,7 +145,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
-                    String lvs = d.iteration() <= 5 ? "return sorted:0,this:-1" : "return sorted:0";
+                    String lvs = d.iteration() <= 2 ? "return sorted:0,this:-1" : "return sorted:0,this:3";
                     assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     String expected = d.iteration() <= 5 ? "<m:sorted>"
                             : "`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
@@ -159,17 +160,17 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<mmc:dg>" : "instance type DependencyGraph<T>";
+                        String expected = d.iteration() <= BIG ? "<mmc:dg>" : "instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
                         assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<vl:dg>"
+                        String expected = d.iteration() <= BIG ? "<vl:dg>"
                                 : "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 6, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, BIG, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, BIG, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
             }
@@ -199,11 +200,11 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 6, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
@@ -211,13 +212,13 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("sorted".equals(d.methodInfo().name) && 3 == n) {
                 assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String srv = d.iteration() <= 5 ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 6, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
                 String srv = d.iteration() <= 5 ? "<m:sorted>"
                         : "/*inline sorted*/`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
@@ -240,7 +241,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("addNode".equals(d.methodInfo().name) && 3 == n) {
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -269,7 +270,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                     default -> "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);

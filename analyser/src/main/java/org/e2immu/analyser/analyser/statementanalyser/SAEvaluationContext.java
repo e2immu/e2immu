@@ -692,6 +692,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 .variable() instanceof LocalVariableReference);
     }
 
+    // we keep "This" variables, because fields may refer to them
+    @Override
+    public Stream<Map.Entry<String, VariableInfoContainer>> variablesFromClosure() {
+        return statementAnalysis.rawVariableStream()
+                .filter(e -> !(e.getValue().current().variable() instanceof ReturnVariable));
+    }
+
     @Override
     public CausesOfDelay variableIsDelayed(Variable variable) {
         VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);

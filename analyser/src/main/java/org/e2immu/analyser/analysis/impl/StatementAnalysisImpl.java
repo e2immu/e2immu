@@ -460,6 +460,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
             }
             if (parent == null) {
+                assert "0".equals(index) || "00".equals(index) || "000".equals(index);
+                flowData.setInitialTime(0, index);
                 createParametersThisAndVariablesFromClosure(evaluationContext, currentMethod);
                 return;
             }
@@ -469,8 +471,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
                 .forEach(e -> copyVariableFromPreviousInIteration0(e, copyFrom,
-                        previous == null, previous == null ? null : previous.index(),
-                        false, evaluationContext));
+                        previous == null, previous == null ? null : previous.index()));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData());
     }
@@ -478,54 +479,44 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private void createParametersThisAndVariablesFromClosure(EvaluationContext evaluationContext, MethodInfo currentMethod) {
         // at the beginning of a method, we create parameters; also those from closures
         assert evaluationContext != null;
-        EvaluationContext closure = evaluationContext;
-        boolean inClosure = false;
-        while (closure != null) {
-            // data is copied back to the closure in StatementAnalyserImpl.transferFromClosureToResult;
-            // mechanism is the VariableAccessReport
-            if (closure.getCurrentMethod() != null) {
-                for (ParameterInfo parameterInfo : closure.getCurrentMethod().getMethodInspection().getParameters()) {
-                    VariableNature variableNature = inClosure
-                            ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.METHOD_WIDE;
-                    createVariable(closure, parameterInfo, 0, variableNature);
+        assert currentMethod != null;
+
+        for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
+            createVariable(evaluationContext, parameterInfo, 0, VariableNature.METHOD_WIDE);
+        }
+        EvaluationContext closure = evaluationContext.getClosure();
+        if (closure != null) {
+            closure.variablesFromClosure().forEach(e -> {
+                VariableInfo vi = e.getValue().current();
+                if (vi.variable() instanceof LocalVariableReference || vi.variable() instanceof DependentVariable) {
+                    Expression newValue = vi.getValue().generify(evaluationContext);
+                    VariableInfoContainer newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(INITIAL),
+                            e.getValue(), navigationData.hasSubBlocks(), newValue);
+                    putVariable(e.getKey(), newVic);
+                } else {
+                    // FR, This: they get values injected
+                    createVariable(evaluationContext, vi.variable(), 0, VariableNature.FROM_ENCLOSING_METHOD);
                 }
-            }
-            closure = closure.getClosure();
-            inClosure = true;
+            });
         }
 
-        // even static methods need a "this" variable, because we use it to mark that modifying method has been called
+        // even static methods need a "this" variable, because we use it to mark that a modifying method has been called
         // in a static context
         This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
         createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
-
-        // we'll copy local variables from outside this method
-        // NOT a while statement, because this one will work recursively
-        EvaluationContext closure4Local = evaluationContext.getClosure();
-        if (closure4Local != null) {
-            closure4Local.localVariableStream().forEach(e ->
-                    copyVariableFromPreviousInIteration0(e, closure4Local.getCurrentStatement().getStatementAnalysis(),
-                            true, null, true, evaluationContext));
-        }
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
                                                       StatementAnalysis copyFrom,
                                                       boolean previousIsParent,
-                                                      String indexOfPrevious,
-                                                      boolean markCopyOfEnclosingMethod,
-                                                      EvaluationContext evaluationContext) {
+                                                      String indexOfPrevious) {
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
         Variable variable = vi.variable();
         VariableInfoContainer newVic;
 
-        if (markCopyOfEnclosingMethod) {
-            Expression newValue = vi.getValue().generify(evaluationContext);
-            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(INITIAL),
-                    vic, navigationData.hasSubBlocks(), newValue);
-        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
+        if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable, copyFrom, previousIsParent)) {
             // move a local variable, not defined in this loop, inside the loop
@@ -601,9 +592,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
          See VariableScope_5 as an example where only in 0 and 1-E are done before a value is reached.
          */
         init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
-        EvaluationContext closure4Local = evaluationContext.getClosure();
-        if (closure4Local != null) {
-            closure4Local.localVariableStream().forEach(e -> {
+        EvaluationContext closure = evaluationContext.getClosure();
+        if (closure != null) {
+            closure.variablesFromClosure().forEach(e -> {
                 VariableInfoContainer here = variables.getOrDefaultNull(e.getKey());
                 if (here != null) {
                     VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
@@ -612,7 +603,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(),
                                 viInClosure.valueProperties(), INITIAL);
                     }
-                }
+                } // else: it is perfectly possible for variables to be returned by variablesFromClosure that were not
+                // present in the initial call in iteration 0 (see Warnings_5, VariableScope_5, e.g.)
+                // however, if they are not present, they have no reason to be there.
             });
         }
 

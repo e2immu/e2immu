@@ -985,12 +985,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo pi && pi.owner == d.methodInfo() && "expression".equals(pi.name)) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 40, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() == 0 ? "<p:expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 40, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -1030,7 +1030,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             // $3 is the lambda in statement 3 of FindInstanceOfPatterns.find
             if ("$3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 40, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_16", 0, 5, new DebugConfiguration.Builder()
