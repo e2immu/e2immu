@@ -109,22 +109,33 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    private void removeAsManyAsPossible(Set<T> set) {
+    private List<T> removeAsManyAsPossible(Set<T> set) {
+        List<T> removed = new ArrayList<>();
         boolean changed = true;
         while (changed) {
-            changed = singleRemoveStep(set);
+            List<T> inSingleStep = singleRemoveStep(set);
+            changed = !inSingleStep.isEmpty();
+            removed.addAll(inSingleStep);
+
             DependencyGraph<T> reverse = reverse(set);
-            changed |= reverse.singleRemoveStep(set);
+            List<T> inReverse = reverse.singleRemoveStep(set);
+            changed |= !inReverse.isEmpty();
+            removed.addAll(inReverse);
         }
+        return removed;
     }
 
-    private boolean singleRemoveStep(Set<T> set) {
-        return set.removeIf(t -> {
+    private List<T> singleRemoveStep(Set<T> set) {
+        List<T> removed = new ArrayList<>();
+        set.removeIf(t -> {
             Node<T> node = nodeMap.get(t);
             assert node != null;
-            return node.dependsOn == null || node.dependsOn.isEmpty() ||
+            boolean remove = node.dependsOn == null || node.dependsOn.isEmpty() ||
                     node.dependsOn.stream().noneMatch(set::contains);
+            if (remove) removed.add(t);
+            return remove;
         });
+        return removed;
     }
 
     /*
@@ -167,13 +178,13 @@ public class DependencyGraph<T> extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn) {
+    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn) {
         addNode(t, dependsOn, false);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull T t, @NotNull1 Collection<T> dependsOn, boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {
@@ -187,7 +198,7 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @Independent
+    @Independent1
     public List<T> sorted() {
         return sorted(null, null, null);
     }
@@ -202,7 +213,7 @@ public class DependencyGraph<T> extends Freezable {
         };
     }
 
-    @Independent
+    @Independent1
     public List<T> sorted(Consumer<List<T>> reportPartOfCycle,
                           Consumer<T> reportIndependent,
                           Comparator<T> backupComparator) {
@@ -231,7 +242,15 @@ public class DependencyGraph<T> extends Freezable {
             if (keys.isEmpty()) {
                 // find the core of the cycle
                 Map<T, Node<T>> cycle = new HashMap<>(toDo);
-                removeAsManyAsPossible(cycle.keySet());
+                List<T> removed = removeAsManyAsPossible(cycle.keySet());
+                removed.forEach(t -> {
+                    result.add(t);
+                    toDo.remove(t);
+                    done.add(t);
+                    if (reportIndependent != null) reportIndependent.accept(t);
+                });
+
+                //  FIXME to do there can be multiple cycles, we should try separate them
                 assert !cycle.isEmpty();
                 List<T> sortedCycle = cycle.entrySet().stream().sorted(comparator(backupComparator)).map(Map.Entry::getKey).toList();
                 T key = sortedCycle.get(0);

@@ -386,6 +386,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if(variable instanceof FieldReference fr) {
             FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
             valueProperties = fieldAnalysis.getValueProperties();
+        } else if(context.evaluationContext().isMyself(parameterizedType)) {
+            valueProperties = context.evaluationContext().valuePropertiesOfFormalType(parameterizedType);
         } else {
             valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         }
