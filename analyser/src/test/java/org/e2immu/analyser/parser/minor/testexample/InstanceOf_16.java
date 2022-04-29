@@ -30,17 +30,17 @@ public class InstanceOf_16 {
         List<Expression> subElements();
     }
 
-    record Negation(Expression expression) implements Expression {
+    record Negation(Expression en) implements Expression {
         @Override
         public List<Expression> subElements() {
-            return List.of(expression);
+            return List.of(en);
         }
     }
 
-    record UnaryOperator(Expression expression, Operator operator) implements Expression {
+    record UnaryOperator(Expression eu, Operator operator) implements Expression {
         @Override
         public List<Expression> subElements() {
-            return List.of(expression);
+            return List.of(eu);
         }
     }
 
@@ -57,12 +57,12 @@ public class InstanceOf_16 {
     static class FindInstanceOfPatterns {
         public static List<InstanceOfPositive> find(Expression expression) {
             if (expression instanceof Negation negation) {
-                return find(negation.expression).stream()
+                return find(negation.en).stream()
                         .map(iop -> new InstanceOfPositive(iop.instanceOf, !iop.positive)).toList();
             }
             // expression has most likely not been evaluated yet, so ! can be negation or unary !
             if (expression instanceof UnaryOperator unaryOperator && unaryOperator.operator.isUnaryNot()) {
-                return find(unaryOperator.expression).stream()
+                return find(unaryOperator.eu).stream()
                         .map(iop -> new InstanceOfPositive(iop.instanceOf, !iop.positive)).toList();
             }
             if (expression instanceof InstanceOf instanceOf) {

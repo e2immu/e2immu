@@ -599,8 +599,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (here != null) {
                     VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
                     VariableInfo hereInitial = here.getRecursiveInitialOrNull();
-                    if (hereInitial != null && !hereInitial.valueIsSet()) {
-                        here.setValue(viInClosure.getValue(), viInClosure.getLinkedVariables(),
+                    if (hereInitial != null) {
+                        here.safeSetValue(viInClosure.getValue(), viInClosure.getLinkedVariables(),
                                 viInClosure.valueProperties(), INITIAL);
                     }
                 } // else: it is perfectly possible for variables to be returned by variablesFromClosure that were not

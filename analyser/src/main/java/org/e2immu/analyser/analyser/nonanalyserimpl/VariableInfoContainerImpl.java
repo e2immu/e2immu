@@ -266,6 +266,30 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
+    @Override
+    public void safeSetValue(Expression value,
+                             LinkedVariables linkedVariables,
+                             Properties properties,
+                             Stage stage) {
+        ensureNotFrozen();
+        Objects.requireNonNull(value);
+        VariableInfoImpl variableInfo = getToWrite(stage);
+
+        if (!variableInfo.valueIsSet()) {
+            variableInfo.setValue(value);
+            boolean valueIsDone = value.isDone() && !value.isNotYetAssigned();
+            properties.stream().forEach(e -> {
+                DV v = e.getValue();
+                Property vp = e.getKey();
+                if (v.isDelayed() && valueIsDone && vp.valueProperty) {
+                    throw new IllegalStateException("Not allowed to even try to set delay on a value property");
+                }
+                variableInfo.setProperty(vp, v);
+            });
+        }
+        variableInfo.setLinkedVariables(linkedVariables);
+    }
+
 
     @Override
     public void setLinkedVariables(LinkedVariables linkedVariables, Stage level) {

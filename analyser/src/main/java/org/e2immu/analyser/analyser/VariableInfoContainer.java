@@ -128,6 +128,10 @@ public interface VariableInfoContainer {
     @Modified
     void setValue(Expression value, LinkedVariables linkedVariables, Properties propertiesToSet, Stage stage);
 
+    // a version used to copy from an outer method into a sub-type
+    @Modified
+    void safeSetValue(Expression value, LinkedVariables linkedVariables, Properties valueProperties, Stage initial);
+
     @Modified
     default void setProperty(Property property, DV value, Stage level) {
         setProperty(property, value, false, level);
@@ -192,4 +196,5 @@ public interface VariableInfoContainer {
                                                        Expression expression,
                                                        Properties properties,
                                                        CausesOfDelay causesOfDelay);
+
 }

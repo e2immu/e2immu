@@ -108,10 +108,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         EvaluationResult result;
         if (statementAnalysis.statement() instanceof ReturnStatement) {
             assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
+            // here is a good breakpoint location (return statements) -->
             result = createAndEvaluateReturnStatement(sharedState, toEvaluate);
         } else {
             LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
-            result = toEvaluate.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
+            EvaluationResult from = EvaluationResult.from(sharedState.evaluationContext());
+            ForwardEvaluationInfo forwardEvaluationInfo = structure.forwardEvaluationInfo();
+            // here is a good breakpoint location (all other statements) -->
+            result = toEvaluate.evaluate(from, forwardEvaluationInfo);
         }
         if (statementAnalysis.statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
