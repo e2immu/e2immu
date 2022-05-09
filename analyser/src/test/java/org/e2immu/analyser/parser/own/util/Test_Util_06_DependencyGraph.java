@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -74,7 +75,6 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("addNode".equals(d.methodInfo().name) && 3 == n) {
@@ -181,7 +181,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("dependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-//                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL); FIXME
+         //               assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -313,8 +313,14 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals("accept, recursivelyComputeDependenciesWithoutStartingPoint", methodResolution.callCycleSorted());
             }
             if ("dependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals("", methodResolution.callCycleSorted());
                 //         assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER); FIXME
             }
         };

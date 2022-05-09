@@ -20,7 +20,6 @@ import org.e2immu.support.Freezable;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * In-house implementation of a directed graph that can be used to model dependencies between objects.
@@ -203,9 +202,14 @@ public class DependencyGraph<T> extends Freezable {
         return sorted(null, null, null);
     }
 
-    static <T> Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
+    static <T> Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator, Set<T> subSet) {
         return (e1, e2) -> {
-            int c = e1.getValue().dependsOn.size() - e2.getValue().dependsOn.size();
+            Set<T> sub1 = new HashSet<>(e1.getValue().dependsOn);
+            sub1.retainAll(subSet);
+            Set<T> sub2 = new HashSet<>(e2.getValue().dependsOn);
+            sub2.retainAll(subSet);
+
+            int c = sub1.size() - sub2.size();
             if (c == 0) {
                 c = backupComparator == null ? 0 : backupComparator.compare(e1.getKey(), e2.getKey());
             }
@@ -250,9 +254,12 @@ public class DependencyGraph<T> extends Freezable {
                     if (reportIndependent != null) reportIndependent.accept(t);
                 });
 
-                //  FIXME to do there can be multiple cycles, we should try separate them
                 assert !cycle.isEmpty();
-                List<T> sortedCycle = cycle.entrySet().stream().sorted(comparator(backupComparator)).map(Map.Entry::getKey).toList();
+                //  There can be multiple cycles, we should separate them
+                Map<T, Node<T>> smallerCycle = startArbitrarily(cycle);
+                List<T> sortedCycle = smallerCycle.entrySet().stream()
+                        .sorted(comparator(backupComparator, smallerCycle.keySet()))
+                        .map(Map.Entry::getKey).toList();
                 T key = sortedCycle.get(0);
                 toDo.remove(key);
                 done.add(key);
@@ -266,16 +273,24 @@ public class DependencyGraph<T> extends Freezable {
         return result;
     }
 
-    public DependencyGraph<T> copyRemove(Predicate<T> accept) {
-        DependencyGraph<T> copy = new DependencyGraph<>();
-        nodeMap.forEach((t, node) -> {
-            if (accept.test(t)) {
-                List<T> newDependsOn = node.dependsOn == null ? null :
-                        node.dependsOn.stream().filter(accept).toList();
-                copy.nodeMap.put(t, new Node<>(t, newDependsOn));
+    // return a sub-map, starting off at some point, and then following links
+    private Map<T, Node<T>> startArbitrarily(Map<T, Node<T>> cycle) {
+        Map<T, Node<T>> sub = new HashMap<>();
+        Node<T> first = cycle.values().stream().findFirst().orElseThrow();
+        sub.put(first.t, first);
+        recursivelyAddToSubGraph(first, sub, cycle);
+        return sub;
+    }
+
+    private void recursivelyAddToSubGraph(Node<T> start, Map<T, Node<T>> sub, Map<T, Node<T>> cycle) {
+        if (start.dependsOn != null) {
+            for (T t : start.dependsOn) {
+                if (!sub.containsKey(t) && cycle.containsKey(t)) {
+                    Node<T> node = nodeMap.get(t);
+                    sub.put(t, node);
+                    recursivelyAddToSubGraph(node, sub, cycle);
+                }
             }
-        });
-        copy.freeze();
-        return copy;
+        }
     }
 }

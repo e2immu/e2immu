@@ -699,7 +699,13 @@ public class ResolverImpl implements Resolver {
                 first = false;
             }
             inCycle.addAll(restrictedCycle);
-        }, null, Comparator.comparing(MethodInfo::fullyQualifiedName));
+        }, null, (m1, m2) -> {
+            int r1 = methodRank(m1);
+            int r2 = methodRank(m2);
+            int c = r1 - r2;
+            if (c != 0) return c;
+            return m1.fullyQualifiedName.compareTo(m2.fullyQualifiedName);
+        });
 
         methodCallGraph.visit((methodInfo, toList) -> {
             if (!methodInfo.methodResolution.isSet()) {
@@ -719,6 +725,20 @@ public class ResolverImpl implements Resolver {
             } // otherwise: already processed during AnnotatedAPI
         });
 
+    }
+
+    /*
+    In a call cycle, at least one method will have poorer analysis (ignoreMeBecauseOfPartOfCallCycle will be true).
+    The more "important" the method is, the less likely do we want to this method to be the one in the cycle to have auto values.
+
+    This can be an area of improvement, obviously. For now, we want to fix a null-pointer problem in
+    DependencyGraph.recursivelyComputeDependenciesWithoutStartingPoint, where we'd rather see the functional interface
+    method being the one that breaks the chain.
+     */
+    private int methodRank(MethodInfo methodInfo) {
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface()) return 0;
+        if (methodInfo.isPrivate()) return 1;
+        return 2;
     }
 
     private void computeAllowsInterrupt(MethodResolution.Builder methodResolutionBuilder,
