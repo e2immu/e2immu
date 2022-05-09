@@ -114,7 +114,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         if ("entry.getValue()".equals(fr.scope.toString())) {
                             assertNotEquals("4", d.statementId());
-                        } else if ("scope-scope-226:40:3.0.1".equals(fr.scope.toString())) {
+                        } else if ("scope-scope-230:40:3.0.1".equals(fr.scope.toString())) {
                             if ("4".equals(d.statementId())) {
                                 String expected = d.iteration() == 0 ? "<f:dependsOn>" : "nullable instance type List<T>";
                                 assertEquals(expected, d.currentValue().toString());
@@ -129,8 +129,8 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
                         String lvs = d.iteration() <= 1
-                                ? "done:-1,reportIndependent:-1,reportPartOfCycle:-1,result:0,return sorted:0,scope-226:40:-1,this.nodeMap:-1,this:-1,toDo:-1"
-                                : "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-226:40:3,this.nodeMap:3,toDo:3";
+                                ? "done:-1,reportIndependent:-1,reportPartOfCycle:-1,result:0,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1"
+                                : "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,toDo:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

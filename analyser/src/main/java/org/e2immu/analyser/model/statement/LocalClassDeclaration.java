@@ -21,6 +21,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class LocalClassDeclaration extends StatementWithStructure {
@@ -59,7 +60,15 @@ public class LocalClassDeclaration extends StatementWithStructure {
     @Override
     public List<? extends Element> subElements() {
         return methodAndConstructorInspections.stream()
-                .map(mi -> Objects.requireNonNull(mi.getMethodBody(), "No method body for "+mi.getMethodInfo().fullyQualifiedName))
+                .map(mi -> Objects.requireNonNull(mi.getMethodBody(),
+                        "No method body for " + mi.getMethodInfo().fullyQualifiedName))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            methodAndConstructorInspections.forEach(i -> i.getMethodBody().visit(predicate));
+        }
     }
 }

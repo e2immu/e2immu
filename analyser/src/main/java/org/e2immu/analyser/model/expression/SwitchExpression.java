@@ -181,7 +181,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             selector.visit(predicate);
             expressions.stream().forEach(v -> v.visit(predicate));

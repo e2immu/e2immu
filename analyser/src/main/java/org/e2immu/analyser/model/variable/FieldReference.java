@@ -231,7 +231,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (scope != null) scope.visit(predicate);
     }
 

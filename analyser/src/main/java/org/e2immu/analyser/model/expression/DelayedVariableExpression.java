@@ -122,7 +122,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
 

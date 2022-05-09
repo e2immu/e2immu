@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class ReturnStatement extends StatementWithExpression {
 
@@ -52,5 +53,12 @@ public class ReturnStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+        }
     }
 }

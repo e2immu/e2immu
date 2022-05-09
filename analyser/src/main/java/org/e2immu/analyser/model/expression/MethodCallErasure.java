@@ -110,7 +110,7 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
 }

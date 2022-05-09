@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,5 +74,14 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
 
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(List.of(expression), switchEntries);
+    }
+
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+            switchEntries.forEach(switchEntry -> switchEntry.visit(predicate));
+        }
     }
 }

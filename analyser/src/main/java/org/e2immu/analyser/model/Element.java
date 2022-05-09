@@ -24,6 +24,7 @@ import org.e2immu.annotation.NotNull1;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public interface Element {
@@ -44,6 +45,13 @@ public interface Element {
         subElements().forEach(element -> element.visit(consumer));
         consumer.accept(this);
     }
+
+    /**
+     * Tests the value first, and only if true, visit deeper.
+     *
+     * @param predicate return true if the search is to be continued deeper
+     */
+    void visit(Predicate<Element> predicate);
 
     @SuppressWarnings("unchecked")
     default <T extends Element> void visit(Consumer<T> consumer, Class<T> clazz) {

@@ -126,7 +126,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             object.visit(predicate);
             parameterExpressions.forEach(p -> p.visit(predicate));

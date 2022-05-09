@@ -20,7 +20,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -126,7 +125,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         arrayExpression.visit(predicate);
         indexExpression.visit(predicate);
     }

@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class IfElseStatement extends StatementWithExpression {
     // for convenience, it's also in structure.subStatements.get(0).block
@@ -92,5 +93,15 @@ public class IfElseStatement extends StatementWithExpression {
             return List.of(expression, structure.block());
         }
         return List.of(expression, structure.block(), elseBlock);
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+            if (!elseBlock.isEmpty()) {
+                elseBlock.visit(predicate);
+            }
+        }
     }
 }

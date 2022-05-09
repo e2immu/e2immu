@@ -122,7 +122,7 @@ public final class LambdaExpressionErasures extends BaseExpression implements Er
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
 }

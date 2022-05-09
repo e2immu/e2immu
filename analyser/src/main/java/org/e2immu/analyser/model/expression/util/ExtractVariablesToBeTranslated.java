@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -29,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-public class ExtractVariablesToBeTranslated implements Predicate<Expression> {
+public class ExtractVariablesToBeTranslated implements Predicate<Element> {
     final Set<Expression> expressions = new HashSet<>();
     final AtomicBoolean containsVariableFields = new AtomicBoolean();
     final AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
@@ -50,7 +51,7 @@ public class ExtractVariablesToBeTranslated implements Predicate<Expression> {
     }
 
     @Override
-    public boolean test(Expression e) {
+    public boolean test(Element e) {
         if (e instanceof Lambda lambda) {
             variablesToIgnore.addAll(lambda.methodInfo.methodInspection.get().getParameters());
             variablesToIgnore.add(new This(inspectionProvider, lambda.methodInfo.typeInfo));

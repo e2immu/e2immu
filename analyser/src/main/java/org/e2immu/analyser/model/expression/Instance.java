@@ -259,7 +259,7 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
 

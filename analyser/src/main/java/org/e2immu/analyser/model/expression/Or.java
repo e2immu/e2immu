@@ -266,7 +266,7 @@ public final class Or extends ExpressionCanBeTooComplex {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));
         }

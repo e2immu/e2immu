@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.SMapList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -139,5 +140,14 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     @Override
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(List.of(expression, structure.block()), labelExpressions);
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+            structure.block().visit(predicate);
+            labelExpressions.forEach(e -> e.visit(predicate));
+        }
     }
 }

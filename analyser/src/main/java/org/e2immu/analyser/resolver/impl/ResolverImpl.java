@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.LocalClassDeclaration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -624,6 +625,9 @@ public class ResolverImpl implements Resolver {
                         created.set(true);
                     }
                 }
+                return !(e instanceof Lambda)
+                        && !(e instanceof ConstructorCall cc && cc.anonymousClass() != null)
+                        && !(e instanceof LocalClassDeclaration);
             });
             if (caller != null && !created.get()) {
                 methodCallGraph.addNode(caller, List.of());

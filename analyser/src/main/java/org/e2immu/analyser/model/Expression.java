@@ -156,13 +156,6 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean isBoolValueFalse();
 
-    /**
-     * Tests the value first, and only if true, visit deeper.
-     *
-     * @param predicate return true if the search is to be continued deeper
-     */
-    void visit(Predicate<Expression> predicate);
-
     @NotNull
     default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
         if (precedence.greaterThan(expression.precedence())) {

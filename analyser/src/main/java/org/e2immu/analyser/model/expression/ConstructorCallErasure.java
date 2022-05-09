@@ -40,7 +40,7 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
 

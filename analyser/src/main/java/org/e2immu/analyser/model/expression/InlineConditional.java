@@ -162,7 +162,7 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             condition.visit(predicate);
             ifTrue.visit(predicate);

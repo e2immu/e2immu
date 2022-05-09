@@ -101,7 +101,7 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return VariableInfoContainer.NOT_A_FIELD;
     }
 
-    default void visit(Predicate<Expression> predicate) {
+    default void visit(Predicate<Element> predicate) {
         // do nothing, but any variable containing an expression should go there (field reference, dependent variable)
     }
 

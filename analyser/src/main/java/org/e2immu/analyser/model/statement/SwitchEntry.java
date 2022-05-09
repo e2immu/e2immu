@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Precedence;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -30,6 +29,7 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -177,6 +177,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
         public List<? extends Element> subElements() {
             return ListUtil.immutableConcat(labels, structure.statements());
         }
+
+        @Override
+        public void visit(Predicate<Element> predicate) {
+            if (predicate.test(this)) {
+                labels.forEach(l -> l.visit(predicate));
+                structure.statements().forEach(st -> st.visit(predicate));
+            }
+        }
     }
 
     //****************************************************************************************************************
@@ -223,6 +231,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
         @Override
         public List<? extends Element> subElements() {
             return ListUtil.immutableConcat(labels, List.of(structure.block()));
+        }
+
+        @Override
+        public void visit(Predicate<Element> predicate) {
+            if (predicate.test(this)) {
+                labels.forEach(l -> l.visit(predicate));
+                structure.block().visit(predicate);
+            }
         }
     }
 }

@@ -199,7 +199,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             for (Declaration declaration : declarations) {
                 declaration.expression.visit(predicate);

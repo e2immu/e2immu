@@ -228,7 +228,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
 

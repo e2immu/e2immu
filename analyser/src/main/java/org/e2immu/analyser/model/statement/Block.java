@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Block extends StatementWithStructure {
@@ -231,6 +232,13 @@ public class Block extends StatementWithStructure {
     @Override
     public List<? extends Element> subElements() {
         return structure.statements();
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            structure.statements().forEach(statement -> statement.visit(predicate));
+        }
     }
 
     @Override

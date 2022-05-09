@@ -134,7 +134,7 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             Expression single = singleExpression();
             if (single != null) single.visit(predicate);

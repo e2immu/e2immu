@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public abstract class LoopStatement extends StatementWithExpression {
     public final String label;
@@ -30,6 +31,14 @@ public abstract class LoopStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression, structure.block());
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+            structure.block().visit(predicate);
+        }
     }
 
     /**

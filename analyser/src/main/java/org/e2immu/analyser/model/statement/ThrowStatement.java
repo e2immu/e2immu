@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class ThrowStatement extends StatementWithExpression {
 
@@ -34,6 +35,13 @@ public class ThrowStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(structure.expression());
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            structure.expression().visit(predicate);
+        }
     }
 
     @Override

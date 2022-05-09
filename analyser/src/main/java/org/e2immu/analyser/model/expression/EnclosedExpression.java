@@ -132,7 +132,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         inner.visit(predicate);
     }
 

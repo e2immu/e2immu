@@ -14,11 +14,14 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.LimitedStatementAnalysis;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+
+import java.util.function.Predicate;
 
 public class EmptyStatement extends StatementWithStructure {
 
@@ -29,6 +32,11 @@ public class EmptyStatement extends StatementWithStructure {
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(Symbol.SEMICOLON);
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        // do nothing
     }
 }
 

@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class ExpressionAsStatement extends StatementWithExpression {
 
@@ -74,6 +75,14 @@ public class ExpressionAsStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
+    }
+
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+        }
     }
 
     @Override

@@ -99,9 +99,9 @@ public class Filter {
 
     private <X> FilterResult<X> internalFilter(Expression value, List<FilterMethod<X>> filterMethods) {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
-        value.visit(v -> {
-            if (!v.isEmpty()) {
-                if (v instanceof Negation negatedValue) {
+        value.visit(element -> {
+            if (element instanceof Expression expression && !expression.isEmpty()) {
+                if (expression instanceof Negation negatedValue) {
                     FilterResult<X> resultOfNegated = internalFilter(negatedValue.expression, filterMethods);
                     if (resultOfNegated != null) {
                         FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
@@ -110,17 +110,17 @@ public class Filter {
                                 negateRest(resultOfNegated.rest));
                         filterResult.set(negatedResult);
                     }
-                } else if (v instanceof And andValue) {
+                } else if (expression instanceof And andValue) {
                     if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
                         filterResult.set(processAndOr(false, andValue.getExpressions(), filterMethods));
                     }
-                } else if (v instanceof Or orValue) {
+                } else if (expression instanceof Or orValue) {
                     if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
                         filterResult.set(processAndOr(true, orValue.expressions(), filterMethods));
                     }
                 } else {
                     for (FilterMethod<X> filterMethod : filterMethods) {
-                        FilterResult<X> res = filterMethod.apply(v);
+                        FilterResult<X> res = filterMethod.apply(expression);
                         if (res != null) {
                             // we have a hit
                             filterResult.set(res);

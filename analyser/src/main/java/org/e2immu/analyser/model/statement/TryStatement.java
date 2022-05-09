@@ -155,7 +155,7 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public void visit(Predicate<Expression> predicate) {
+        public void visit(Predicate<Element> predicate) {
             throw new UnsupportedOperationException();
         }
     }
@@ -192,5 +192,13 @@ public class TryStatement extends StatementWithStructure {
     @Override
     public List<? extends Element> subElements() {
         return subElements;
+    }
+
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            subElements.forEach(e -> e.visit(predicate));
+        }
     }
 }

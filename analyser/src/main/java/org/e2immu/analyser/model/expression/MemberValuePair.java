@@ -67,7 +67,7 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
 

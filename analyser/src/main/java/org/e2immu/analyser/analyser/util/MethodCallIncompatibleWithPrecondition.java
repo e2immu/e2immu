@@ -111,9 +111,9 @@ public class MethodCallIncompatibleWithPrecondition {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         AnalyserContext analyserContext = context.getAnalyserContext();
-        expression.visit(e -> {
+        expression.visit(element -> {
             VariableExpression ve;
-            if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
+            if (element instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
                 MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
                 for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
@@ -130,7 +130,7 @@ public class MethodCallIncompatibleWithPrecondition {
                             TranslationMap translationMap = new TranslationMapImpl.Builder()
                                     .put(thisVar, ve.variable()).build();
                             Expression translated = value.translate(analyserContext, translationMap);
-                            builder.put(e, translated);
+                            builder.put(methodCall, translated);
                         }
                     }
                 }

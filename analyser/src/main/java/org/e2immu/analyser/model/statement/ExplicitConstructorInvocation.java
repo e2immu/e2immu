@@ -21,6 +21,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 // this( )
@@ -62,5 +63,12 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     @Override
     public List<? extends Element> subElements() {
         return structure.updaters();
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            structure.updaters().forEach(updater -> updater.visit(predicate));
+        }
     }
 }

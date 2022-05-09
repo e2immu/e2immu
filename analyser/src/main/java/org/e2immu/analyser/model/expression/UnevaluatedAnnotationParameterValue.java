@@ -18,10 +18,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -107,7 +104,7 @@ public final class UnevaluatedAnnotationParameterValue extends BaseExpression im
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
 }

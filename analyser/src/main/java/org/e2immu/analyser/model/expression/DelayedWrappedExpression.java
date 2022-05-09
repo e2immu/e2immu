@@ -86,7 +86,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
-    public void visit(Predicate<Expression> predicate) {
+    public void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
 

@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
+
+import java.util.function.Predicate;
 
 public abstract class BreakOrContinueStatement extends StatementWithStructure {
     public final String label;
@@ -26,5 +29,10 @@ public abstract class BreakOrContinueStatement extends StatementWithStructure {
 
     public boolean hasALabel() {
         return label != null;
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        predicate.test(this);
     }
 }

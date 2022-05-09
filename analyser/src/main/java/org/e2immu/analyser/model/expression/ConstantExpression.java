@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -122,7 +119,7 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default void visit(Predicate<Expression> predicate) {
+    default void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
 }
