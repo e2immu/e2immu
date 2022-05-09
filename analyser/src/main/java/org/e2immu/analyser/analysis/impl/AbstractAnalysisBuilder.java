@@ -87,6 +87,14 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     @Override
+    public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
+        DV dv = properties.getOrDefaultNull(property);
+        if (dv == null || dv.isDelayed()) {
+            properties.put(property, causes);
+        }
+    }
+
+    @Override
     public Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
         return annotationChecks.stream();
     }

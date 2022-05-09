@@ -103,7 +103,8 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
-        if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) methodAnalysis.internalAllDoneCheck();
+        if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
+            methodAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
         List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterMethodAnalyserVisitors();
@@ -124,8 +125,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                methodAnalysis.setSingleReturnValue(delayedSrv(delays, true));
-                return delays;
+                return delayedSrv(delays, true);
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
             // unless it is a constant, a parameter of the method, or statically assigned to a constructor (?) we can't do much

@@ -264,12 +264,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
             }
             if (vi.isDelayed()) {
-                LOGGER.debug("Apply of {}, {} is delayed because of unknown value for {}",
-                        index(), methodInfo().fullyQualifiedName, variable);
+                LOGGER.debug("Apply it {} of {}, {} is delayed because of unknown value for {}",
+                        sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(vi.getValue().causesOfDelay());
             } else if (changeData.delays().isDelayed()) {
-                LOGGER.debug("Apply of {}, {} is delayed because of delay in method call on {}",
-                        index(), methodInfo().fullyQualifiedName, variable);
+                LOGGER.debug("Apply it {} of {}, {} is delayed because of delay in method call on {}",
+                        sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(changeData.delays());
             }
         }

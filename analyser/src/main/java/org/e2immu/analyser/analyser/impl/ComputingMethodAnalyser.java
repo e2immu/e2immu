@@ -612,9 +612,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     if (!methodAnalysis.properties.isDone(CONTAINER))
                         methodAnalysis.setProperty(CONTAINER, container);
                 } else {
-                    Expression delayedExpression = delayedSrv(variableInfo.getValue().causesOfDelay(), true);
-                    methodAnalysis.setSingleReturnValue(delayedExpression);
-                    return delayedExpression.causesOfDelay();
+                    return delayedSrv(variableInfo.getValue().causesOfDelay(), true);
                 }
             } else {
                 throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
@@ -628,9 +626,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
-                Expression delayedExpression = delayedSrv(modified.causesOfDelay(), false);
-                methodAnalysis.setSingleReturnValue(delayedExpression);
-                return delayedExpression.causesOfDelay();
+                return delayedSrv(modified.causesOfDelay(), false);
             }
             if (modified.valueIsFalse()) {
                 /*
@@ -641,9 +637,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDone();
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
-                    Expression delayedExpression = delayedSrv(value.causesOfDelay(), true);
-                    methodAnalysis.setSingleReturnValue(delayedExpression);
-                    return delayedExpression.causesOfDelay();
+                    return delayedSrv(value.causesOfDelay(), true);
                 }
             }
         }
@@ -653,9 +647,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // see e.g. Identity_2
         if (contextNotNull.isDelayed()) {
             LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
-            Expression delayedExpression = delayedSrv(contextNotNull.causesOfDelay(), false);
-            methodAnalysis.setSingleReturnValue(delayedExpression);
-            return delayedExpression.causesOfDelay();
+            return delayedSrv(contextNotNull.causesOfDelay(), false);
         }
         assert contextNotNull.isDone();
 
@@ -668,9 +660,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-                Expression delayedExpression = delayedSrv(externalNotNull.causesOfDelay(), false);
-                methodAnalysis.setSingleReturnValue(delayedExpression);
-                return delayedExpression.causesOfDelay();
+                return delayedSrv(externalNotNull.causesOfDelay(), false);
             }
         } else {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
@@ -690,9 +680,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
-                Expression delayedExpression = delayedSrv(constantField.causesOfDelay(), false);
-                methodAnalysis.setSingleReturnValue(delayedExpression);
-                return delayedExpression.causesOfDelay();
+                return delayedSrv(constantField.causesOfDelay(), false);
             }
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;

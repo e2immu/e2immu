@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analysis.impl;
 
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
@@ -55,6 +52,14 @@ abstract class AnalysisImpl implements Analysis {
 
     public DV getPropertyFromMapNeverDelay(Property property) {
         return properties.getOrDefault(property, property.valueWhenAbsent());
+    }
+
+    @Override
+    public void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes) {
+        DV dv = properties.getOrDefault(property, null);
+        if (dv == null || dv.isDelayed()) {
+            properties.put(property, causes);
+        }
     }
 
     @Override
