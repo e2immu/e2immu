@@ -99,7 +99,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                                 vi1.getValue().toString());
                         assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
-                    String expectedLinks = d.iteration() == 0 ? LINKS_LOCAL3_SET3 + ",v:-1" : LINKS_LOCAL3_SET3;
+                    String expectedLinks = d.iteration() == 0 ? "local3:0,this.set3:-1,v:-1" : LINKS_LOCAL3_SET3;
                     assertEquals(expectedLinks, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -112,7 +112,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isRead());
-                    String expectedLinks = d.iteration() == 0 ? LINKS_LOCAL3_SET3 + ",v:-1" : LINKS_LOCAL3_SET3;
+                    String expectedLinks = d.iteration() == 0 ? "local3:0,this.set3:-1,v:-1" : LINKS_LOCAL3_SET3;
                     assertEquals(expectedLinks, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                     assertEquals(expectValue, d.variableInfo().getValue().toString());

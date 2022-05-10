@@ -99,7 +99,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "array:0,array[i]:-1,av-32:17:-1" : "array:0,array[i]:805,av-32:17:805";
+                        String linked = d.iteration() == 0 ? "array:-1,array[i]:-1,av-32:17:-1" : "array:0,array[i]:805,av-32:17:805";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -107,7 +107,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("2.0.1".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "cm:array@Method_method_2.0.1:M;cm:array[i]@Method_method_2.0.1:M;cm:av-32:17@Method_method_2.0.1:M;initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1.0.2-C;initial@Class_Loops_21" : "";
+                String expected = d.iteration() == 0 ? "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1.0.2-C;initial@Class_Loops_21" : "";
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 if (d.iteration() >= 2) {
                     assertTrue(d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));

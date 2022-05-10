@@ -105,7 +105,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<mmc:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
@@ -159,7 +159,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);

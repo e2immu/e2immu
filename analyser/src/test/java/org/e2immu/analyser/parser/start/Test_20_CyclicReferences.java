@@ -147,8 +147,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:methodF>" : "true";
-                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertEquals("true", d.evaluationResult().value().toString());
                 }
             }
         };
@@ -172,14 +171,14 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             MethodResolution methodResolution = d.methodInfo().methodResolution.get();
             if ("methodC".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
-                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 String expected = d.iteration() == 0 ? "<m:methodC>"
-                        : "/*inline methodC*/\"b\".equals(paramC)?CyclicReferences_3.methodD(\"b\"):\"a\".equals(paramC)";
+                        : "/*inline methodC*/\"a\".equals(paramC)||\"b\".equals(paramC)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodD".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
-                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
             if ("methodE".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
@@ -188,8 +187,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodF".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                String expected = d.iteration() == 0 ? "<m:methodF>"
-                        : "/*inline methodF*/\"a\".equals(paramF)||\"b\".equals(paramF)";
+                String expected = "/*inline methodF*/\"a\".equals(paramF)?CyclicReferences_3.methodC(paramF):\"b\".equals(paramF)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -206,13 +204,10 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Expression expression = d.statementAnalysis().stateData().valueOfExpression.get();
-                    String expected = d.iteration() == 0 ? "<m:methodF>" : "instance type boolean";
-                    assertEquals(expected, expression.toString());
-                    if (d.iteration() > 0) {
-                        if (expression instanceof Instance i) {
-                            assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
-                        } else fail();
-                    }
+                    assertEquals("instance type boolean", expression.toString());
+                    if (expression instanceof Instance i) {
+                        assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
+                    } else fail();
                 }
             }
         };

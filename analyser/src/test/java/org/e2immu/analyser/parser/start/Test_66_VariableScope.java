@@ -297,7 +297,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("qualification".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration()<=2? "<new:QualificationImpl>":"new QualificationImpl()";
+                        String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
@@ -511,7 +511,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected2, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d,2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() <= 3
                                 ? "<null-check>&&<instanceOf:MethodCall>?<mmc:outputBuilder>:<new:OutputBuilder>"
                                 : "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
@@ -554,9 +554,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:object>/*(MethodCall)*/";
-                            case 1 -> "<vp:object:[17 delays]>/*(MethodCall)*/";
-                            case 2 -> "<vp:object:cm@Parameter_guideGenerator;cm@Parameter_qualification;mom@Parameter_object>/*(MethodCall)*/";
-                            case 3 -> "<vp:object:cm:return output@Method_output_0-E;cm:this@Method_output_0-E;cm@Parameter_guideGenerator;cm@Parameter_qualification;initial:this.object@Method_output2_2-C;initial@Field_outputElements;mom@Parameter_object;srv@Method_output2>/*(MethodCall)*/";
+                            case 1 -> "<vp:object:cm@Parameter_guideGenerator;cm@Parameter_name;cm@Parameter_object;cm@Parameter_parameterExpressions;cm@Parameter_qualification;initial:this.object@Method_output2_2.0.0-C;initial@Interface_OutputElement;mom@Parameter_name;mom@Parameter_object;mom@Parameter_parameterExpressions>/*(MethodCall)*/";
+                            case 2 -> "<vp:object:[15 delays]>/*(MethodCall)*/";
+                            case 3 -> "<vp:object:cm@Parameter_guideGenerator;cm@Parameter_qualification>/*(MethodCall)*/";
                             default -> "object/*(MethodCall)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -568,11 +568,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 2 ? "<m:output2>"
+                String expected = d.iteration() <= 1 ? "<m:output2>"
                         : "/*inline output2*/nullable instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
@@ -582,7 +582,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_8", 0, 6, new DebugConfiguration.Builder()
@@ -645,7 +645,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 2 ? "<m:output2>" : "/*inline output2*/nullable instance type OutputBuilder";
+                String expected = d.iteration() <= 1 ? "<m:output2>" : "/*inline output2*/nullable instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -653,7 +653,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_8_1", 0, DONT_CARE, new DebugConfiguration.Builder()
@@ -701,7 +701,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>&&this!=(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>)";
                         case 1, 2, 3 -> "<null-check>&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10)";
-                        default -> "null!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)";
+                        default -> "this!=(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)&&(scope-vdol:1.statementIndex.startsWith(index+\".\")||null!=nullable instance type VariableScope_10)&&(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop||null!=nullable instance type VariableScope_10)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -740,9 +740,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // eval
                         String expected = switch (d.iteration()) {
                             case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
-                            case 1 -> "<vp:vn:[11 delays]>/*(VariableDefinedOutsideLoop)*/";
-                            case 2 -> "<vp:vn:cm@Parameter_index;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature>/*(VariableDefinedOutsideLoop)*/";
-                            case 3 -> "<vp:vn:cm@Parameter_index;mom@Parameter_previousVariableNature>/*(VariableDefinedOutsideLoop)*/";
+                            case 1, 2 -> "<vp:vn:cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_index;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
+                            case 3 -> "<vp:vn:break_mom_delay@Parameter_previousVariableNature;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_index;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
                             default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -772,7 +771,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("scope-vdol:1".equals(fr.scope.toString())) {
                             assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable,
                                     "is " + d.variableInfoContainer().variableNature().getClass());
-                            assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         } else fail("Have scope " + fr.scope);
                     }
                     if ("2".equals(d.statementId())) {
@@ -793,7 +792,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "CM{state=(!<instanceOf:VariableDefinedOutsideLoop>||!<m:startsWith>)&&(!<null-check>||this==(<instanceOf:VariableDefinedOutsideLoop>&&<m:startsWith>?<dv:scope-vdol:1.previousVariableNature>:<vl:vn>));parent=CM{}}";
                         case 1, 2, 3 -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(!<null-check>||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?<dv:scope-vdol:1.previousVariableNature>:nullable instance type VariableScope_10));parent=CM{}}";
-                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(null==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10));parent=CM{}}";
+                        default -> "CM{state=(!scope-vdol:1.statementIndex.startsWith(index+\".\")||!(vn instanceof VariableDefinedOutsideLoop))&&(this==(scope-vdol:1.statementIndex.startsWith(index+\".\")&&nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop?scope-vdol:1.previousVariableNature:nullable instance type VariableScope_10)||!(nullable instance type VariableScope_10 instanceof VariableDefinedOutsideLoop)&&null==nullable instance type VariableScope_10);parent=CM{}}";
                     };
                     assertEquals(expected, d.conditionManagerForNextStatement().toString());
                 }

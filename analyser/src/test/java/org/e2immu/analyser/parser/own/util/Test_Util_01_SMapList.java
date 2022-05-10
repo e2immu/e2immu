@@ -105,18 +105,18 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     .getParameterAnalyses().get(1).getProperty(Property.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                if (d.iteration() <= 1) assertTrue(paramMod.isDelayed());
+                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
                 else assertEquals(DV.FALSE_DV, paramMod);
             }
             if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                if (d.iteration() <= 1) assertTrue(paramMod.isDelayed());
+                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
                 else assertEquals(DV.FALSE_DV, paramMod);
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
             String expected;
             if ("3".equals(d.statementId())) {
-                expected = d.iteration() == 0 ? "a:3,bs:-1,list:0,map:-1" : "bs:3,list:0";
+                expected = d.iteration() == 0 ? "a:3,bs:-1,list:-1,map:-1" : "bs:3,list:0";
             } else {
                 expected = d.iteration() == 0 ? "a:3,list:0,map:3" : "list:0";
             }
@@ -232,11 +232,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
             if ("bs".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("b".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {

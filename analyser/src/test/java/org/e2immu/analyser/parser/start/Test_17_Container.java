@@ -254,11 +254,11 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:-1" : "s3:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:-1" : "s3:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -268,11 +268,11 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -283,13 +283,13 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("set3:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         // NO s3!
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:0" : "set3:0,this.s:0";
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:-1,this.s:-1" : "set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -405,7 +405,7 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<p:coll5>" : "nullable instance type Collection<String>/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? "coll5:0,this:-1" : "coll5:0";
+                    String expectLinked = d.iteration() == 0 ? "coll5:-1,this:-1" : "coll5:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }

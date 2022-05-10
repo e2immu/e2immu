@@ -157,7 +157,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "return getX:-1,this.xs:-1,xs[index]:0";
+                        case 0, 1 -> "return getX:-1,this.xs:-1,xs[index]:-1";
                         default -> "return getX:1,this.xs:5,xs[index]:0";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -176,7 +176,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals("new X[](p.length)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "p:-1,this.xs:0" : "p:3,this.xs:0";
+                        String expectLv = d.iteration() == 0 ? "p:-1,this.xs:-1" : "p:3,this.xs:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -232,7 +232,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? "this.xs:0,xs:-1" : "this.xs:0,xs:3";
+                        String expectLinked = d.iteration() == 0 ? "this.xs:-1,xs:-1" : "this.xs:0,xs:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -240,7 +240,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectLinked = switch (d.iteration()) {
-                        case 0, 1 -> "return getX:0,this.xs:-1,xs[index]:-1";
+                        case 0, 1 -> "return getX:-1,this.xs:-1,xs[index]:-1";
                         default -> "return getX:0,this.xs:1,xs[index]:1";
                     };
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

@@ -248,10 +248,10 @@ public class Test_56_Fluent extends CommonTestRunner {
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

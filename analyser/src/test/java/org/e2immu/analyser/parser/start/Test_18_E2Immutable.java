@@ -384,7 +384,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
                             : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? "incremented:0,this.map7:-1" : "incremented:0,this.map7:3";
+                    String expectLinked = d.iteration() == 0 ? "incremented:-1,this.map7:-1" : "incremented:0,this.map7:3";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {

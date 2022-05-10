@@ -135,7 +135,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.1.1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "newTrieNode:-1,root.map:-1,this.root:0" : "this.root:0";
+                        String expected = d.iteration() <= 1 ? "newTrieNode:-1,root.map:-1,this.root:-1" : "this.root:0";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -558,7 +558,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "data".equals(pi.name)) {
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("s".equals(d.variableName())) {
@@ -640,7 +640,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(d.iteration() >= 2, d.currentValue().isDone());
 
                         String links = switch (d.iteration()) {
-                            case 0, 1 -> "node.map:-1,node:0,this.root:-1";
+                            case 0, 1 -> "node.map:-1,node:-1,this.root:-1";
                             default -> "node.map:2,node:0,this.root:0";
                         };
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
@@ -740,7 +740,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("node".equals(fr.scope.toString())) {
                         if ("1.0.1.0.0".equals(d.statementId())) {
-                            String linked = d.iteration() <= 1 ? "node.map:0,node:-1,this.root:-1" : "node.map:0,node:2,this.root:2"; // missing: node$1.map
+                            String linked = d.iteration() <= 1 ? "node.map:-1,node:-1,this.root:-1" : "node.map:0,node:2,this.root:2"; // missing: node$1.map
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
                         }
@@ -750,7 +750,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("1.0.1.0.2".equals(d.statementId())) {
                             String expected = d.iteration() <= 1 ? "<mmc:map>" : "instance type HashMap<String,TrieNode<T>>";
                             assertEquals(expected, d.currentValue().toString());
-                            String linked = d.iteration() <= 1 ? "newTrieNode:-1,node.map:0,node:-1,this.root:-1"
+                            String linked = d.iteration() <= 1 ? "newTrieNode:-1,node.map:-1,node:-1,this.root:-1"
                                     : "newTrieNode:3,node.map:0,node:2,this.root:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -758,7 +758,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("1.0.1.1.0".equals(d.statementId())) {
                             // newTrieNode = node.map.get(s)
                             String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:0,node:-1,this.root:-1";
+                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                                 default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -771,7 +771,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         }
                         if ("1.0.1.1.1".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:0,node:-1,this.root:-1";
+                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                                 default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -784,7 +784,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         }
                         if ("1.0.1".equals(d.statementId())) {
                             String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:0,node:-1,this.root:-1";
+                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                                 default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -802,7 +802,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         };
                         if ("3".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
-                            String expectLinked = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:0,node:-1,this.root:-1"
+                            String expectLinked = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:-1,node:-1,this.root:-1"
                                     : "data:3,node.data:2,node.map:0,node:2,this.root:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
@@ -816,7 +816,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("4".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
                             String linkedVars = switch (d.iteration()) {
-                                case 0, 1 -> "data:-1,node.data:-1,node.map:0,node:-1,return add:-1,this.root:-1";
+                                case 0, 1 -> "data:-1,node.data:-1,node.map:-1,node:-1,return add:-1,this.root:-1";
                                 default -> "data:3,node.data:2,node.map:0,node:2,return add:2,this.root:2";
                             };
                             assertEquals(linkedVars, d.variableInfo().getLinkedVariables().toString());

@@ -203,16 +203,17 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if ("l".equals(d.variableName())) {
                     String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectedLv = d.iteration() == 0
                                 ? "l:0,new X(x.k).k:0"
                                 : "l:0,new X(x.k).k:0,x.k:1";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectedLv = d.iteration() == 0
-                                ? "l:0,new X(x.k).k:-1,return get:0"
+                                ? "l:-1,new X(x.k).k:-1,return get:-1"
                                 : "l:0,new X(x.k).k:0,return get:0,x.k:1";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -221,9 +222,9 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d,1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String lv = d.iteration() == 0
-                                ? "l:0,new X(x.k).k:0,return get:0"
+                                ? "l:0,new X(x.k).k:-1,return get:-1"
                                 : "l:0,new X(x.k).k:0,return get:0,x.k:1";
                         assertEquals(lv, d.variableInfo().getLinkedVariables().toString());
                     }

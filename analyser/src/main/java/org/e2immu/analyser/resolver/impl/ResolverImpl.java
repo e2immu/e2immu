@@ -441,8 +441,11 @@ public class ResolverImpl implements Resolver {
             fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, anonymousType, sam, callGetOnSam,
                     Identifier.generate("resolved field initializer"));
             Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
-            MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(topType, sam);
+            MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(topType);
             methodsAndFieldsVisited.visit(toVisit);
+            if (sam != null) {
+                new CallGraph(topType, sam).visit(toVisit);
+            }
             dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);
         } else {
             fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION,
@@ -540,8 +543,9 @@ public class ResolverImpl implements Resolver {
                 methodInspection.setInspectedBlock(blockBuilder.build());
             }
         }
-        MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(topType, methodInfo);
+        MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(topType);
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
+        new CallGraph(topType, methodInfo).visit(methodInspection.getMethodBody());
 
         // finally, we build the method inspection and set it in the methodInfo object
         methodInspection.build(expressionContext.typeContext());
@@ -578,18 +582,15 @@ public class ResolverImpl implements Resolver {
     IMPORTANT: this visitor stays at the level of explicit (non-anonymous) subtypes, and fields, methods that are
     not part of anonymous subtypes.
      */
-    private class MethodsAndFieldsVisited {
+    private static class MethodsAndFieldsVisited {
         final Set<WithInspectionAndAnalysis> methodsAndFields = new HashSet<>();
         final TypeInfo topType;
-        final MethodInfo caller;
 
-        public MethodsAndFieldsVisited(TypeInfo topType, MethodInfo caller) {
+        public MethodsAndFieldsVisited(TypeInfo topType) {
             this.topType = topType;
-            this.caller = caller;
         }
 
         void visit(Element element) {
-            AtomicBoolean created = new AtomicBoolean();
             element.visit(e -> {
                 VariableExpression ve;
                 ConstructorCall constructorCall;
@@ -620,17 +621,73 @@ public class ResolverImpl implements Resolver {
                     if (methodInfo.typeInfo.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
                         methodsAndFields.add(methodInfo);
                     }
+                }
+            });
+        }
+    }
+
+    /*
+     Similar, but not the same as MethodsAndFieldsVisited.
+     Crucially, anonymous subtypes are seen as independent types.
+     */
+    private class CallGraph {
+        final TypeInfo topType;
+        final MethodInfo caller;
+
+        public CallGraph(TypeInfo topType, MethodInfo caller) {
+            this.topType = topType;
+            this.caller = caller;
+        }
+
+        void visit(Element element) {
+            AtomicBoolean created = new AtomicBoolean();
+            element.visit(e -> {
+                MethodInfo methodInfo;
+                if (e instanceof MethodCall methodCall) {
+                    methodInfo = methodCall.methodInfo;
+                } else if (e instanceof MethodReference methodReference) {
+                    methodInfo = methodReference.methodInfo;
+                } else if (e instanceof ConstructorCall constructorCall && constructorCall.constructor() != null) {
+                    methodInfo = constructorCall.constructor();
+                } else if (e instanceof ExplicitConstructorInvocation eci) {
+                    methodInfo = eci.methodInfo;
+                } else if (e instanceof Lambda lambda) {
+                    methodInfo = lambda.methodInfo;
+                } else {
+                    methodInfo = null;
+                }
+                if (methodInfo != null) {
                     if (caller != null) {
                         methodCallGraph.addNode(caller, List.of(methodInfo));
                         created.set(true);
                     }
                 }
-                return !(e instanceof Lambda)
-                        && !(e instanceof ConstructorCall cc && cc.anonymousClass() != null)
-                        && !(e instanceof LocalClassDeclaration);
+                boolean drillDeeper;
+                if (e instanceof Lambda lambda && !lambda.block.isEmpty()) {
+                    drillDeeper = false;
+                    new CallGraph(lambda.methodInfo.typeInfo, lambda.methodInfo).visit(lambda.block);
+                } else if (e instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+                    drillDeeper = false;
+                    callGraphOf(cc.anonymousClass());
+                } else if (e instanceof LocalClassDeclaration lcd) {
+                    callGraphOf(lcd.typeInfo);
+                    drillDeeper = false;
+                } else {
+                    drillDeeper = true;
+                }
+                return drillDeeper;
             });
             if (caller != null && !created.get()) {
                 methodCallGraph.addNode(caller, List.of());
+            }
+        }
+
+        private void callGraphOf(TypeInfo subClass) {
+            for (MethodInfo methodInfo : inspectionProvider.getTypeInspection(subClass).methodsAndConstructors()) {
+                Block block = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
+                if (!block.isEmpty()) {
+                    new CallGraph(subClass, methodInfo).visit(block);
+                }
             }
         }
     }
@@ -692,9 +749,10 @@ public class ResolverImpl implements Resolver {
 
         methodCallGraph.sorted(cycle -> {
             boolean first = true;
-            Set<MethodInfo> restrictedCycle = new HashSet<>(cycle);
-            restrictedCycle.removeAll(inCycle);
-            for (MethodInfo methodInfo : restrictedCycle) {
+            List<MethodInfo> restrictedList = new LinkedList<>(cycle);
+            restrictedList.removeAll(inCycle);
+            Set<MethodInfo> restrictedCycle = new HashSet<>(restrictedList);
+            for (MethodInfo methodInfo : restrictedList) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
 
                 builder.setIgnoreMeBecauseOfPartOfCallCycle(first);

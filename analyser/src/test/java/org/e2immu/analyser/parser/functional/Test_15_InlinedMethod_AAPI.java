@@ -375,7 +375,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
 
-        testClass("InlinedMethod_13", 0, 6, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_13", 0, 5, new DebugConfiguration.Builder()
              //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
              //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -407,7 +407,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("[new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,map]", d.fieldAnalysis().getValue().toString());
             }
         };
-        testClass("InlinedMethod_14", 0, 6, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_14", 0, 5, new DebugConfiguration.Builder()
             //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
              //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()

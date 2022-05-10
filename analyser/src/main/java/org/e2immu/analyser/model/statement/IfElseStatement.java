@@ -99,6 +99,7 @@ public class IfElseStatement extends StatementWithExpression {
     public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             expression.visit(predicate);
+            structure.block().visit(predicate);
             if (!elseBlock.isEmpty()) {
                 elseBlock.visit(predicate);
             }

@@ -149,7 +149,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = d.iteration() == 0
                                 ? "<p:collection>/*(List<String>)*/" : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "collection:-1,list:0" : "collection:1,list:0";
+                        String expectLv = d.iteration() == 0 ? "collection:-1,list:-1" : "collection:1,list:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -333,7 +333,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
-                        String expectLv = d.iteration() == 0 ? "object:1,return create:-1,string:0" : "object:1,string:0";
+                        String expectLv = d.iteration() == 0 ? "object:1,return create:-1,string:-1" : "object:1,string:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -467,7 +467,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "expression:0,ne.expression:-1,ne:-1,x:-1";
+                            case 0, 1 -> "expression:-1,ne.expression:-1,ne:-1,x:-1";
                             default -> "expression:0,ne.expression:2,ne:1,x:2";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
@@ -519,7 +519,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "expression:-1,ne.expression:-1,ne:0,x:-1";
+                            case 0, 1 -> "expression:-1,ne.expression:-1,ne:-1,x:-1";
                             default -> "expression:1,ne.expression:2,ne:0,x:2";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -558,7 +558,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "expression:-1,scope-ne:2.expression:0,scope-ne:2:-1,x:0";
+                            case 0, 1 -> "expression:-1,scope-ne:2.expression:-1,scope-ne:2:-1,x:-1";
                             default -> "expression:0,scope-ne:2.expression:0,scope-ne:2:2,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -659,10 +659,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -674,8 +674,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "evaluationContext:-1,return method:0,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
-                            case 1, 2, 3 -> "return method:0,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 0 -> "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 1, 2, 3 -> "return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
                             default -> "return method:0,scope-ne1:0.0.1.0.4.expression:3,scope-ne1:0.0.1.0.4:3,v:3,x:3";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -750,8 +750,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:0";
-                            case 1, 2, 3 -> "return method:-1,scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:0";
+                            case 0 -> "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 1, 2, 3 -> "return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
                             default -> "return method:3,scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:2,v:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -802,7 +802,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         // delays in clustering in iteration 2, otherwise we'd have CM
                         if ("0.0.1.0.5".equals(d.statementId())) {
                             String expectLv = d.iteration() == 0
-                                    ? "evaluationContext:0,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1"
+                                    ? "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1"
                                     : "evaluationContext:0";
                             assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -819,8 +819,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:0,v:-1,x:-1";
-                            case 1, 2, 3 -> "return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:0,v:-1,x:-1";
+                            case 0 -> "evaluationContext:-1,return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
+                            case 1, 2, 3 -> "return method:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1";
                             default -> "sum:1,this.expression:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -1031,8 +1031,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             assertTrue(d.variableInfoContainer().hasEvaluation());
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                             String lvs = switch (d.iteration()) {
-                                case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:0,unaryOperator:-1";
-                                case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:0,unaryOperator:-1";
+                                case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                                case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                                 default -> "expression:2,scope-negation:0.en:2,scope-negation:0:2,unaryOperator.operator:0,unaryOperator:2";
                             };
                             assertEquals(lvs, eval.getLinkedVariables().toString());
@@ -1054,7 +1054,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
                         case 0 -> "";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:0,unaryOperator:-1";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:2,scope-negation:0.en:2,scope-negation:0:2,unaryOperator.operator:0,unaryOperator:2";
                     };
                     assertEquals(expected, lvs);
@@ -1065,7 +1065,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
                         case 0 -> "";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:0,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:2,scope-negation:0.en:0,scope-negation:0:2,unaryOperator.operator:2,unaryOperator:2";
                     };
                     assertEquals(expected, lvs);
@@ -1073,23 +1073,23 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
                         case 0 -> "";
-                        case 1, 2 -> "expression:0,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:0,scope-negation:0.en:2,scope-negation:0:2,unaryOperator.operator:2,unaryOperator:1";
                     };
                     assertEquals(expected, lvs);
                 } else if ("scope-negation:0".equals(d.variableName())) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
-                        case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:0,unaryOperator.operator:-1,unaryOperator:-1";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:0,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:2,scope-negation:0.en:2,scope-negation:0:0,unaryOperator.operator:2,unaryOperator:2";
                     };
                     assertEquals(expected, lvs);
                 } else if ("unaryOperator".equals(d.variableName())) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
-                        case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:0";
-                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:0";
+                        case 0 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:1,scope-negation:0.en:2,scope-negation:0:2,unaryOperator.operator:2,unaryOperator:0";
                     };
                     assertEquals(expected, lvs);

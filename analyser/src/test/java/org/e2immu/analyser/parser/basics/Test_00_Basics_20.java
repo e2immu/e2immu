@@ -70,7 +70,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
     };
 
 
-    StatementAnalyserVariableVisitor createSavv(boolean expectNotNull) {
+    StatementAnalyserVariableVisitor createVisitor(boolean expectNotNull) {
         String fieldValue = expectNotNull ? "instance type List<T>" : "nullable instance type List<T>";
         return d -> {
             if ("C2".equals(d.methodInfo().name)) {
@@ -100,7 +100,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedLv = d.iteration() == 0 ? "return getListC2:0,this.list:-1" : "return getListC2:0,this.list:3";
+                    String expectedLv = d.iteration() == 0 ? "return getListC2:-1,this.list:-1" : "return getListC2:0,this.list:3";
                     assertEquals(expectedLv,
                             d.variableInfo().getLinkedVariables().toString());
                 }
@@ -128,7 +128,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // i:3 gone, because substitution with "new I()"
-                        String lvs = d.iteration() <= 1 ? "i:-1,list:0" : "i:3,list:0";
+                        String lvs = d.iteration() <= 1 ? "i:-1,list:-1" : "i:3,list:0";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -141,7 +141,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci:0,i:-1,list:-1";
+                        case 0, 1 -> "ci:-1,i:-1,list:-1";
                         default -> "ci:0,i:3,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -152,7 +152,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci2:0,ci:-1,i:-1,list:-1";
+                        case 0, 1 -> "ci2:-1,ci:-1,i:-1,list:-1";
                         default -> "ci2:0,ci:3,i:3,list:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -217,7 +217,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     private void runTest(boolean expectNotNull, int warnings) throws IOException {
         testClass("Basics_20", 0, warnings, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(createSavv(expectNotNull))
+                .addStatementAnalyserVariableVisitor(createVisitor(expectNotNull))
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
                 .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))

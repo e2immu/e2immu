@@ -617,7 +617,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         String expectL1 = switch (d.iteration()) {
-                            case 0, 1 -> "container:-1,entry:0";
+                            case 0, 1 -> "container:-1,entry:-1";
                             default -> "entry:0";
                         };
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());

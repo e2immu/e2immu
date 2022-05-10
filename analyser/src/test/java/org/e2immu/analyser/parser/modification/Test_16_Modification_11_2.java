@@ -106,7 +106,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 2 ? "c:-1,this.s2:0" : "c:2,this.s2:0";
+                        String expected = d.iteration() <= 2 ? "c:-1,this.s2:-1" : "c:2,this.s2:0";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -117,7 +117,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:0,this.s2:-1" : "c.set:2,c:0,this.s2:2";
+                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:-1,this.s2:-1" : "c.set:2,c:0,this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

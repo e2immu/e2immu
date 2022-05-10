@@ -1478,7 +1478,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
-        }).filter(CausesOfDelay::isDelayed).findFirst().orElse(CausesOfDelay.EMPTY);
+        }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        // IMPORTANT: use reduce, do not use filter(isDelayed).findFirst(), because mom delay has to pass (e.g. Modified_19)
 
         if (contextModifications.isDone()) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);

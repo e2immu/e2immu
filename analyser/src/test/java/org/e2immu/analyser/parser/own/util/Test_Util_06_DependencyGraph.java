@@ -75,6 +75,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("addNode".equals(d.methodInfo().name) && 3 == n) {
@@ -128,10 +129,11 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         String expected = d.iteration() <= 5 ? "<vl:result>"
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        String lvs = d.iteration() <= 1
+                        String lvs = d.iteration() <= 4
                                 ? "done:-1,reportIndependent:-1,reportPartOfCycle:-1,result:0,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1"
-                                : "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,toDo:3";
+                                : "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,this:3,toDo:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("cycle".equals(d.variableName())) {
@@ -141,13 +143,27 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
+                if (d.variable() instanceof This) {
+                    if ("3.0.1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.0.2.0.03".equals(d.statementId())) {
+                 //       assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.0.2.0.04".equals(d.statementId())) {
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("3.0.2.1.1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
                     String lvs = switch (d.iteration()) {
-                        case 0, 1, 2, 4, 5 -> "return sorted:0,this:-1";
-                        case 3 -> "return sorted:0,this:3";
+                        case 0, 1, 2, 3, 4, 5 -> "return sorted:0,this:-1";
+                        // case 3 -> "return sorted:0,this:3";
                         default -> "return sorted:0";
                     };
                     assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
@@ -181,7 +197,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("dependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-         //               assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -245,21 +261,22 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
-            if ("sorted".equals(d.methodInfo().name) && 3 == n) {
-                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            String methodName = d.methodInfo().name;
+            if ("sorted".equals(methodName) && 3 == n) {
+                assertDv(d, 6, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String srv = d.iteration() <= 5 ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
-            if ("sorted".equals(d.methodInfo().name) && 0 == n) {
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            if ("sorted".equals(methodName) && 0 == n) {
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 6, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
                 String srv = d.iteration() <= 5 ? "<m:sorted>"
                         : "/*inline sorted*/`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
-            if ("reverse".equals(d.methodInfo().name)) {
+            if ("reverse".equals(methodName)) {
                 assertDv(d, 4, DV.FALSE_DV, Property.FLUENT);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -273,37 +290,37 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
             }
-            if ("singleRemoveStep".equals(d.methodInfo().name)) {
+            if ("singleRemoveStep".equals(methodName)) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
             }
-            if ("copyRemove".equals(d.methodInfo().name)) {
+            if ("copyRemove".equals(methodName)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-            if ("addNode".equals(d.methodInfo().name) && 3 == n) {
+            if ("addNode".equals(methodName) && 3 == n) {
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 String addNodePCE = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:getOrCreate, methodCall:getOrCreate, methodCall:ensureNotFrozen]]";
                 assertEquals(addNodePCE, d.methodAnalysis().getPreconditionForEventual().toString());
                 assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
-            if ("addNode".equals(d.methodInfo().name) && 2 == n) {
+            if ("addNode".equals(methodName) && 2 == n) {
                 String addNodePCE = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:addNode]]";
                 assertEquals(addNodePCE, d.methodAnalysis().getPreconditionForEventual().toString());
                 assertDv(d, 4, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
-            if ("getOrCreate".equals(d.methodInfo().name)) {
+            if ("getOrCreate".equals(methodName)) {
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 String pre = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]";
                 assertEquals(pre, d.methodAnalysis().getPreconditionForEventual().toString());
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
-            if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
+            if ("removeAsManyAsPossible".equals(methodName)) {
                 String pre = switch (d.iteration()) {
                     case 0, 1, 2, 3, 4, 5 -> "Precondition[expression=<precondition>, causes=[]]";
                     default -> "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
@@ -311,17 +328,39 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
                 assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
-            if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
+            if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(methodName)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("accept, recursivelyComputeDependenciesWithoutStartingPoint", methodResolution.callCycleSorted());
             }
-            if ("dependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
+            if ("dependenciesWithoutStartingPoint".equals(methodName)) {
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("", methodResolution.callCycleSorted());
-                //         assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER); FIXME
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+            if ("recursivelyAddToSubGraph".equals(methodName)) {
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals("", methodResolution.callCycleSorted());
+                assertEquals("recursivelyAddToSubGraph", methodResolution.methodsOfOwnClassReachedSorted());
+            }
+            if ("startArbitrarily".equals(methodName)) {
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals("", methodResolution.callCycleSorted());
+                assertEquals("recursivelyAddToSubGraph", methodResolution.methodsOfOwnClassReachedSorted());
+            }
+            if ("comparator".equals(methodName)) {
+                assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals("", methodResolution.callCycleSorted());
+                assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
         testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, 6,

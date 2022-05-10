@@ -169,10 +169,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build());
     }
 
