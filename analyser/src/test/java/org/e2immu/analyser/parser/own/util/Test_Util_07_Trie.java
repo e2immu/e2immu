@@ -71,7 +71,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0, 1 -> "node.map:-1,node:0,this.root:-1";
+                            case 0, 1 -> "node.map:-1,node:-1,this.root:-1";
                             default -> "node.map:2,node:0,this.root:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -84,7 +84,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         };
                         assertEquals(value, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0, 1 -> "newTrieNode:-1,node.map:-1,node:0,this.root:-1";
+                            case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                             default -> "newTrieNode:3,node.map:2,node:0,this.root:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -105,7 +105,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
-                        String lvs = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:-1,node:0,this.root:-1"
+                        String lvs = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:-1,node:-1,this.root:-1"
                                 : "data:3,node.data:2,node.map:2,node:0,this.root:0";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -115,7 +115,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String expected = d.iteration() <= 1 ? "<m:get>" : "node$2.map$0.get(s)";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
-                            case 0, 1 -> "newTrieNode:0,node.map:-1,node:-1,this.root:-1";
+                            case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                             default -> "newTrieNode:0,node.map:3,node:3,this.root:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -125,7 +125,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     if ("node".equals(fr.scope.toString())) {
                         if ("4".equals(d.statementId())) {
                             assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                            String lvs = d.iteration() <= 1 ? "data:3,node.data:0,node.map:-1,node:-1,this.root:-1"
+                            String lvs = d.iteration() <= 1 ? "data:3,node.data:-1,node.map:-1,node:-1,this.root:-1"
                                     : "data:3,node.data:0,node.map:2,node:2,this.root:2";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -139,7 +139,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             String expected = d.iteration() <= 1 ? "<f:map>" : "nullable instance type Map<String,TrieNode<T>>";
                             assertEquals(expected, d.currentValue().toString());
                             String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:0,node:-1,this.root:-1";
+                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
                                 default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

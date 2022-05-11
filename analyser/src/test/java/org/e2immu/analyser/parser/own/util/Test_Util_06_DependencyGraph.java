@@ -75,7 +75,6 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("addNode".equals(d.methodInfo().name) && 3 == n) {
@@ -126,12 +125,14 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 }
                 if ("result".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<vl:result>"
+                        String expected = d.iteration() <= 6 ? "<vl:result>"
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        String lvs = d.iteration() <= 4
-                                ? "done:-1,reportIndependent:-1,reportPartOfCycle:-1,result:0,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1"
-                                : "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,this:3,toDo:3";
+                        String lvs = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4 -> "done:-1,reportIndependent:-1,reportPartOfCycle:-1,result:-1,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1";
+                            case 5, 6 -> "done:3,reportIndependent:3,reportPartOfCycle:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,this:3,toDo:3";
+                            default -> "done:3,reportIndependent:3,result:0,return sorted:0,scope-230:40:3,this.nodeMap:3,this:3,toDo:3";
+                        };
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 5, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -148,7 +149,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.03".equals(d.statementId())) {
-                 //       assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.04".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -162,12 +163,11 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
                     String lvs = switch (d.iteration()) {
-                        case 0, 1, 2, 3, 4, 5 -> "return sorted:0,this:-1";
-                        // case 3 -> "return sorted:0,this:3";
+                        case 0, 1, 2, 3, 4, 5, 6 -> "return sorted:-1,this:-1";
                         default -> "return sorted:0";
                     };
                     assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
-                    String expected = d.iteration() <= 5 ? "<m:sorted>"
+                    String expected = d.iteration() <= 6 ? "<m:sorted>"
                             : "`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -180,17 +180,17 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<mmc:dg>" : "instance type DependencyGraph<T>";
+                        String expected = d.iteration() <= 6 ? "<mmc:dg>" : "instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
                         assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 5 ? "<vl:dg>"
+                        String expected = d.iteration() <= 6 ? "<vl:dg>"
                                 : "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 6, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, 7, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 7, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
             }
@@ -237,7 +237,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                        case 1, 2, 3, 4, 5 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
+                        case 1, 2, 3, 4, 5, 6 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
                         default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
@@ -251,28 +251,28 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 6, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-            }
-            if ("$4".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 6, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+            }
+            if ("$4".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 7, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 8, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             String methodName = d.methodInfo().name;
             if ("sorted".equals(methodName) && 3 == n) {
-                assertDv(d, 6, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String srv = d.iteration() <= 5 ? "<m:sorted>"
+                String srv = d.iteration() <= 6 ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("sorted".equals(methodName) && 0 == n) {
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 6, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
-                String srv = d.iteration() <= 5 ? "<m:sorted>"
+                assertDv(d, 7, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
+                String srv = d.iteration() <= 6 ? "<m:sorted>"
                         : "/*inline sorted*/`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -280,12 +280,9 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertDv(d, 4, DV.FALSE_DV, Property.FLUENT);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                if (d.iteration() == 6) {
-                    assertEquals("", d.methodAnalysis().preconditionStatus().toString());
-                }
                 String pre = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    case 1, 2, 3, 4, 5 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
+                    case 1, 2, 3, 4, 5, 6 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
                     default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
@@ -322,7 +319,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("removeAsManyAsPossible".equals(methodName)) {
                 String pre = switch (d.iteration()) {
-                    case 0, 1, 2, 3, 4, 5 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 0, 1, 2, 3, 4, 5, 6 -> "Precondition[expression=<precondition>, causes=[]]";
                     default -> "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
@@ -363,7 +360,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, 6,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 4, 11,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -377,7 +374,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, 6,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, 11,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .build(),

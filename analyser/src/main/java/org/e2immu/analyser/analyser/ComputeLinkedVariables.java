@@ -264,33 +264,29 @@ public class ComputeLinkedVariables {
         for (Cluster cluster : clusters) {
             Map<Variable, DV> propertyValues;
             /* context modified needs all linking to be done */
-        /*    if (Property.CONTEXT_MODIFIED == property) {
+            if (Property.CONTEXT_MODIFIED == property) {
                 CausesOfDelay clusterDelays = removeMyself(cluster.delays, cluster.variables);
                 if (clusterDelays.isDelayed()) {
                     // a delay on clustering can be caused by a delay on the value to be linked
                     // replace @CM values by those delays, and inject a dedicated variable delay.
                     propertyValues = propertyValuesIn.entrySet().stream()
+                            .filter(e -> cluster.variables.contains(e.getKey()))
                             .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                                     e -> injectContextModifiedDelay(e.getKey(), e.getValue(), clusterDelays)));
                 } else {
                     propertyValues = propertyValuesIn;
                 }
             } else {
+                // for all other properties, cluster delays are not taken into account (that agrees with the
+                // choice for only STATICALLY_ASSIGNED)
                 propertyValues = propertyValuesIn;
-            }*/
+            }
 
-            assert cluster.variables.stream().allMatch(propertyValuesIn::containsKey);
+            assert cluster.variables.stream().allMatch(propertyValues::containsKey);
             DV summary = cluster.variables.stream()
-                    .map(v -> propertyValuePotentiallyBreakDelay(property, v, propertyValuesIn.get(v)))
+                    .map(v -> propertyValuePotentiallyBreakDelay(property, v, propertyValues.get(v)))
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
-            if (cluster.delays.isDelayed()) {
-                if(summary.isDone()) {
-                    summary = cluster.delays;
-                } else {
-                    summary = summary.causesOfDelay().merge(cluster.delays);
-                }
-            }
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
             }

@@ -107,7 +107,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("2.0.1".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1.0.2-C;initial@Class_Loops_21" : "";
+                String expected = d.iteration() == 0 ? "cm:array@Method_method_2.0.1:M;cm:array[i]@Method_method_2.0.1:M;cm:av-32:17@Method_method_2.0.1:M;initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1.0.2-C;initial@Class_Loops_21" : "";
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 if (d.iteration() >= 2) {
                     assertTrue(d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
@@ -156,7 +156,6 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
     // the not-null on x travels to xes as ContentNotNull, and on to the parameter
     @Test
     public void test_23_1() throws IOException {
-        int BIG = 10;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xes".equals(fr.fieldInfo.name)) {

@@ -134,8 +134,10 @@ public class Test_25_FieldReference extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String delayed = "cm@Parameter_setP;initial:this.setP@Method_copy_0-C;mom@Parameter_setP";
-                        assertDv(d, delayed, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String delayed = d.iteration() == 0
+                                ? "cm:newSet@Method_copy_2-E;cm:return copy@Method_copy_2-E;cm:this.setP@Method_copy_2-E;initial:this.setP@Method_copy_0-C"
+                                : "mom@Parameter_setP";
+                        assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -164,16 +166,16 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 String delayed = switch (d.iteration()) {
-                    case 0 -> "mom@Parameter_setP";
-                    case 1 -> "break_mom_delay@Parameter_setP;cm@Parameter_setP;initial:this.setP@Method_copy_0-C;mom@Parameter_setP";
+                    case 0, 1 -> "mom@Parameter_setP";
+                    case 2 -> "break_mom_delay@Parameter_setP;mom@Parameter_setP";
                     default -> "xx";
                 };
-                assertDv(d.p(0), delayed, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), delayed, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("setP".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
