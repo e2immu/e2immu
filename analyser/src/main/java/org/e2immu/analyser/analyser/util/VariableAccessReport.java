@@ -49,9 +49,9 @@ public record VariableAccessReport(Map<Variable, Properties> propertiesMap) {
             properties.put(Property.READ, DV.TRUE_DV);
         }
 
-        public void addVariableModified(Variable v, DV value) {
+        public void addContextProperty(Variable v, Property property, DV value) {
             Properties properties = propertiesMap.computeIfAbsent(v, x -> Properties.writable());
-            properties.put(Property.CONTEXT_MODIFIED, value);
+            properties.put(property, value);
         }
 
         public VariableAccessReport build() {

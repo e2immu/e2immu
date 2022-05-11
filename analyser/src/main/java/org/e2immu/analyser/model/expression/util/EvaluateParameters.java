@@ -43,7 +43,8 @@ public class EvaluateParameters {
                                                                              ForwardEvaluationInfo forwardEvaluationInfo,
                                                                              MethodInfo methodInfo,
                                                                              boolean recursiveOrPartOfCallCycle,
-                                                                             Expression scopeObject) {
+                                                                             Expression scopeObject,
+                                                                             boolean allowUpgradeCnnOfScope) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
         int i = 0;
@@ -62,7 +63,8 @@ public class EvaluateParameters {
         }
 
         VariableExpression scopeVariable;
-        if (minCnnOverParameters.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
+        if (allowUpgradeCnnOfScope &&
+                minCnnOverParameters.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&

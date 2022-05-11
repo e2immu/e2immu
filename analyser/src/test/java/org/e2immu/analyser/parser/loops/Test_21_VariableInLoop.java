@@ -139,7 +139,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("url".equals(d.variableName())) {
@@ -151,9 +151,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                 }
             }
         };
-        // content not null problem
-        // TODO would be nicer if this was just 1 error, rather than 2
-        testClass("VariableInLoop_2", 0, 2, new DebugConfiguration.Builder()
+        testClass("VariableInLoop_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());

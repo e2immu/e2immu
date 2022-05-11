@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Properties implements Comparable<Properties> {
@@ -224,5 +225,9 @@ public class Properties implements Comparable<Properties> {
             if (d != 0) return d;
         }
         return 0;
+    }
+
+    public String sortedToString() {
+        return stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
 }

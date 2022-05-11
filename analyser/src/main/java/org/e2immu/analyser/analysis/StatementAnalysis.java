@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotNull1;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface StatementAnalysis extends Analysis,
@@ -159,9 +160,15 @@ public interface StatementAnalysis extends Analysis,
 
     List<Variable> variablesReadBySubAnalysers();
 
-    Stream<Map.Entry<Variable, DV>> variablesModifiedBySubAnalysers();
+    Stream<Map.Entry<Variable, Properties>> propertiesFromSubAnalysers();
 
-    boolean haveVariablesModifiedBySubAnalysers();
+    default String propertiesFromSubAnalysersSortedToString() {
+        return propertiesFromSubAnalysers()
+                .map(e -> e.getKey().simpleName() + "={" + e.getValue().sortedToString() + "}")
+                .sorted().collect(Collectors.joining(", "));
+    }
+
+    boolean havePropertiesFromSubAnalysers();
 
     boolean latestDelay(CausesOfDelay delay);
 

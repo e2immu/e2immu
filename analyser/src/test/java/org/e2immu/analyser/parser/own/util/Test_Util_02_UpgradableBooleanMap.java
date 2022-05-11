@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,18 +160,17 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                     String expected = d.iteration() == 0
                             ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=cm:e@Method_accept_0-E;cm:this@Method_accept_0-E,this=cm:e@Method_accept_0-E;cm:this@Method_accept_0-E"
                             : "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=false:0,this=true:1";
-                    assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Objects::toString)
-                            .sorted().collect(Collectors.joining(",")));
+                    assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }
         };
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build());
     }
 

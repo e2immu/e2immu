@@ -386,7 +386,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // "normal"
 
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                context, forwardEvaluationInfo, constructor, false, null);
+                context, forwardEvaluationInfo, constructor, false, null,
+                false);
         CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed()) {
             return delayedConstructorCall(context, res.k, parameterDelays);

@@ -376,6 +376,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         /**
          * Primary method to generate Context Not Null on a variable.
+         * <p>
+         * DGSimplified_4, backupComparator line 135 shows a dilemma: bc == null ? 0 : bc.compare(...)
+         * requires content not null in the "ifFalse" clause, but allows for null. Should we make the parameter
+         * Nullable, or NotNull1? We prefer nullable.
          *
          * @param variable        the variable which occurs in the not null context
          * @param value           the variable's value. This can be a variable expression again (redirect).
@@ -401,7 +405,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
-            if (cmDelays.isDelayed() &&  !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
+            if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
                     forwardEvaluationInfo.getAssignmentTarget(), variable)) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
                 return;
@@ -409,7 +413,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             boolean effectivelyNotNull = (evaluationContext.notNullAccordingToConditionManager(variable).valueIsTrue()
                     || evaluationContext.notNullAccordingToConditionManager(value).valueIsTrue());
 
-            if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) && effectivelyNotNull) {
+            if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
@@ -828,6 +832,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return evaluationContext.isNotNull0(expression, false, ForwardEvaluationInfo.DEFAULT);
         }
 
-
+        // see DGSimplified_4, backupComparator. the functional interface's CNN cannot be upgraded to content not null,
+        // because it is nullable
+        public boolean contextNotNullIsNotNullable(Variable variable) {
+            ChangeData cd = valueChanges.get(variable);
+            if (cd != null) {
+                DV cnn = cd.getProperty(Property.CONTEXT_NOT_NULL);
+                return cnn != null && cnn.gt(MultiLevel.NULLABLE_DV);
+            }
+            return false;
+        }
     }
 }

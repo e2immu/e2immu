@@ -1117,9 +1117,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().haveVariablesModifiedBySubAnalysers());
-                    assertEquals(6L, d.statementAnalysis().variablesModifiedBySubAnalysers().count());
-                    DV reduced = d.statementAnalysis().variablesModifiedBySubAnalysers().map(Map.Entry::getValue).reduce(DV.MIN_INT_DV, DV::max);
+                    assertTrue(d.statementAnalysis().havePropertiesFromSubAnalysers());
+                    assertEquals(6L, d.statementAnalysis().propertiesFromSubAnalysers().count());
+                    DV reduced = d.statementAnalysis().propertiesFromSubAnalysers()
+                            .map(e->e.getValue().get(Property.CONTEXT_MODIFIED))
+                            .reduce(DV.MIN_INT_DV, DV::max);
                     assertEquals(d.iteration() <= 3, reduced.isDelayed());
                 }
             }

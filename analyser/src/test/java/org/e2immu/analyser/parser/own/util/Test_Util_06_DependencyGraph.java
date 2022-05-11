@@ -217,6 +217,16 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                     }
                 }
             }
+            if ("accept".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "result".equals(pi.name)
+                        && pi.index == 1 && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if ("0".equals(d.statementId())) {
+                        // these values should travel upwards (StatementAnalyserImpl.transferFromClosureToResult)
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
@@ -241,6 +251,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
+                }
+            }
+            if ("recursivelyComputeDependenciesWithoutStartingPoint".equals(d.methodInfo().name)) {
+                if ("2.0.0".equals(d.statementId())) {
+                    assertEquals("dependsOn={modified in context=false:0, not null in context=nullable:1}, node={modified in context=false:0, not null in context=nullable:1}, nodeMap={modified in context=false:0, not null in context=nullable:1}, result={modified in context=true:1, not null in context=not_null:5, read=true:1}, t={modified in context=false:0, not null in context=nullable:1}, this={modified in context=false:0, not null in context=not_null:5, read=true:1}",
+                            d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }
         };
@@ -330,6 +346,10 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("accept, recursivelyComputeDependenciesWithoutStartingPoint", methodResolution.callCycleSorted());
+
+                // CM on result should travel from $xx.accept(...)
+                // FIXME wrong!
+//                assertDv(d.p(1), 10, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("dependenciesWithoutStartingPoint".equals(methodName)) {
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
@@ -360,7 +380,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 4, 11,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 2, 10,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -374,7 +394,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, 11,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 3, 10,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .build(),

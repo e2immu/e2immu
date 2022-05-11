@@ -478,7 +478,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
                     analyserContext.getConfiguration().debugConfiguration(), analyserComponents);
 
-            if(overallStatus.isDone()){
+            if (overallStatus.isDone()) {
                 statementAnalysis.internalAllDoneCheck();
                 LOGGER.debug("*** ALL DONE {} {} ***", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName);
             }
@@ -645,10 +645,12 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                     DV combined = modified.isDelayed() || linksEstablished.isDone() ? modified :
                             modified.causesOfDelay().merge(linksEstablished);
-                    builder.addVariableModified(vi.variable(), combined); // also when delayed!!!
-                    if (combined.isDelayed()) {
-                        causes.set(causes.get().merge(combined.causesOfDelay()));
-                    }
+                    builder.addContextProperty(vi.variable(), Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
+                    if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
+
+                    DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
+                    builder.addContextProperty(vi.variable(), Property.CONTEXT_NOT_NULL, notNull);
+                    if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
                 }
             });
             VariableAccessReport variableAccessReport = builder.build();

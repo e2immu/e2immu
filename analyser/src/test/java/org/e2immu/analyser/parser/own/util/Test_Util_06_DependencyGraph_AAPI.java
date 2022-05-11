@@ -127,7 +127,7 @@ public class Test_Util_06_DependencyGraph_AAPI extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(DependencyGraph.class), 5, 11,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class), 3, 10,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)

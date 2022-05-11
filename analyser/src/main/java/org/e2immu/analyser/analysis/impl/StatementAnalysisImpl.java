@@ -74,8 +74,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
-    private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
-    private final Map<Variable, DV> variablesModifiedBySubAnalysers = new HashMap<>(); // TODO protect
+    private final Map<Variable, Properties> propertiesFromSubAnalysers = new HashMap<>();
 
     // a variable that changes from iteration to iteration... should be moved out at some point
     private final Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
@@ -2348,37 +2347,48 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         assert loopIndex != null;
     }
 
+    /*
+    we protect
+     */
     @Override
     public void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport) {
         for (Map.Entry<Variable, Properties> e : variableAccessReport.propertiesMap().entrySet()) {
-            DV read = e.getValue().getOrDefaultNull(READ);
             Variable variable = e.getKey();
-            if (read != null && read.valueIsTrue() && !variablesReadBySubAnalysers.contains(variable)) {
-                variablesReadBySubAnalysers.add(variable);
-            }
+            DV read = e.getValue().getOrDefaultNull(READ);
             DV modified = e.getValue().getOrDefaultNull(CONTEXT_MODIFIED);
-            if (modified != null) {
-                DV current = variablesModifiedBySubAnalysers.get(variable);
-                assert current == null || current.isDelayed() || current.equals(modified) :
-                        "For variable " + variable + ", current CM is " + current + ", new CM is " + modified;
-                variablesModifiedBySubAnalysers.put(variable, modified);
+            DV notNull = e.getValue().getOrDefaultNull(CONTEXT_NOT_NULL);
+            boolean haveMapForVariable = read != null || modified != null || notNull != null;
+            if (haveMapForVariable) {
+                Properties p = propertiesFromSubAnalysers.computeIfAbsent(variable, v -> Properties.writable());
+                if (read != null) {
+                    p.put(READ, read);
+                }
+                if (modified != null) {
+                    p.put(CONTEXT_MODIFIED, modified);
+                }
+                if (notNull != null) {
+                    p.put(CONTEXT_NOT_NULL, notNull);
+                }
             }
         }
     }
 
     @Override
     public List<Variable> variablesReadBySubAnalysers() {
-        return this.variablesReadBySubAnalysers.stream().toList();
+        return this.propertiesFromSubAnalysers.entrySet().stream()
+                .filter(e -> e.getValue().getOrDefault(READ, DV.FALSE_DV).valueIsTrue())
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     @Override
-    public Stream<Map.Entry<Variable, DV>> variablesModifiedBySubAnalysers() {
-        return this.variablesModifiedBySubAnalysers.entrySet().stream();
+    public Stream<Map.Entry<Variable, Properties>> propertiesFromSubAnalysers() {
+        return this.propertiesFromSubAnalysers.entrySet().stream();
     }
 
     @Override
-    public boolean haveVariablesModifiedBySubAnalysers() {
-        return !variablesModifiedBySubAnalysers.isEmpty();
+    public boolean havePropertiesFromSubAnalysers() {
+        return !this.propertiesFromSubAnalysers.isEmpty();
     }
 
     // IMPORTANT: Singleton_2 runs green when we only look at the previous delay

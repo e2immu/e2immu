@@ -77,9 +77,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 2) {
-                        String expected = "org.e2immu.support.SetOnceMap.putAll(org.e2immu.support.SetOnceMap<K,V>):0:setOnceMap=false:0,this=true:1";
-                        assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers()
-                                .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                        String expected = "setOnceMap={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, not null in context=not_null:5, read=true:1}";
+                        assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                     }
                 }
             }

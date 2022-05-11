@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
@@ -489,16 +488,22 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     private EvaluationResult variablesReadOrModifiedInSubAnalysers(EvaluationResult evaluationResultIn,
                                                                    EvaluationResult context) {
-        List<Variable> readBySubAnalysers = statementAnalysis.variablesReadBySubAnalysers();
-        if (!readBySubAnalysers.isEmpty() || statementAnalysis.haveVariablesModifiedBySubAnalysers()) {
+        if (statementAnalysis.havePropertiesFromSubAnalysers()) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
             builder.compose(evaluationResultIn);
-            for (Variable variable : readBySubAnalysers) {
-                builder.markRead(variable);
-            }
-            Stream<Map.Entry<Variable, DV>> modifiedStream = statementAnalysis.variablesModifiedBySubAnalysers();
-            modifiedStream.forEach(e -> builder.setProperty(e.getKey(), CONTEXT_MODIFIED, e.getValue()));
-
+            statementAnalysis.propertiesFromSubAnalysers().forEach(e -> {
+                Variable variable = e.getKey();
+                Properties properties = e.getValue();
+                properties.stream().forEach(ee -> {
+                    Property property = ee.getKey();
+                    DV value = ee.getValue();
+                    if (property == READ) {
+                        if (value == DV.TRUE_DV) builder.markRead(variable);
+                    } else {
+                        builder.setProperty(variable, property, value);
+                    }
+                });
+            });
             return builder.build();
         }
 

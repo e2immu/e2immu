@@ -30,7 +30,6 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,7 +69,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         case 1 -> "copy.nodeMap=initial@Field_dependsOn;initial@Field_t, copy=initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=initial@Field_dependsOn;initial@Field_t, this=initial@Field_dependsOn;initial@Field_t";
                         default -> "copy.nodeMap=true:1, copy=true:1, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=true:1, this=false:0";
                     };
-                    assertEquals(expected, d.statementAnalysis().variablesModifiedBySubAnalysers().map(Object::toString).sorted().collect(Collectors.joining(", ")));
+                    assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -213,7 +212,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
@@ -416,6 +415,17 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
+            if ("compare".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "backupComparator".equals(pi.name)) {
+                    assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<p:backupComparator>"
+                                : "nullable instance type Comparator<T>/*@Identity*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("sorted".equals(d.methodInfo().name)) {
@@ -430,7 +440,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()
+        testClass("DGSimplified_4", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

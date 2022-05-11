@@ -298,11 +298,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
+        // see DGSimplified_4, backupComparator. the functional interface's CNN cannot be upgraded to content not null,
+        // because it is nullable
+        boolean allowUpgradeCnnOfScope = objectValue instanceof IsVariableExpression ive &&
+                builder.contextNotNullIsNotNullable(ive.variable());
 
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 context, forwardEvaluationInfo,
-                methodInfo, recursiveCall || breakCallCycleDelay, objectValue);
+                methodInfo, recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
