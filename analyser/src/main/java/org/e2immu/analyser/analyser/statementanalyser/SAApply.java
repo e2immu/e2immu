@@ -69,35 +69,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn,
                                   boolean doNotWritePreconditionFromMethod) {
-        CausesOfDelay delay = evaluationResultIn.causesOfDelay();
-        EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
-                sharedState.context());
-
-        // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
-        // part 1 is in the constructor of SAEvaluationContext
-        // the data is stored in the state data of statement analysis
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-        statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
-            VariableExpression ve = e.getKey();
-            // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
-            // TODO is there an equivalent for loop variables?
-            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf) || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
-                EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(ve.variable());
-                if (cd != null && cd.isMarkedRead()) {
-                    LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
-                    builder.assignment(ve.variable(), e.getValue(), lv);
-                }
-            }
-        });
-        EvaluationResult evaluationResult2 = builder.compose(evaluationResult1).build();
-        // ***
-
-        EvaluationResult evaluationResult;
-        if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
-            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult2, index());
-        } else {
-            evaluationResult = evaluationResult2;
-        }
+        EvaluationResult evaluationResult = potentiallyModifyEvaluationResult(sharedState, evaluationResultIn);
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
@@ -136,6 +108,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay()
                 .findVariableCause(CauseOfDelay.Cause.BREAK_INIT_DELAY, vc -> vc.location().equals(initialLocation));
 
+        CausesOfDelay delay = evaluationResultIn.causesOfDelay();
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -149,117 +122,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             if (changeData.markAssignment()) {
-                if (!vi.valueIsSet()) {
-                    if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
-                            sharedState.localConditionManager(), sharedState.context())) {
-                        statementAnalysis.ensure(Message.newMessage(getLocation(),
-                                Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
-                    }
-
-                    Expression bestValue = SAHelper.bestValue(changeData, vi1);
-                    Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
-
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Write value {} to variable {}",
-                                valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
-                                variable.fullyQualifiedName());
-                    }
-                    // first do the properties that come with the value; later, we'll write the ones in changeData
-                    // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
-                    // it should not be taken into account anymore. (See e.g. Loops_1)
-                    Properties valueProperties = sharedState.evaluationContext()
-                            .getValueProperties(variable.parameterizedType(), valueToWrite, true);
-
-
-                    Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
-
-                    Properties changeDataProperties = Properties.of(changeData.properties());
-                    boolean myself = sharedState.evaluationContext().isMyself(variable);
-                    Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
-                            groupPropertyValues);
-                    // LVs start empty, the changeData.linkedVariables will be added later
-                    Properties combined;
-                    if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
-                        // captures self-referencing instance fields (but not static fields, as in Enum_)
-                        // a similar check exists in StatementAnalysisImpl.initializeFieldReference
-                        combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
-                    } else {
-                        combined = merged;
-                    }
-
-                    if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
-                            valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
-                        // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
-                        // evaluation context
-                        vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, EVALUATION);
-                    }
-                    if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
-                        statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
-                    }
-                }
+                markAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi, vi1);
             } else {
-                if (changeData.value() != null && (changeData.value().isDone() || !(vi1.getValue() instanceof DelayedWrappedExpression))) {
-                    // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
-                    // see e.g. UpgradableBooleanMap, E2InContext_0, _2
-                    //assert changeData.value().isDone();
-                    // we cannot let DWEs be changed into other delays... they must be passed on (e.g. StaticSideEffects_1)
-
-                    Map<Property, DV> merged = SAHelper.mergePreviousAndChange(sharedState.evaluationContext(),
-                            variable, vi1.getProperties(),
-                            changeData.properties(), groupPropertyValues, true);
-
-                    Properties properties = Properties.of(merged);
-                    CausesOfDelay causesOfDelay = properties.delays();
-                    Expression toWrite;
-                    if (changeData.value().isDone() && causesOfDelay.isDelayed()) {
-                        // cannot yet change to changeData.value()...
-                        toWrite = DelayedExpression.forDelayedValueProperties(changeData.value().getIdentifier(), changeData.value().returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
-                    } else {
-                        toWrite = changeData.value();
-                    }
-                    LinkedVariables removed = vi1.getLinkedVariables()
-                            .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
-                    vic.setValue(toWrite, removed, properties, EVALUATION);
+                if (changeData.value() != null && (changeData.value().isDone()
+                        || !(vi1.getValue() instanceof DelayedWrappedExpression))) {
+                    changeValueWithoutAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi1);
                 } else {
-                    LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState,
-                            variable, vic, vi, changeData, groupPropertyValues);
-                    delay = delay.merge(loopResult.delays);
-                    if (!loopResult.wroteValue) {
-                        if (variable instanceof This
-                                || !evaluationResult.causesOfDelay().isDelayed()
-                                || optBreakInitDelay.isPresent()
-                                || vi1.getValue() instanceof DelayedWrappedExpression) {
-                            // we're not assigning (and there is no change in instance because of a modifying method)
-                            // only then we copy from INIT to EVAL
-                            // if the existing value is not delayed, the value properties must not be delayed either!
-                            Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
-                                    sharedState.evaluationContext(),
-                                    variable, vi1.getProperties(),
-                                    changeData.properties(), groupPropertyValues, true);
-                            assert vi1.getValue().isDelayed()
-                                    || vi1.getValue().isNotYetAssigned()
-                                    || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
-                                    "While writing to variable " + variable;
-                            Expression value;
-                            if (optBreakInitDelay.isPresent() && vi1.isDelayed()) {
-                                // if we break a delay, but the value that we write is still delayed, we propagate the delay (see Basics_7_1)
-                                LOGGER.debug("Propagate break init delay in {} in {}", variable, index());
-                                value = vi1.getValue().mergeDelays(DelayFactory.createDelay(optBreakInitDelay.get()));
-                            } else {
-                                value = vi1.getValue();
-                            }
-                            vic.setValue(value, vi1.getLinkedVariables(), Properties.of(merged), EVALUATION);
-                        } else {
-                            // delayed situation; do not copy the value properties UNLESS there is a break delay
-                            Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
-                                    sharedState.evaluationContext(),
-                                    variable, vi1.getProperties(),
-                                    changeData.properties(), groupPropertyValues, false);
-                            merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
-                            // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
-                            vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
-                        }
-                    }
+                    delay = noValueChange(sharedState, delay, evaluationResult, groupPropertyValues,
+                            optBreakInitDelay.orElse(null), variable, changeData, vic, vi, vi1);
                 }
             }
             if (vi.isDelayed()) {
@@ -279,7 +149,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());
             delay = delay.merge(loopResult.delays);
         }
-
 
         /*
         The loop variable has been created in the initialisation phase. Evaluation has to wait until
@@ -317,6 +186,178 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
 
         return applyStatusAndEnnStatus;
+    }
+
+    private EvaluationResult potentiallyModifyEvaluationResult(StatementAnalyserSharedState sharedState,
+                                                               EvaluationResult evaluationResultIn) {
+        EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
+                sharedState.context());
+
+        // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
+        // part 1 is in the constructor of SAEvaluationContext
+        // the data is stored in the state data of statement analysis
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
+        statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
+            VariableExpression ve = e.getKey();
+            // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
+            // TODO is there an equivalent for loop variables?
+            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf)
+                    || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
+                EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(ve.variable());
+                if (cd != null && cd.isMarkedRead()) {
+                    LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
+                    builder.assignment(ve.variable(), e.getValue(), lv);
+                }
+            }
+        });
+        EvaluationResult evaluationResult2 = builder.compose(evaluationResult1).build();
+        // ***
+
+        EvaluationResult evaluationResult;
+        if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
+            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult2, index());
+        } else {
+            evaluationResult = evaluationResult2;
+        }
+        return evaluationResult;
+    }
+
+    private CausesOfDelay noValueChange(StatementAnalyserSharedState sharedState,
+                                        CausesOfDelay delay,
+                                        EvaluationResult evaluationResult,
+                                        GroupPropertyValues groupPropertyValues,
+                                        VariableCause optBreakInitDelay,
+                                        Variable variable,
+                                        EvaluationResult.ChangeData changeData,
+                                        VariableInfoContainer vic,
+                                        VariableInfo vi,
+                                        VariableInfo vi1) {
+        LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState,
+                variable, vic, vi, changeData, groupPropertyValues);
+        delay = delay.merge(loopResult.delays);
+        if (!loopResult.wroteValue) {
+            if (variable instanceof This
+                    || !evaluationResult.causesOfDelay().isDelayed()
+                    || optBreakInitDelay != null
+                    || vi1.getValue() instanceof DelayedWrappedExpression) {
+                // we're not assigning (and there is no change in instance because of a modifying method)
+                // only then we copy from INIT to EVAL
+                // if the existing value is not delayed, the value properties must not be delayed either!
+                Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
+                        sharedState.evaluationContext(),
+                        variable, vi1.getProperties(),
+                        changeData.properties(), groupPropertyValues, true);
+                assert vi1.getValue().isDelayed()
+                        || vi1.getValue().isNotYetAssigned()
+                        || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
+                        "While writing to variable " + variable;
+                Expression value;
+                if (optBreakInitDelay != null && vi1.isDelayed()) {
+                    // if we break a delay, but the value that we write is still delayed, we propagate the delay (see Basics_7_1)
+                    LOGGER.debug("Propagate break init delay in {} in {}", variable, index());
+                    value = vi1.getValue().mergeDelays(DelayFactory.createDelay(optBreakInitDelay));
+                } else {
+                    value = vi1.getValue();
+                }
+                vic.setValue(value, vi1.getLinkedVariables(), Properties.of(merged), EVALUATION);
+            } else {
+                // delayed situation; do not copy the value properties UNLESS there is a break delay
+                Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
+                        sharedState.evaluationContext(),
+                        variable, vi1.getProperties(),
+                        changeData.properties(), groupPropertyValues, false);
+                merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
+                // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
+                vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
+            }
+        }
+        return delay;
+    }
+
+    private void changeValueWithoutAssignment(StatementAnalyserSharedState sharedState,
+                                              GroupPropertyValues groupPropertyValues,
+                                              Variable variable,
+                                              EvaluationResult.ChangeData changeData,
+                                              VariableInfoContainer vic,
+                                              VariableInfo vi1) {
+        // a modifying method caused an updated instance value. IMPORTANT: the value properties do not change.
+        // see e.g. UpgradableBooleanMap, E2InContext_0, _2
+        //assert changeData.value().isDone();
+        // we cannot let DWEs be changed into other delays... they must be passed on (e.g. StaticSideEffects_1)
+
+        Map<Property, DV> merged = SAHelper.mergePreviousAndChange(sharedState.evaluationContext(),
+                variable, vi1.getProperties(),
+                changeData.properties(), groupPropertyValues, true);
+
+        Properties properties = Properties.of(merged);
+        CausesOfDelay causesOfDelay = properties.delays();
+        Expression toWrite;
+        if (changeData.value().isDone() && causesOfDelay.isDelayed()) {
+            // cannot yet change to changeData.value()...
+            toWrite = DelayedExpression.forDelayedValueProperties(changeData.value().getIdentifier(),
+                    changeData.value().returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+        } else {
+            toWrite = changeData.value();
+        }
+        LinkedVariables removed = vi1.getLinkedVariables()
+                .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
+        vic.setValue(toWrite, removed, properties, EVALUATION);
+    }
+
+    private void markAssignment(StatementAnalyserSharedState sharedState,
+                                GroupPropertyValues groupPropertyValues,
+                                Variable variable,
+                                EvaluationResult.ChangeData changeData,
+                                VariableInfoContainer vic,
+                                VariableInfo vi,
+                                VariableInfo vi1) {
+        if (vi.valueIsSet()) return;
+        if (conditionsForOverwritingPreviousAssignment(myMethodAnalyser, vi1, vic, changeData,
+                sharedState.localConditionManager(), sharedState.context())) {
+            statementAnalysis.ensure(Message.newMessage(getLocation(),
+                    Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
+        }
+
+        Expression bestValue = SAHelper.bestValue(changeData, vi1);
+        Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Write value {} to variable {}",
+                    valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
+                    variable.fullyQualifiedName());
+        }
+        // first do the properties that come with the value; later, we'll write the ones in changeData
+        // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
+        // it should not be taken into account anymore. (See e.g. Loops_1)
+        Properties valueProperties = sharedState.evaluationContext()
+                .getValueProperties(variable.parameterizedType(), valueToWrite, true);
+
+
+        Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
+
+        Properties changeDataProperties = Properties.of(changeData.properties());
+        boolean myself = sharedState.evaluationContext().isMyself(variable);
+        Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
+                groupPropertyValues);
+        // LVs start empty, the changeData.linkedVariables will be added later
+        Properties combined;
+        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+            // captures self-referencing instance fields (but not static fields, as in Enum_)
+            // a similar check exists in StatementAnalysisImpl.initializeFieldReference
+            combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
+        } else {
+            combined = merged;
+        }
+
+        if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
+                valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
+            // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
+            // evaluation context
+            vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, EVALUATION);
+        }
+        if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
+            statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
+        }
     }
 
     private record LoopResult(boolean wroteValue, CausesOfDelay delays) {
