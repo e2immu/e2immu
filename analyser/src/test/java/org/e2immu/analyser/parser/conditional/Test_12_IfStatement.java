@@ -245,8 +245,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<simplification>||null==set?null:<return value>" : "null";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("null", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<simplification>||<null-check>?null:<m:contains>?\"one\":\"two\"" : "???";
@@ -258,15 +257,14 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData().isUnreachable());
+                    assertTrue(d.statementAnalysis().flowData().isUnreachable());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() == 0 ? "<m:method1>" : "null";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("null", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         // 4 errors, 3 in method1, 1 in method2

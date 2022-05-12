@@ -732,17 +732,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newEcd);
         }
 
-        // Used in transformation of parameter lists
         public void setProperty(Variable variable, Property property, DV value) {
             assert evaluationContext != null;
+
+            CausesOfDelay causesOfDelay = property.contextProperty ? CausesOfDelay.EMPTY: value.causesOfDelay();
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(null, value.causesOfDelay(), CausesOfDelay.EMPTY, false, Set.of(),
+                newEcd = new ChangeData(null, causesOfDelay, CausesOfDelay.EMPTY, false, Set.of(),
                         LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value));
             } else {
-                newEcd = new ChangeData(ecd.value, ecd.delays.merge(value.causesOfDelay()), ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.delays.merge(causesOfDelay), ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables, ecd.toRemoveFromLinkedVariables,
                         mergeProperties(ecd.properties, Map.of(property, value)));
             }

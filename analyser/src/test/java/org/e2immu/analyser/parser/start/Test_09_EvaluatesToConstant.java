@@ -53,21 +53,14 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectState = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
-                assertEquals(expectState, d.absoluteState().toString());
-
-                if (d.iteration() >= 1) {
-                    Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
-                    assertEquals("\"xzy\"", value.toString());
-                    assertTrue(value instanceof StringConstant);
-                }
+                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
+                assertEquals("\"xzy\"", value.toString());
+                assertTrue(value instanceof StringConstant);
             }
             if ("1.0.1".equals(d.statementAnalysis().index())) {
-                String expectState = d.iteration() == 0 ? "<m:contains>&&!<c:boolean>" : "param.contains(\"a\")";
-                assertEquals(expectState, d.absoluteState().toString());
-                if (d.iteration() >= 1) {
-                    assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
-                }
+                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index())) {
                 String expected = d.iteration() == 0 ? "<c:boolean>&&<m:contains>" : "false";
@@ -85,11 +78,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-
         if (d.variable() instanceof ReturnVariable) {
             if (d.currentValue() instanceof UnknownExpression ue) {
                 assertEquals(UnknownExpression.RETURN_VALUE, ue.msg());
-
                 for (Property property : EvaluationContext.VALUE_PROPERTIES) {
                     DV dv = d.getProperty(property);
                     assertTrue(dv == null || dv.isDone(),
@@ -117,28 +108,14 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    if (d.iteration() == 0) {
-                        assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;initial:param@Method_method3_0-E",
-                                d.currentValue().causesOfDelay().toString());
-                        assertNull(d.getProperty(Property.IDENTITY));
-                    } else {
-                        assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
-                    }
+                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    if (d.iteration() == 0) {
-                        assertEquals("<p:param>", d.currentValue().toString());
-                        assertEquals("cm@Parameter_a;initial:param@Method_method3_0-E",
-                                d.currentValue().causesOfDelay().toString());
-                        assertNull(d.getProperty(Property.IDENTITY));
-                    } else {
-                        assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
-                    }
+                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
                 }
                 // this is the if(a==null) { ..} statement, where the expression evaluates to false
                 if ("1.0.1".equals(d.statementId())) {
@@ -192,21 +169,15 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>"
-                            : "<return value>";
-                    assertEquals(expected, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return method3:0" : "";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("<return value>", d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0
-                            ? "<m:contains>&&<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>"
-                            : "<return value>";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("<return value>", d.currentValue().toString());
                     CausesOfDelay causesOfDelayOfLinkedVars = d.variableInfo().getLinkedVariables().causesOfDelay();
                     assertTrue(causesOfDelayOfLinkedVars.isDone());
-                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
@@ -226,12 +197,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 // read: someMethod's parameter a may cause modification or not-null, but not known yet
-                String expectDelay = d.iteration() == 0 ? "cm@Parameter_a" : "";
-                assertEquals(expectDelay, d.evaluationResult().causesOfDelay().toString());
+                assertEquals("", d.evaluationResult().causesOfDelay().toString());
             }
             if ("1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
-                assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 assertTrue(d.evaluationResult().causesOfDelay().isDone());
@@ -257,7 +226,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
+        testClass("EvaluatesToConstant", 5, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

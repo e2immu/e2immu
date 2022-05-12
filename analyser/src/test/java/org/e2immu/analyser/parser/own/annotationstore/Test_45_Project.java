@@ -299,9 +299,7 @@ public class Test_45_Project extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0
-                            ? "cm@Parameter_value;ext_not_null@Parameter_value;mom@Parameter_value" : "";
-                    assertEquals(expect, d.evaluationResult().causesOfDelay().toString());
+                    assertEquals("", d.evaluationResult().causesOfDelay().toString());
                 }
             }
         };

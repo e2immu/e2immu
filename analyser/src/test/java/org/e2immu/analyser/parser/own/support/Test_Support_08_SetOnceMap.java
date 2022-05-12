@@ -102,7 +102,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<mmc:map>" : "instance type HashMap<K,V>";
+                        String expectValue = d.iteration() == 0 ? "<mmc:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -135,7 +135,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
+                        String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         String lvs = d.iteration() <= 1 ? "k:-1,this.map:3,this:-1,v:0" : "k:3,this.map:3,v:0";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());

@@ -578,8 +578,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String value = d.iteration() <= 1 ? "<v:s>" : "nullable instance type String";
                         assertEquals(value, d.currentValue().toString());
                         String expected = switch (d.iteration()) {
-                            case 0 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.0.2-E";
-                            case 1 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.0.2-E;initial@Field_data;initial@Field_map";
+                            case 0 -> "initial:node@Method_add_1.0.1.0.2-C;initial:s@Method_add_1.0.1.0.2-E";
+                            case 1 -> "initial:node@Method_add_1.0.1.0.2-C;initial:s@Method_add_1.0.1.0.2-E;initial@Field_data;initial@Field_map";
                             default -> "";
                         };
                         assertEquals(expected, d.currentValue().causesOfDelay().toString());
@@ -879,7 +879,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type TrieNode<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_add_1.0.1-C";
+                        case 0 -> "initial:node@Method_add_1.0.1.0.2-C";
                         case 1 -> "initial@Field_data;initial@Field_map";
                         default -> "";
                     };

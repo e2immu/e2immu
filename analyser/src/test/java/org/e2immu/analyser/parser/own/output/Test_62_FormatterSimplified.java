@@ -116,7 +116,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3.1.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?\"\":<m:write>";
+                            case 1, 2 -> "<s:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -125,7 +125,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":<m:write>";
+                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -308,8 +308,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() <= 2 ? "<instanceOf:Guide>" :
-                            "list.get(forwardInfo.pos) instanceof Guide";
+                    String expect = d.iteration() == 0 ? "<instanceOf:Guide>" : "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }

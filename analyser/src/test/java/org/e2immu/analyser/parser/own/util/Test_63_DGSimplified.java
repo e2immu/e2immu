@@ -47,7 +47,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String value = d.iteration() <= 1 ? "<m:put>" : "nullable instance type Node<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;ext_not_null@Parameter_dependsOn;ext_not_null@Parameter_t;initial:copy.nodeMap@Method_accept_0.0.1-C;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
+                        case 0 -> "initial:copy.nodeMap@Method_accept_0.0.1-C;initial:node.dependsOn@Method_accept_0.0.0-C";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
@@ -56,7 +56,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:freeze>" : "<no return value>";
+                    String expected = d.iteration() == 0 ? "<m:freeze>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -65,9 +65,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "copy.nodeMap=cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t, copy=cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t, this=cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t";
-                        case 1 -> "copy.nodeMap=initial@Field_dependsOn;initial@Field_t, copy=initial@Field_dependsOn;initial@Field_t, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=initial@Field_dependsOn;initial@Field_t, this=initial@Field_dependsOn;initial@Field_t";
-                        default -> "copy.nodeMap=true:1, copy=true:1, org.e2immu.analyser.parser.own.util.testexample.DGSimplified_0.copyRemove(java.util.function.Predicate<T>):0:accept=true:1, this=false:0";
+                        case 0 -> "accept={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, not null in context=initial:node.dependsOn@Method_accept_0.0.0-C, read=true:1}, copy={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, not null in context=not_null:5, read=true:1}, this={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M, not null in context=not_null:5}";
+                        case 1 -> "accept={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, not null in context=content_not_null:13, read=true:1}, copy={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, this={modified in context=cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}";
+                        default -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=false:0, not null in context=not_null:5}";
                     };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
@@ -75,16 +75,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t";
-                        case 1 -> "initial@Field_dependsOn;initial@Field_t";
+                        case 0 -> "cm:accept@Method_accept_0.0.1-E;cm:copy.nodeMap@Method_accept_0.0.1-E;cm:copy@Method_accept_0.0.1-E;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E";
+                        case 1 -> "cm:accept@Method_accept_0.0.1-E;cm:newDependsOn@Method_accept_0.0.1-E;cm:node.dependsOn@Method_accept_0.0.1-E;cm:node@Method_accept_0.0.1-E;cm:t@Method_accept_0.0.1-E;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;mom@Parameter_dependsOn;mom@Parameter_t";
-                        case 1 -> "initial@Field_dependsOn;initial@Field_t";
+                        case 0 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M";
+                        case 1 -> "cm:accept@Method_accept_0:M;cm:copy.nodeMap@Method_accept_0:M;cm:copy@Method_accept_0:M;cm:node.dependsOn@Method_accept_0:M;cm:node@Method_accept_0:M;cm:t@Method_accept_0:M;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
@@ -107,9 +107,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<mmc:copy>" : "instance type DGSimplified_0<T>";
+                        String expected = d.iteration() == 0 ? "<mmc:copy>" : "instance type DGSimplified_0<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -207,12 +207,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         // TODO improve on errors
-        testClass("DGSimplified_0", 6, 2, new DebugConfiguration.Builder()
+        testClass("DGSimplified_0", 5, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
@@ -281,7 +281,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        testClass("DGSimplified_1", 6, 2, new DebugConfiguration.Builder()
+        testClass("DGSimplified_1", 5, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -294,24 +294,15 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 3 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    String delay = switch (d.iteration()) {
-                        case 0 -> "cm:dependsOn@Method_addNode_0-E;cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t;initial:dg@Method_reverse_1.0.0-C";
-                        case 1 -> "[14 delays]";
-                        case 2 -> "[15 delays]";
-                        case 3 -> "cm:node.dependsOn@Method_addNode_1:M;cm:node@Method_addNode_1:M;cm:scope-n:1.dependsOn@Method_addNode_1:M;cm:scope-n:1@Method_addNode_1:M;cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t";
-                        case 4 -> "cm:t@Method_addNode_0-E;cm:this@Method_addNode_0-E;cm@Parameter_t";
-                        default -> "";
-                    };
-                    //    assertEquals(delay, d.evaluationResult().causesOfDelay().toString());
                 }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 3 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
@@ -392,9 +383,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -440,7 +431,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("DGSimplified_4", 0, 3, new DebugConfiguration.Builder()
+        testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

@@ -310,7 +310,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
 
-                        String expect = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object/*@Identity*/";
+                        String expect ="nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
 
@@ -328,8 +328,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("object/*(String)*/", prev.getValue().toString());
 
-                        String expect = d.iteration() == 0 ? "<v:string>" : "object/*(String)*/";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("object/*(String)*/", d.currentValue().toString());
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
