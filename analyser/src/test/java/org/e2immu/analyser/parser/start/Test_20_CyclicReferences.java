@@ -73,7 +73,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
                 assertEquals("nullable instance type List<String>", d.currentValue().toString());
-                assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
+                assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             }
         };
 

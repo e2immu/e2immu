@@ -57,7 +57,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
 
                 } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#org.e2immu.analyser.parser.modification.testexample.Modification_6.add6(org.e2immu.analyser.parser.modification.testexample.Modification_6,java.util.Set<java.lang.String>):0:example6".equals(d.variableName())) {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("example6.set6:0,example6:2", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("example6:2", d.variableInfo().getLinkedVariables().toString());
 
                 } else if("org.e2immu.analyser.parser.modification.testexample.Modification_6.this".equals(d.variableName())) {
                     // since 20220404 we cannot create variables after iteration 0, so this has to exist, even in static methods
@@ -69,7 +69,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set6".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                        assertEquals("in6:0,this.set6:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("in6:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

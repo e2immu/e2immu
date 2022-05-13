@@ -148,7 +148,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
                     assertEquals("1", d.statementId());

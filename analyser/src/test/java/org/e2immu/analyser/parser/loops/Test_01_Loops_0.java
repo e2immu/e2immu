@@ -72,7 +72,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             }
             if (d.variable() instanceof This) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
             if ("i".equals(d.variableName())) {

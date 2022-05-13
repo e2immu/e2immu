@@ -329,7 +329,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                         assertEquals("nullable instance type IFluent_1/*@Identity*/", d.currentValue().toString());
-                        assertEquals("instance:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

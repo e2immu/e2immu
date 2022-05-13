@@ -75,8 +75,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
 
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-
-                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
@@ -84,7 +83,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        assertEquals("res:0,s:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("res:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     assertFalse("2".equals(d.statementId()) || "0".equals(d.statementId()));
                 }
@@ -96,7 +95,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
 
                         assertEquals("s", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertEquals("res:0,s:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
@@ -112,7 +111,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                         } else fail();
 
                         assertEquals("instance type String", d.currentValue().toString());
-                        String expectLv = "res:0,return method:0";
+                        String expectLv = "return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -123,8 +122,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals("res", d.currentValue().toString());
 
-                        String expectLv = "res:0,return method:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("res:0", d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));

@@ -75,6 +75,8 @@ public class Test_36_Cast extends CommonTestRunner {
                     String expectValue = d.iteration() <= 1 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(d.iteration()<=1, d.variableInfo().getLinkedVariables().isDelayed());
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1 ? "<f:t>" : "instance type T";

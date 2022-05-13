@@ -53,7 +53,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                                 : "instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:-1" : "theSet:0,this.s2:0";
+                        String expectLv = d.iteration() == 0 ? "s:-1,this.s2:0" : "this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -61,9 +61,9 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     String expectLinked;
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        expectLinked = "theSet:0,this.s2:0";
+                        expectLinked = "theSet:0";
                     } else {
-                        expectLinked = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:-1" : "theSet:0,this.s2:0";
+                        expectLinked = d.iteration() == 0 ? "s:-1,theSet:0" : "theSet:0";
                     }
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 

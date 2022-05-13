@@ -27,8 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_24_TypeParameters extends CommonTestRunner {
     public Test_24_TypeParameters() {
@@ -51,7 +50,7 @@ public class Test_24_TypeParameters extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("TypeParameters_0".equals(d.methodInfo().name) && STRINGS.equals(d.variableName())) {
                 assertEquals("input.stream().map(C::new).collect(Collectors.toList())", d.currentValue().toString());
-                assertEquals("this.strings:0", d.variableInfo().getLinkedVariables().toString());
+                assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             }
         };
 

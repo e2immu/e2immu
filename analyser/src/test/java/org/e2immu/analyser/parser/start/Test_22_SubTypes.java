@@ -70,7 +70,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 assertEquals("key", d.currentValue().toString());
-                assertEquals("key:0,this.key:0", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("key:0", d.variableInfo().getLinkedVariables().toString());
             }
 
         };
@@ -194,15 +194,15 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if ("it2".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("it2:0,set2:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("set2:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("it2:0,set2:2", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("set2:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "set2".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("it2:2,set2:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("it2:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

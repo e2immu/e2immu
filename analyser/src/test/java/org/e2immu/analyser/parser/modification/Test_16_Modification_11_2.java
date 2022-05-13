@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 // differs only in the approach to @NotNull, see parameter computeContextPropertiesOverAllMethods, now set to true
 
-// cause(s|d) a crash where the other version doesn't, so worth splitting out.
+// cause(s|d) a crash where the other version doesn't, so worth splitting aff.
 
 public class Test_16_Modification_11_2 extends CommonTestRunner {
 
@@ -49,7 +49,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     // not a direct assignment!
-                    assertEquals("setC:1,this.set:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("setC:1", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo setC && "setC".equals(setC.name)) {
@@ -89,13 +89,10 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
-
-                    String expectLv = "this.set:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if (d.variable() instanceof ParameterInfo s && "string".equals(s.name)) {
-                    String expectLv = "string:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     //container:this.set@Method_add_0
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
@@ -106,7 +103,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 2 ? "c:-1,this.s2:-1" : "c:2,this.s2:0";
+                        String expected = d.iteration() <= 2 ? "c:-1" : "c:2";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -117,7 +114,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,c:-1,this.s2:-1" : "c.set:2,c:0,this.s2:2";
+                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

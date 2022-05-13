@@ -168,7 +168,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 String delay = switch (d.iteration()) {
-                    case 0 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial:this.s2@Method_example1_0-C";
+                    case 0 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E";
                     case 1 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial@Field_set";
                     case 2 -> "mom@Parameter_setC";
                     case 3-> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:this.s2@Method_example1_2-E;mom@Parameter_setC";

@@ -314,7 +314,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
                     // because immutableOfHiddenContent = @ERContainer
-                    assertEquals("this.set:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     // we wait because of hidden content
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
