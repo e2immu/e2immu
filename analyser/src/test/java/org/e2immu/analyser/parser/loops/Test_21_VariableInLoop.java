@@ -89,6 +89,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                                 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:<return value>"
                                 : "((sa$1.navigationData()).next.isPresent()||null==sa$1)&&(null==sa$1||null!=(sa$1.navigationData()).next.get().orElse(null))?<return value>:sa$1";
                         assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
@@ -97,9 +98,38 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                 }
                 if ("sa".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        if (d.iteration() == 0) {
+                            assertTrue(eval.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
+                        } else {
+
+                            // should be CONTENT_NOT_NULL, but in competition with the null check
+                            assertEquals(MultiLevel.NULLABLE_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
+                        }
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    // then comes an assignment...
+                    if ("1.0.3".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    // and therefore "1" remains nullable, 1st round
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>?<m:get>:<vl:sa>" : "null";
                         assertEquals(expected, d.currentValue().toString());
+                        // nullable or content not null? delayed or not in iteration 0?
+                        // either @NotNull1 or @Nullable; it is the expression of the return value
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }

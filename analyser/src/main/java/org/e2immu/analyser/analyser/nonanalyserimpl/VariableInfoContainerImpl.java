@@ -256,13 +256,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
             variableInfo.setProperty(vp, v);
         });
-        try {
-            variableInfo.setLinkedVariables(linkedVariables);
-        } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
-                    variableInfo.variable().fullyQualifiedName(),
-                    linkedVariables, variableInfo.getLinkedVariables());
-            throw ise;
+        if (linkedVariables != null) {
+            try {
+                variableInfo.setLinkedVariables(linkedVariables);
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
+                        variableInfo.variable().fullyQualifiedName(),
+                        linkedVariables, variableInfo.getLinkedVariables());
+                throw ise;
+            }
         }
     }
 

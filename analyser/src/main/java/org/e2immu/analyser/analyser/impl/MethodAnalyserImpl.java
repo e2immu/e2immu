@@ -256,7 +256,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.FLUENT, merge);
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.IDENTITY, merge);
         Expression srv = DelayedExpression.forMethod(methodInfo.identifier, methodInfo, methodInfo.returnType(),
-                LinkedVariables.EMPTY, merge);
+                LinkedVariables.EMPTY, merge, Map.of());
         methodAnalysis.setSingleReturnValue(srv);
         return merge;
     }

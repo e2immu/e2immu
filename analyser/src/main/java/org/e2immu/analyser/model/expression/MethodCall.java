@@ -110,7 +110,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .merge(translatedObject.causesOfDelay());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
-                    LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
+                    LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay, Map.of());
         }
         return new MethodCall(identifier,
                 objectIsImplicit,
@@ -506,15 +506,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return false;
     }
 
-    private EvaluationResult delayedMethod(EvaluationResult evaluationContext,
+    private EvaluationResult delayedMethod(EvaluationResult context,
                                            EvaluationResult.Builder builder,
                                            CausesOfDelay causesOfDelay,
                                            DV modified) {
         assert causesOfDelay.isDelayed();
         // NOTE: we do not convert the linked variables to blanket delay! this is not necessary and holds back Context Modified
-        LinkedVariables linkedVariables = linkedVariables(evaluationContext);
+        LinkedVariables linkedVariables = linkedVariables(context);
+        Map<Variable, DV> cnnMap = builder.cnnMap();
         builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                linkedVariables, causesOfDelay));
+                linkedVariables, causesOfDelay, cnnMap));
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
             // IMPORTANT: we change the value of the object variable, not the variable the object may be
@@ -640,7 +641,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
-                            objectValue.linkedVariables(context).changeAllToDelay(causesOfDelay), causesOfDelay);
+                            objectValue.linkedVariables(context).changeAllToDelay(causesOfDelay), causesOfDelay, Map.of());
                 }
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);

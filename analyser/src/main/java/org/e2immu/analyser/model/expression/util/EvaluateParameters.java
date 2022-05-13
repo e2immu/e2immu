@@ -118,8 +118,8 @@ public class EvaluateParameters {
                 }
                 return false;
             });
-
-            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle || self;
+            // FIXME REMOVED BREAK
+            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle ;//|| self;
             doContextContainer(methodInfo, recursivePartOfCallSelf, map);
             doContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);

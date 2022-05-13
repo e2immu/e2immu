@@ -101,7 +101,7 @@ public class VariableInfoImpl implements VariableInfo {
             statementTime = VariableInfoContainer.NOT_A_FIELD;
         }
         value.setVariable(DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay));
-        linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
+        linkedVariables.setVariable(LinkedVariables.NOT_YET_SET);
     }
 
     // normal one for creating an initial or evaluation
@@ -119,7 +119,7 @@ public class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         CausesOfDelay causesOfDelay = initialValue(location, variable);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, statementTime, causesOfDelay) : delayedValue);
-        linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
+        linkedVariables.setVariable(LinkedVariables.NOT_YET_SET);
     }
 
     private static CausesOfDelay initialValue(Location location, Variable variable) {
@@ -231,7 +231,29 @@ public class VariableInfoImpl implements VariableInfo {
 
     void setLinkedVariables(LinkedVariables linkedVariables) {
         assert linkedVariables != null;
-        this.linkedVariables.setVariable(linkedVariables);
+        assert this.linkedVariables.get() != null : "Please initialize LVs";
+        assert !linkedVariables.contains(variable) : "Self references are not allowed";
+        if (this.linkedVariables.isFinal()) {
+            if (!this.linkedVariables.get().equals(linkedVariables)) {
+                throw new IllegalStateException("Not allowed to change LVs anymore: old: " + this.linkedVariables.get()
+                        + ", new " + linkedVariables);
+            }
+            return;
+        }
+        if (this.linkedVariables.get() != LinkedVariables.NOT_YET_SET) {
+            // the first time, there are no restrictions on statically assigned values
+            // as soon as we have a real value, we cannot change SA anymore
+
+            if (!this.linkedVariables.get().identicalStaticallyAssigned(linkedVariables)) {
+                throw new IllegalStateException("Cannot change statically assigned\nold: "
+                        + this.linkedVariables.get() + "\nnew: " + linkedVariables + "\n");
+            }
+        }
+        if (linkedVariables.isDelayed()) {
+            this.linkedVariables.setVariable(linkedVariables);
+        } else {
+            this.linkedVariables.setFinal(linkedVariables);
+        }
     }
 
     void setValue(Expression value) {

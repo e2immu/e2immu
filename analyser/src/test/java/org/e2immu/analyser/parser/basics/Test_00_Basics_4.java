@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_4 extends CommonTestRunner {
     public Test_00_Basics_4() {
@@ -49,7 +50,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "1+i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
             if ("getI".equals(d.methodInfo().name)) {
@@ -63,8 +64,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    String expectLv = "return getI:0,this.i:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
             }

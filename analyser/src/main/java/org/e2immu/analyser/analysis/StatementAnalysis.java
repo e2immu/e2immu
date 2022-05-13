@@ -209,10 +209,10 @@ public interface StatementAnalysis extends Analysis,
                                     EvaluationContext evaluationContext,
                                     ConditionManager localConditionManager);
 
-    void ensureVariables(EvaluationContext evaluationContext,
-                         Variable variable,
-                         EvaluationResult.ChangeData changeData,
-                         int newStatementTime);
+    void ensureVariable(EvaluationContext evaluationContext,
+                        Variable variable,
+                        EvaluationResult.ChangeData changeData,
+                        int newStatementTime);
 
     void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
 }

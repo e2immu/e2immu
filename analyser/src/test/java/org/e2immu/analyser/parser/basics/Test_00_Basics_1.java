@@ -19,6 +19,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
@@ -57,7 +58,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if ("s1".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("p0", d.currentValue().toString());
-                    assertEquals("p0:0,s1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("p0:0", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 }
@@ -66,7 +67,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(FIELD1, d.variableName());
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
-                    assertEquals("p0:1,s1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("p0:1,s1:0", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
@@ -113,7 +114,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
                     assertDv(d, 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     assertTrue(d.iteration() <= 2);
-                    assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
@@ -121,24 +122,33 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 }
             }
         }
-
+        if ("contains".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo.name)) {
+                assertEquals("0", d.statementId());
+                String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
+                assertEquals(expected, d.currentValue().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
+            }
+        }
         if ("getF1".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference fr && "f1".equals(fr.fieldInfo.name)) {
                 assertEquals(FIELD1, d.variableName());
                 assertTrue(d.variableInfo().isRead());
 
                 assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0-C;initial@Field_f1", "nullable instance type Set<String>");
-                assertLinked(d, 0, "", "return getF1:0,this.f1:0");
+                assertLinked(d, 0, "", "return getF1:0");
                 assertTrue(d.variableInfo().getLinkedVariables().isDone());
 
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
-            if (GET_F1_RETURN.equals(d.variableName())) {
+            if (d.variable() instanceof ReturnVariable) {
+                assertEquals(GET_F1_RETURN, d.variableName());
                 assertTrue(d.variableInfo().isAssigned());
 
-                assertEquals("return getF1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString()); // without p0
+                assertEquals("this.f1:0", d.variableInfo().getLinkedVariables().toString()); // without p0
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());

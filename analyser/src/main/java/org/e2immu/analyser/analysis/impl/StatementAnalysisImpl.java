@@ -91,7 +91,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     .map(VariableInfoContainer::current)
                     .forEach(vi -> {
                         assert vi.valueIsSet() : "Variable " + vi.variable().fullyQualifiedName() + " has value: "
-                                + vi.getValue().toString() + " in statement " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName;
+                                + vi.getValue() + " in statement " + index + ", "
+                                + methodAnalysis.getMethodInfo().fullyQualifiedName;
+                        assert vi.linkedVariablesIsSet() : "Variable " + vi.variable().fullyQualifiedName()
+                                + " has unfrozen linked variables in statement " + index + ", "
+                                + methodAnalysis.getMethodInfo().fullyQualifiedName;
                     });
         }
         stateData.internalAllDoneCheck();
@@ -815,9 +819,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.isEmpty() && !viEval.isRead()) {
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
-                // end of the "apply" phase, even for variables that aren't read
+                // end of the "apply" phase, even for variables that aren't read.
+                // Neither do we write linked variables here.
                 map.removeAll(GroupPropertyValues.PROPERTIES);
-                vic.setValue(initialValue, viInitial.getLinkedVariables(), map, EVALUATION);
+                vic.setValue(initialValue, null, map, EVALUATION);
             }
         }
     }
@@ -1356,8 +1361,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-
-        computeLinkedVariables.writeLinkedVariables(touched, prepareMerge.toRemove);
+        Map<Variable, Set<Variable>> staticallyAssigned = computeLinkedVariables.staticallyAssignedVariables();
+        computeLinkedVariablesCm.writeLinkedVariables(staticallyAssigned, touched, prepareMerge.toRemove);
 
         for (Variable variable : touched) {
             if (!linkedVariablesMap.containsKey(variable)) {
@@ -1684,7 +1689,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
-        vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, INITIAL);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, INITIAL);
     }
 
     private void initializeFieldReference(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldReference fieldReference) {
@@ -2106,8 +2111,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(index(), loopVar, valueProperties);
         }
-        vic.setValue(value, LinkedVariables.EMPTY, valueProperties, EVALUATION);
-        vic.setLinkedVariables(linked, EVALUATION);
+        vic.setValue(value, linked, valueProperties, EVALUATION);
         return value.causesOfDelay();
     }
 
@@ -2267,10 +2271,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
     */
     @Override
-    public void ensureVariables(EvaluationContext evaluationContext,
-                                Variable variable,
-                                EvaluationResult.ChangeData changeData,
-                                int newStatementTime) {
+    public void ensureVariable(EvaluationContext evaluationContext,
+                               Variable variable,
+                               EvaluationResult.ChangeData changeData,
+                               int newStatementTime) {
         VariableInfoContainer vic;
         VariableNature vn;
         if (!variableIsSet(variable.fullyQualifiedName())) {

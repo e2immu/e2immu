@@ -398,7 +398,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
             LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
             LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
-                    changed, merged);
+                    changed, merged, Map.of());
         }
         Identifier inline;
         // non-modifying: make sure it remains the same one

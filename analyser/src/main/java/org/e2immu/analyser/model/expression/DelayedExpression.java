@@ -26,6 +26,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
@@ -37,13 +39,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     private final LinkedVariables linkedVariables;
     private final CausesOfDelay causesOfDelay;
     private final Properties priorityProperties;
+    private final Map<Variable, DV> cnnMap;
 
     private DelayedExpression(Identifier identifier,
                               String msg,
                               ParameterizedType parameterizedType,
                               LinkedVariables linkedVariables,
                               CausesOfDelay causesOfDelay) {
-        this(identifier, msg, parameterizedType, linkedVariables, causesOfDelay, Properties.EMPTY);
+        this(identifier, msg, parameterizedType, linkedVariables, causesOfDelay, Properties.EMPTY, Map.of());
     }
 
     private DelayedExpression(Identifier identifier,
@@ -51,7 +54,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                               ParameterizedType parameterizedType,
                               LinkedVariables linkedVariables,
                               CausesOfDelay causesOfDelay,
-                              Properties properties) {
+                              Properties properties,
+                              Map<Variable, DV> cnnMap) {
         super(identifier);
         this.msg = msg;
         this.parameterizedType = parameterizedType;
@@ -59,6 +63,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         this.causesOfDelay = causesOfDelay;
         assert causesOfDelay.isDelayed();
         this.priorityProperties = properties;
+        this.cnnMap = Objects.requireNonNull(cnnMap);
     }
 
     private static String brackets(String msg) {
@@ -69,9 +74,11 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                               MethodInfo methodInfo,
                                               ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables,
-                                              CausesOfDelay causesOfDelay) {
+                                              CausesOfDelay causesOfDelay,
+                                              Map<Variable, DV> cnnMap) {
         String msg = brackets("m:" + methodInfo.name);
-        return new DelayedExpression(identifier, msg, concreteReturnType, linkedVariables, causesOfDelay);
+        return new DelayedExpression(identifier, msg, concreteReturnType, linkedVariables, causesOfDelay,
+                Properties.EMPTY, cnnMap);
     }
 
     /*
@@ -164,14 +171,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
         String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
-        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes, priorityProperties);
-    }
-
-    public static Expression forInitialFieldValue(FieldInfo fieldInfo,
-                                                  LinkedVariables linkedVariables,
-                                                  CausesOfDelay causesOfDelay) {
-        String msg = brackets("f:" + fieldInfo.name);
-        return new DelayedExpression(fieldInfo.getIdentifier(), msg, fieldInfo.type, linkedVariables, causesOfDelay);
+        return new DelayedExpression(identifier, msg, parameterizedType, linkedVariables, causes, priorityProperties,
+                Map.of());
     }
 
     public static Expression forInlinedMethod(Identifier identifier, ParameterizedType parameterizedType, CausesOfDelay causes) {
@@ -256,7 +257,9 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(context).setExpression(this).build();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        cnnMap.forEach((v, dv) -> builder.setProperty(v, Property.CONTEXT_NOT_NULL, dv));
+        return builder.setExpression(this).build();
     }
 
     @Override

@@ -53,7 +53,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() < 3 ? "<mmc:eventually>" : "instance type Eventually<String>";

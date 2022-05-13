@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -293,7 +292,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 // same as in MethodAnalyserImpl, which we don't have access to here
                 DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
                         methodInfo.returnType(), LinkedVariables.EMPTY,
-                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
+                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of());
                 singleReturnValue.setVariable(de);
             }
         }

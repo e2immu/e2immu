@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
@@ -410,16 +411,22 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
                 return;
             }
-            boolean effectivelyNotNull = (evaluationContext.notNullAccordingToConditionManager(variable).valueIsTrue()
-                    || evaluationContext.notNullAccordingToConditionManager(value).valueIsTrue());
+            DV effectivelyNotNull = evaluationContext.notNullAccordingToConditionManager(variable)
+                    .maxIgnoreDelay(evaluationContext.notNullAccordingToConditionManager(value));
+            if (effectivelyNotNull.isDelayed()) {
+                setProperty(variable, Property.CONTEXT_NOT_NULL, effectivelyNotNull);
+                return;
+            }
 
-            if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull) {
+            // using le() instead of equals() here is controversial. if a variable is not null according to the
+            // condition manager, and we're requesting content not null, e.g., then what to do? see header of this method.
+            if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull.valueIsTrue()) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             boolean complain = forwardEvaluationInfo.isComplainInlineConditional();
             if (contextNotNull.isDone() && contextNotNull.lt(notNullRequired) && complain) {
-                DV nnc = effectivelyNotNull ? notNullRequired : MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                DV nnc = effectivelyNotNull.valueIsTrue() ? notNullRequired : MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
@@ -428,11 +435,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private static final Set<CauseOfDelay.Cause> CM_CAUSES = Set.of(CauseOfDelay.Cause.BREAK_INIT_DELAY, CauseOfDelay.Cause.INITIAL_VALUE);
 
         // e.g. Lazy, Loops_23_1
+        // FIXME Basics_1 cannot have 3rd param, DependencyGraph goes into infinite loop without it
+        // FIXME REMOVED BREAK
         private boolean causeOfConditionManagerDelayIsAssignmentTarget(CausesOfDelay cmDelays,
                                                                        Variable assignmentTarget,
                                                                        Variable variable) {
             return cmDelays.containsCausesOfDelay(CM_CAUSES, c -> c instanceof VariableCause vc &&
-                    (vc.variable().equals(assignmentTarget) || vc.variable().equals(variable)));
+                    (vc.variable().equals(assignmentTarget)));// || vc.variable().equals(variable)));
         }
 
         /*
@@ -735,7 +744,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void setProperty(Variable variable, Property property, DV value) {
             assert evaluationContext != null;
 
-            CausesOfDelay causesOfDelay = property.contextProperty ? CausesOfDelay.EMPTY: value.causesOfDelay();
+            CausesOfDelay causesOfDelay = property.contextProperty ? CausesOfDelay.EMPTY : value.causesOfDelay();
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
@@ -842,6 +851,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return cnn != null && cnn.gt(MultiLevel.NULLABLE_DV);
             }
             return false;
+        }
+
+        public Map<Variable, DV> cnnMap() {
+            return valueChanges.entrySet().stream()
+                    .filter(e -> e.getValue().properties.containsKey(Property.CONTEXT_NOT_NULL) )
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                            e -> e.getValue().getProperty(Property.CONTEXT_NOT_NULL)));
         }
     }
 }

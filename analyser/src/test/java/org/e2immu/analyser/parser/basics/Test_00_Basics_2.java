@@ -98,7 +98,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
-                    assertEquals("collection:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
@@ -115,7 +115,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             if ("setString".equals(d.methodInfo().name)) {
                 if (STRING_FIELD.equals(d.variableName())) {
                     assertTrue(d.variableInfo().isAssigned());
-                    assertEquals("string:0,this.string:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("string:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getString".equals(d.methodInfo().name)) {

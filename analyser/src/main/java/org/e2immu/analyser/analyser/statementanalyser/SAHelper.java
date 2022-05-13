@@ -124,18 +124,15 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     There is no overlap between valueProps and variableProps
      */
     static Properties mergeAssignment(Variable variable,
-                                      boolean typeOfVariableIsMyself,
                                       Properties valueProps,
                                       Properties changeData,
+                                      Properties externalProperties,
                                       GroupPropertyValues groupPropertyValues) {
         Properties res = valueProps.combine(changeData);
 
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
-        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, EXTERNAL_NOT_NULL.valueWhenAbsent());
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, EXTERNAL_IMMUTABLE.valueWhenAbsent());
-        groupPropertyValues.set(EXTERNAL_CONTAINER, variable, EXTERNAL_CONTAINER.valueWhenAbsent());
-        groupPropertyValues.set(EXTERNAL_IGNORE_MODIFICATIONS, variable, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
+        externalProperties.stream().forEach(e -> groupPropertyValues.set(e.getKey(), variable, e.getValue()));
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
@@ -143,9 +140,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
 
-        res.remove(CONTEXT_IMMUTABLE);
-        DV contextImm = typeOfVariableIsMyself || variable instanceof ReturnVariable ? MultiLevel.MUTABLE_DV : valueProps.get(IMMUTABLE);
-        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, contextImm);
+        DV cImm = res.remove(CONTEXT_IMMUTABLE);
+        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV: cImm);
 
         DV cCont = res.remove(CONTEXT_CONTAINER);
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);

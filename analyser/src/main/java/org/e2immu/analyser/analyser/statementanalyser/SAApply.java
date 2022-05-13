@@ -82,7 +82,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // here we set read+assigned
         evaluationResult.changeData().forEach((v, cd) -> statementAnalysis
-                .ensureVariables(sharedState.evaluationContext(), v, cd, evaluationResult.statementTime()));
+                .ensureVariable(sharedState.evaluationContext(), v, cd, evaluationResult.statementTime()));
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
@@ -206,7 +206,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(ve.variable());
                 if (cd != null && cd.isMarkedRead()) {
                     LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
-                    builder.assignment(ve.variable(), e.getValue(), lv);
+                    builder.modifyingMethodAccess(ve.variable(), e.getValue(), lv);
                 }
             }
         });
@@ -259,7 +259,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 } else {
                     value = vi1.getValue();
                 }
-                vic.setValue(value, vi1.getLinkedVariables(), Properties.of(merged), EVALUATION);
+                vic.setValue(value, null, Properties.of(merged), EVALUATION);
             } else {
                 // delayed situation; do not copy the value properties UNLESS there is a break delay
                 Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
@@ -299,9 +299,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         } else {
             toWrite = changeData.value();
         }
-        LinkedVariables removed = vi1.getLinkedVariables()
-                .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
-        vic.setValue(toWrite, removed, properties, EVALUATION);
+        vic.setValue(toWrite, null, properties, EVALUATION);
     }
 
     private void markAssignment(StatementAnalyserSharedState sharedState,
@@ -331,14 +329,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // it should not be taken into account anymore. (See e.g. Loops_1)
         Properties valueProperties = sharedState.evaluationContext()
                 .getValueProperties(variable.parameterizedType(), valueToWrite, true);
-
+        Properties externalProperties = sharedState.evaluationContext().getExternalProperties(valueToWrite);
 
         Expression valueToWritePossiblyDelayed = delayAssignmentValue(sharedState, valueToWrite, valueProperties.delays());
 
         Properties changeDataProperties = Properties.of(changeData.properties());
         boolean myself = sharedState.evaluationContext().isMyself(variable);
-        Properties merged = SAHelper.mergeAssignment(variable, myself, valueProperties, changeDataProperties,
-                groupPropertyValues);
+        Properties merged = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties,
+                externalProperties, groupPropertyValues);
         // LVs start empty, the changeData.linkedVariables will be added later
         Properties combined;
         if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
@@ -353,7 +351,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
             // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
             // evaluation context
-            vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, EVALUATION);
+            vic.setValue(valueToWritePossiblyDelayed, null, combined, EVALUATION);
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -380,7 +378,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
                 Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
                 vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
-                vic.setValue(delayedValue, LinkedVariables.delayedEmpty(causes), delayedVPs, EVALUATION);
+                vic.setValue(delayedValue, null, delayedVPs, EVALUATION);
                 if (changeData != null) {
                     changeData.properties().forEach((p, dv) -> {
                         if (GroupPropertyValues.PROPERTIES.contains(p)) {
@@ -404,7 +402,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         Identifier identifier = statement().getIdentifier();
                         value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
                     }
-                    vic.setValue(value, LinkedVariables.EMPTY, properties, EVALUATION);
+                    vic.setValue(value, null, properties, EVALUATION);
                     // FIXME clean up, duplicate code
                     if (changeData != null) {
                         changeData.properties().forEach((p, dv) -> {
@@ -501,7 +499,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // move DWE to the front, if it is hidden somewhere deeper inside the expression
         Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(inspectionProvider, valueToWritePossiblyDelayed);
         if (e instanceof DelayedWrappedExpression) {
-            vic.setValue(e, LinkedVariables.EMPTY, combined, EVALUATION);
+            vic.setValue(e, null, combined, EVALUATION);
             return true;
         }
         return false;
@@ -595,7 +593,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
 
-        CausesOfDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
+        // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
+        Map<Variable, Set<Variable>> staticallyAssigned = computeLinkedVariables.staticallyAssignedVariables();
+        CausesOfDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(staticallyAssigned);
         CausesOfDelay delay = delayIn.merge(linkDelays);
 
         // 1

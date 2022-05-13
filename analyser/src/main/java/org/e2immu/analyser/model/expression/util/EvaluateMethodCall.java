@@ -227,13 +227,13 @@ public class EvaluateMethodCall {
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
                 methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                        linkedVariablesForDelay.apply(delays), delays);
+                        linkedVariablesForDelay.apply(delays), delays, Map.of());
             } else {
                 methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
             }
         } else {
             methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                    linkedVariablesForDelay.apply(modified.causesOfDelay()), modified.causesOfDelay());
+                    linkedVariablesForDelay.apply(modified.causesOfDelay()), modified.causesOfDelay(), Map.of());
         }
         return builder.setExpression(methodValue).build();
     }
@@ -251,7 +251,7 @@ public class EvaluateMethodCall {
                                    LinkedVariables linkedVariables,
                                    CausesOfDelay causesOfDelay) {
         return builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                linkedVariables, causesOfDelay)).build();
+                linkedVariables, causesOfDelay, Map.of())).build();
     }
 
     /*
@@ -303,7 +303,7 @@ public class EvaluateMethodCall {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
                 return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                        linkedVariables.apply(modifying.causesOfDelay()), modifying.causesOfDelay());
+                        linkedVariables.apply(modifying.causesOfDelay()), modifying.causesOfDelay(), Map.of());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
                 return new BooleanConstant(primitives, true);
@@ -472,7 +472,7 @@ public class EvaluateMethodCall {
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
             return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                     linkedVariables.apply(fluent.causesOfDelay()),
-                    fluent.causesOfDelay());
+                    fluent.causesOfDelay(), Map.of());
         }
         if (!fluent.valueIsTrue()) return null;
         Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
@@ -493,7 +493,7 @@ public class EvaluateMethodCall {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
             return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                    linkedVariables.apply(identity.causesOfDelay()), identity.causesOfDelay());
+                    linkedVariables.apply(identity.causesOfDelay()), identity.causesOfDelay(), Map.of());
         }
         if (!identity.valueIsTrue()) return null;
 

@@ -12,16 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.minor.testexample;
+package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.NotNull;
 
-public class Assert_0 {
+public class Assert_3 {
 
     @NotNull
     private final Object object;
 
-    public Assert_0(@NotNull Object object) {
+    public Assert_3(@NotNull Object object) {
         this.object = object;
         assert object != null;
     }

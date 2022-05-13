@@ -305,7 +305,7 @@ public class ComputeLinkedVariables {
                     } else if (summary.isDone() && !summary.equals(current)) {
                         LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
                         LOGGER.error("Property {}, current {}, new {}", property, current, summary);
-                        // FIXME   throw new UnsupportedOperationException("Overwriting value");
+                        throw new UnsupportedOperationException("Overwriting value");
                     }
                 }
             }
@@ -322,11 +322,32 @@ public class ComputeLinkedVariables {
         return DelayFactory.createDelay(causes);
     }
 
+    public Map<Variable, Set<Variable>> staticallyAssignedVariables() {
+        // computed on the 0 values
+        Map<Variable, Set<Variable>> staticallyAssigned = new HashMap<>();
+        for (Cluster cluster : clusters) {
+            for (Variable variable : cluster.variables) {
+                Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+                Set<Variable> set = map.entrySet().stream()
+                        // keep only statically assigned
+                        .filter(e -> LinkedVariables.STATICALLY_ASSIGNED_DV.equals(e.getValue()))
+                        // remove self-references
+                        .filter(e -> !e.getKey().equals(variable))
+                        .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+                staticallyAssigned.put(variable, set);
+            }
+        }
+        return staticallyAssigned;
+    }
+
     /**
      * This method differs from writeLinkedVariables in that it does not touch variables which do not
      * yet have an EVALUATION level. It is used in SAApply.
+     * <p>
+     * only used on the CM version (not statically assigned) with the statically assigned variables forming
+     * the core.
      */
-    public CausesOfDelay writeClusteredLinkedVariables() {
+    public CausesOfDelay writeClusteredLinkedVariables(Map<Variable, Set<Variable>> staticallyAssignedVariables) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (Cluster cluster : clusters) {
             for (Variable variable : cluster.variables) {
@@ -334,20 +355,41 @@ public class ComputeLinkedVariables {
                 assert vic != null : "No variable named " + variable.fullyQualifiedName();
 
                 Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
+                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables, variable, map);
+
                 causes = causes.merge(linkedVariables.causesOfDelay());
                 vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                vic.setLinkedVariables(linkedVariables, stage);
+                try {
+                    vic.setLinkedVariables(linkedVariables, stage);
+                } catch (IllegalStateException isa) {
+                    LOGGER.error("Linked variables change in illegal way in stmt {}: {}", statementAnalysis.index(), isa);
+                    LOGGER.error("Variable: {}", variable);
+                    LOGGER.error("Cluster : {}", cluster);
+                    throw isa;
+                }
             }
         }
         return causes;
+    }
+
+    private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference(Map<Variable, Set<Variable>> staticallyAssignedVariables,
+                                                                          Variable variable,
+                                                                          Map<Variable, DV> map) {
+        Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
+        if (staticallyAssigned != null) {
+            staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV));
+        }
+        map.remove(variable); // no self references
+        return map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
     }
 
     /**
      * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
      * It touches all variables rather than those in clusters only.
      */
-    public void writeLinkedVariables(Set<Variable> touched, Set<Variable> toRemove) {
+    public void writeLinkedVariables(Map<Variable, Set<Variable>> staticallyAssignedVariables,
+                                     Set<Variable> touched,
+                                     Set<Variable> toRemove) {
         assert stage == Stage.MERGE;
         statementAnalysis.rawVariableStream()
                 .forEach(e -> {
@@ -357,9 +399,7 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         Map<Variable, DV> map = weightedGraph.links(variable, null, true);
                         map.keySet().removeIf(toRemove::contains);
-
-                        LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
-
+                        LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables, variable, map);
                         vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
                         vic.setLinkedVariables(linkedVariables, stage);
                     }

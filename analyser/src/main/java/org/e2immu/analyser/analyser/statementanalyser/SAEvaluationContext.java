@@ -33,6 +33,7 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -391,6 +392,27 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         DV cm = cmNn.isDelayed() ? cmNn : cmNn.valueIsTrue() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : NULLABLE_DV;
         if (isBreakInitDelay) return cm;
         return cnnInMap.max(cm);
+    }
+
+    private static final Properties EXTERNALS_WHEN_ABSENT = Properties.of(Map.of(
+            EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
+            EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
+            EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(),
+            EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent()));
+
+    @Override
+    public Properties getExternalProperties(Expression valueToWrite) {
+        IsVariableExpression ive;
+        if ((ive = valueToWrite.asInstanceOf(IsVariableExpression.class)) != null) {
+            Variable variable = ive.variable();
+            VariableInfo eval = findForReading(variable, true);
+            Map<Property, DV> map = new HashMap<>();
+            for (Property property : EXTERNALS) {
+                map.put(property, eval.getProperty(property));
+            }
+            return Properties.of(map);
+        }
+        return EXTERNALS_WHEN_ABSENT;
     }
 
     // specific implementation for SAEvaluationContext, currently only used by EvaluationResult.removeFromLinkedVariables

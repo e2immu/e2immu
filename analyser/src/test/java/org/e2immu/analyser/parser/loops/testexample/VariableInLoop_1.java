@@ -16,6 +16,26 @@ package org.e2immu.analyser.parser.loops.testexample;
 
 // debugging part of ComputingMethodAnalyser
 
+/*
+important: navigationData() is a single abstract method,
+making StatementAnalyser a functional interface type.
+
+this activates the @NotNull1 requirement when sa.navigationData() appears in
+@NotNull context (we want the result of navigationData() to be not null as well)
+(see notNullRequirementOnScope in MethodCall)
+
+this observation comes in contrast with a not-null requirement in the condition
+manager. In the competition between nullable-not nullable and not null-content not null
+wins the former.
+
+thirdly, the context not null built up in the while block is erased by the last statement.
+so we end the block with sa = nullable.
+
+the 'return null' statement hides a complex expression consisting of 3 exit points.
+in iteration 0, it contains a number of delayed expressions that do NOT contain sa.
+in iteration 1, 'sa' appears all of a sudden; this is problematic.
+ */
+
 import org.e2immu.annotation.Nullable;
 
 import java.util.Optional;
@@ -27,6 +47,7 @@ public class VariableInLoop_1 {
             assert next != null;
         }
     }
+
     interface StatementAnalyser {
         @Nullable
         NavigationData navigationData();

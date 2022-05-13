@@ -571,7 +571,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
-        testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
+        testClass("Loops_17", 0, 0, new DebugConfiguration.Builder()
                 .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

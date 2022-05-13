@@ -19,10 +19,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -55,12 +52,14 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                 .filter(CausesOfDelay::isDelayed)
                 .findFirst().orElse(CausesOfDelay.EMPTY);
         // IMPORTANT: only one delay is kept, in the fastest possible way
-        this.causesOfDelay = causesOfDelay.isDelayed() ? causesOfDelay: otherCausesOfDelay;
+        this.causesOfDelay = causesOfDelay.isDelayed() ? causesOfDelay : otherCausesOfDelay;
     }
 
     public static LinkedVariables delayedEmpty(CausesOfDelay causes) {
         return new LinkedVariables(Map.of(), causes);
     }
+
+    public static LinkedVariables NOT_YET_SET = delayedEmpty(CausesOfDelay.EMPTY);
 
     public static DV fromIndependentToLinkedVariableLevel(DV dv) {
         assert dv.lt(MultiLevel.INDEPENDENT_DV); // cannot be linked
@@ -160,7 +159,8 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     @Override
     public String toString() {
-        if (this == EMPTY) return "";
+        if (this == NOT_YET_SET) return "NOT_YET_SET";
+        if (this == EMPTY || variables.isEmpty()) return "";
         return variables.entrySet().stream()
                 .map(e -> e.getKey().minimalOutput() + ":" + e.getValue().value())
                 .sorted()
@@ -335,5 +335,15 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     @Override
     public int compareTo(LinkedVariables o) {
         return Properties.compareMaps(variables, o.variables);
+    }
+
+    private List<Variable> staticallyAssigned() {
+        return variables.entrySet().stream()
+                .filter(e -> e.getValue().equals(STATICALLY_ASSIGNED_DV))
+                .map(Map.Entry::getKey).toList();
+    }
+
+    public boolean identicalStaticallyAssigned(LinkedVariables linkedVariables) {
+        return staticallyAssigned().equals(linkedVariables.staticallyAssigned());
     }
 }

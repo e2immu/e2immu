@@ -156,6 +156,12 @@ public class Test_57_Lambda extends CommonTestRunner {
                     }
                 }
             }
+            if ("get".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name) && "x".equals(fr.scope.toString())) {
+                    assertEquals("0", d.statementId());
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -222,7 +228,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d,1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String lv = d.iteration() == 0
                                 ? "l:0,new X(x.k).k:-1,return get:-1"
                                 : "l:0,new X(x.k).k:0,return get:0,x.k:1";
