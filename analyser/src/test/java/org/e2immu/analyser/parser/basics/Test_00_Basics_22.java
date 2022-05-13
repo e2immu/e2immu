@@ -52,23 +52,21 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                     // return statement
                     if ("1.0.0.0.1".equals(d.statementId())) {
                         assertEquals("byteArrayOutputStream.toByteArray()", d.currentValue().toString());
-                        assertEquals("return loadBytes:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
 
                     // try statement
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = "(instance type ByteArrayOutputStream).toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = "return loadBytes:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
 
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
                         String expect = "path.split(\"/\").length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = "return loadBytes:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
             }

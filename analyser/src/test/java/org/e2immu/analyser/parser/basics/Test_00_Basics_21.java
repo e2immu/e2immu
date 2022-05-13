@@ -82,14 +82,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
-
-
                     if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:other>" :
                                 "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLinked = d.iteration() <= 1 ? "other:-1,this:-1" : "other:0,this:3";
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -109,7 +107,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
-                        String expectLinked = d.iteration() <= 1 ? "other:-1,this:-1" : "other:0,this:3";
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);

@@ -410,7 +410,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue(),
                 vi1.variable().statementTime());
         write.setValue(vi1.getValue());
-        write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                 .forEach(e -> {
                     assert !e.getKey().valueProperty || vi1.getValue().isDelayed() || e.getValue().isDone();
@@ -444,7 +443,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     });
 
             evaluation.setValue(previous.getValue());
-            evaluation.setLinkedVariables(previous.getLinkedVariables());
+         //   evaluation.setLinkedVariables(previous.getLinkedVariables());
         } else if (previous.getValue().isDelayed() && evaluation.getValue().isDelayed()) {
             // copy the delay, so that we know what the cause of delay is
             // this also speeds up Context Modified, see Container_3
@@ -463,7 +462,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 });
         VariableInfoImpl evaluation = this.evaluation.get();
         evaluation.setValue(previous.getValue());
-        evaluation.setLinkedVariables(previous.getLinkedVariables());
         return previous.getValue().causesOfDelay().merge(previous.getLinkedVariables().causesOfDelay());
     }
 
@@ -475,7 +473,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             VariableInfo best = best(Stage.EVALUATION);
             VariableInfoImpl mergeImpl = merge.get();
             if (mergeImpl.getValue().isDelayed()) mergeImpl.setValue(best.getValue());
-            mergeImpl.setLinkedVariables(best.getLinkedVariables());
+            mergeImpl.ensureLinkedVariables();
             best.getProperties().forEach((k, v) -> {
                 DV dv = mergeImpl.getProperty(k, null);
                 if (dv == null || dv.isDelayed()) mergeImpl.setProperty(k, v);

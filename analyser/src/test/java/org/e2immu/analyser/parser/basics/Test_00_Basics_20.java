@@ -75,34 +75,31 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         return d -> {
             if ("C2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
-                    assertEquals("list:0,this.list:3", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.list:3", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     assertEquals("new ArrayList<>(list)", d.currentValue().toString());
-                    assertEquals("list:3,this.list:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("list:3", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getFirstC1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:list>" : fieldValue;
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = "return getFirstC1:3,this.list:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getFirstC1:3", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = "return getFirstC1:0,this.list:3";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.list:3", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getListC2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedLv = d.iteration() == 0 ? "return getListC2:-1,this.list:-1" : "return getListC2:0,this.list:3";
-                    assertEquals(expectedLv,
-                            d.variableInfo().getLinkedVariables().toString());
+                    String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+                    assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("test1".equals(d.methodInfo().name)) {
@@ -128,7 +125,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // i:3 gone, because substitution with "new I()"
-                        String lvs = d.iteration() <= 1 ? "i:-1,list:-1" : "i:3,list:0";
+                        String lvs = d.iteration() <= 1 ? "i:-1" : "i:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -141,8 +138,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci:-1,i:-1,list:-1";
-                        default -> "ci:0,i:3,list:2";
+                        case 0, 1 -> "i:-1,list:-1";
+                        default -> "i:3,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -152,8 +149,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci2:-1,ci:-1,i:-1,list:-1";
-                        default -> "ci2:0,ci:3,i:3,list:3";
+                        case 0, 1 -> "ci:-1,i:-1,list:-1";
+                        default -> "ci:3,i:3,list:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 

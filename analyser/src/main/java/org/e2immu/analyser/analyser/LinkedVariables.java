@@ -346,4 +346,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public boolean identicalStaticallyAssigned(LinkedVariables linkedVariables) {
         return staticallyAssigned().equals(linkedVariables.staticallyAssigned());
     }
+
+    public LinkedVariables nonDelayedPart() {
+        return new LinkedVariables(variables.entrySet().stream()
+                .filter(e -> e.getValue().isDone())
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
 }

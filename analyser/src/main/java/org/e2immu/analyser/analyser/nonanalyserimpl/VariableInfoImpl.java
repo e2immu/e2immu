@@ -304,4 +304,13 @@ public class VariableInfoImpl implements VariableInfo {
             properties.put(property, dv);
         }
     }
+
+    /*
+    in the safest possible way, keep what you have
+     */
+    public void ensureLinkedVariables() {
+        if(linkedVariables.isVariable()) {
+            linkedVariables.setFinal(linkedVariables.get().nonDelayedPart());
+        }
+    }
 }
