@@ -245,8 +245,9 @@ public class VariableInfoImpl implements VariableInfo {
             // as soon as we have a real value, we cannot change SA anymore
 
             if (!this.linkedVariables.get().identicalStaticallyAssigned(linkedVariables)) {
-                throw new IllegalStateException("Cannot change statically assigned\nold: "
-                        + this.linkedVariables.get() + "\nnew: " + linkedVariables + "\n");
+                throw new IllegalStateException("Cannot change statically assigned for variable "
+                        + variable.fullyQualifiedName() + "\nold: " + this.linkedVariables.get()
+                        + "\nnew: " + linkedVariables + "\n");
             }
         }
         if (linkedVariables.isDelayed()) {
@@ -309,7 +310,7 @@ public class VariableInfoImpl implements VariableInfo {
     in the safest possible way, keep what you have
      */
     public void ensureLinkedVariables() {
-        if(linkedVariables.isVariable()) {
+        if (linkedVariables.isVariable()) {
             linkedVariables.setFinal(linkedVariables.get().nonDelayedPart());
         }
     }

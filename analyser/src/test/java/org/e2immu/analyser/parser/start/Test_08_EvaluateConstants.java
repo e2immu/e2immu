@@ -50,11 +50,11 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     assertEquals("in", in.name);
-                    assertEquals("in:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if ("0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     assertEquals("in", in.name);
-                    assertEquals("in:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {

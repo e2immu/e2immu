@@ -215,7 +215,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // we switch to NOT_INVOLVED, given that the field has been assigned; its external value is of no use
-                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertTrue(d.variableInfo().linkedVariablesIsSet());
                     }
@@ -227,17 +227,17 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1.0.2".equals(d.statementId())) {
                         assertEquals(expect102, d.currentValue().toString());
                         assertEquals("1.0.2-E", d.variableInfo().getReadId());
-                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals(expect102, d.currentValue().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                 }
             }

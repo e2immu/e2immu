@@ -1610,9 +1610,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
             }
             Properties valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
-            linkedVariables = lvArrayBase
-                    .changeAllTo(independent)
-                    .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
+            linkedVariables = lvArrayBase.changeAllTo(independent);
             initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
             valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
         } else {

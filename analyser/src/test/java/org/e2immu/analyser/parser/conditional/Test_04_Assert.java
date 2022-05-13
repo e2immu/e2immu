@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -75,11 +76,60 @@ public class Test_04_Assert extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
             }
+            if ("combine".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("other instanceof NotDelayed&&null!=other?this:<return value>",
+                                d.currentValue().toString());
+                        assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertEquals("merge:0,this:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.1.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "merge:-1,other:-1,this:0" : "merge:1,this:0";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("5".equals(d.statementId())) {
+                        String value = d.iteration() <= 1
+                                ? "<simplification>?this:<m:addProgress>"
+                                : "other instanceof NotDelayed?this:this.addProgress(other.isProgress())";
+                        assertEquals(value, d.currentValue().toString());
+                        // inconsistent result
+                        String linked = d.iteration() <= 1 ? "merge:-1,other:-1,this:0" : "merge:0,this:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("merge".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        String linked = d.iteration() <= 1 ? "other:-1,return combine:0,this:0" : "return combine:0,this:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("5".equals(d.statementId())) {
+                        String value = d.iteration() <= 1
+                                ? "limit&&(<m:numberOfDelays>><f:LIMIT>||other.numberOfDelays()><f:LIMIT>)?<s:SimpleSet>:<s:CausesOfDelay>"
+                                : "this";
+                        assertEquals(value, d.currentValue().toString());
+                        String linked = d.iteration() <= 1 ? "other:-1,return combine:2,this:0" : "?";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("addProgress".equals(d.methodInfo().name) && "CausesOfDelay".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
         };
         testClass("Assert_0", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 

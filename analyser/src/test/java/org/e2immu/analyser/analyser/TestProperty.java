@@ -25,17 +25,30 @@ public class TestProperty {
     Set<Property> CONTEXT = Set.of(Property.CONTEXT_IMMUTABLE, Property.CONTEXT_CONTAINER,
             Property.CONTEXT_MODIFIED, Property.CONTEXT_NOT_NULL);
 
+    Set<Property> EXTERNAL = Set.of(Property.EXTERNAL_IMMUTABLE, Property.EXTERNAL_CONTAINER,
+            Property.EXTERNAL_NOT_NULL, Property.EXTERNAL_IGNORE_MODIFICATIONS);
+
     @Test
     public void testContext() {
         for (Property property : Property.values()) {
-            assertEquals(property.contextProperty, CONTEXT.contains(property), "for " + property);
+            assertEquals(property.propertyType == Property.PropertyType.CONTEXT, CONTEXT.contains(property),
+                    "for " + property);
+        }
+    }
+
+    @Test
+    public void testExternal() {
+        for (Property property : Property.values()) {
+            assertEquals(property.propertyType == Property.PropertyType.EXTERNAL, EXTERNAL.contains(property),
+                    "for " + property);
         }
     }
 
     @Test
     public void testValue() {
         for (Property property : Property.values()) {
-            assertEquals(property.valueProperty, EvaluationContext.VALUE_PROPERTIES.contains(property), "for " + property);
+            assertEquals(property.propertyType== Property.PropertyType.VALUE,
+                    EvaluationContext.VALUE_PROPERTIES.contains(property), "for " + property);
         }
     }
 }

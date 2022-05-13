@@ -62,7 +62,9 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
         assert causesOfDelay.isDelayed();
         // we need all value properties to be done, and possibly IMMUTABLE_BREAK, NOT_NULL_BREAK
         assert expression instanceof NullConstant ||
-                properties.stream().filter(e -> e.getKey().valueProperty).allMatch(e -> e.getValue().isDone());
+                properties.stream()
+                        .filter(e -> e.getKey().propertyType == Property.PropertyType.VALUE)
+                        .allMatch(e -> e.getValue().isDone());
     }
 
     /*

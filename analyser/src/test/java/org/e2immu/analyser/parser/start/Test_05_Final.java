@@ -64,11 +64,11 @@ public class Test_05_Final extends CommonTestRunner {
                 if (S4.equals(d.variableName())) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     assertEquals("s4", d.currentValue().toString());
-                    assertEquals("s4:0,this.s4:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("s4:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("s4:0,this.s4:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.s4:0", d.variableInfo().getLinkedVariables().toString());
 
                         // p4 never came in a not-null context
                         assertTrue(d.variableInfo().isRead());
@@ -116,7 +116,7 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
                     }
-                    assertEquals("this.s1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if (S5.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {

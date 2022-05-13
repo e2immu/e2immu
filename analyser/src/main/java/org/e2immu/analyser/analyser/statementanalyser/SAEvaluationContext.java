@@ -412,6 +412,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
             return Properties.of(map);
         }
+        if(valueToWrite.isDelayed()) {
+            // e.g., delayed method call
+            CausesOfDelay delay = valueToWrite.causesOfDelay();
+            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
+                    EXTERNAL_IGNORE_MODIFICATIONS, delay, EXTERNAL_NOT_NULL, delay));
+        }
         return EXTERNALS_WHEN_ABSENT;
     }
 

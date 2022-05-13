@@ -340,7 +340,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     private List<Variable> staticallyAssigned() {
         return variables.entrySet().stream()
                 .filter(e -> e.getValue().equals(STATICALLY_ASSIGNED_DV))
-                .map(Map.Entry::getKey).toList();
+                .map(Map.Entry::getKey).sorted().toList();
     }
 
     public boolean identicalStaticallyAssigned(LinkedVariables linkedVariables) {

@@ -744,7 +744,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void setProperty(Variable variable, Property property, DV value) {
             assert evaluationContext != null;
 
-            CausesOfDelay causesOfDelay = property.contextProperty ? CausesOfDelay.EMPTY : value.causesOfDelay();
+            CausesOfDelay causesOfDelay = property.propertyType == Property.PropertyType.CONTEXT
+                    ? CausesOfDelay.EMPTY : value.causesOfDelay();
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);

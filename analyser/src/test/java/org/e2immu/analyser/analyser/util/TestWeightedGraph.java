@@ -98,7 +98,7 @@ public class TestWeightedGraph {
         assertEquals(v3, startAtToDo.get(cycle));
         assertEquals(v3, startAtToDo.get(nodeMap));
         assertEquals(v3, startAtToDo.get(smallerCycle));
-        assertEquals(delay, startAtToDo.get(thisVar)); // this one may be a bit surprising, but it is difficult to avoid
+        assertEquals(delay, startAtToDo.get(thisVar)); // this one may be a bit surprising (expect v3), but it is difficult to avoid
         assertEquals(delay, startAtToDo.get(removed));
     }
 
@@ -107,7 +107,12 @@ public class TestWeightedGraph {
     public void test4() {
         Map<Variable, DV> startAtRemoved = wg.links(removed, INDEPENDENT1_DV, true);
         assertEquals(6, startAtRemoved.size());
-        assertTrue(startAtRemoved.values().stream().allMatch(v -> v.equals(delay)));
+        assertEquals(delay, startAtRemoved.get(thisVar));
+        assertEquals(STATICALLY_ASSIGNED_DV, startAtRemoved.get(removed));
+        assertEquals(delay, startAtRemoved.get(cycle));
+        assertEquals(delay, startAtRemoved.get(smallerCycle));
+        assertEquals(delay, startAtRemoved.get(toDo));
+        assertEquals(delay, startAtRemoved.get(nodeMap));
     }
 
     @Test
@@ -117,7 +122,7 @@ public class TestWeightedGraph {
         assertEquals(DV.MAX_INT_DV, startAtRemoved.get(cycle));
         assertEquals(DV.MAX_INT_DV, startAtRemoved.get(smallerCycle));
         assertEquals(delay, startAtRemoved.get(thisVar));
-        assertEquals(delay, startAtRemoved.get(removed));
+        assertEquals(STATICALLY_ASSIGNED_DV, startAtRemoved.get(removed));
     }
 
     private Variable makeVariable(String name) {

@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
@@ -23,7 +21,6 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
@@ -87,47 +84,44 @@ public class GroupPropertyValues {
         }
     }
 
-
-    public void addToMap(StatementAnalysis statementAnalysis, AnalyserContext analyserContext, Stage stage) {
-        addToMap(statementAnalysis, CONTEXT_NOT_NULL, x -> AnalysisProvider.defaultNotNull(x.parameterizedType()), true);
-        addToMap(statementAnalysis, EXTERNAL_NOT_NULL, x ->
-                DelayFactory.createDelay(new VariableCause(x, statementAnalysis.location(stage),
-                        CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
-        addToMap(statementAnalysis, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
-        addToMap(statementAnalysis, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
-        addToMap(statementAnalysis, EXTERNAL_IGNORE_MODIFICATIONS, x -> EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent(), false);
-        addToMap(statementAnalysis, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, false);
-        addToMap(statementAnalysis, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
-        addToMap(statementAnalysis, CONTEXT_CONTAINER, x -> MultiLevel.NOT_CONTAINER_DV, true);
+    public void addToMap(StatementAnalysis statementAnalysis) {
+        for (Property property : EXTERNALS) {
+            addToMap(statementAnalysis, property);
+        }
+        for (Property property : CONTEXTS) {
+            addToMap(statementAnalysis, property);
+        }
     }
 
-    private void addToMap(StatementAnalysis statementAnalysis,
-                          Property property,
-                          Function<Variable, DV> falseValue,
-                          boolean complainDelay0) {
+    private void addToMap(StatementAnalysis statementAnalysis, Property property) {
         Map<Variable, DV> map = getMap(property);
         statementAnalysis.rawVariableStream().forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
-            if (!map.containsKey(vi1.variable())) { // variables that don't occur in contextNotNull
+            Variable variable = vi1.variable();
+            if (!map.containsKey(variable)) { // variables that don't occur in contextNotNull
                 DV prev = vi1.getProperty(property);
                 if (prev.isDone()) {
                     if (vic.hasEvaluation()) {
                         VariableInfo vi = vic.best(EVALUATION);
                         DV eval = vi.getProperty(property);
                         if (eval.isDelayed()) {
-                            map.put(vi.variable(), prev.maxIgnoreDelay(falseValue.apply(vi.variable())));
+                            // no value yet, nothing from evaluation
+                            map.put(variable, prev);
                         } else {
-                            map.put(vi.variable(), eval);
+                            // there already is a done value
+                            map.put(variable, eval);
                         }
                     } else {
-                        map.put(vi1.variable(), prev);
+                        // there is no evaluation
+                        map.put(variable, prev);
                     }
                 } else {
-                    map.put(vi1.variable(), prev);
-                    if (complainDelay0 && "0".equals(statementAnalysis.index())) {
+                    // there is no previous yet
+                    map.put(variable, prev);
+                    if (property.propertyType == PropertyType.CONTEXT && "0".equals(statementAnalysis.index())) {
                         throw new UnsupportedOperationException(
-                                "Impossible, all variables start with non-delay: " + vi1.variable().fullyQualifiedName()
+                                "Impossible, all context properties start with non-delay: " + variable.fullyQualifiedName()
                                         + ", prop " + property);
                     }
                 }

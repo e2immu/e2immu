@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
 import org.e2immu.support.Freezable;
@@ -25,8 +24,11 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
+import static org.e2immu.analyser.analyser.LinkedVariables.STATICALLY_ASSIGNED_DV;
+
 /**
  * In-house implementation of a directed graph that is used to model the links between objects.
+ * A distance of 0 (STATICALLY_ASSIGNED) is always kept, even across delays.
  */
 @E2Container(after = "frozen")
 public class WeightedGraph extends Freezable {
@@ -57,7 +59,7 @@ public class WeightedGraph extends Freezable {
     @Independent
     public Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed) {
         Map<Variable, DV> result = new TreeMap<>();
-        result.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV);
+        result.put(v, STATICALLY_ASSIGNED_DV);
         recursivelyComputeLinks(v, result, maxWeight, followDelayed);
         return result;
     }
@@ -79,7 +81,7 @@ public class WeightedGraph extends Freezable {
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
                 if (followDelayed || d.isDone()) {
-                    DV distanceToN = currentDistanceToV.max(d);
+                    DV distanceToN = max(currentDistanceToV, d);
                     DV currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
                         // we've not been at N before
@@ -90,12 +92,23 @@ public class WeightedGraph extends Freezable {
                             distanceToStartingPoint.put(n, DV.MAX_INT_DV); // beyond max value
                         }
                     } else {
-                        DV newDistanceToN = distanceToN.min(currentDistanceToN);
+                        DV newDistanceToN = min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
                     }
                 } // else: ignore delayed links!
             });
         }
+    }
+
+    private DV min(DV d1, DV d2) {
+        if (d1.equals(STATICALLY_ASSIGNED_DV) || d2.equals(STATICALLY_ASSIGNED_DV)) {
+            return STATICALLY_ASSIGNED_DV;
+        }
+        return d1.min(d2);
+    }
+
+    private DV max(DV d1, DV d2) {
+        return d1.max(d2);
     }
 
     @NotModified(contract = true)

@@ -141,14 +141,12 @@ public class Test_14_Warnings extends CommonTestRunner {
                 if ("integers".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("{1,2,3}", d.currentValue().toString());
-                        assertEquals("integers:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // so that we know that integers.iterator() has been called
                         assertEquals("1" + E, d.variableInfo().getReadId());
-
-                        // in iteration 0 we don't know if integers will be assigned to
-                        assertEquals("integers:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -198,14 +196,14 @@ public class Test_14_Warnings extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("5", d.currentValue().toString());
-                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("6", d.currentValue().toString());
-                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
         };

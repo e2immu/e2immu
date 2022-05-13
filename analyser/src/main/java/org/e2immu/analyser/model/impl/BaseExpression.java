@@ -146,7 +146,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     protected DV getPropertyForPrimitiveResults(Property property) {
-        if (property.valueProperty) {
+        if (property.propertyType == Property.PropertyType.VALUE) {
             CausesOfDelay causesOfDelay = causesOfDelay();
             if (causesOfDelay.isDelayed()) {
                 return causesOfDelay;

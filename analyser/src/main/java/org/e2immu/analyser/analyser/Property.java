@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.MultiLevel;
 
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public enum Property {
 
@@ -26,7 +28,7 @@ public enum Property {
 
     // only lives in change map
     IN_NOT_NULL_CONTEXT("in not-null context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.IN_NN_CONTEXT, false, false),
+            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.IN_NN_CONTEXT, PropertyType.OTHER),
     CNN_TRAVELS_TO_PRECONDITION("cnn travels to pc", CauseOfDelay.Cause.CONTEXT_NOT_NULL),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning", CauseOfDelay.Cause.CANDIDATE_NULL_PTR),
 
@@ -46,16 +48,16 @@ public enum Property {
     and the corresponding code in StatementAnalysis.copyBackLocalCopies
      */
     NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.NOT_NULL_PARAMETER, false, false),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.NOT_NULL_PARAMETER, PropertyType.OTHER),
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXTERNAL_NOT_NULL, false, false),
+            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXTERNAL_NOT_NULL, PropertyType.EXTERNAL),
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, true, false),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, PropertyType.VALUE),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL, false, true),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL, PropertyType.CONTEXT),
 
     NOT_NULL_BREAK("@NotNull break", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, false, false),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL, PropertyType.OTHER),
     /*
     @E2Immutable, @E1Immutable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.
@@ -73,28 +75,28 @@ public enum Property {
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted", CauseOfDelay.Cause.IMMUTABLE_BEFORE_CONTRACTED),
     NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV,
             MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.NEXT_C_IMM,
-            false, false),
+             PropertyType.OTHER),
 
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, true, false),
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, PropertyType.VALUE),
     CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE, false, true),
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE, PropertyType.CONTEXT),
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
             MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM,
-            false, false),
+             PropertyType.EXTERNAL),
 
     // internal, used for enclosing-nested or type-subtype interactions (e.g., in the enclosing we have a field whose
     // type is an anonymous (non-static) subtype)
     PARTIAL_IMMUTABLE("partial @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV,
-            CauseOfDelay.Cause.PARTIAL_IMM, false, false),
+            CauseOfDelay.Cause.PARTIAL_IMM,  PropertyType.OTHER),
     // internal, temporary
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null,
-            false, false),
+             PropertyType.OTHER),
 
     IMMUTABLE_BREAK("@Immutable break", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, false, false),
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE,  PropertyType.OTHER),
 
     // separate property for fields, in conjunction with a finalizer
     BEFORE_MARK("@BeforeMark", CauseOfDelay.Cause.BEFORE_MARK),
@@ -117,7 +119,7 @@ public enum Property {
     MODIFIED_VARIABLE("@Modified variable", CauseOfDelay.Cause.MODIFIED_VARIABLE),
     MODIFIED_OUTSIDE_METHOD("modified outside method", CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD),
     CONTEXT_MODIFIED("modified in context", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV,
-            CauseOfDelay.Cause.CONTEXT_MODIFIED, false, true),
+            CauseOfDelay.Cause.CONTEXT_MODIFIED, PropertyType.CONTEXT),
     /**
      * The default for methods is @NotModified
      */
@@ -138,7 +140,7 @@ public enum Property {
     @Dependent is the default in green mode, @Independent is the default in red mode.
      */
     INDEPENDENT("@Independent", MultiLevel.DEPENDENT_DV, MultiLevel.INDEPENDENT_DV, MultiLevel.DEPENDENT_DV,
-            CauseOfDelay.Cause.VALUE_INDEPENDENT, true, false),
+            CauseOfDelay.Cause.VALUE_INDEPENDENT, PropertyType.VALUE),
 
     /*
     group of more simple properties
@@ -147,23 +149,23 @@ public enum Property {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL, false, false),
+    FINAL("@Final", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL,  PropertyType.OTHER),
     FINALIZER("@Finalizer", CauseOfDelay.Cause.FINALIZER),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
-    CONTAINER("@Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER, true, false),
-    EXTERNAL_CONTAINER("external @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_CONTAINER, false, false),
-    CONTEXT_CONTAINER("context @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTEXT_CONTAINER, false, true),
-    PARTIAL_CONTAINER("partial @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER, false, false),
+    CONTAINER("@Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER, PropertyType.VALUE),
+    EXTERNAL_CONTAINER("external @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_CONTAINER,  PropertyType.EXTERNAL),
+    CONTEXT_CONTAINER("context @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTEXT_CONTAINER, PropertyType.CONTEXT),
+    PARTIAL_CONTAINER("partial @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER,  PropertyType.OTHER),
 
-    IGNORE_MODIFICATIONS("@IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS, true, false),
-    EXTERNAL_IGNORE_MODIFICATIONS("external @IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS, false, false),
+    IGNORE_MODIFICATIONS("@IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS, PropertyType.VALUE),
+    EXTERNAL_IGNORE_MODIFICATIONS("external @IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS,  PropertyType.EXTERNAL),
 
     CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
-    IDENTITY("@Identity", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.IDENTITY, true, false),
+    IDENTITY("@Identity", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.IDENTITY, PropertyType.VALUE),
     SINGLETON("@Singleton", CauseOfDelay.Cause.SINGLETON),
     UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
     EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS),
@@ -173,16 +175,19 @@ public enum Property {
     // marker in CommaExpression, used in conjunction with PropertyWrapper; cause of delay completely irrelevant
     MARK_CLEAR_INCREMENTAL("mark clear incremental", CauseOfDelay.Cause.CONSTANT);
 
+    public enum PropertyType {
+        EXTERNAL, VALUE, CONTEXT, OTHER
+    }
+
     public final String name;
     private final DV valueWhenAbsentDv;
     public final DV bestDv;
     public final DV falseDv;
     public final CauseOfDelay.Cause cause;
-    public final boolean valueProperty;
-    public final boolean contextProperty;
+    public final PropertyType propertyType;
 
     Property(String name, CauseOfDelay.Cause cause) {
-        this(name, DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, cause, false, false);
+        this(name, DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, cause, PropertyType.OTHER);
     }
 
     Property(String name,
@@ -190,15 +195,13 @@ public enum Property {
              DV best,
              DV valueWhenAbsent,
              CauseOfDelay.Cause cause,
-             boolean valueProperty,
-             boolean contextProperty) {
+             PropertyType propertyType) {
         this.name = name;
         this.valueWhenAbsentDv = valueWhenAbsent;
         this.bestDv = best;
         this.falseDv = falseValue;
         this.cause = cause;
-        this.valueProperty = valueProperty;
-        this.contextProperty = contextProperty;
+        this.propertyType = propertyType;
     }
 
     @Override
@@ -220,6 +223,8 @@ public enum Property {
         return x.max(y);
     }
 
-    public static final Set<Property> EXTERNALS = Set.of(EXTERNAL_IMMUTABLE,
-            EXTERNAL_CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IGNORE_MODIFICATIONS);
+    public static final Set<Property> EXTERNALS = Arrays.stream(Property.values())
+            .filter(p -> p.propertyType == PropertyType.EXTERNAL).collect(Collectors.toUnmodifiableSet());
+    public static final Set<Property> CONTEXTS = Arrays.stream(Property.values())
+            .filter(p -> p.propertyType == PropertyType.CONTEXT).collect(Collectors.toUnmodifiableSet());
 }

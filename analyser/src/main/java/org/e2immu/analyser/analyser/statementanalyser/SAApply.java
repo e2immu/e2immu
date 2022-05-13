@@ -568,7 +568,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       GroupPropertyValues groupPropertyValues,
                                                       boolean doNotWritePreconditionFromMethod) {
         // the second one is across clusters of variables
-        groupPropertyValues.addToMap(statementAnalysis, analyserContext, EVALUATION);
+        groupPropertyValues.addToMap(statementAnalysis);
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
