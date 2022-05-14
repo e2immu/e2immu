@@ -402,7 +402,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV));
+        return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
     }
 
     @Override

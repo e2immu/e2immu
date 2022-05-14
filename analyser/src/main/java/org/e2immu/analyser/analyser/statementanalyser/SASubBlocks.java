@@ -517,7 +517,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (range.isDelayed()) {
                 negatedConditionOrExitState = DelayedExpression.forState(loopStatement.identifier,
                         statementAnalysis.primitives().booleanParameterizedType(),
-                        LinkedVariables.delayedEmpty(range.causesOfDelay()), range.causesOfDelay());
+                        LinkedVariables.NOT_YET_SET, range.causesOfDelay());
             } else {
                 // at the moment there is no Range which does not return a boolean constant
                 Expression exit = range.exitState(context.evaluationContext());
@@ -671,8 +671,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         DelayedExpression.forUnspecifiedLoopCondition(statement().getIdentifier(),
-                                primitives.booleanParameterizedType(),
-                                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay));
+                                primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causesOfDelay));
             }
 
             if (range != Range.NO_RANGE) {

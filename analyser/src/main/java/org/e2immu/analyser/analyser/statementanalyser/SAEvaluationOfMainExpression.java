@@ -414,10 +414,11 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     }
                 }
                 if (!assigned && weMustWait) {
-                    // do an assignment
+                    // do a delayed assignment
+                    // TODO this assignment should result in a delayed link...
                     FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                     CauseOfDelay causeOfDelay = new SimpleCause(sharedState.evaluationContext().getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
-                    DelayedVariableExpression end = DelayedVariableExpression.forField(fr, statementAnalysis.statementTime(EVALUATION), causeOfDelay);
+                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), DelayFactory.createDelay(causeOfDelay));
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
@@ -527,7 +528,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             } else {
                 Identifier identifier = statement().getStructure().expression().getIdentifier();
                 return DelayedExpression.forCondition(identifier, statementAnalysis.primitives().booleanParameterizedType(),
-                        LinkedVariables.delayedEmpty(causes), causes);
+                        LinkedVariables.NOT_YET_SET, causes);
             }
         }
 

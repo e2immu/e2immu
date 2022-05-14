@@ -271,7 +271,7 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return new LinkedVariables(Map.of(variable, causesOfDelay));
+        return LinkedVariables.of(variable, causesOfDelay);
     }
 
     @Override

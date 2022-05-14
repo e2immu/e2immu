@@ -424,7 +424,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (!directAssignment.isEmpty()) {
             Map<Variable, DV> map = directAssignment.stream()
                     .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
-            linkedVariables = lvExpression.merge(new LinkedVariables(map));
+            linkedVariables = lvExpression.merge(LinkedVariables.of(map));
         } else {
             linkedVariables = lvExpression;
         }

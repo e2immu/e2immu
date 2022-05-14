@@ -285,7 +285,7 @@ public class EvaluateMethodCall {
                 MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         CausesOfDelay delayed = valueProperties.delays();
         if (delayed.isDelayed()) {
-            return DelayedExpression.forValueOf(parameterizedType, delayed);
+            return DelayedExpression.forValueOf(parameterizedType, objectValue.linkedVariables(context), delayed);
         }
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }

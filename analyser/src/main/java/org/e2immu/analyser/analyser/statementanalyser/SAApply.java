@@ -68,7 +68,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn,
-                                  boolean doNotWritePreconditionFromMethod) {
+                                  boolean firstOfTwoCallsForECI) {
         EvaluationResult evaluationResult = potentiallyModifyEvaluationResult(sharedState, evaluationResultIn);
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
@@ -173,9 +173,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
-        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
-                delay, analyserContext, groupPropertyValues, doNotWritePreconditionFromMethod);
-
+        ApplyStatusAndEnnStatus applyStatusAndEnnStatus;
+        if (firstOfTwoCallsForECI) {
+            applyStatusAndEnnStatus = new ApplyStatusAndEnnStatus(delay, CausesOfDelay.EMPTY);
+        } else {
+            applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
+                    delay, analyserContext, groupPropertyValues);
+        }
         // debugging...
 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
@@ -565,8 +569,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       EvaluationResult evaluationResult,
                                                       CausesOfDelay delayIn,
                                                       AnalyserContext analyserContext,
-                                                      GroupPropertyValues groupPropertyValues,
-                                                      boolean doNotWritePreconditionFromMethod) {
+                                                      GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
         groupPropertyValues.addToMap(statementAnalysis);
 
@@ -689,13 +692,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
          */
         evaluationResult.messages().getMessageStream().filter(this::acceptMessage).forEach(statementAnalysis::ensure);
 
-        if (!doNotWritePreconditionFromMethod) {
-            // not checking on DONE anymore because any delay will also have crept into the precondition itself??
-            Precondition precondition = evaluationResult.precondition();
-            CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
-                    sharedState.localConditionManager());
-            delay = delay.merge(applyPrecondition);
-        }
+        // not checking on DONE anymore because any delay will also have crept into the precondition itself??
+        Precondition precondition = evaluationResult.precondition();
+        CausesOfDelay applyPrecondition = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
+                sharedState.localConditionManager());
+        delay = delay.merge(applyPrecondition);
 
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont).merge(extIgnMod).merge(anyExtIgnMod);
@@ -776,8 +777,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 if (merged.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                     return value;
                 }
-                LinkedVariables lv = LinkedVariables.delayedEmpty(merged);
-                return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(), lv, merged);
+                LinkedVariables linkedVariables = value.linkedVariables(sharedState.context());
+                return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(),
+                        linkedVariables, merged);
             }
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {

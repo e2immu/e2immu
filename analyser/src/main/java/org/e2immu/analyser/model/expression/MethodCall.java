@@ -110,7 +110,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .merge(translatedObject.causesOfDelay());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
-                    LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay, Map.of());
+                    LinkedVariables.NOT_YET_SET, causesOfDelay, Map.of());
         }
         return new MethodCall(identifier,
                 objectIsImplicit,
@@ -1016,9 +1016,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity.valueIsTrue()) {
             return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         }
-        if (identity.isDelayed()) {
+        if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
-            if (parameterExpressions.isEmpty()) return LinkedVariables.delayedEmpty(identity.causesOfDelay());
             return object.linkedVariables(context)
                     .merge(parameterExpressions.get(0).linkedVariables(context))
                     .minimum(LinkedVariables.ASSIGNED_DV)

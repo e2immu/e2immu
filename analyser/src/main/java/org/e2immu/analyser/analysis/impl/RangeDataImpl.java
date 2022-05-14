@@ -308,7 +308,7 @@ public class RangeDataImpl implements RangeData {
         CausesOfDelay causes = range.get().causesOfDelay();
         return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
                 evaluationContext.getPrimitives().booleanParameterizedType(),
-                LinkedVariables.delayedEmpty(causes), causes);
+                LinkedVariables.EMPTY, causes);
     }
 
     /**

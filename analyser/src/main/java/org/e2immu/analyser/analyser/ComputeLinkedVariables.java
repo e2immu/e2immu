@@ -185,7 +185,7 @@ public class ComputeLinkedVariables {
                 .collect(Collectors.toUnmodifiableSet());
         DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.DEPENDENT_DV;
         Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
-        return new LinkedVariables(map);
+        return LinkedVariables.of(map);
     }
 
     private static List<Cluster> computeClusters(WeightedGraph weightedGraph,
@@ -380,7 +380,7 @@ public class ComputeLinkedVariables {
             staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
         map.remove(variable); // no self references
-        return map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
+        return map.isEmpty() ? LinkedVariables.EMPTY : LinkedVariables.of(map);
     }
 
     /**

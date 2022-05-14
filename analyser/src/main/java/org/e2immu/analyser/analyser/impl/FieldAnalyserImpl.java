@@ -1347,7 +1347,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (causesOfDelay != null) {
             LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo.fullyQualifiedName());
             // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
-            fieldAnalysis.setLinkedVariables(LinkedVariables.delayedEmpty(causesOfDelay));
+            fieldAnalysis.setLinkedVariables(LinkedVariables.NOT_YET_SET);
             return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
         }
 
@@ -1358,9 +1358,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
                         && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
-        LinkedVariables linkedVariables = new LinkedVariables(map);
+        LinkedVariables linkedVariables = LinkedVariables.of(map);
         fieldAnalysis.setLinkedVariables(linkedVariables);
         LOGGER.debug("FA: Set links of {} to [{}]", fqn, linkedVariables);
 

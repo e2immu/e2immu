@@ -202,7 +202,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() == 0 ? "" : "p:3";
+                String expectLinked = d.iteration() == 0 ? "NOT_YET_SET" : "p:3";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
@@ -250,7 +250,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                assertLinked(d, 1, "initial@Class_X", "xs:3");
+                assertLinked(d, 1, "link@NOT_YET_SET", "xs:3");
             }
         };
 

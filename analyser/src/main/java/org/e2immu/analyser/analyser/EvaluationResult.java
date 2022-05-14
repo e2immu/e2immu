@@ -773,7 +773,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void link(Variable from, Variable to, DV level) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(from);
-            LinkedVariables linked = new LinkedVariables(Map.of(to, level));
+            LinkedVariables linked = LinkedVariables.of(to, level);
             if (ecd == null) {
                 newEcd = new ChangeData(null, level.causesOfDelay(),
                         CausesOfDelay.EMPTY, false, Set.of(), linked, LinkedVariables.EMPTY, Map.of());

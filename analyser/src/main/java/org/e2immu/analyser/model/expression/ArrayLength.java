@@ -121,6 +121,7 @@ public class ArrayLength extends BaseExpression implements Expression {
             builder.setExpression(size);
         } else if (result.value().isDelayed()) {
             builder.setExpression(DelayedExpression.forArrayLength(identifier, context.getPrimitives(),
+                    result.value().linkedVariables(context),
                     result.value().causesOfDelay()));
         } else {
             builder.setExpression(this);
