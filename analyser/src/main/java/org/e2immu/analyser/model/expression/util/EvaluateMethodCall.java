@@ -22,13 +22,13 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
@@ -66,13 +66,10 @@ public class EvaluateMethodCall {
             return builder.setExpression(methodValue).build();
         }
 
-        Function<CausesOfDelay, LinkedVariables> linkedVariablesForDelay =
-                causes -> objectValue.linkedVariables(context).changeAllToDelay(causes);
-
         // no value (method call on field that does not have effective value yet)
         CausesOfDelay objectValueDelayed = objectValue.causesOfDelay();
         if (objectValueDelayed.isDelayed()) {
-            return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(objectValueDelayed), objectValueDelayed);
+            return delay(builder, methodInfo, concreteReturnType, objectValueDelayed);
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
@@ -96,21 +93,20 @@ public class EvaluateMethodCall {
         if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName) && !analyserContext.inAnnotatedAPIAnalysis()) {
             Expression parameter = parameters.get(0);
             boolean inState = inState(context, parameter);
-            return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(primitives, inState)).build();
+            return builder.setExpression(new BooleanConstant(primitives, inState)).build();
         }
 
         if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) && !analyserContext.inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
-            Expression clause = new MethodCall(identifier, objectValue, methodInfo,
-                    List.of(new BooleanConstant(primitives, true)));
+            BooleanConstant TRUE = new BooleanConstant(primitives, true);
+            Expression clause = new MethodCall(identifier, objectValue, methodInfo, List.of(TRUE));
             if (boolValue.constant()) {
                 boolean isKnown = inState(context, clause);
                 Expression result = new BooleanConstant(primitives, isKnown);
                 return builder.setExpression(result).build();
-            } else {
-                // isKnown(false)-> return MethodValue
-                return builder.setExpression(clause).build();
             }
+            // isKnown(false)-> return MethodValue
+            return builder.setExpression(clause).build();
         }
 
        /*
@@ -122,11 +118,13 @@ public class EvaluateMethodCall {
         if (modified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression() && methodInfo.returnType().isBoolean()) {
             Expression condition = context.evaluationContext().getConditionManager().condition();
             if (methodCall.equals(condition) || condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
-                return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(context.getPrimitives(), true)).build();
+                BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
+                return builder.setExpression(TRUE).build();
             }
             if (condition instanceof Negation n && methodCall.equals(n.expression) ||
                     condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
-                return new EvaluationResult.Builder(context).setExpression(new BooleanConstant(context.getPrimitives(), false)).build();
+                BooleanConstant FALSE = new BooleanConstant(context.getPrimitives(), false);
+                return builder.setExpression(FALSE).build();
             }
         }
 
@@ -142,10 +140,10 @@ public class EvaluateMethodCall {
             return builder.setExpression(evaluationOnConstant).build();
         }
 
-        Expression evaluationOfEquals = computeEvaluationOfEquals(methodInfo, concreteReturnType, objectValue,
-                linkedVariablesForDelay, parameters);
+        EvaluationResult evaluationOfEquals = computeEvaluationOfEquals(methodInfo, concreteReturnType, objectValue,
+                builder, parameters);
         if (evaluationOfEquals != null) {
-            return builder.setExpression(evaluationOfEquals).build();
+            return evaluationOfEquals;
         }
 
         if (!context.evaluationContext().disableEvaluationOfMethodCallsUsingCompanionMethods()) {
@@ -177,17 +175,17 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(concreteReturnType, methodAnalysis, parameters, linkedVariablesForDelay);
+        EvaluationResult identity = computeIdentity(concreteReturnType, methodAnalysis, parameters, builder);
         if (identity != null) {
-            return builder.setExpression(identity).build();
+            return identity;
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(concreteReturnType, methodAnalysis, objectValue, modifiedInstance,
-                linkedVariablesForDelay);
+        EvaluationResult fluent = computeFluent(concreteReturnType, methodAnalysis, objectValue, modifiedInstance,
+                builder);
         if (fluent != null) {
-            return builder.setExpression(fluent).build();
+            return fluent;
         }
 
         Expression nameInEnum = computeNameInEnum(objectValue);
@@ -199,8 +197,7 @@ public class EvaluateMethodCall {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
-                        srv.causesOfDelay());
+                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay());
             }
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
@@ -226,14 +223,11 @@ public class EvaluateMethodCall {
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
-                methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                        linkedVariablesForDelay.apply(delays), delays, Map.of());
-            } else {
-                methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
+                return delay(builder, methodInfo, concreteReturnType, delays);
             }
+            methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
         } else {
-            methodValue = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                    linkedVariablesForDelay.apply(modified.causesOfDelay()), modified.causesOfDelay(), Map.of());
+            return delay(builder, methodInfo, concreteReturnType, modified.causesOfDelay());
         }
         return builder.setExpression(methodValue).build();
     }
@@ -245,13 +239,18 @@ public class EvaluateMethodCall {
         return !res.accepted().isEmpty();
     }
 
+    /*
+    IMPORTANT: keep in sync with very similar method in MethodCall
+    Make sure that all delayed exits go via this method!
+     */
     private EvaluationResult delay(EvaluationResult.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
-                                   LinkedVariables linkedVariables,
                                    CausesOfDelay causesOfDelay) {
+        LinkedVariables linkedVariables = methodCall.linkedVariables(context);
+        Map<Variable, DV> cnnMap = builder.cnnMap();
         return builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                linkedVariables, causesOfDelay, Map.of())).build();
+                linkedVariables, causesOfDelay, cnnMap)).build();
     }
 
     /*
@@ -291,22 +290,21 @@ public class EvaluateMethodCall {
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
 
-    private Expression computeEvaluationOfEquals(MethodInfo methodInfo,
-                                                 ParameterizedType concreteReturnType,
-                                                 Expression objectValue,
-                                                 Function<CausesOfDelay, LinkedVariables> linkedVariables,
-                                                 List<Expression> parameters) {
+    private EvaluationResult computeEvaluationOfEquals(MethodInfo methodInfo,
+                                                       ParameterizedType concreteReturnType,
+                                                       Expression objectValue,
+                                                       EvaluationResult.Builder builder,
+                                                       List<Expression> parameters) {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
             DV modifying = modifying(paramValue);
             if (modifying.isDelayed()) {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                        linkedVariables.apply(modifying.causesOfDelay()), modifying.causesOfDelay(), Map.of());
+                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
-                return new BooleanConstant(primitives, true);
+                return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }
         }
         return null;
@@ -463,37 +461,37 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private Expression computeFluent(ParameterizedType concreteReturnType,
-                                     MethodAnalysis methodAnalysis,
-                                     Expression scope,
-                                     Expression modifiedInstance,
-                                     Function<CausesOfDelay, LinkedVariables> linkedVariables) {
+    private EvaluationResult computeFluent(ParameterizedType concreteReturnType,
+                                           MethodAnalysis methodAnalysis,
+                                           Expression scope,
+                                           Expression modifiedInstance,
+                                           EvaluationResult.Builder builder) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                    linkedVariables.apply(fluent.causesOfDelay()),
-                    fluent.causesOfDelay(), Map.of());
+            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay());
         }
         if (!fluent.valueIsTrue()) return null;
         Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
         DV hardCoded = toReturn.hardCodedPropertyOrNull(NOT_NULL_EXPRESSION);
+        Expression e;
         if (hardCoded != null && hardCoded.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-            return toReturn;
+            e = toReturn;
+        } else {
+            e = PropertyWrapper.propertyWrapper(toReturn, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
         }
-        return PropertyWrapper.propertyWrapper(toReturn, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+        return builder.setExpression(e).build();
     }
 
 
     private final static Property[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION};
 
-    private Expression computeIdentity(ParameterizedType concreteReturnType,
-                                       MethodAnalysis methodAnalysis,
-                                       List<Expression> parameters,
-                                       Function<CausesOfDelay, LinkedVariables> linkedVariables) {
+    private EvaluationResult computeIdentity(ParameterizedType concreteReturnType,
+                                             MethodAnalysis methodAnalysis,
+                                             List<Expression> parameters,
+                                             EvaluationResult.Builder builder) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                    linkedVariables.apply(identity.causesOfDelay()), identity.causesOfDelay(), Map.of());
+            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay());
         }
         if (!identity.valueIsTrue()) return null;
 
@@ -504,8 +502,8 @@ public class EvaluateMethodCall {
             DV p = context.evaluationContext().getProperty(parameter, property, true, true);
             if (v.isDone() && !v.equals(p)) map.put(property, v);
         }
-        if (map.isEmpty()) return parameter;
-        return PropertyWrapper.propertyWrapper(parameter, map);
+        Expression e = map.isEmpty() ? parameter : PropertyWrapper.propertyWrapper(parameter, map);
+        return builder.setExpression(e).build();
     }
 
 }

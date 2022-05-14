@@ -506,6 +506,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return false;
     }
 
+    /*
+    IMPORTANT!! keep in sync with very similar method in EvaluateMethodCall
+    */
     private EvaluationResult delayedMethod(EvaluationResult context,
                                            EvaluationResult.Builder builder,
                                            CausesOfDelay causesOfDelay,

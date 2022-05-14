@@ -140,4 +140,14 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return context.evaluationContext().getProperty(inner, property, duringEvaluation, false);
     }
+
+    @Override
+    public LinkedVariables linked1VariablesScope(EvaluationResult context) {
+        return inner.linked1VariablesScope(context);
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        return inner.linkedVariables(context);
+    }
 }
