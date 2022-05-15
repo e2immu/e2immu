@@ -312,6 +312,15 @@ public class MultiLevel {
         return composeNotNull(newLevel);
     }
 
+    public static DV composeOneLevelMoreImmutable(DV dv) {
+        if (dv.isDelayed()) return dv;
+        assert dv.value() >= 0;
+        int level = level(dv);
+        int newLevel = level == MAX_LEVEL ? level : level + 1;
+        Effective effective = MUTABLE_DV.equals(dv) ? EFFECTIVE : MultiLevel.effective(dv);
+        return composeImmutable(effective, newLevel);
+    }
+
     // ImmutableSet<T>. If T is E2, then combination is E3
     // ImmutableSet<Integer> -> MAX
     public static DV sumImmutableLevels(DV base, DV parameters) {
@@ -346,4 +355,8 @@ public class MultiLevel {
         return (levelImmutable == levelIndependent + 1) && effectiveIndependent == EFFECTIVE;
     }
 
+    public static boolean isRecursivelyImmutable(DV immutable) {
+        int levelImmutable = MultiLevel.level(immutable);
+        return levelImmutable == MAX_LEVEL;
+    }
 }

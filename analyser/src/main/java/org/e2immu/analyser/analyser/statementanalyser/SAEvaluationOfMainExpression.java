@@ -521,18 +521,19 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     private Expression eval_IfElse_Assert(StatementAnalyserSharedState sharedState, Expression value) {
         assert value != null;
 
+        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(), value, false);
+
         if (sharedState.localConditionManager().isDelayed()) {
             CausesOfDelay causes = sharedState.localConditionManager().causesOfDelay();
             if (causes.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                 LOGGER.debug("Break init delay -- not delaying");
             } else {
                 Identifier identifier = statement().getStructure().expression().getIdentifier();
+                LinkedVariables linkedVariables = evaluated.linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
                 return DelayedExpression.forCondition(identifier, statementAnalysis.primitives().booleanParameterizedType(),
-                        LinkedVariables.NOT_YET_SET, causes);
+                        linkedVariables, causes);
             }
         }
-
-        Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.context(), value, false);
 
         if (evaluated.isConstant()) {
             Message.Label message;

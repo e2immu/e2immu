@@ -673,13 +673,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // in case both state and result of expression are delayed, we give preference to the result
             // we do NOT take the delayed state into account when the assignment target is the reason for the delay
             // see FirstThen_0 and Singleton_7
-            Expression value = stateIsDelayed.isDelayed()
-                    && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)
-                    ? DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
-                    resultOfExpression.returnType(),
-                    resultOfExpression.linkedVariables(EvaluationResult.from(evaluationContext)).changeAllToDelay(stateIsDelayed),
-                    stateIsDelayed) : resultOfExpression;
+            Expression value = valueDelayWithState(assignmentTarget, resultOfExpression, stateIsDelayed);
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
@@ -695,6 +689,23 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             valueChanges.put(assignmentTarget, newEcd);
             return this;
+        }
+
+        private Expression valueDelayWithState(Variable assignmentTarget,
+                                               Expression resultOfExpression,
+                                               CausesOfDelay stateIsDelayed) {
+            if (stateIsDelayed.isDelayed()
+                    && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
+                    && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)) {
+                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                LinkedVariables lv1 = resultOfExpression.linkedVariables(context);
+                LinkedVariables lv2 = evaluationContext.getConditionManager().state().linkedVariables(context);
+                LinkedVariables linkedVariables = lv1.merge(lv2);
+                LinkedVariables lv = linkedVariables == LinkedVariables.NOT_YET_SET ? LinkedVariables.EMPTY : linkedVariables;
+                return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
+                        resultOfExpression.returnType(), lv, stateIsDelayed);
+            }
+            return resultOfExpression;
         }
 
         private CausesOfDelay breakSelfReferenceDelay(Variable assignmentTarget, CausesOfDelay stateIsDelayed) {
@@ -856,7 +867,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public Map<Variable, DV> cnnMap() {
             return valueChanges.entrySet().stream()
-                    .filter(e -> e.getValue().properties.containsKey(Property.CONTEXT_NOT_NULL) )
+                    .filter(e -> e.getValue().properties.containsKey(Property.CONTEXT_NOT_NULL))
                     .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                             e -> e.getValue().getProperty(Property.CONTEXT_NOT_NULL)));
         }

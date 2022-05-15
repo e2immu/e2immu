@@ -173,7 +173,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         VariableInfoContainer vic = d.statementAnalysis().getVariable(ExplicitConstructorInvocation_7.class.getCanonicalName() + ".primitives");
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:primitives>";
+                            case 0 -> "<eci>";
                             case 1 -> "<s:Primitives>";
                             default -> "primitives/*@NotNull*/";
                         };

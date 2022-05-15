@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -88,6 +89,7 @@ public class ComputeLinkedVariables {
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> variables = new HashSet<>();
         Set<Variable> atStage = new HashSet<>();
+        AtomicReference<CausesOfDelay> encounteredNotYetSet = new AtomicReference<>(CausesOfDelay.EMPTY);
         statementAnalysis.variableEntryStream(stage).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
@@ -98,6 +100,9 @@ public class ComputeLinkedVariables {
                 LinkedVariables curated = add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned,
                         externalLinkedVariables, evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
                 variables.addAll(curated.variables().keySet());
+                if (curated == LinkedVariables.NOT_YET_SET) {
+                    encounteredNotYetSet.set(curated.causesOfDelay());
+                }
             }
         });
         /*
@@ -120,7 +125,8 @@ public class ComputeLinkedVariables {
         List<Cluster> clusters = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV,
-                !staticallyAssigned);
+                !staticallyAssigned,
+                encounteredNotYetSet.get());
 
         // this will cause delays across the board for CONTEXT_ and EXTERNAL_ if the flag is set.
         if (evaluationContext.delayStatementBecauseOfECI()) {
@@ -141,19 +147,7 @@ public class ComputeLinkedVariables {
                                        VariableInfo vi1,
                                        Variable variable) {
         AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
-        Predicate<Variable> computeMyself = evaluationContext::isMyself;
-        Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.defaultImmutable(v.parameterizedType(), false);
-        Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
-        Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
-            TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-            if (bestType == null) return DV.TRUE_DV;
-            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-            return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-        };
 
-        DV sourceImmutable = computeImmutable.apply(variable);
         boolean isBeingReassigned = reassigned.contains(variable);
 
         LinkedVariables external = externalLinkedVariables.apply(variable);
@@ -161,9 +155,27 @@ public class ComputeLinkedVariables {
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
         LinkedVariables refToScope = variable instanceof FieldReference fr ? combined.merge(linkToScope(fr)) : combined;
-        LinkedVariables curated = refToScope
-                .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                        immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
+        LinkedVariables curatedBeforeIgnore;
+        if (staticallyAssigned) {
+            curatedBeforeIgnore = refToScope;
+        } else {
+            Predicate<Variable> computeMyself = evaluationContext::isMyself;
+            Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
+                    analysisProvider.defaultImmutable(v.parameterizedType(), false);
+            Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
+                    analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
+            Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
+                TypeInfo bestType = v.parameterizedType().bestTypeInfo();
+                if (bestType == null) return DV.TRUE_DV;
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
+                return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            };
+
+            DV sourceImmutable = computeImmutable.apply(variable);
+            curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
+                    immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
+        }
+        LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         weightedGraph.addNode(variable, curated.variables(), true);
         boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
@@ -192,7 +204,8 @@ public class ComputeLinkedVariables {
                                                  Set<Variable> variables,
                                                  DV minInclusive,
                                                  DV maxInclusive,
-                                                 boolean followDelayed) {
+                                                 boolean followDelayed,
+                                                 CausesOfDelay encounteredNotYetSet) {
         Set<Variable> done = new HashSet<>();
         List<Cluster> result = new ArrayList<>(variables.size());
 
@@ -203,7 +216,13 @@ public class ComputeLinkedVariables {
                         .filter(e -> e.getValue().ge(minInclusive) && e.getValue().le(maxInclusive))
                         .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
                 DV delays = map.values().stream().reduce(DV.MIN_INT_DV, DV::max);
-                Cluster cluster = new Cluster(reachable, delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay());
+                CausesOfDelay clusterDelay;
+                if (encounteredNotYetSet.isDelayed() && followDelayed) {
+                    clusterDelay = encounteredNotYetSet;
+                } else {
+                    clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
+                }
+                Cluster cluster = new Cluster(reachable, clusterDelay);
                 result.add(cluster);
                 done.addAll(reachable);
             }
@@ -327,13 +346,8 @@ public class ComputeLinkedVariables {
         Map<Variable, Set<Variable>> staticallyAssigned = new HashMap<>();
         for (Cluster cluster : clusters) {
             for (Variable variable : cluster.variables) {
-                Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                Set<Variable> set = map.entrySet().stream()
-                        // keep only statically assigned
-                        .filter(e -> LinkedVariables.STATICALLY_ASSIGNED_DV.equals(e.getValue()))
-                        // remove self-references
-                        .filter(e -> !e.getKey().equals(variable))
-                        .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+                Set<Variable> set = new HashSet<>(cluster.variables);
+                set.remove(variable); // remove self-reference
                 staticallyAssigned.put(variable, set);
             }
         }
@@ -355,7 +369,8 @@ public class ComputeLinkedVariables {
                 assert vic != null : "No variable named " + variable.fullyQualifiedName();
 
                 Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables, variable, map);
+                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                        variable, map, cluster.delays);
 
                 causes = causes.merge(linkedVariables.causesOfDelay());
                 vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
@@ -374,13 +389,23 @@ public class ComputeLinkedVariables {
 
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference(Map<Variable, Set<Variable>> staticallyAssignedVariables,
                                                                           Variable variable,
-                                                                          Map<Variable, DV> map) {
+                                                                          Map<Variable, DV> map,
+                                                                          CausesOfDelay clusterDelays) {
+        if (clusterDelays.isDelayed()) {
+            for (Map.Entry<Variable, DV> entry : map.entrySet()) {
+                entry.setValue(clusterDelays);
+            }
+        }
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
         if (staticallyAssigned != null) {
             staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
         map.remove(variable); // no self references
-        return map.isEmpty() ? LinkedVariables.EMPTY : LinkedVariables.of(map);
+        if (map.isEmpty()) {
+            if (clusterDelays.isDelayed()) return LinkedVariables.NOT_YET_SET;
+            return LinkedVariables.EMPTY;
+        }
+        return LinkedVariables.of(map);
     }
 
     /**
@@ -399,7 +424,8 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         Map<Variable, DV> map = weightedGraph.links(variable, null, true);
                         map.keySet().removeIf(toRemove::contains);
-                        LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables, variable, map);
+                        LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                                variable, map, CausesOfDelay.EMPTY);
                         vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
                         vic.setLinkedVariables(linkedVariables, stage);
                     }

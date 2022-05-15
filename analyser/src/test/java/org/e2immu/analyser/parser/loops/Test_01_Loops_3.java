@@ -63,8 +63,7 @@ public class Test_01_Loops_3 extends CommonTestRunner {
                         // once we have determined that the loop is empty, the merger should take the original value
                         String expectValue = d.iteration() == 0 ? "<vl:res>" : "\"a\"";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLinked = "res:0";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
             }

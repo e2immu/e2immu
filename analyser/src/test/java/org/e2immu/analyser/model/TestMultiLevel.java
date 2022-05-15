@@ -116,4 +116,9 @@ public class TestMultiLevel {
         assertEquals(NOT_CONTAINER_DV, NOT_CONTAINER_DV.minIgnoreNotInvolved(CONTAINER_DV));
         assertEquals(CONTAINER_DV, NOT_INVOLVED_DV.minIgnoreNotInvolved(CONTAINER_DV));
     }
+
+    @Test
+    public void testComposeOneLevelMoreImmutable() {
+        assertEquals(EFFECTIVELY_E2IMMUTABLE_DV, composeOneLevelMoreImmutable(MUTABLE_DV));
+    }
 }

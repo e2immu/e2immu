@@ -78,6 +78,13 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if (d.statementId().compareTo("1") >= 0) {
+                        String expected = d.iteration() <= 1 ? "<f:map>" : "instance type Map<Integer,String>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
             }
         };
 

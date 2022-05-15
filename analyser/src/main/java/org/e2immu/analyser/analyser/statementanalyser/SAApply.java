@@ -150,20 +150,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             delay = delay.merge(loopResult.delays);
         }
 
-        /*
-        The loop variable has been created in the initialisation phase. Evaluation has to wait until
-        the expression of the forEach statement has been evaluated. For this reason, we need to handle
-        this separately.
-         */
-
-        if (statement() instanceof ForEachStatement) {
-            Variable loopVar = statementAnalysis.obtainLoopVar();
-            CausesOfDelay evalForEach = statementAnalysis.evaluationOfForEachVariable(loopVar,
-                    evaluationResult.getExpression(), evaluationResult.causesOfDelay(), sharedState.evaluationContext());
-            existingVariablesNotVisited.remove(loopVar);
-            delay = delay.merge(evalForEach);
-        }
-
         // idea: variables which already have an evaluation, but do not feature (anymore) in the evaluation result
         // or where the eval was created in contextProperties() in an earlier iteration (e.g. InstanceOf_9)
         for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
@@ -220,6 +206,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         EvaluationResult evaluationResult;
         if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
             evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult2, index());
+        } else if (statementAnalysis.statement() instanceof ForEachStatement) {
+           /*
+            The loop variable has been created in the initialisation phase. Evaluation has to wait until
+            the expression of the forEach statement has been evaluated. For this reason, we need to handle
+            this separately.
+            */
+            Variable loopVar = statementAnalysis.obtainLoopVar();
+            evaluationResult = statementAnalysis.evaluationOfForEachVariable(loopVar,
+                    evaluationResultIn.getExpression(), evaluationResultIn.causesOfDelay(), evaluationResult2);
+
         } else {
             evaluationResult = evaluationResult2;
         }

@@ -59,7 +59,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public boolean isDelayed() {
-        if(this == NOT_YET_SET) return true;
+        if (this == NOT_YET_SET) return true;
         return variables.values().stream().anyMatch(DV::isDelayed);
     }
 
@@ -69,6 +69,15 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV INDEPENDENT1_DV = new NoDelay(3, "independent1");
     public static final DV NO_LINKING_DV = new NoDelay(MultiLevel.MAX_LEVEL, "no");
 
+    public static DV value(int i) {
+        return switch (i) {
+            case 0 -> STATICALLY_ASSIGNED_DV;
+            case 1 -> ASSIGNED_DV;
+            case 2 -> DEPENDENT_DV;
+            case 3 -> INDEPENDENT1_DV;
+            default -> new NoDelay(i);
+        };
+    }
 
     public static LinkedVariables sameValue(Stream<Variable> variables, DV value) {
         return new LinkedVariables(variables.collect(Collectors.toMap(v -> v, v -> value)));
@@ -326,7 +335,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
             CauseOfDelay.Cause.LINKING);
 
     public CausesOfDelay causesOfDelay() {
-        if(this == NOT_YET_SET) {
+        if (this == NOT_YET_SET) {
             return NOT_YET_SET_DELAY;
         }
         return variables.values().stream()
@@ -339,7 +348,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public boolean isDone() {
-        if(this == NOT_YET_SET) return false;
+        if (this == NOT_YET_SET) return false;
         return causesOfDelay().isDone();
     }
 

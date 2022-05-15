@@ -363,7 +363,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<vl:fromTypeBounds>";
-                                case 1 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 1 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());

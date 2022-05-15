@@ -2085,13 +2085,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return lvc.declarations.get(0).localVariableReference();
     }
 
-    // updates variables.get(loopVar)
     @Override
-    public CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
+    public EvaluationResult evaluationOfForEachVariable(Variable loopVar,
                                                      Expression evaluatedIterable,
                                                      CausesOfDelay someValueWasDelayed,
-                                                     EvaluationContext evaluationContext) {
-        LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
+                                                     EvaluationResult evaluationResult) {
+        EvaluationContext evaluationContext = evaluationResult.evaluationContext();
+        assert evaluationContext != null;
+
         VariableInfoContainer vic = findForWriting(loopVar);
         vic.ensureEvaluation(location(EVALUATION), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 Set.of());
@@ -2109,8 +2110,28 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(index(), loopVar, valueProperties);
         }
-        vic.setValue(value, linked, valueProperties, EVALUATION);
-        return value.causesOfDelay();
+        LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
+        /*
+        We know that the spliterator() method is INDEPENDENT_1 wrt the iterating type, so we must ensure the
+        linked values are at least INDEPENDENT_1 (when the loopVar type is MUTABLE), and at most INDEPENDENT
+        (when the loopVar is recursively IMMUTABLE)
+         */
+        DV minLinking = minimumLinking(evaluationContext, loopVar.parameterizedType());
+        LinkedVariables linked1 = minLinking == LinkedVariables.NO_LINKING_DV ? LinkedVariables.EMPTY :
+                linked.minimum(minLinking);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationResult);
+        builder.assignment(loopVar, value, linked1);
+        return builder.compose(evaluationResult).build();
+    }
+
+    private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false);
+        // REC IMM -> NO_LINKING
+        if (MultiLevel.isRecursivelyImmutable(immutable)) return LinkedVariables.NO_LINKING_DV;
+        int level = MultiLevel.level(immutable);
+        // MUTABLE -> INDEPENDENT_1
+        // E2IMM -> INDEPENDENT_2
+        return LinkedVariables.value(level + 3);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

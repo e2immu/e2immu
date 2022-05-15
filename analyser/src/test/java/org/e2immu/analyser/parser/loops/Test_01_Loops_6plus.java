@@ -195,7 +195,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
-                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertDv(d, DV.TRUE_DV, CNN_TRAVELS_TO_PRECONDITION);
                     }
                 }
@@ -263,7 +263,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:UTC>" : "nullable instance type ZoneOffset";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
 
                         assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
@@ -277,7 +277,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -293,7 +293,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 ? "<vl:result>"
                                 : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo(now$3.toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = "result:0,return method:0";
+                        String expectLv = "result:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -572,7 +572,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
     @Test
     public void test_17_2() throws IOException {
         testClass("Loops_17", 0, 0, new DebugConfiguration.Builder()
-                .build(),
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

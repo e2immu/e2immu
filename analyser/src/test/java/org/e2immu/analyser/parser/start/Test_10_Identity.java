@@ -192,20 +192,26 @@ public class Test_10_Identity extends CommonTestRunner {
     public void test_2() throws IOException {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().name.equals("idem3") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
-                // there is an explicit @NotNull on the first parameter of debug
-                if ("0".equals(d.statementId())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+            if (d.methodInfo().name.equals("idem3")) {
+                if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    // there is an explicit @NotNull on the first parameter of debug
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
-                if ("1".equals(d.statementId())) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem3".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<m:idem3>" : "/*inline idem3*/s";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
@@ -239,7 +245,30 @@ public class Test_10_Identity extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("idem2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "s:-1" : "s:1";
+                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("idem4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        // 0 because of the "?...:" s in the ifFalse part of the inline conditional
+                        assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("idem2".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+            }
             if ("idem4".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
@@ -250,6 +279,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

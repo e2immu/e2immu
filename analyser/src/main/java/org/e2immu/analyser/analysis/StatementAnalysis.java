@@ -196,10 +196,10 @@ public interface StatementAnalysis extends Analysis,
 
     Variable obtainLoopVar();
 
-    CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
+    EvaluationResult evaluationOfForEachVariable(Variable loopVar,
                                               Expression evaluatedIterable,
                                               CausesOfDelay someValueWasDelayed,
-                                              EvaluationContext evaluationContext);
+                                              EvaluationResult evaluationResult);
 
     void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap);
 
