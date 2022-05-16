@@ -281,7 +281,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.noInformationYet(methodInfo.newLocation(), primitives));
             Expression delayedPreconditionForEventual = DelayedExpression.forPrecondition(methodInfo.identifier,
-                    primitives, initialDelay(methodInfo));
+                    primitives, List.of(), initialDelay(methodInfo));
             preconditionForEventual.setVariable(Precondition.forDelayed(delayedPreconditionForEventual));
             eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));
             if (!methodInfo.hasReturnValue()) {
@@ -291,7 +291,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             } else {
                 // same as in MethodAnalyserImpl, which we don't have access to here
                 DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
-                        methodInfo.returnType(), LinkedVariables.EMPTY,
+                        methodInfo.returnType(),
+                        List.of(),
                         methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of());
                 singleReturnValue.setVariable(de);
             }

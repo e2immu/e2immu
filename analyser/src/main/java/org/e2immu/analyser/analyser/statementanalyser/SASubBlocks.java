@@ -517,7 +517,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (range.isDelayed()) {
                 negatedConditionOrExitState = DelayedExpression.forState(loopStatement.identifier,
                         statementAnalysis.primitives().booleanParameterizedType(),
-                        LinkedVariables.EMPTY, range.causesOfDelay());
+                        range.variables(),
+                        range.causesOfDelay());
             } else {
                 // at the moment there is no Range which does not return a boolean constant
                 Expression exit = range.exitState(context.evaluationContext());
@@ -671,7 +672,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         DelayedExpression.forUnspecifiedLoopCondition(statement().getIdentifier(),
-                                primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causesOfDelay));
+                                primitives.booleanParameterizedType(),
+                                range.variables(),
+                                causesOfDelay));
             }
 
             if (range != Range.NO_RANGE) {
@@ -696,7 +699,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (valueIsDelayed) {
             return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
                     context.getPrimitives().booleanParameterizedType(),
-                    value.linkedVariables(context).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
+                    value.variables(true),
+                    value.causesOfDelay());
         }
         if (value instanceof ArrayInitializer ai) {
             return new BooleanConstant(context.getPrimitives(), ai.multiExpression.expressions().length > 0);

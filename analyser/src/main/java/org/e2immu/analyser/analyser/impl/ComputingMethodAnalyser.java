@@ -333,7 +333,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        finalOverFields.causesOfDelay(), primitives));
+                        List.of(), finalOverFields.causesOfDelay(), primitives));
                 return finalOverFields.causesOfDelay();
             }
             if (finalOverFields.valueIsFalse()) {
@@ -360,7 +360,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (haveEventuallyImmutableFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        haveEventuallyImmutableFields.causesOfDelay(), primitives));
+                        List.of(), haveEventuallyImmutableFields.causesOfDelay(), primitives));
                 return haveEventuallyImmutableFields.causesOfDelay();
             }
             if (haveEventuallyImmutableFields.valueIsTrue()) {
@@ -385,7 +385,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        haveContentChangeableField.causesOfDelay(), primitives));
+                        List.of(), haveContentChangeableField.causesOfDelay(), primitives));
                 return haveContentChangeableField.causesOfDelay();
             }
             if (haveContentChangeableField.valueIsTrue()) {
@@ -468,6 +468,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                 methodInfo.fullyQualifiedName);
                         methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
+                                cm.state().variables(true),
                                 cm.state().causesOfDelay(), primitives));
                         return cm.state().causesOfDelay();
                     }

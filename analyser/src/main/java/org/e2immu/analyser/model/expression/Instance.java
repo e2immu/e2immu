@@ -139,7 +139,7 @@ public final class Instance extends BaseExpression implements Expression {
         if (delays.isDelayed()) {
             Stream<Variable> variableStream = Stream.concat(Stream.of(variable), array.variables(true).stream());
             return DelayedExpression.forArrayAccessValue(identifier, variable.parameterizedType(),
-                    LinkedVariables.sameValue(variableStream, delays), delays);
+                    List.of(variable), delays);
         }
         return new Instance(identifier, variable.parameterizedType(), properties);
     }

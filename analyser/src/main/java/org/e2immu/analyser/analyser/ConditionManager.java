@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*
 condition = the condition in the parent statement that leads to this block. Default: true
@@ -384,7 +385,10 @@ public record ConditionManager(Expression condition,
         Primitives primitives = evaluationContext.getPrimitives();
         Expression withoutNegation = state instanceof Negation negation ? negation.expression : state;
         if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {
-            Expression newState = state.isDelayed() ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(), state.causesOfDelay()) : new BooleanConstant(primitives, true);
+            Expression newState = state.isDelayed()
+                    ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(),
+                    state.variables(true), state.causesOfDelay())
+                    : new BooleanConstant(primitives, true);
             return new ConditionManager(condition, newState, precondition, parent);
         }
         if (withoutNegation instanceof And and) {
@@ -400,6 +404,13 @@ public record ConditionManager(Expression condition,
 
     public boolean isEmpty() {
         return condition.isBoolValueTrue() && state.isBoolValueTrue() && precondition().isEmpty() && (parent == null || parent().isEmpty());
+    }
+
+    public List<Variable> variables() {
+        return Stream.concat(parent == null ? Stream.of() : parent.variables().stream(),
+                Stream.concat(condition.variables(true).stream(),
+                        Stream.concat(precondition.expression().variables(true).stream(),
+                                state.variables(true).stream()))).toList();
     }
 
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

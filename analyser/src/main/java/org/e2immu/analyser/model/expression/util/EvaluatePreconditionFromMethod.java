@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,14 +53,16 @@ public class EvaluatePreconditionFromMethod {
         }
         if (precondition.isDelayed() || scopeObject.isDelayed()) {
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay());
-            return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
+            List<Variable> variables = precondition.expression().variables(true);
+            return Precondition.forDelayed(identifierOfMethodCall, variables, causes, context.getPrimitives());
         }
 
         // we use the machinery of inlined methods to do proper translations.
         Expression inlinedMethod = InlinedMethod.of(identifierOfMethodCall, methodInfo, precondition.expression(), context.getAnalyserContext());
         if (inlinedMethod.isDelayed()) {
+            List<Variable> variables = precondition.expression().variables(true);
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay()).merge(inlinedMethod.causesOfDelay());
-            return Precondition.forDelayed(identifierOfMethodCall, causes, context.getPrimitives());
+            return Precondition.forDelayed(identifierOfMethodCall, variables, causes, context.getPrimitives());
         }
         InlinedMethod iv = (InlinedMethod) inlinedMethod;
         TranslationMap translationMap = iv.translationMap(context, parameterValues, scopeObject,

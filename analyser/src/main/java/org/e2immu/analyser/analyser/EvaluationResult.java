@@ -697,13 +697,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (stateIsDelayed.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)) {
-                EvaluationResult context = EvaluationResult.from(evaluationContext);
-                LinkedVariables lv1 = resultOfExpression.linkedVariables(context);
-                LinkedVariables lv2 = evaluationContext.getConditionManager().state().linkedVariables(context);
-                LinkedVariables linkedVariables = lv1.merge(lv2);
-                LinkedVariables lv = linkedVariables == LinkedVariables.NOT_YET_SET ? LinkedVariables.EMPTY : linkedVariables;
                 return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
-                        resultOfExpression.returnType(), lv, stateIsDelayed);
+                        resultOfExpression.returnType(),
+                        resultOfExpression.variables(true),
+                        stateIsDelayed);
             }
             return resultOfExpression;
         }

@@ -149,7 +149,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (assignments == null) {
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
                 CausesOfDelay eciDelay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier,
+                        List.of(), eciDelay));
                 return eciDelay;
             }
             // IMPORTANT: quasi identical code in emptyExpression
@@ -208,7 +209,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // and my cause delays in the evaluation after a number of iterations
         if (value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
             value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
-                    value.returnType(), LinkedVariables.EMPTY, sharedState.localConditionManager().causesOfDelay());
+                    value.returnType(),
+                    sharedState.localConditionManager().variables(),
+                    sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
 
@@ -246,7 +249,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
                 CausesOfDelay eciDelay = DelayFactory.createDelay(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI);
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, eciDelay));
+                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, List.of(), eciDelay));
                 return eciDelay;
             }
             if (!assignments.isBooleanConstant()) {
@@ -418,7 +421,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     // TODO this assignment should result in a delayed link...
                     FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                     CauseOfDelay causeOfDelay = new SimpleCause(sharedState.evaluationContext().getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
-                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), DelayFactory.createDelay(causeOfDelay));
+                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), List.of(), DelayFactory.createDelay(causeOfDelay));
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
@@ -529,9 +532,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 LOGGER.debug("Break init delay -- not delaying");
             } else {
                 Identifier identifier = statement().getStructure().expression().getIdentifier();
-                LinkedVariables linkedVariables = evaluated.linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
-                return DelayedExpression.forCondition(identifier, statementAnalysis.primitives().booleanParameterizedType(),
-                        linkedVariables, causes);
+                return DelayedExpression.forCondition(identifier,
+                        statementAnalysis.primitives().booleanParameterizedType(),
+                        evaluated.variables(true), causes);
             }
         }
 

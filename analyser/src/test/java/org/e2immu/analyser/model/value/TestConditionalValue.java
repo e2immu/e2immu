@@ -14,10 +14,14 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -191,8 +195,8 @@ public class TestConditionalValue extends CommonAbstractValue {
     @Test
     public void testReturnType() {
         CausesOfDelay delay = DelayFactory.createDelay(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
-        Expression a = DelayedExpression.forState(Identifier.generate("test"),
-                PRIMITIVES.booleanParameterizedType(), LinkedVariables.EMPTY, delay);
+        Expression a = DelayedExpression.forState(Identifier.generate("test"), PRIMITIVES.booleanParameterizedType(),
+              List.of(),  delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = UnknownExpression.forReturnVariable(Identifier.constant("unknown"), boxed);
         Expression inline = inline(c, a, b);

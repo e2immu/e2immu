@@ -67,7 +67,10 @@ public class Equals extends BinaryOperator {
                                     ForwardEvaluationInfo forwardEvaluationInfo) {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
         Expression expression = internalEquals(identifier, context, l, r, checkForNull, forwardEvaluationInfo);
-        return causes.isDelayed() && expression.isDone() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
+        return causes.isDelayed() && expression.isDone()
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
+                expression.variables(true), causes)
+                : expression;
     }
 
     private static Expression internalEquals(Identifier identifier,
@@ -83,13 +86,17 @@ public class Equals extends BinaryOperator {
                 DV dv = context.evaluationContext().isNotNull0(r, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(r.causesOfDelay()));
+                    return DelayedExpression.forNullCheck(identifier, primitives,
+                            r.variables(true),
+                            dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r instanceof NullConstant) {
                 DV dv = context.evaluationContext().isNotNull0(l, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
-                    return DelayedExpression.forNullCheck(identifier, primitives, dv.causesOfDelay().merge(l.causesOfDelay()));
+                    return DelayedExpression.forNullCheck(identifier, primitives,
+                            l.variables(true),
+                            dv.causesOfDelay().merge(l.causesOfDelay()));
             }
         }
 
@@ -262,16 +269,16 @@ public class Equals extends BinaryOperator {
                     And.and(context, notCondition, recursively2));
         }
 
-        if(c.isNull()) {
-            if(inlineConditional.ifTrue.isNull()) {
+        if (c.isNull()) {
+            if (inlineConditional.ifTrue.isNull()) {
                 // null == (a ? null: b) --> a || (b == null)
                 return Or.or(context, inlineConditional.condition, Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifFalse));
             }
-            if(inlineConditional.ifFalse.isNull()) {
+            if (inlineConditional.ifFalse.isNull()) {
                 // null== (a ? b : null) --> !a || (b == null)
                 return Or.or(context, Negation.negate(context, inlineConditional.condition), Equals.equals(context, NullConstant.NULL_CONSTANT, inlineConditional.ifTrue));
             }
-         }
+        }
         return null;
     }
 

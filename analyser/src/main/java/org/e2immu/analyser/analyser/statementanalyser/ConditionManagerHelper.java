@@ -45,7 +45,9 @@ class ConditionManagerHelper {
             CausesOfDelay causes = Objects.requireNonNullElseGet(
                     previous.methodLevelData().combinedPreconditionIsDelayedSet(), () ->
                             previous.methodAnalysis().getMethodInfo().delay(CauseOfDelay.Cause.UNREACHABLE));
-            Expression delayedExpression = DelayedExpression.forPrecondition(identifier, primitives, causes);
+            Expression delayedExpression = DelayedExpression.forPrecondition(identifier, primitives,
+                    previous.methodLevelData().combinedPreconditionGet().expression().variables(true),
+                    causes);
             combinedPrecondition = Precondition.forDelayed(delayedExpression);
         }
 

@@ -295,7 +295,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (changeData.value().isDone() && causesOfDelay.isDelayed()) {
             // cannot yet change to changeData.value()...
             toWrite = DelayedExpression.forDelayedValueProperties(changeData.value().getIdentifier(),
-                    changeData.value().returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+                    changeData.value().returnType(),
+                    changeData.value().variables(true),
+                    causesOfDelay, Properties.EMPTY);
         } else {
             toWrite = changeData.value();
         }
@@ -772,9 +774,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 if (merged.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                     return value;
                 }
-                LinkedVariables linkedVariables = value.linkedVariables(sharedState.context());
                 return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(),
-                        linkedVariables, merged);
+                        value.variables(true), merged);
             }
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {

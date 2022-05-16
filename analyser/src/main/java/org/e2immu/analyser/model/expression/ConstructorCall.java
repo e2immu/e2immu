@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -104,7 +105,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causesOfDelay = valueProperties.delays();
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forInstanceOf(identifier, primitives, parameterizedType,
-                    LinkedVariables.NOT_YET_SET, causesOfDelay);
+                    variables(true), causesOfDelay);
         }
         return new Instance(identifier, parameterizedType, valueProperties);
     }
@@ -163,7 +164,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forNewObject(identifier, translatedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    LinkedVariables.NOT_YET_SET, causesOfDelay);
+                    variables(true), causesOfDelay);
         }
         return new ConstructorCall(identifier,
                 constructor,
@@ -397,15 +398,15 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         Expression instance;
         if (constructor != null) {
             MethodAnalysis constructorAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
+            List<Variable> variables = variables(true);
             Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
-                    constructor, constructorAnalysis, null, this, res.v);
+                    constructor, constructorAnalysis, null, this, res.v, variables);
             if (modifiedInstance == null) {
                 instance = this;
             } else {
                 instance = modifiedInstance.isDelayed()
-                        ? DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        linkedVariables(context).changeAllToDelay(modifiedInstance.causesOfDelay()),
-                        modifiedInstance.causesOfDelay())
+                        ? DelayedExpression.forNewObject(identifier, parameterizedType,
+                        MultiLevel.EFFECTIVELY_NOT_NULL_DV, variables, modifiedInstance.causesOfDelay())
                         : modifiedInstance;
             }
         } else {
@@ -442,7 +443,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
         return DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                linkedVariables(context).changeAllToDelay(causes), causes);
+                variables(true), causes);
     }
 
     public MethodInfo constructor() {

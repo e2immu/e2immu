@@ -52,13 +52,19 @@ public class Sum extends BinaryOperator {
         Identifier identifier = Identifier.joined("sum", List.of(l.getIdentifier(), r.getIdentifier()));
         Expression expression = sum(identifier,
                 evaluationContext, l, r, true);
-        return causes.isDelayed() && !expression.isDelayed() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
+        return causes.isDelayed() && !expression.isDelayed()
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
+                expression.variables(true), causes)
+                : expression;
     }
 
     public static Expression sum(Identifier identifier, EvaluationResult evaluationContext, Expression l, Expression r) {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
         Expression expression = sum(identifier, evaluationContext, l, r, true);
-        return causes.isDelayed() && !expression.isDelayed() ? DelayedExpression.forSimplification(identifier, expression.returnType(), causes) : expression;
+        return causes.isDelayed() && !expression.isDelayed()
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
+                expression.variables(true), causes)
+                : expression;
     }
 
     private static Expression sum(Identifier identifier,

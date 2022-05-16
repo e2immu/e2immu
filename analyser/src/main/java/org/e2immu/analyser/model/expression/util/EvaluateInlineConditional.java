@@ -45,8 +45,11 @@ public class EvaluateInlineConditional {
         if (evaluationResult.value().isDone()) {
             CausesOfDelay causes = condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
             if (causes.isDelayed()) {
-                Identifier identifier = Identifier.joined("inline", List.of(condition.getIdentifier(), ifTrue.getIdentifier(), ifFalse.getIdentifier()));
-                Expression delay = DelayedExpression.forSimplification(identifier, evaluationResult.value().returnType(), causes);
+                Identifier identifier = Identifier.joined("inline", List.of(condition.getIdentifier(),
+                        ifTrue.getIdentifier(), ifFalse.getIdentifier()));
+                Expression delay = DelayedExpression.forSimplification(identifier, evaluationResult.value().returnType(),
+                        evaluationResult.value().variables(true),
+                        causes);
                 return new EvaluationResult.Builder(evaluationContext).setExpression(delay).build();
             }
         }

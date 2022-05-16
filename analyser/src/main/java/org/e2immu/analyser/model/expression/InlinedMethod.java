@@ -106,7 +106,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 throw rte;
             }
         }
-        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), ev.getCauses());
+        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(),
+                expression.variables(true), ev.getCauses());
     }
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {
@@ -186,7 +187,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Expression translated = expression.translate(inspectionProvider, translationMap);
         if (translated == expression) return this;
         if (translated.isDelayed()) {
-            return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), translated.causesOfDelay());
+            return DelayedExpression.forInlinedMethod(identifier, expression.returnType(),
+                    expression.variables(true), translated.causesOfDelay());
         }
         return of(identifier, methodInfo, translated, fr -> containsVariableFields, inspectionProvider);
     }
@@ -382,11 +384,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
         AnalyserContext analyserContext = context.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
 
-        Properties valueProperties ;
-        if(variable instanceof FieldReference fr) {
+        Properties valueProperties;
+        if (variable instanceof FieldReference fr) {
             FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
             valueProperties = fieldAnalysis.getValueProperties();
-        } else if(context.evaluationContext().isMyself(parameterizedType)) {
+        } else if (context.evaluationContext().isMyself(parameterizedType)) {
             valueProperties = context.evaluationContext().valuePropertiesOfFormalType(parameterizedType);
         } else {
             valueProperties = analyserContext.defaultValueProperties(parameterizedType);
@@ -395,10 +397,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 .merge(variable.causesOfDelay())
                 .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay());
         if (merged.isDelayed()) {
-            LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
-            LinkedVariables changed = lv == null ? LinkedVariables.EMPTY : lv.changeAllToDelay(merged);
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
-                    changed, merged, Map.of());
+                    List.of(), // given that we'll return an expanded variable
+                    merged, Map.of());
         }
         Identifier inline;
         // non-modifying: make sure it remains the same one

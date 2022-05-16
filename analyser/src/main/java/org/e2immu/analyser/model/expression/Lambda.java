@@ -246,7 +246,7 @@ public class Lambda extends BaseExpression implements Expression {
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
                 result = DelayedExpression.forMethod(identifier, methodInfo, implementation,
-                        LinkedVariables.NOT_YET_SET, causes, Map.of());
+                        variables(true), causes, Map.of());
             }
         } else {
             // the lambda
@@ -269,8 +269,8 @@ public class Lambda extends BaseExpression implements Expression {
 
     private Expression noLocalAnalysersYet(EvaluationResult evaluationContext) {
         Expression result;
-        CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
-        result = DelayedExpression.forMethod(identifier, methodInfo, implementation, LinkedVariables.NOT_YET_SET,
+        result = DelayedExpression.forMethod(identifier, methodInfo, implementation,
+                variables(true),
                 DelayFactory.createDelay(evaluationContext.getCurrentType(), CauseOfDelay.Cause.TYPE_ANALYSIS), Map.of());
         return result;
     }

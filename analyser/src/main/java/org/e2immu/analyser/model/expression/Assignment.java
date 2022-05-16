@@ -15,8 +15,8 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -403,7 +403,8 @@ public class Assignment extends BaseExpression implements Expression {
                 Expression instance;
                 if (causesOfDelay.isDelayed()) {
                     instance = DelayedExpression.forDelayedValueProperties(identifier, returnType,
-                            LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+                            fieldReference.scope.variables(true),
+                            causesOfDelay, Properties.EMPTY);
                 } else {
                     instance = Instance.forGetInstance(identifier, returnType, valueProperties);
                 }

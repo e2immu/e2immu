@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -121,7 +122,7 @@ public class ArrayLength extends BaseExpression implements Expression {
             builder.setExpression(size);
         } else if (result.value().isDelayed()) {
             builder.setExpression(DelayedExpression.forArrayLength(identifier, context.getPrimitives(),
-                    result.value().linkedVariables(context),
+                    variables(true),
                     result.value().causesOfDelay()));
         } else {
             builder.setExpression(this);
@@ -132,5 +133,10 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return ConstantExpression.propertyOfConstant(property);
+    }
+
+    @Override
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return scope.variables(true);
     }
 }

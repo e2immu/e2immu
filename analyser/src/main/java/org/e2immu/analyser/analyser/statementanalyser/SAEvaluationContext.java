@@ -412,7 +412,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
             return Properties.of(map);
         }
-        if(valueToWrite.isDelayed()) {
+        if (valueToWrite.isDelayed()) {
             // e.g., delayed method call
             CausesOfDelay delay = valueToWrite.causesOfDelay();
             return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
@@ -655,7 +655,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 translationMap.put(ve, newObject);
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                        eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
+                        bestValue.variables(true), delays);
                 translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
                 // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
                 // see VariableScope_10
@@ -698,7 +698,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 return translated;
             }
             if (modified.isDelayed()) {
-                return DelayedExpression.forPrecondition(identifier, getPrimitives(), modified.causesOfDelay());
+                return DelayedExpression.forPrecondition(identifier, getPrimitives(),
+                        variables, modified.causesOfDelay());
             }
         }
         return precondition.isDelayed() ? precondition : null;

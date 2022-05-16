@@ -21,6 +21,8 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.List;
+
 public interface Range {
     /**
      * express the range conditions in terms of the loop variable
@@ -120,6 +122,10 @@ public interface Range {
             return "NO RANGE";
         }
     };
+
+    default List<Variable> variables() {
+        return List.of();
+    }
 
     record Delayed(CausesOfDelay causesOfDelay) implements Range {
 

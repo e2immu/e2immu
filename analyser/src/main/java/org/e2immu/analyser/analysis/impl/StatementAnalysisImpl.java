@@ -1107,7 +1107,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Properties bestProperties = best.valueProperties();
                 if (best.getValue().isDelayed() || bestProperties.delays().isDelayed()) {
                     CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
-                    outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(), toRemove.parameterizedType(), causes);
+                    outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(),
+                            toRemove.parameterizedType(),
+                            best.getValue().variables(true),
+                            causes);
                     afterFiltering.put(toRemove, outOfScopeValue);
                 } else {
                     // at the moment, there may be references to other variables to be removed inside the best.getValue()
@@ -1156,7 +1159,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causesOfDelay = propertiesOfLvr.delays();
             if (causesOfDelay.isDelayed() && lvr.assignmentExpression.isDone()) {
                 scopeValue = DelayedExpression.forDelayedValueProperties(lvr.assignmentExpression.getIdentifier(),
-                        lvr.assignmentExpression.returnType(), LinkedVariables.EMPTY, causesOfDelay, Properties.EMPTY);
+                        lvr.assignmentExpression.returnType(),
+                        lvr.assignmentExpression.variables(true),
+                        causesOfDelay, Properties.EMPTY);
             } else {
                 scopeValue = lvr.assignmentExpression;
             }

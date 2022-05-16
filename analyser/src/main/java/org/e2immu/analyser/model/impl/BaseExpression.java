@@ -137,7 +137,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
             return delayed;
         }
         return DelayedExpression.forDelayedValueProperties(identifier, returnType(),
-                linkedVariables(context).changeAllToDelay(causes), causes, Properties.EMPTY);
+                variables(true), causes, Properties.EMPTY);
     }
 
     @Override

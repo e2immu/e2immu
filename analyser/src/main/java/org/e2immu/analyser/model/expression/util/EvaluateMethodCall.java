@@ -247,10 +247,10 @@ public class EvaluateMethodCall {
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
                                    CausesOfDelay causesOfDelay) {
-        LinkedVariables linkedVariables = methodCall.linkedVariables(context);
         Map<Variable, DV> cnnMap = builder.cnnMap();
         return builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                linkedVariables, causesOfDelay, cnnMap)).build();
+                        methodCall.variables(true), causesOfDelay, cnnMap))
+                .build();
     }
 
     /*
@@ -285,7 +285,7 @@ public class EvaluateMethodCall {
                 MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         CausesOfDelay delayed = valueProperties.delays();
         if (delayed.isDelayed()) {
-            return DelayedExpression.forValueOf(parameterizedType, objectValue.linkedVariables(context), delayed);
+            return DelayedExpression.forValueOf(parameterizedType, methodCall.variables(true), delayed);
         }
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
