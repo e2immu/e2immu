@@ -593,8 +593,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 sharedState.evaluationContext());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        Map<Variable, Set<Variable>> staticallyAssigned = computeLinkedVariables.staticallyAssignedVariables();
-        CausesOfDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(staticallyAssigned);
+        CausesOfDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(computeLinkedVariables);
         CausesOfDelay delay = delayIn.merge(linkDelays);
 
         // 1

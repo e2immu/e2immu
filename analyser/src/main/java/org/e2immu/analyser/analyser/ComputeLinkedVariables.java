@@ -341,7 +341,7 @@ public class ComputeLinkedVariables {
         return DelayFactory.createDelay(causes);
     }
 
-    public Map<Variable, Set<Variable>> staticallyAssignedVariables() {
+    private Map<Variable, Set<Variable>> staticallyAssignedVariables() {
         // computed on the 0 values
         Map<Variable, Set<Variable>> staticallyAssigned = new HashMap<>();
         for (Cluster cluster : clusters) {
@@ -361,7 +361,8 @@ public class ComputeLinkedVariables {
      * only used on the CM version (not statically assigned) with the statically assigned variables forming
      * the core.
      */
-    public CausesOfDelay writeClusteredLinkedVariables(Map<Variable, Set<Variable>> staticallyAssignedVariables) {
+    public CausesOfDelay writeClusteredLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV) {
+        Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedCLV.staticallyAssignedVariables();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (Cluster cluster : clusters) {
             for (Variable variable : cluster.variables) {
@@ -369,22 +370,35 @@ public class ComputeLinkedVariables {
                 assert vic != null : "No variable named " + variable.fullyQualifiedName();
 
                 Map<Variable, DV> map = weightedGraph.links(variable, null, true);
-                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                         variable, map, cluster.delays);
 
                 causes = causes.merge(linkedVariables.causesOfDelay());
                 vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
-                try {
-                    vic.setLinkedVariables(linkedVariables, stage);
-                } catch (IllegalStateException isa) {
-                    LOGGER.error("Linked variables change in illegal way in stmt {}: {}", statementAnalysis.index(), isa);
-                    LOGGER.error("Variable: {}", variable);
-                    LOGGER.error("Cluster : {}", cluster);
-                    throw isa;
-                }
+                writeLinkedVariables(cluster, variable, vic, linkedVariables);
+                staticallyAssigned.remove(variable);
             }
         }
+        // there may be variables remaining, which were present in linking that is not removed in the first phase
+        // Occurs in statement 3, Basics_24, to the "map" variable
+        for(Variable variable: staticallyAssigned.keySet()) {
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+            assert vic != null : "No variable named " + variable.fullyQualifiedName();
+            vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            writeLinkedVariables(null, variable, vic, LinkedVariables.EMPTY);
+        }
         return causes;
+    }
+
+    private void writeLinkedVariables(Cluster cluster, Variable variable, VariableInfoContainer vic, LinkedVariables linkedVariables) {
+        try {
+            vic.setLinkedVariables(linkedVariables, stage);
+        } catch (IllegalStateException isa) {
+            LOGGER.error("Linked variables change in illegal way in stmt {}: {}", statementAnalysis.index(), isa);
+            LOGGER.error("Variable: {}", variable);
+            LOGGER.error("Cluster : {}", cluster);
+            throw isa;
+        }
     }
 
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference(Map<Variable, Set<Variable>> staticallyAssignedVariables,
@@ -412,10 +426,11 @@ public class ComputeLinkedVariables {
      * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
      * It touches all variables rather than those in clusters only.
      */
-    public void writeLinkedVariables(Map<Variable, Set<Variable>> staticallyAssignedVariables,
+    public void writeLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV,
                                      Set<Variable> touched,
                                      Set<Variable> toRemove) {
         assert stage == Stage.MERGE;
+        Map<Variable, Set<Variable>> staticallyAssignedVariables = staticallyAssignedCLV.staticallyAssignedVariables();
         statementAnalysis.rawVariableStream()
                 .forEach(e -> {
                     VariableInfoContainer vic = e.getValue();

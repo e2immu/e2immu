@@ -1361,8 +1361,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        Map<Variable, Set<Variable>> staticallyAssigned = computeLinkedVariables.staticallyAssignedVariables();
-        computeLinkedVariablesCm.writeLinkedVariables(staticallyAssigned, touched, prepareMerge.toRemove);
+        computeLinkedVariablesCm.writeLinkedVariables(computeLinkedVariables, touched, prepareMerge.toRemove);
 
         for (Variable variable : touched) {
             if (!linkedVariablesMap.containsKey(variable)) {
