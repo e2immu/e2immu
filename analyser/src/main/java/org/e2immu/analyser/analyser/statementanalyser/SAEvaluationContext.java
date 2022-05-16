@@ -864,6 +864,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 suffix = VariableExpression.NO_SUFFIX;
             }
             if (evaluatedScopeValue != null) {
+                // given record X(int k){}, we know that new X(3).k === 3
                 Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
                 if (shortCut != null) return shortCut;
             }

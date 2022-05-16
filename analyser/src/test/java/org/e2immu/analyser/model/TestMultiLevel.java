@@ -49,6 +49,8 @@ public class TestMultiLevel {
         assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_DV));
         assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
         assertEquals(IMMUTABLE_1.level, level(EVENTUALLY_E1IMMUTABLE_DV)); // we know about E2IMMUTABLE: FALSE
+
+        assertEquals(INDEPENDENT_1.level, level(INDEPENDENT_1_DV));
     }
 
     @Test

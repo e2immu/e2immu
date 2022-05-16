@@ -166,8 +166,10 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
 
             if ("expand".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    assertEquals("srv@Method_expand",
-                            d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
+                    String expected = d.iteration() == 0
+                            ? "cm:return getI@Method_getI_0-E;cm:this.i@Method_getI_0-E;cm:this@Method_getI_0-E;initial:this.i@Method_getI_0-C;srv@Method_expand"
+                            : "srv@Method_expand";
+                    assertEquals(expected, d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertFalse(inlinedMethod.containsVariableFields());
                     assertEquals("`variableField.i`", inlinedMethod.expression().toString());

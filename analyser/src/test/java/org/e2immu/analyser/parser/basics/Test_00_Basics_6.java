@@ -15,7 +15,10 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -78,25 +81,25 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 if ("v1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv =  "this.field:0,v2:0" ;
+                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v2:0" : "this.field:0,v2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         // evaluation to write linked properties
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectLv = "this.field:0,v2:0";
+                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v2:0" : "this.field:0,v2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
                 if ("v2".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expectLv ="this.field:0,v1:0";
+                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v1:0" : "this.field:0,v1:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
@@ -109,7 +112,8 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("v1:0,v2:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "this:-1,v1:0,v2:0" : "v1:0,v2:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -118,7 +122,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:field>" : "field$0";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectedLv = "this.field:0";
+                        String expectedLv = d.iteration() == 0 ? "this.field:0,this:-1" : "this.field:0";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
@@ -304,7 +308,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
-            if("test3".equals(d.methodInfo().name)) {
+            if ("test3".equals(d.methodInfo().name)) {
                 assertEquals("someMinorMethod", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
             }
         };

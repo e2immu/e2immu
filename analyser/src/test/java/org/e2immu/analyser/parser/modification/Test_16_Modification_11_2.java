@@ -103,7 +103,10 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 2 ? "c:-1" : "c:2";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2 -> "c:-1,this:-1";
+                            default -> "c:2";
+                        };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -114,17 +117,18 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        String expectLinked = d.iteration() <= 2 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
+                        String expectLinked = switch (d.iteration()) {
+                            case 0, 1, 2 -> "c.set:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1,this:-1";
+                            default -> "c.set:2,this.s2:2";
+                        };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String causesOfDelay = switch (d.iteration()) {
                         case 0 -> "initial:this.s2@Method_example1_0-C";
-                        case 1 -> "cm@Parameter_setC;cm@Parameter_string;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
-                        // when all goes well:
-                        case 2 -> "initial:this.s2@Method_example1_0-C;initial@Field_set";
-                        // otherwise: cm@Parameter_string;container@Class_C1;initial@Method_add
+                        case 1 -> "cm:return getSet@Method_getSet_0-E;cm:this.set@Method_getSet_0-E;cm:this@Method_getSet_0-E;cm@Parameter_setC;cm@Parameter_string;initial:this.s2@Method_example1_0-C;initial:this.set@Method_getSet_0-C;mom@Parameter_setC";
+                        case 2 -> "cm:return getSet@Method_getSet_0-E;cm:this.set@Method_getSet_0-E;cm:this@Method_getSet_0-E;ext_not_null@Field_set;initial:this.s2@Method_example1_0-C";
                         default -> "";
                     };
                     assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());

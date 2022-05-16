@@ -156,10 +156,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
 
                     assert fieldAsVariable != null;
                     assertTrue(fieldAsVariable.isRead());
-                    assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-
-                    // property of the field as variable info in the method
-                    assertEquals(DV.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
+                    assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
                 }
                 if ("setString".equals(d.methodInfo().name)) {
                     assert fieldAsVariable != null;

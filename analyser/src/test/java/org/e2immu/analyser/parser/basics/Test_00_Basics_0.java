@@ -107,7 +107,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
                     assertEquals(expectReturn, d.currentValue().toString());
 
-                    assertEquals("this.explicitlyFinal:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() == 0 ? "this.explicitlyFinal:0,this:-1" : "this.explicitlyFinal:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);

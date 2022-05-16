@@ -121,11 +121,12 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    String linked = d.iteration() == 0 ? "label3:-1,this.map:-1,this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0 ? "<null-check>?defaultValue1:<m:get>"

@@ -90,8 +90,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
-                    assertFalse(d.variableInfoContainer().hasMerge(), "In: " + d.statementId() + ", it " + d.iteration());
-
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasMerge()); // link in merge
+                    }
                     // statement independent, as the only occurrence of input1 is in evaluation of "0", before "0.0.0" etc.
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
@@ -211,11 +212,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     assertCurrentValue(d, 2, "nullable instance type String");
 
-                    String expectLv = "return getS:0";
+                    String expectLv = d.iteration() <= 1 ? "return getS:0,this:-1" : "return getS:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());
@@ -303,7 +304,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 // because the value is not known, the ENN cannot be either
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-                assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }

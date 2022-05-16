@@ -28,7 +28,6 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_4 extends CommonTestRunner {
     public Test_00_Basics_4() {
@@ -50,7 +49,8 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "1+i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    String linked = d.iteration() <= 1 ? "this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getI".equals(d.methodInfo().name)) {
@@ -64,14 +64,15 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() <= 1 ? "this.i:0,this:-1" : "this.i:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
             }
         };
         testClass("Basics_4", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(),
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }
 }

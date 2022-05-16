@@ -68,7 +68,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
 
             if ("add4".equals(d.methodInfo().name) && "local4".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
 
                     String expect = d.iteration() == 0 ? SET4_DELAYED : "set4";

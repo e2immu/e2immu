@@ -1347,8 +1347,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // create looks at these+previous, minus those to be removed.
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
-        Set<Variable> touched = Stream.concat(linkedVariablesMap.keySet().stream(),
-                        linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream()))
+        // we include -E in touched, see Basics_8 (j, k in statement 4)
+        Set<Variable> touched = Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
+                                linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
+                        variables.stream().map(Map.Entry::getValue)
+                                .filter(VariableInfoContainer::hasEvaluation)
+                                .map(e -> e.current().variable()))
                 .filter(v -> !prepareMerge.toRemove.contains(v) && variables.isSet(v.fullyQualifiedName()))
                 .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
@@ -1609,8 +1613,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
             }
             Properties valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
-            linkedVariables = lvArrayBase.changeAllTo(independent);
-            initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
+            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
+            if (lvIndependent.equals(LinkedVariables.NO_LINKING_DV)) {
+                linkedVariables = LinkedVariables.EMPTY;
+                initialValue = arrayValue;
+            } else {
+                linkedVariables = lvArrayBase.changeAllTo(lvIndependent);
+                initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
+            }
             valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
         } else {
             initialValue = UnknownExpression.forNotYetAssigned(Identifier.generate("not yet assigned"), variable.parameterizedType());
@@ -2086,9 +2096,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public EvaluationResult evaluationOfForEachVariable(Variable loopVar,
-                                                     Expression evaluatedIterable,
-                                                     CausesOfDelay someValueWasDelayed,
-                                                     EvaluationResult evaluationResult) {
+                                                        Expression evaluatedIterable,
+                                                        CausesOfDelay someValueWasDelayed,
+                                                        EvaluationResult evaluationResult) {
         EvaluationContext evaluationContext = evaluationResult.evaluationContext();
         assert evaluationContext != null;
 
@@ -2125,12 +2135,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
         DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false);
-        // REC IMM -> NO_LINKING
-        if (MultiLevel.isRecursivelyImmutable(immutable)) return LinkedVariables.NO_LINKING_DV;
-        int level = MultiLevel.level(immutable);
-        // MUTABLE -> INDEPENDENT_1
-        // E2IMM -> INDEPENDENT_2
-        return LinkedVariables.value(level + 3);
+        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

@@ -37,7 +37,7 @@ public class Test_16_Modification_1 extends CommonTestRunner {
     public void test1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("size".equals(d.methodInfo().name) && "Modification_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("getFirst".equals(d.methodInfo().name) && d.iteration() > 0) {
                 assertNotNull(d.haveError(Message.Label.UNUSED_PARAMETER));
@@ -46,7 +46,7 @@ public class Test_16_Modification_1 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set2")) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

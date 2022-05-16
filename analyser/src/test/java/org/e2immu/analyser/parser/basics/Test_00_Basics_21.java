@@ -83,7 +83,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:other>" :
+                        String expectValue = d.iteration() <= 1 ? "<mmc:other>" :
                                 "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
@@ -98,7 +98,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     } else {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "<p:other>";
+                            case 0, 1 -> "<mmc:other>";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -141,12 +141,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertDv(d, 2, DV.FALSE_DV, MODIFIED_METHOD);
                 String expect = d.iteration() <= 1 ? "<m:get>" : "/*inline get*/t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertDv(d, 2, DV.FALSE_DV, MODIFIED_METHOD);
                 String expect = d.iteration() <= 1 ? "<m:isSet>" : "/*inline isSet*/null!=t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -154,7 +154,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, DV.FALSE_DV, FINAL);
             }
         };

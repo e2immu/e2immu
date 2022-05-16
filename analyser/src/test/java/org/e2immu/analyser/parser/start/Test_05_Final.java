@@ -116,7 +116,8 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
                     }
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    String linked = d.iteration() == 0 ? "s1:-1,this.s3:-1,this:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (S5.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -187,7 +188,8 @@ public class Test_05_Final extends CommonTestRunner {
             if ("s1".equals(d.fieldInfo().name)) {
                 String expect = d.iteration() == 0 ? "<f:s1>" : "[s1+\"abc\",s1]";
                 assertEquals(expect, d.fieldAnalysis().getValue().toString());
-                assertEquals("s1:0", d.fieldAnalysis().getLinkedVariables().toString());
+                String linked = d.iteration() == 0 ? "NOT_YET_SET" : "s1:0";
+                assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 String expectValue = d.iteration() == 0 ? "<f:s2>" : "[null,s2]";

@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -30,10 +31,7 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -417,7 +415,15 @@ public class Assignment extends BaseExpression implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        // may already be linked to others
+        /*
+        There are fundamentally two approaches to computing linked variables here.
+        The first is to compute them on "value", the second one on "resultOfExpression".
+        The former stays the same, and does not include the "tryShortCut", "single return value" substitutions,
+        computation simplifications, etc. etc., which are present in the latter.
+
+        We choose the latter approach, but introduce a delay on all possible variables of the former as long as
+        "resultOfExpression" is delayed.
+         */
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         Set<Variable> directAssignment = value.directAssignmentVariables();
         LinkedVariables linkedVariables;
@@ -428,7 +434,16 @@ public class Assignment extends BaseExpression implements Expression {
         } else {
             linkedVariables = lvExpression;
         }
-        builder.assignment(at, resultOfExpression, linkedVariables);
+        LinkedVariables lvAfterDelay;
+        if (resultOfExpression.isDelayed()) {
+            Set<Variable> vars = new HashSet<>(value.variables(true));
+            Map<Variable, DV> map = vars.stream()
+                    .collect(Collectors.toUnmodifiableMap(v -> v, v -> resultOfExpression.causesOfDelay()));
+            lvAfterDelay = linkedVariables.merge(LinkedVariables.of(map));
+        } else {
+            lvAfterDelay = linkedVariables;
+        }
+        builder.assignment(at, resultOfExpression, lvAfterDelay);
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {

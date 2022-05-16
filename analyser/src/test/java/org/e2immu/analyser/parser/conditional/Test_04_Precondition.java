@@ -159,14 +159,14 @@ public class Test_04_Precondition extends CommonTestRunner {
             }
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    if (d.iteration() > 2) {
-                        assertEquals("i>=0", d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
-                    }
+                    String pc = d.iteration() == 0 ? "Precondition[expression=<f:i>>=0, causes=[escape]]"
+                            : "Precondition[expression=i>=0, causes=[escape]]";
+                    assertEquals(pc, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    if (d.iteration() > 2) {
-                        assertEquals("i>=0", d.localConditionManager().precondition().expression().toString());
-                    }
+                    String pc = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
+                            : "Precondition[expression=i>=0, causes=[escape]]";
+                    assertEquals(pc, d.localConditionManager().precondition().toString());
                 }
             }
         };

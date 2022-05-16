@@ -20,6 +20,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -86,7 +87,8 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                 if ("j".equals(d.variableName())) {
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        assertEquals("this.i:0", linkedVariables, d.statementId());
+                        String linked = d.iteration() == 0 ? "this.i:0,this:-1" : "this.i:0";
+                        assertEquals(linked, linkedVariables, d.statementId());
                         String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
                         assertEquals(expectValue, d.currentValue().toString());
                         if (d.iteration() == 0) {
@@ -98,20 +100,28 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("k:0,this.i:0", linkedVariables, d.statementId());
+                        String linked = d.iteration() == 0 ? "k:0,this.i:0,this:-1" : "k:0,this.i:0";
+                        assertEquals(linked, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("j0:0,k:0,this.i:0", linkedVariables, d.statementId());
+                        String linked = d.iteration() == 0 ? "j0:0,k:0,this.i:0,this:-1" : "j0:0,k:0,this.i:0";
+                        assertEquals(linked, linkedVariables, d.statementId());
                     }
-                    if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
-                            "4.0.0.0.3".equals(d.statementId()) || "4.0.0.0.4".equals(d.statementId())) {
-                        assertEquals("j0:0,k:0", linkedVariables, "At " + d.statementId());
+                    if ("4.0.0.0.1".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "j0:0,k:0,q:-1,this.i:-1,this:-1" : "j0:0,k:0";
+                        assertEquals(linked, linkedVariables, "At " + d.statementId());
+                    }
+                    if ("4.0.0.0.2".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "j0:0,k0:-1,k:0,q:-1,this.i:-1,this:-1" : "j0:0,k:0";
+                        assertEquals(linked, linkedVariables, "At " + d.statementId());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        assertEquals("k:0,this.i:0", linkedVariables, "At " + d.statementId());
+                        String linked = d.iteration() == 0 ? "k:0,q:-1,this.i:-1,this:-1" : "k:0";
+                        assertEquals(linked, linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertEquals("k:0,this.i:0", linkedVariables, d.statementId());
+                        String linked = d.iteration() == 0 ? "k:0,q:-1,this.i:0,this:-1" : "k:0,this.i:0";
+                        assertEquals(linked, linkedVariables, d.statementId());
                     }
                 }
                 if ("k".equals(d.variableName())) {
@@ -129,9 +139,6 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
                         assertEquals("i", d.currentValue().toString());
                     }
-                    if (I.equals(d.variableName()) && "4.0.0.0.1".equals(d.statementId())) {
-                        assertEquals("i+q", d.currentValue().toString());
-                    }
                     if ("k0".equals(d.variableName()) && "4.0.0.0.2".equals(d.statementId())) {
                         assertEquals("i+q", d.currentValue().toString());
                     }
@@ -146,6 +153,22 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                }
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("4.0.0.0.1".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "j0:-1,j:-1,k:-1,q:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "j:-1,k:-1,q:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        // the j:0, k:0 come from the fact that the if-block is only executed conditionally, and so,
+                        // in case of j!=k, they both still have been assigned.
+                        String linked = d.iteration() == 0 ? "j:0,k:0,q:-1,this:-1" : "j:0,k:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };

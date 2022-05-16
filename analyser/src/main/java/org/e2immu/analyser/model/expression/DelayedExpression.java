@@ -312,7 +312,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return linkedVariables;
+        return LinkedVariables.EMPTY; // FIXME if this is OK, then we'd better remove a lot of crap
     }
 
     public CausesOfDelay causesOfDelay() {
@@ -325,10 +325,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     public ParameterizedType parameterizedType() {
         return parameterizedType;
-    }
-
-    public LinkedVariables linkedVariables() {
-        return linkedVariables;
     }
 
     @Override

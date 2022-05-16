@@ -82,7 +82,10 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if (d.statementId().compareTo("1") >= 0) {
                         String expected = d.iteration() <= 1 ? "<f:map>" : "instance type Map<Integer,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,return method:-1,this:-1,x.s:-1,x:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
