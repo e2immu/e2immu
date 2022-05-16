@@ -53,7 +53,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     assertTrue(stringVic.hasEvaluation());
                     assertFalse(stringVic.hasMerge());
                     assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
-                    assertEquals("this.string:0", stringVic.current().getLinkedVariables().toString());
+                    assertEquals("", stringVic.current().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, stringVic.current().getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
@@ -199,7 +199,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 int expectSize = d.iteration() <= 1 ? 0 : 1;
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
 
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
                 String expectFields = d.iteration() <= 1 ? "" : "string";
                 assertEquals(expectFields, d.typeAnalysis().marksRequiredForImmutable().stream()
@@ -315,9 +315,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             if ("EventuallyE1Immutable_3".equals(d.typeInfo().simpleName)) {
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
                 assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
+                String expectE2 = d.iteration() <= 2 ? "{}" : "{string=null==string}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

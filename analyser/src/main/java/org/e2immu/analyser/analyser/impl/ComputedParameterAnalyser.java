@@ -464,9 +464,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (extImm.isDone()) {
             return DONE;
         }
-        DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
-        parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
-        return AnalysisStatus.of(dv);
+        if(parameterAnalysis.isAssignedToFieldDelaysResolved()) {
+            DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
+            parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
+            return AnalysisStatus.of(dv);
+        }
+        return AnalysisStatus.of(parameterAnalysis.assignedToFieldDelays());
     }
 
     private boolean findModifiedOutsideMethod(CausesOfDelay causes) {

@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -78,12 +79,18 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals(d.iteration() > 0, p0.assignedToFieldDelays().isDone());
+                if (d.iteration() > 0) {
+                    assertEquals("{myContainerLinkedToParameter=assigned:1}", p0.getAssignedToField().toString());
+                }
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("setI".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("getI".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name) && "MyNonContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
@@ -102,6 +109,9 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertEquals("consumer:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible

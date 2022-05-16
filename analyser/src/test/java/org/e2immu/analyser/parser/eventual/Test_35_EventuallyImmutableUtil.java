@@ -364,7 +364,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                         assertTrue(pw.expression() instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo);
                     } else fail();
                     // properly linked to the field!
-                    assertEquals("ev:1,this.eventuallyFinal:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("ev:1", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, d.getProperty(Property.IMMUTABLE));
                 }
             }

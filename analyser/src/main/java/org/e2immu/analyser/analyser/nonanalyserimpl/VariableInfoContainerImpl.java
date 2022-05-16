@@ -289,7 +289,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 variableInfo.setProperty(vp, v);
             });
         }
-        variableInfo.setLinkedVariables(linkedVariables);
+        if (linkedVariables != null) {
+            variableInfo.setLinkedVariables(linkedVariables);
+        }
     }
 
 

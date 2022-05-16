@@ -603,8 +603,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfo viInClosure = e.getValue().getPreviousOrInitial();
                     VariableInfo hereInitial = here.getRecursiveInitialOrNull();
                     if (hereInitial != null) {
-                        here.safeSetValue(viInClosure.getValue(), viInClosure.getLinkedVariables(),
-                                viInClosure.valueProperties(), INITIAL);
+                        // E2Immutable_7 shows that we cannot simply keep copying in LVs
+                        here.safeSetValue(viInClosure.getValue(), null, viInClosure.valueProperties(),
+                                INITIAL);
                     }
                 } // else: it is perfectly possible for variables to be returned by variablesFromClosure that were not
                 // present in the initial call in iteration 0 (see Warnings_5, VariableScope_5, e.g.)

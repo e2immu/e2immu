@@ -137,12 +137,12 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);
