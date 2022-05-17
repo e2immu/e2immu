@@ -12,9 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-public class IfStatement_11 {
+public class DependentVariables_5 {
 
     public static boolean method(boolean a, boolean b, boolean c, boolean d) {
         if (a || b || c || d) {

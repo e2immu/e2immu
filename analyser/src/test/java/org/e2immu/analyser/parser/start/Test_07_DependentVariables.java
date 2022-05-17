@@ -403,4 +403,45 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+    // simpler version of DependentVariables_3, without the delays
+    @Test
+    public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("added".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("false", d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertEquals("a", d.currentValue().toString());
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        assertEquals("a||b", d.currentValue().toString());
+                    }
+                    if ("0.0.3".equals(d.statementId())) {
+                        assertEquals("a||b||c", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("0.0.0".equals(d.statementId())) {
+                assertEquals("a||b||c||d", d.absoluteState().toString());
+            }
+            if ("0.0.1.0.0".equals(d.statementId())) {
+                assertEquals("a", d.absoluteState().toString());
+            }
+            if ("0.0.2.0.0".equals(d.statementId())) {
+                assertEquals("b", d.absoluteState().toString());
+            }
+            if ("0.0.3.0.0".equals(d.statementId())) {
+                assertEquals("c", d.absoluteState().toString());
+            }
+        };
+        testClass("DependentVariables_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
 }

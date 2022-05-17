@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 import java.util.Stack;
 
-public class Precondition_9 {
+public class Precondition_7 {
     private final Stack<String> stack = new Stack<>();
 
     // should have no precondition! (the "assert" is a post-condition, if nothing else)

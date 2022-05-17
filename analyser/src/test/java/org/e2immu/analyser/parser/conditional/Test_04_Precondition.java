@@ -175,7 +175,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     // TODO I'd expect only "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = d.iteration() == 0 ? "<f:i>>=0&&j2<=-1" : "j2<=-1&&i$0>=0";
+                    String expect = d.iteration() == 0 ? "j2<=-1&&<f:i>>=0" : "j2<=-1&&i$0>=0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -497,4 +497,31 @@ public class Test_04_Precondition extends CommonTestRunner {
                 .stream().findFirst().orElseThrow()
                 .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
     }
+
+
+    @Test
+    public void test_7() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("pop".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("pop".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0
+                        ? "Precondition[expression=!<m:isEmpty>, causes=[escape]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
+                if (d.iteration() > 0) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
+            }
+        };
+        testClass("Precondition_7", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
+    }
+
 }
