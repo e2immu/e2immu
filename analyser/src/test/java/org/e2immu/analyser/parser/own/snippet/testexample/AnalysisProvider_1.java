@@ -12,13 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 
 import java.util.List;
 
 // variant on _10, where there is a call cycle of 3 (see comment ~ line 123)
-public interface Precondition_10_2 {
+public interface AnalysisProvider_1 {
     record TypeInfo(String name) {
     }
 

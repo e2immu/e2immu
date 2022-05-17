@@ -12,13 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 import java.util.ArrayList;
 import java.util.List;
 
 // heavily trimmed down version of _7; trying to catch NoProgressException
-public class Precondition_7_2 {
+public class ParameterizedType_4 {
 
     static class ParameterizedType {
         private final TypeInfo typeInfo;

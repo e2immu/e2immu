@@ -12,16 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class Precondition_7_1 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Precondition_7_1.class);
+public class ParameterizedType_3 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType_3.class);
 
     public static final char PLUS_EXTENDS = '+';
     public static final char MINUS_SUPER = '-';

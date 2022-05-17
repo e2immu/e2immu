@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 
 import org.e2immu.annotation.NotNull;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 // trying to catch an error
-public class Precondition_11 {
+public class Expressions_0 {
 
     interface Expression {
         default boolean isInstanceOf(Class<? extends Expression> clazz) {

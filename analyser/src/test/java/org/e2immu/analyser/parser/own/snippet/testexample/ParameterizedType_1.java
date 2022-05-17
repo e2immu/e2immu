@@ -12,13 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 
 import java.util.List;
 
 // quasi identical to _9, but with "private" in front of the typeParameter field. Cause(s/d) a crash.
-public class IfStatement_10 {
+public class ParameterizedType_1 {
 
     static class ParameterizedType {
         String typeInfo;

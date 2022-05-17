@@ -12,14 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.own.snippet.testexample;
 
 
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
-public interface Precondition_10 {
+public interface AnalysisProvider_0 {
     record TypeInfo(String name) {
     }
 
