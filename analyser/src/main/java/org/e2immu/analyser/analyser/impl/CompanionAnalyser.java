@@ -61,7 +61,7 @@ public class CompanionAnalyser {
         this.companionMethod = companionMethod;
         this.companionMethodName = companionMethodName;
         this.mainMethod = mainMethod;
-        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationParameters);
+        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationParameters, companionMethod);
         this.typeAnalysis = typeAnalysis;
     }
 
@@ -212,7 +212,7 @@ public class CompanionAnalyser {
                                     new VariableCause(variable, getLocation(Stage.INITIAL),
                                             CauseOfDelay.Cause.REMAP_PARAMETER)));
                 Expression remapped = remapping.get(parameterInfo.name);
-                if(remapped != null) return remapped;
+                if (remapped != null) return remapped;
             }
             return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
         }

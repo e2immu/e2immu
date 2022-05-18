@@ -249,14 +249,15 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         return delay;
     }
 
-    protected AnalysisStatus delayedSrv(CausesOfDelay causesOfDelay, boolean addSrvDelay) {
+    protected AnalysisStatus delayedSrv(CausesOfDelay causesOfDelay, boolean addSrvDelay,
+                                        boolean concreteImplementationForthcoming) {
         CausesOfDelay merge = addSrvDelay
                 ? methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay)
                 : causesOfDelay;
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.FLUENT, merge);
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.IDENTITY, merge);
         Expression srv = DelayedExpression.forMethod(methodInfo.identifier, methodInfo, methodInfo.returnType(),
-                List.of(), merge, Map.of());
+                List.of(), merge, Map.of(), concreteImplementationForthcoming);
         methodAnalysis.setSingleReturnValue(srv);
         return merge;
     }

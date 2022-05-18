@@ -69,7 +69,8 @@ public class EvaluateMethodCall {
         // no value (method call on field that does not have effective value yet)
         CausesOfDelay objectValueDelayed = objectValue.causesOfDelay();
         if (objectValueDelayed.isDelayed()) {
-            return delay(builder, methodInfo, concreteReturnType, objectValueDelayed);
+            return delay(builder, methodInfo, concreteReturnType, objectValueDelayed,
+                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
@@ -148,8 +149,7 @@ public class EvaluateMethodCall {
 
         if (!context.evaluationContext().disableEvaluationOfMethodCallsUsingCompanionMethods()) {
             // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
-            Expression assistedByCompanion = valueAssistedByCompanion(context, objectValue, methodInfo, methodAnalysis,
-                    parameters);
+            Expression assistedByCompanion = valueAssistedByCompanion(context, objectValue, methodInfo, parameters);
             if (assistedByCompanion != null) {
                 return builder.setExpression(assistedByCompanion).build();
             }
@@ -197,7 +197,8 @@ public class EvaluateMethodCall {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay());
+                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay(),
+                        srv.concreteImplementationForthcoming());
             }
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
@@ -223,11 +224,13 @@ public class EvaluateMethodCall {
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
-                return delay(builder, methodInfo, concreteReturnType, delays);
+                return delay(builder, methodInfo, concreteReturnType, delays,
+                        methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
             }
             methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
         } else {
-            return delay(builder, methodInfo, concreteReturnType, modified.causesOfDelay());
+            return delay(builder, methodInfo, concreteReturnType, modified.causesOfDelay(),
+                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
         }
         return builder.setExpression(methodValue).build();
     }
@@ -246,11 +249,13 @@ public class EvaluateMethodCall {
     private EvaluationResult delay(EvaluationResult.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
-                                   CausesOfDelay causesOfDelay) {
+                                   CausesOfDelay causesOfDelay,
+                                   boolean concreteImplementationForthcoming) {
         Map<Variable, DV> cnnMap = builder.cnnMap();
-        return builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                        methodCall.variables(true), causesOfDelay, cnnMap))
-                .build();
+        DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                methodCall.variables(true), causesOfDelay, cnnMap,
+                concreteImplementationForthcoming);
+        return builder.setExpression(delay).build();
     }
 
     /*
@@ -301,7 +306,7 @@ public class EvaluateMethodCall {
             if (modifying.isDelayed()) {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay());
+                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay(), false);
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
@@ -320,13 +325,11 @@ public class EvaluateMethodCall {
     private Expression valueAssistedByCompanion(EvaluationResult context,
                                                 Expression objectValue,
                                                 MethodInfo methodInfo,
-                                                MethodAnalysis methodAnalysis,
                                                 List<Expression> parameterValues) {
         if (!context.evaluationContext().hasState(objectValue)) return null;
         Expression state = context.evaluationContext().state(objectValue);
-
-        Optional<Map.Entry<CompanionMethodName, CompanionAnalysis>> optValue = methodAnalysis.getCompanionAnalyses()
-                .entrySet().stream()
+        Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
+        Optional<Map.Entry<CompanionMethodName, CompanionAnalysis>> optValue = cMap.entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.VALUE)
                 .findFirst();
         if (optValue.isEmpty()) {
@@ -382,7 +385,8 @@ public class EvaluateMethodCall {
         Expression state = context.evaluationContext().state(objectValue);
 
         TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
-        methodAnalysis.getCompanionAnalyses().entrySet().stream()
+        Map<CompanionMethodName,CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
+        cMap.entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
                 .forEach(e -> {
                     // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
@@ -468,7 +472,8 @@ public class EvaluateMethodCall {
                                            EvaluationResult.Builder builder) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay());
+            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay(),
+                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
         }
         if (!fluent.valueIsTrue()) return null;
         Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
@@ -491,7 +496,8 @@ public class EvaluateMethodCall {
                                              EvaluationResult.Builder builder) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay());
+            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay(),
+                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
         }
         if (!identity.valueIsTrue()) return null;
 

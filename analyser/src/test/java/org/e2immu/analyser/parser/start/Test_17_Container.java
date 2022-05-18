@@ -73,7 +73,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("nullable instance type Set<String>/*@Identity*/", d.currentValue().toString());
 
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("0-E", d.variableInfo().getReadId());
@@ -82,7 +82,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("nullable instance type Set<String>/*@Identity*/", d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 } else if (d.variable() instanceof ParameterInfo p && "toAdd".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
@@ -98,13 +98,13 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("p", d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<mmc:s>" : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 } else if (S0.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -145,7 +145,7 @@ public class Test_17_Container extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -371,7 +371,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration()>0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("m2".equals(d.methodInfo().name)) {
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());

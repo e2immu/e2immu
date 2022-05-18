@@ -32,6 +32,7 @@ import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -399,5 +400,49 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             return rs.expression;
         }
         return null;
+    }
+
+    // call recursively, add if not yet present
+    public Map<CompanionMethodName, CompanionAnalysis> collectCompanionMethods(AnalyserContext analyserContext) {
+        MethodInspection inspection = analyserContext.getMethodInspection(this);
+        Map<CompanionMethodName, MethodInfo> local = inspection.getCompanionMethods();
+        Map<CompanionMethodName, CompanionAnalysis> result;
+        if (local == null) {
+            result = new HashMap<>();
+        } else {
+            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysisNullWhenAbsent(this);
+            if (methodAnalysis == null) {
+                result = new HashMap<>();
+            } else {
+                result = local.keySet().stream().collect(Collectors.toMap(k -> k,
+                        k -> methodAnalysis.getCompanionAnalyses().get(k)));
+            }
+        }
+        // NOTE: there is no order in the overrides() set. Therefore, we need to check using typeResolution
+        for (MethodInfo override : methodResolution.get().overrides()) {
+            MethodInspection overrideInspection = analyserContext.getMethodInspection(override);
+            MethodAnalysis overrideAnalysis = analyserContext.getMethodAnalysisNullWhenAbsent(override);
+            if (overrideAnalysis != null) {
+                Map<CompanionMethodName, MethodInfo> map = overrideInspection.getCompanionMethods();
+                if (map != null) {
+                    map.keySet().forEach(k -> {
+                        // let's not overwrite!
+                        boolean overwrite;
+                        CompanionAnalysis companionAnalysis = overrideAnalysis.getCompanionAnalyses().get(k);
+                        if (result.containsKey(k)) {
+                            TypeInfo existing = result.get(k).getCompanion().typeInfo;
+                            TypeInfo newType = companionAnalysis.getCompanion().typeInfo;
+                            overwrite = newType.typeResolution.get().superTypesExcludingJavaLangObject().contains(existing);
+                        } else {
+                            overwrite = true;
+                        }
+                        if (overwrite) {
+                            result.put(k, companionAnalysis);
+                        }
+                    });
+                }
+            }
+        }
+        return Map.copyOf(result);
     }
 }

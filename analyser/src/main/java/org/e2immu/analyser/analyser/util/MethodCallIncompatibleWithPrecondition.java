@@ -115,8 +115,8 @@ public class MethodCallIncompatibleWithPrecondition {
             VariableExpression ve;
             if (element instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
-                MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
-                for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
+                Map<CompanionMethodName, CompanionAnalysis> cMap = methodCall.methodInfo.collectCompanionMethods(context.getAnalyserContext());
+                for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : cMap.entrySet()) {
                     if (entry.getKey().action() == CompanionMethodName.Action.VALUE) {
                         CompanionMethodName companionMethodName = entry.getKey();
                         CompanionAnalysis companionAnalysis = entry.getValue();
@@ -152,11 +152,13 @@ public class MethodCallIncompatibleWithPrecondition {
                 AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
                 for (MethodInfo aspectMain : typeAnalysis.getAspects().values()) {
-                    MethodAnalysis aspectMainAnalysis = analyserContext.getMethodAnalysis(aspectMain);
-                    Optional<CompanionMethodName> oInvariant = aspectMainAnalysis.getCompanionAnalyses().keySet()
-                            .stream().filter(cmn -> cmn.action() == CompanionMethodName.Action.INVARIANT).findFirst();
-                    if (oInvariant.isPresent()) {
-                        CompanionAnalysis companionAnalysis = aspectMainAnalysis.getCompanionAnalyses().get(oInvariant.get());
+                    Map<CompanionMethodName, CompanionAnalysis> cMap = aspectMain.collectCompanionMethods(analyserContext);
+                    Optional<Map.Entry<CompanionMethodName, CompanionAnalysis>> optionalEntry =
+                            cMap.entrySet().stream()
+                                    .filter(entry -> entry.getKey().action() == CompanionMethodName.Action.INVARIANT)
+                                    .findFirst();
+                    if (optionalEntry.isPresent()) {
+                        CompanionAnalysis companionAnalysis = optionalEntry.get().getValue();
                         Expression invariant = companionAnalysis.getValue();
                         LOGGER.debug("Found invariant expression {} for method call", invariant);
 

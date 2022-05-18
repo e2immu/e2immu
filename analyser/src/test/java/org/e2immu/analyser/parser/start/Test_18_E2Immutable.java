@@ -437,20 +437,21 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_10() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertEquals(d.iteration() == 3, d.context().evaluationContext().allowBreakDelay());
 
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 3 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
+                    String expectValue = d.iteration() <= 4 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() <= 3 ? "return method:-1,sub.string:-1,this:-1" : "";
+                    String linked = d.iteration() <= 4 ? "return method:-1,sub.string:-1,this:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
-                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, 3, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, 5, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // no linked variables
-                    String linked = d.iteration() <= 3 ? "sub.string:0,this.sub:-1,this:-1" : "sub.string:0";
+                    String linked = d.iteration() <= 4 ? "sub.string:0,this.sub:-1,this:-1" : "sub.string:0";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -458,13 +459,13 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Sub".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("sub".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<f:sub>" : "new Sub()";
+                String expected = d.iteration() <= 3 ? "<f:sub>" : "new Sub()";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };

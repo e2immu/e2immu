@@ -111,7 +111,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     variables(true),
-                    causesOfDelay, Map.of());
+                    causesOfDelay, Map.of(), false);
         }
         return new MethodCall(identifier,
                 objectIsImplicit,
@@ -260,20 +260,48 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
+        MethodInfo concreteMethod;
+        if (methodInfo.isAbstract()) {
+            EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            Expression expression = objProbe.value();
+            // situation A
+            if (expression.isDone()) {
+                MethodInfo concrete = expression.returnType().typeInfo.findMethodImplementing(methodInfo);
+                concreteMethod = concrete == null ? methodInfo : concrete;
+            } else if (expression.concreteImplementationForthcoming()) {
+                // situation B
+                builder.compose(objProbe);
+                MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
+
+                // we have to evaluate them, with default settings, to make sure the variables in the expressions get created
+                for (Expression parameterExpression : parameterExpressions) {
+                    EvaluationResult er = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+                    builder.compose(er);
+                }
+                return delayedMethod(builder, methodAnalysis, expression.causesOfDelay(), CausesOfDelay.EMPTY);
+            } else {
+                concreteMethod = methodInfo;
+            }
+            // default: C
+        } else {
+            concreteMethod = methodInfo;
+        }
+
+        boolean breakCallCycleDelay = concreteMethod.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        boolean recursiveCall = recursiveCall(concreteMethod, context.evaluationContext());
 
         // is the method modifying, do we need to wait?
-        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(concreteMethod);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
         DV modified = recursiveCall || breakCallCycleDelay ? DV.FALSE_DV : modifiedMethod;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
-        DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
+        DV notNullForward = notNullRequirementOnScope(concreteMethod,
+                forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
 
         ImmutableData immutableData = recursiveCall || breakCallCycleDelay ? NOT_EVENTUAL :
-                computeContextImmutable(context);
+                computeContextImmutable(context, concreteMethod);
 
         // modification on a type expression -> make sure that this gets modified too!
         if (object instanceof TypeExpression) {
@@ -307,12 +335,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 context, forwardEvaluationInfo,
-                methodInfo, recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
+                concreteMethod, recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
         // precondition
-        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, methodInfo, objectValue,
+        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod, objectValue,
                 parameterValues);
         builder.addPrecondition(precondition);
 
@@ -326,7 +354,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.link(v, v2, combined);
         }));
 
-        linksBetweenParameters(builder, context);
+        linksBetweenParameters(builder, context, concreteMethod);
 
         // increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
@@ -341,13 +369,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed() || modified.isDelayed() || objectResult.causesOfDelay().isDelayed()) {
             CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                     .merge(objectResult.causesOfDelay());
-            return delayedMethod(builder, causes, modified);
+            return delayedMethod(builder, methodAnalysis, causes, modified);
         }
 
         // companion methods
         Expression modifiedInstance;
         if (modified.valueIsTrue()) {
-            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context, methodInfo,
+            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context, concreteMethod,
                     methodAnalysis, object, objectValue, parameterValues, variables(true));
             if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
@@ -361,8 +389,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         Expression result;
-        if (!methodInfo.isVoid()) {
-            MethodInspection methodInspection = methodInfo.methodInspection.get();
+        if (!concreteMethod.isVoid()) {
+            MethodInspection methodInspection = concreteMethod.methodInspection.get();
 
             EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
@@ -377,15 +405,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         builder.setExpression(result);
 
-        checkCommonErrors(builder, context, objectValue);
+        checkCommonErrors(builder, context, concreteMethod, objectValue);
         if (objectValue.isDelayed() || modifiedInstance != null && modifiedInstance.isDelayed()) {
             CausesOfDelay causes = modifiedInstance != null
                     ? objectValue.causesOfDelay().merge(modifiedInstance.causesOfDelay())
                     : objectValue.causesOfDelay();
-            return delayedMethod(builder, causes, modified);
+            return delayedMethod(builder, methodAnalysis, causes, modified);
         }
         return builder.build();
     }
+
+    /* we have to probe the object first, to see if there is a value
+       A. if there is a value, and the value offers a concrete implementation, we replace methodInfo by that
+       concrete implementation.
+       B. if there is no value, and the delay indicates that a concrete implementation may be forthcoming,
+       we delay
+       C otherwise (no value, no concrete implementation forthcoming) we continue with the abstract method.
+       */
 
     public static boolean recursiveCall(MethodInfo methodInfo, EvaluationContext evaluationContext) {
         MethodAnalyser currentMethod = evaluationContext.getCurrentMethod();
@@ -411,7 +447,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     CausesOfDelay initialTime = DelayFactory.createDelay(methodAnalysis.location(Stage.INITIAL),
                             CauseOfDelay.Cause.INITIAL_TIME);
                     CausesOfDelay causes = modified.causesOfDelay().merge(initialTime);
-                    return delayedMethod(builder, causes, modified);
+                    return delayedMethod(builder, methodAnalysis, causes, modified);
                 } else {
                     if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
                         increment = false;
@@ -433,11 +469,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     /*
     not computed, only contracted!
      */
-    public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationResult context) {
+    public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationResult context, MethodInfo concreteMethod) {
         // key is dependent on values, but only if all of them are variable expressions
-        Map<Integer, Map<Integer, DV>> crossLinks = methodInfo.crossLinks(context.getAnalyserContext());
+        Map<Integer, Map<Integer, DV>> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
         if (crossLinks != null) {
-            MethodInspection methodInspection = methodInfo.methodInspection.get();
+            MethodInspection methodInspection = concreteMethod.methodInspection.get();
             crossLinks.forEach((source, v) -> v.forEach((target, level) -> {
                 IsVariableExpression vSource = parameterExpressions.get(source).asInstanceOf(IsVariableExpression.class);
                 if (vSource != null) {
@@ -510,13 +546,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     IMPORTANT!! keep in sync with very similar method in EvaluateMethodCall
     */
     private EvaluationResult delayedMethod(EvaluationResult.Builder builder,
+                                           MethodAnalysis methodAnalysis,
                                            CausesOfDelay causesOfDelay,
                                            DV modified) {
         assert causesOfDelay.isDelayed();
         // NOTE: we do not convert the linked variables to blanket delay! this is not necessary and holds back Context Modified
         Map<Variable, DV> cnnMap = builder.cnnMap();
-        builder.setExpression(DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                variables(true), causesOfDelay, cnnMap));
+        DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
+                variables(true), causesOfDelay, cnnMap,
+                methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
+        builder.setExpression(delay);
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
             // IMPORTANT: we change the value of the object variable, not the variable the object may be
@@ -544,8 +583,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static final ImmutableData NOT_EVENTUAL = new ImmutableData(MultiLevel.NOT_INVOLVED_DV, MultiLevel.NOT_INVOLVED_DV);
 
     // delays travel to EXTERNAL_IMMUTABLE via variableOccursInEventuallyImmutableContext
-    private ImmutableData computeContextImmutable(EvaluationResult evaluationContext) {
-        DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
+    private ImmutableData computeContextImmutable(EvaluationResult evaluationContext, MethodInfo concreteMethod) {
+        DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(concreteMethod.typeInfo)
                 .getProperty(Property.IMMUTABLE);
         if (formalTypeImmutable.isDelayed()) {
             return new ImmutableData(formalTypeImmutable.causesOfDelay(), formalTypeImmutable.causesOfDelay());
@@ -554,7 +593,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (effective != MultiLevel.Effective.EVENTUAL) {
             return NOT_EVENTUAL;
         }
-        MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
+        MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod).getEventual();
         if (eventual.causesOfDelay().isDelayed()) {
             return new ImmutableData(eventual.causesOfDelay(), eventual.causesOfDelay());
         }
@@ -595,16 +634,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         AtomicReference<Expression> newState = new AtomicReference<>(state);
-        Set<CompanionMethodName> companionMethodNames = methodInfo.methodInspection.get().getCompanionMethods().keySet();
-        if (companionMethodNames.isEmpty()) {
+        // NOTE: because of the code that selects concrete implementations, we must go up in hierarchy, to collect all companions
+        Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
+        if (cMap.isEmpty()) {
             // modifying method, without instructions on how to change the state... we simply clear it!
             newState.set(TRUE);
         } else {
-            companionMethodNames.stream()
-                    .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
+            cMap.keySet().stream()
+                    .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
                     .sorted()
-                    .forEach(companionMethodName -> companionMethod(context, methodInfo, methodAnalysis,
-                            parameterValues, newState, companionMethodName));
+                    .forEach(cmn -> companionMethod(context, methodInfo, methodAnalysis, parameterValues, newState,
+                            cmn, cMap.get(cmn)));
 
             if (containsEmptyExpression(newState.get())) {
                 newState.set(TRUE);
@@ -643,8 +683,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
-                            variables,
-                            causesOfDelay, Map.of());
+                            variables, causesOfDelay, Map.of(), false);
                 }
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
@@ -669,8 +708,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                         MethodAnalysis methodAnalysis,
                                         List<Expression> parameterValues,
                                         AtomicReference<Expression> newState,
-                                        CompanionMethodName companionMethodName) {
-        CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
+                                        CompanionMethodName companionMethodName,
+                                        CompanionAnalysis companionAnalysis) {
+        assert companionAnalysis != null;
         MethodInfo aspectMethod;
         if (companionMethodName.aspect() != null) {
             aspectMethod = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
@@ -786,15 +826,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return companionValueTranslationResult.value();
     }
 
-    private DV notNullRequirementOnScope(DV notNullRequirement) {
-        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
+    private static DV notNullRequirementOnScope(MethodInfo concreteMethod, DV notNullRequirement) {
+        if (concreteMethod.typeInfo.typeInspection.get().isFunctionalInterface()
+                && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
-    private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationResult context, Expression objectValue) {
-        if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+    private void checkCommonErrors(EvaluationResult.Builder builder,
+                                   EvaluationResult context,
+                                   MethodInfo concreteMethod,
+                                   Expression objectValue) {
+        if (concreteMethod.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
                     context.getPrimitives().stringTypeInfo()) {
@@ -806,14 +850,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue instanceof InlinedMethod ico) {
             method = ico.methodInfo();
         } else {
-            method = methodInfo;
+            method = concreteMethod;
         }
 
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(method);
         DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
         if (modified.valueIsTrue() && context.evaluationContext().cannotBeModified(objectValue).valueIsTrue()) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
-                    "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
+                    "Method: " + concreteMethod.distinguishingName() + ", Type: " + objectValue.returnType());
         }
     }
 

@@ -293,7 +293,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
                         methodInfo.returnType(),
                         List.of(),
-                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of());
+                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of(), false);
                 singleReturnValue.setVariable(de);
             }
         }

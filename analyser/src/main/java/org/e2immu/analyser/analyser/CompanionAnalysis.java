@@ -15,11 +15,15 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
 public interface CompanionAnalysis {
+
+    @NotNull
+    MethodInfo getCompanion();
 
     @NotNull
     AnnotationParameters getAnnotationType();

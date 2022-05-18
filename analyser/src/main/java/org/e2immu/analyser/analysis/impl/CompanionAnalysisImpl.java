@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.support.SetOnce;
 
 import java.util.List;
@@ -24,21 +25,27 @@ import java.util.Map;
 import java.util.Objects;
 
 public class CompanionAnalysisImpl implements CompanionAnalysis {
-
+    private final MethodInfo companion; // for debugging
     private final Expression value;
     private final AnnotationParameters annotationType;
     private final Expression preAspectVariableValue;
     private final List<Expression> parameterValues;
 
-    private CompanionAnalysisImpl(AnnotationParameters annotationType,
+    private CompanionAnalysisImpl(MethodInfo companion,
+                                  AnnotationParameters annotationType,
                                   Expression value,
                                   Expression preAspectVariableValue,
                                   List<Expression> parameterValues) {
-        Objects.requireNonNull(value);
-        this.value = value;
+        this.companion = Objects.requireNonNull(companion);
+        this.value = Objects.requireNonNull(value);
         this.annotationType = annotationType;
         this.preAspectVariableValue = preAspectVariableValue;
         this.parameterValues = parameterValues;
+    }
+
+    @Override
+    public MethodInfo getCompanion() {
+        return companion;
     }
 
     @Override
@@ -61,19 +68,20 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
     }
 
     public static class Builder implements CompanionAnalysis {
-
+        private final MethodInfo companion;
         private final AnnotationParameters annotationType;
         public final SetOnce<Expression> value = new SetOnce<>();
         public final SetOnce<Map<String, Expression>> remapParameters = new SetOnce<>();
         public final SetOnce<Expression> preAspectVariableValue = new SetOnce<>();
         public final SetOnce<List<Expression>> parameterValues = new SetOnce<>();
 
-        public Builder(AnnotationParameters annotationType) {
+        public Builder(AnnotationParameters annotationType, MethodInfo companion) {
             this.annotationType = annotationType;
+            this.companion = Objects.requireNonNull(companion);
         }
 
         public CompanionAnalysis build() {
-            return new CompanionAnalysisImpl(annotationType, value.get(), getPreAspectVariableValue(),
+            return new CompanionAnalysisImpl(companion, annotationType, value.get(), getPreAspectVariableValue(),
                     List.copyOf(parameterValues.getOrDefault(List.of())));
         }
 
@@ -95,6 +103,11 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         @Override
         public Expression getPreAspectVariableValue() {
             return preAspectVariableValue.getOrDefaultNull();
+        }
+
+        @Override
+        public MethodInfo getCompanion() {
+            return companion;
         }
     }
 }

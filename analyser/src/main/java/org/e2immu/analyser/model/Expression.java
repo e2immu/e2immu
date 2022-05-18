@@ -263,4 +263,6 @@ public interface Expression extends Element, Comparable<Expression> {
     default DV hardCodedPropertyOrNull(Property property) {
         return null;
     }
+
+    default boolean concreteImplementationForthcoming() { return false; }
 }

@@ -102,7 +102,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String value = d.iteration() <= 1
                                 ? "<simplification>?this:<m:addProgress>"
-                                : "other instanceof NotDelayed?this:this.addProgress(other.isProgress())";
+                                : "other instanceof NotDelayed?this:null";
                         assertEquals(value, d.currentValue().toString());
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
                         // however, the previous linking is taken into account, and only the linking to "other"

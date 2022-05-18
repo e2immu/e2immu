@@ -399,7 +399,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if (merged.isDelayed()) {
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
                     List.of(), // given that we'll return an expanded variable
-                    merged, Map.of());
+                    merged, Map.of(), false);
         }
         Identifier inline;
         // non-modifying: make sure it remains the same one

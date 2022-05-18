@@ -47,6 +47,7 @@ public class DependentVariables_2 {
             System.arraycopy(xs, 0, this.xs, 0, xs.length);
         }
 
+        @Dependent // because X is not transparent
         public X getX(int index) {
             return xs[index];
         }

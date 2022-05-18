@@ -208,7 +208,7 @@ public class TestLinkingExpression {
                 List.of(ve, vi, vj));
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context);
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo);
         // v links @Independent1 to i and j
         assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());

@@ -498,9 +498,23 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 assertEquals("set.size()", d.evaluationResult().value().toString());
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals(1L, d.statementAnalysis().messageStream().count());
+                }
+                if ("3".equals(d.statementId())) {
+                    assertEquals(1L, d.statementAnalysis().messageStream().count());
+                }
+                if ("4".equals(d.statementId())) {
+                    assertEquals(1L, d.statementAnalysis().messageStream().count());
+                }
+            }
+        };
         testClass("BasicCompanionMethods_10", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

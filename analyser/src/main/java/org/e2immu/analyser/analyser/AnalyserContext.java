@@ -141,6 +141,16 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return methodAnalyser.getMethodAnalysis();
     }
 
+    default MethodAnalysis getMethodAnalysisNullWhenAbsent(MethodInfo methodInfo) {
+        MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
+        if (methodAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getMethodAnalysisNullWhenAbsent(methodInfo);
+            return methodInfo.methodAnalysis.getOrDefaultNull();
+        }
+        return methodAnalyser.getMethodAnalysis();
+    }
+
     default FieldInspection getFieldInspection(FieldInfo fieldInfo) {
         return fieldInfo.fieldInspection.get();
     }

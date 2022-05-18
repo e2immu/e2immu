@@ -246,7 +246,7 @@ public class Lambda extends BaseExpression implements Expression {
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
                 result = DelayedExpression.forMethod(identifier, methodInfo, implementation,
-                        variables(true), causes, Map.of());
+                        variables(true), causes, Map.of(), true);
             }
         } else {
             // the lambda
@@ -271,7 +271,8 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result;
         result = DelayedExpression.forMethod(identifier, methodInfo, implementation,
                 variables(true),
-                DelayFactory.createDelay(evaluationContext.getCurrentType(), CauseOfDelay.Cause.TYPE_ANALYSIS), Map.of());
+                DelayFactory.createDelay(evaluationContext.getCurrentType(), CauseOfDelay.Cause.TYPE_ANALYSIS), Map.of(),
+                true);
         return result;
     }
 

@@ -325,12 +325,21 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("applyMethod".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
                     assertEquals("/*inline method*//*inline apply*/a*a+a*b+a*-i+b*-i", e.toString());
                     assertTrue(e instanceof InlinedMethod);
+                } else {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
                 }
             }
             if ("direct".equals(d.methodInfo().name)) {
@@ -338,10 +347,22 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertEquals("/*inline direct*/a*a+a*b+a*-i+b*-i", e.toString());
                     assertTrue(e instanceof InlinedMethod);
+                } else {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
+                }
+            }
+            if ("applyMethod".equals(d.methodInfo().name)) {
+                Expression e = d.methodAnalysis().getSingleReturnValue();
+                if (d.iteration() > 0) {
+                    assertEquals("/*inline applyMethod*/2*i*i+2*i*-i", e.toString());
+                    assertTrue(e instanceof InlinedMethod);
+                } else {
+                    assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
                 }
             }
         };
         testClass("Lambda_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
