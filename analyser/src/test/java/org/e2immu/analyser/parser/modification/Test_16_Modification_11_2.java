@@ -127,8 +127,8 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String causesOfDelay = switch (d.iteration()) {
                         case 0 -> "initial:this.s2@Method_example1_0-C";
-                        case 1 -> "cm:return getSet@Method_getSet_0-E;cm:this.set@Method_getSet_0-E;cm:this@Method_getSet_0-E;cm@Parameter_setC;cm@Parameter_string;initial:this.s2@Method_example1_0-C;initial:this.set@Method_getSet_0-C;mom@Parameter_setC";
-                        case 2 -> "cm:return getSet@Method_getSet_0-E;cm:this.set@Method_getSet_0-E;cm:this@Method_getSet_0-E;ext_not_null@Field_set;initial:this.s2@Method_example1_0-C";
+                        case 1 -> "cm@Parameter_setC;cm@Parameter_string;initial:this.s2@Method_example1_0-C;initial:this.set@Method_getSet_0-C;mom@Parameter_setC";
+                        case 2 -> "ext_not_null@Field_set;initial:this.s2@Method_example1_0-C";
                         default -> "";
                     };
                     assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());
@@ -209,11 +209,11 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
         };
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                      //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

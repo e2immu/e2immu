@@ -504,7 +504,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -519,8 +519,8 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
         testClass("Precondition_7", 0, 0,
                 new DebugConfiguration.Builder()
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

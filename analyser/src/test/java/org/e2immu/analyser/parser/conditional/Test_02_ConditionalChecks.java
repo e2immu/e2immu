@@ -334,7 +334,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:o:container@Class_ConditionalChecks_4>/*(ConditionalChecks_4)*/";
-                            case 1, 2 -> "<vp:o:cm:conditionalChecks.i@Method_method5_3-E;cm:conditionalChecks@Method_method5_3-E;cm:o@Method_method5_3-E;cm:return method5@Method_method5_3-E;cm:this.i@Method_method5_3-E;cm:this@Method_method5_3-E;cm@Parameter_o;initial:this.i@Method_method5_3-C>/*(ConditionalChecks_4)*/";
+                            case 1, 2, 3, 4 -> "<vp:o:cm@Parameter_o;initial:this.i@Method_method5_3-C>/*(ConditionalChecks_4)*/";
+                            case 5 -> "<vp:o:cm@Parameter_o>/*(ConditionalChecks_4)*/";
                             default -> "o/*(ConditionalChecks_4)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -353,17 +354,19 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                            case 1, 2 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                            case 1, 2, 3, 4, 5 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                             default -> RETURN_VALUE;
                         };
                         assertEquals(expectValue, d.currentValue().toString());
-                        mustSeeIteration(d, 2);
+                        mustSeeIteration(d, 6);
                     }
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
+
             if ("method5".equals(d.methodInfo().name)) {
                 // the escape mechanism does NOT kick in!
                 if ("0".equals(d.statementId())) {
@@ -384,7 +387,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 mustSeeIteration(d, 2);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
         };
@@ -416,11 +419,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
                         case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                        case 1, 2 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                        case 1, 2, 3, 4, 5 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                         default -> RETURN_VALUE;
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 5, d.evaluationResult().causesOfDelay().isDelayed());
 
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
@@ -439,11 +442,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         testClass("ConditionalChecks_4", 0, 0, new DebugConfiguration.Builder()
-        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

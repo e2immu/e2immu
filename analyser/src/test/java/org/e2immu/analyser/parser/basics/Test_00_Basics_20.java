@@ -130,7 +130,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         String lvs = d.iteration() <= 1 ? "i:-1" : "i:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
