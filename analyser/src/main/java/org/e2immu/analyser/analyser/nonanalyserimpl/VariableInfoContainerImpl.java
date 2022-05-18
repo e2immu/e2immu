@@ -505,18 +505,18 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues) {
-        copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, this);
+    public boolean copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues) {
+        return copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, this);
     }
 
     @Override
-    public void copyNonContextFromPreviousOrEvalToMergeOfOther(GroupPropertyValues groupPropertyValues,
-                                                               VariableInfoContainer vicRenamed) {
+    public boolean copyNonContextFromPreviousOrEvalToMergeOfOther(GroupPropertyValues groupPropertyValues,
+                                                                  VariableInfoContainer vicRenamed) {
         assert vicRenamed.hasMerge();
         VariableInfo eval = best(Stage.EVALUATION);
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = ((VariableInfoContainerImpl) vicRenamed).merge.get();
-        mergeImpl.setValue(eval.getValue());
+        AtomicBoolean progress = new AtomicBoolean(mergeImpl.setValue(eval.getValue()));
 
         eval.propertyStream()
                 .forEach(e -> {
@@ -528,20 +528,23 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     } else {
                         assert vp.propertyType != Property.PropertyType.VALUE
                                 || eval.getValue().isDelayed() || eval.getValue().isNotYetAssigned() || value.isDone();
-                        mergeImpl.setProperty(vp, value);
+                        if (mergeImpl.setProperty(vp, value)) progress.set(true);
                     }
                 });
+        return progress.get();
     }
 
     @Override
-    public void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues) {
+    public boolean copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues) {
         assert hasMerge();
 
         VariableInfo eval = best(Stage.EVALUATION);
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
-        mergeImpl.setValue(eval.getValue());
-        mergeImpl.setLinkedVariables(eval.getLinkedVariables());
+        AtomicBoolean progress = new AtomicBoolean(mergeImpl.setValue(eval.getValue()));
+        if (mergeImpl.setLinkedVariables(eval.getLinkedVariables())) {
+            progress.set(true);
+        }
 
         eval.propertyStream()
                 .forEach(e -> {
@@ -552,12 +555,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     } else {
                         assert vp.propertyType != Property.PropertyType.VALUE
                                 || eval.getValue().isDelayed() || value.isDone();
-                        mergeImpl.setProperty(vp, value);
+                        if (mergeImpl.setProperty(vp, value)) {
+                            progress.set(true);
+                        }
                     }
                 });
         for (Property property : GroupPropertyValues.PROPERTIES) {
             groupPropertyValues.setIfKeyAbsent(property, v, property.valueWhenAbsent());
         }
+        return progress.get();
     }
 
     void setMerge(VariableInfoImpl vii) {

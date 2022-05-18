@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
@@ -1178,6 +1179,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
         CausesOfDelay delay = CausesOfDelay.EMPTY;
+        boolean progress = false;
+
         for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
             Variable variable = current.variable();
@@ -1228,9 +1231,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Merge merge = new Merge(evaluationContext, destination);
 
                     // the main merge operation
-                    CausesOfDelay mergeDelay = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
+                    ProgressAndDelay pad = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
                             localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
-                    delay = delay.merge(mergeDelay);
+                    delay = delay.merge(pad.causes());
+                    progress |= pad.progress();
 
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .map(lv -> lv.translate(translationMap))
@@ -1253,7 +1257,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else if (destination.hasMerge()) {
                 assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                 // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                destination.copyFromEvalIntoMerge(groupPropertyValues);
+                progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
                 linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
             } else {
                 throw new UnsupportedOperationException("Have not yet encountered this situation");
@@ -1268,7 +1272,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         });
 
         AnalysisStatus mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay);
+                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay)
+                .addProgress(progress);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
                 addToStateAfterMerge.translate(evaluationContext.getAnalyserContext(), translationMap);
@@ -1374,7 +1379,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        computeLinkedVariablesCm.writeLinkedVariables(computeLinkedVariables, touched, prepareMerge.toRemove);
+        boolean progress = computeLinkedVariablesCm.writeLinkedVariables(computeLinkedVariables, touched,
+                prepareMerge.toRemove);
 
         for (Variable variable : touched) {
             if (!linkedVariablesMap.containsKey(variable)) {
@@ -1384,9 +1390,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (renamed != null) {
                     // copy from vic into the renamed variable
                     VariableInfoContainer vicRenamed = variables.get(renamed.fullyQualifiedName());
-                    vic.copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, vicRenamed);
+                    progress |= vic.copyNonContextFromPreviousOrEvalToMergeOfOther(groupPropertyValues, vicRenamed);
                 } else {
-                    vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+                    progress |= vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
                 }
             }
         }
@@ -1398,6 +1404,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (VariableInfoContainer vic : ignoredNotTouched) {
             CausesOfDelay delays = vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
             externalDelaysOnIgnoredVariables = externalDelaysOnIgnoredVariables.merge(delays);
+            // IMPORTANT: no progress associated with this---is that correct?
         }
 
         if (translationMap.hasVariableTranslations()) {
@@ -1411,8 +1418,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (Map.Entry<Variable, DV> e : setCnnVariables.entrySet()) {
             cnnMap.merge(e.getKey(), e.getValue(), DV::max);
         }
-        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
-                cnnMap);
+        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL, cnnMap);
 
         AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
@@ -1433,7 +1439,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
         return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
-                .combine(AnalysisStatus.of(externalDelaysOnIgnoredVariables));
+                .combine(AnalysisStatus.of(externalDelaysOnIgnoredVariables))
+                .addProgress(progress);
     }
 
     private void ensureDestination(Variable renamed,

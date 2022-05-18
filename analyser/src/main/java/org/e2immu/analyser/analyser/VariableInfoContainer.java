@@ -76,7 +76,7 @@ public interface VariableInfoContainer {
     boolean setLinkedVariables(LinkedVariables linkedVariables, Stage level);
 
     @Modified
-    void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
+    boolean copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
     boolean isPrevious();
 
@@ -165,11 +165,13 @@ public interface VariableInfoContainer {
     @Modified
     AnalysisStatus copyFromPreviousOrInitialIntoEvaluation();
 
+    // return progress
     @Modified
-    void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);
+    boolean copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);
 
+    // return progress
     @Modified
-    void copyNonContextFromPreviousOrEvalToMergeOfOther(GroupPropertyValues groupPropertyValues, VariableInfoContainer vicRenamed);
+    boolean copyNonContextFromPreviousOrEvalToMergeOfOther(GroupPropertyValues groupPropertyValues, VariableInfoContainer vicRenamed);
 
     @Modified
     CausesOfDelay copyAllFromPreviousOrEvalIntoMergeIfMergeExists();

@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FlowData;
@@ -86,12 +87,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             cmFromStatement = cm;
             statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPrecondition()));
         }
-        statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cmFromStatement);
+        boolean progress = statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cmFromStatement);
 
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
-        return statusFromStatement;
+        return statusFromStatement.addProgress(progress);
     }
 
     private CausesOfDelay ensureEmptyPrecondition() {
@@ -116,9 +117,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (translated != null) {
             LOGGER.debug("Escape with precondition {}", translated);
             Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-            statementAnalysis.stateData().setPrecondition(pc);
+            boolean progress = statementAnalysis.stateData().setPrecondition(pc);
             CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
-            return AnalysisStatus.of(preconditionIsDelayed);
+            return ProgressWrapper.of(progress, preconditionIsDelayed);
         }
         if (escapeAlwaysExecuted.isDelayed()) {
             return AnalysisStatus.of(delays.causesOfDelay());
@@ -157,12 +158,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             // the null/not null of parameters has been handled during the main evaluation
             pc = Precondition.empty(statementAnalysis.primitives());
         }
-        statementAnalysis.stateData().setPrecondition(pc);
+        boolean progress = statementAnalysis.stateData().setPrecondition(pc);
 
         AnalysisStatus analysisStatus;
         if (expressionIsDelayed || pc.isDelayed()) {
             CausesOfDelay merge = statementAnalysis.stateData().valueOfExpressionIsDelayed().merge(pc.causesOfDelay());
-            analysisStatus = AnalysisStatus.of(merge);
+            analysisStatus = ProgressWrapper.of(progress, merge);
         } else {
             analysisStatus = DONE;
         }
@@ -340,8 +341,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             analysisStatus = analysisStatus.combine(result.analysisStatus());
         }
 
+        boolean progress;
         if (keepCurrentLocalConditionManager) {
-            statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
+            progress = statementAnalysis.stateData().setLocalConditionManagerForNextStatement(sharedState.localConditionManager());
+        } else {
+            progress = false;
         }
         // has to be executed AFTER merging
         statementAnalysis.potentiallyRaiseNullPointerWarningENN();
@@ -349,10 +353,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         // whatever we do, we do not return DONE in the first iteration inside a loop, because of delayed values lingering
         // because we need to decide whether variables defined outside the loop are assigned in it.
         if (statementAnalysis.inLoop() && sharedState.evaluationContext().getIteration() == 0 && analysisStatus == DONE) {
-            return AnalysisStatus.of(DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(Stage.MERGE),
-                    CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT)));
+            CausesOfDelay delay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(Stage.MERGE),
+                    CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+            return ProgressWrapper.of(true, delay);
         }
-        return analysisStatus;
+        return analysisStatus.addProgress(progress);
     }
 
     /*

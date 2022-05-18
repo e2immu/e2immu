@@ -318,7 +318,7 @@ public class ComputeLinkedVariables {
                 causes = causes.merge(summary.causesOfDelay());
             }
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
-             //   summary = causes.merge(summary.causesOfDelay()).merge(cluster.delays);// FIXME
+                summary = causes.merge(summary.causesOfDelay()).merge(cluster.delays);// FIXME
             }
             for (Variable variable : cluster.variables) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());

@@ -164,11 +164,13 @@ public class StateData {
     and the method level data's combined precondition.
      */
 
-    public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
+    public boolean setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         try {
             if (localConditionManager.isSafeDelayed()) {
                 conditionManagerForNextStatement.setVariable(localConditionManager);
-            } else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
+                return false;
+            }
+            return setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
         } catch (IllegalStateException ise) {
             LOGGER.error("Error setting new localConditionManager {}, already have {}", localConditionManager,
                     conditionManagerForNextStatement.get());

@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
@@ -48,12 +49,12 @@ public record Merge(EvaluationContext evaluationContext,
         }
     }
 
-    public CausesOfDelay merge(Expression stateOfDestination,
-                               ExpressionAndProperties overwriteValue,
-                               boolean atLeastOneBlockExecuted,
-                               List<ConditionAndVariableInfo> mergeSources,
-                               GroupPropertyValues groupPropertyValues,
-                               TranslationMap translationMap) {
+    public ProgressAndDelay merge(Expression stateOfDestination,
+                                  ExpressionAndProperties overwriteValue,
+                                  boolean atLeastOneBlockExecuted,
+                                  List<ConditionAndVariableInfo> mergeSources,
+                                  GroupPropertyValues groupPropertyValues,
+                                  TranslationMap translationMap) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         VariableInfoContainerImpl vici = (VariableInfoContainerImpl) vic;
@@ -68,7 +69,7 @@ public record Merge(EvaluationContext evaluationContext,
                     overwriteValue, atLeastOneBlockExecuted,
                     mergeSources, groupPropertyValues, translationMap);
             vici.setMerge(mhr.vii());
-            return mhr.delays();
+            return new ProgressAndDelay(true, mhr.progressAndDelay().causes());
         }
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
         return mergeHelper.mergeIntoMe(stateOfDestination,

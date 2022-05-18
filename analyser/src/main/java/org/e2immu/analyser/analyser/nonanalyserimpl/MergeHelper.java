@@ -18,6 +18,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.*;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,7 +62,7 @@ and potentially already in the value as well. In the former, the state of 1 shou
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeHelper.class);
 
-    record MergeHelperResult(VariableInfoImpl vii, CausesOfDelay delays) {
+    record MergeHelperResult(VariableInfoImpl vii, ProgressAndDelay progressAndDelay) {
     }
 
     /*
@@ -77,9 +79,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
-        CausesOfDelay causes = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, overwriteValue,
+        ProgressAndDelay pad = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, overwriteValue,
                 atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
-        return new MergeHelperResult(newObject, causes);
+        return new MergeHelperResult(newObject, pad);
     }
 
     /**
@@ -88,13 +90,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      * In case of a rename operation, "me" is a new VII object; the mergeSources still have VI's
      * that point to the old variable.
      */
-    public CausesOfDelay mergeIntoMe(Expression stateOfDestination,
-                                     Merge.ExpressionAndProperties overwriteValue,
-                                     boolean atLeastOneBlockExecuted,
-                                     VariableInfoImpl previous,
-                                     List<ConditionAndVariableInfo> mergeSources,
-                                     GroupPropertyValues groupPropertyValues,
-                                     TranslationMap translationMap) {
+    public ProgressAndDelay mergeIntoMe(Expression stateOfDestination,
+                                        Merge.ExpressionAndProperties overwriteValue,
+                                        boolean atLeastOneBlockExecuted,
+                                        VariableInfoImpl previous,
+                                        List<ConditionAndVariableInfo> mergeSources,
+                                        GroupPropertyValues groupPropertyValues,
+                                        TranslationMap translationMap) {
         assert atLeastOneBlockExecuted || previous != vi;
 
         Merge.ExpressionAndProperties mergeValue;
@@ -116,25 +118,30 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         Expression mergedValue = vi.variable() instanceof FieldReference
                 ? DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(), beforeMoveDWE)
                 : beforeMoveDWE;
+        AtomicBoolean progress = new AtomicBoolean();
         try {
-            vi.setValue(mergedValue); // copy the delayed value
+            progress.set(vi.setValue(mergedValue)); // copy the delayed value
         } catch (IllegalStateException ise) {
             LOGGER.error("Problem overwriting!");
             throw ise;
         }
         if (!mergedValue.isDelayed() && !mergedValue.isNotYetAssigned()) {
-            mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
+            mergeValue.valueProperties().stream().forEach(e -> {
+                boolean b = vi.setProperty(e.getKey(), e.getValue());
+                if (b) progress.set(true);
+            });
             assert allValuePropertiesSet();
         }
 
         // TODO maybe we should do these together with the value as well?
-        mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+        boolean b = mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+        if (b) progress.set(true);
 
         if (evaluationContext.isMyself(vi.variable())) {
-            vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
-            vi.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+            if (vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV)) progress.set(true);
+            if (vi.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV)) progress.set(true);
         }
-        return mergedValue.causesOfDelay();
+        return new ProgressAndDelay(progress.get(), mergedValue.causesOfDelay());
     }
 
     private boolean allValuePropertiesSet() {
@@ -178,10 +185,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      * Compute and set or update in this object, the properties resulting from merging previous and merge sources.
      * If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
-    void mergeNonValueProperties(boolean existingValuesWillBeOverwritten,
-                                 VariableInfo previous,
-                                 List<ConditionAndVariableInfo> mergeSources,
-                                 GroupPropertyValues groupPropertyValues) {
+    boolean mergeNonValueProperties(boolean existingValuesWillBeOverwritten,
+                                    VariableInfo previous,
+                                    List<ConditionAndVariableInfo> mergeSources,
+                                    GroupPropertyValues groupPropertyValues) {
         List<VariableInfo> list = mergeSources.stream()
                 .map(ConditionAndVariableInfo::variableInfo)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
@@ -189,6 +196,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             assert previous != null;
             list.add(previous);
         }
+        boolean progress = false;
         for (VariableInfo.MergeOp mergeOp : MERGE_WITHOUT_VALUE_PROPERTIES) {
             DV commonValue = mergeOp.initial();
 
@@ -203,10 +211,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                 groupPropertyValues.set(mergeOp.property(), previous.variable(), commonValue);
             } else {
                 if (commonValue.isDone()) {
-                    vi.setProperty(mergeOp.property(), commonValue);
+                    progress |= vi.setProperty(mergeOp.property(), commonValue);
                 }
             }
         }
+        return progress;
     }
 
     private Merge.ExpressionAndProperties addValueProperties(Expression expression) {
