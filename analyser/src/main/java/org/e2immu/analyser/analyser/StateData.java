@@ -124,21 +124,26 @@ public class StateData {
     Expression false: impossible (not allowed to call the method?)
     delayed expression: there will be info, but it is delayed
     any other: real PC
+
+    return progress
      */
-    public void setPrecondition(Precondition pc) {
+    public boolean setPrecondition(Precondition pc) {
         assert pc != null;
         if (pc.expression().isDelayed()) {
             try {
                 precondition.setVariable(pc);
+                return false;
             } catch (IllegalStateException ise) {
                 LOGGER.error("Try to set delayed {}, already have {}", pc, precondition.get());
                 throw ise;
             }
-        } else setFinalAllowEquals(precondition, pc);
+        }
+        return setFinalAllowEquals(precondition, pc);
     }
 
-    public void setPreconditionAllowEquals(Precondition expression) {
-        setFinalAllowEquals(precondition, expression);
+    // return progress
+    public boolean setPreconditionAllowEquals(Precondition expression) {
+        return setFinalAllowEquals(precondition, expression);
     }
 
     public Precondition getPrecondition() {
@@ -184,25 +189,32 @@ public class StateData {
         return preconditionFromMethodCalls.get();
     }
 
-    public void setPreconditionFromMethodCalls(Precondition precondition) {
+    // return progress
+    public boolean setPreconditionFromMethodCalls(Precondition precondition) {
         try {
             if (precondition.isDelayed()) {
                 preconditionFromMethodCalls.setVariable(precondition);
-            } else if (preconditionFromMethodCalls.isVariable() || !precondition.equals(preconditionFromMethodCalls.get())) {
+                return false;
+            }
+            boolean variable = preconditionFromMethodCalls.isVariable();
+            if (variable || !precondition.equals(preconditionFromMethodCalls.get())) {
                 preconditionFromMethodCalls.setFinal(precondition);
             }
+            return variable;
         } catch (IllegalStateException ise) {
             LOGGER.error("Value was {}, new value {}", preconditionFromMethodCalls.get(), precondition);
             throw ise;
         }
     }
 
-    public void setValueOfExpression(Expression value) {
+    public boolean setValueOfExpression(Expression value) {
         if (value.isDelayed()) {
             assert valueOfExpression.isVariable()
                     : "Already have final value '" + valueOfExpression.get() + "'; trying to write delayed value '" + value + "'";
             valueOfExpression.setVariable(value);
-        } else setFinalAllowEquals(valueOfExpression, value);
+            return false;
+        }
+        return setFinalAllowEquals(valueOfExpression, value);
     }
 
     // mainly for testing
@@ -213,13 +225,13 @@ public class StateData {
     // states of interrupt
 
     // we're adding the break and return states
-    public void addStateOfInterrupt(String index, Expression state) {
+    public boolean addStateOfInterrupt(String index, Expression state) {
         EventuallyFinal<Expression> cd = statesOfInterrupts.getOrCreate(index, i -> new EventuallyFinal<>());
         if (state.isDelayed()) {
             cd.setVariable(state);
-        } else {
-            setFinalAllowEquals(cd, state);
+            return false;
         }
+        return setFinalAllowEquals(cd, state);
     }
 
     public void addStateOfReturnInLoop(String index, Expression state) {

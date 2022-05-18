@@ -77,7 +77,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
     is only computed in the first step of the analyser components.
      */
-    private record SharedState(EvaluationContext evaluationContext) {
+    private record SharedState(boolean allowBreakDelay, EvaluationContext evaluationContext) {
     }
 
 
@@ -131,10 +131,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
-            AnalyserResult result = firstStatementAnalyser
-                    .analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
-                            ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
-                            sharedState.evaluationContext.getClosure());
+            ForwardAnalysisInfo fwd = ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives(),
+                    sharedState.allowBreakDelay);
+            AnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState
+                    .evaluationContext.getIteration(), fwd, sharedState.evaluationContext.getClosure());
             analyserResultBuilder.add(result, false, false);
             this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
             return result.analysisStatus();
@@ -196,15 +196,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     // called from primary type analyser
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(Analyser.SharedState sharedState) {
         assert !isUnreachable();
+        int iteration = sharedState.iteration();
+
         LOGGER.info("Analysing method {} it {}", methodInfo.fullyQualifiedName(), iteration);
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
-        SharedState sharedState = new SharedState(evaluationContext);
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
+        SharedState state = new SharedState(sharedState.allowBreakDelay(), evaluationContext);
 
         try {
-            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            AnalysisStatus analysisStatus = analyserComponents.run(state);
             if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
                 methodAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);

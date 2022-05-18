@@ -208,7 +208,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    public AnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo, EvaluationContext closure) {
+    public AnalyserResult analyseAllStatementsInBlock(int iteration,
+                                                      ForwardAnalysisInfo forwardAnalysisInfo,
+                                                      EvaluationContext closure) {
         try {
             // skip all the statements that are already in the DONE state...
             PreviousAndFirst previousAndFirst = goToFirstStatementToAnalyse();
@@ -227,7 +229,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
-                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure, delaySubsequentStatementBecauseOfECI);
+                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure,
+                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.allowBreakDelay());
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
@@ -460,7 +463,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
-                    iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI);
+                    iteration, localConditionManager, closure, delaySubsequentStatementBecauseOfECI,
+                    forwardAnalysisInfo.allowBreakDelay());
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
                     EvaluationResult.from(evaluationContext),
                     analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
@@ -562,8 +566,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         builder.setAnalysisStatus(NOT_YET_EXECUTED);
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
-            AnalyserResult analyserResult = analyser
-                    .analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
+            Analyser.SharedState shared = new Analyser.SharedState(sharedState.evaluationContext().getIteration(),
+                    sharedState.evaluationContext().allowBreakDelay(), sharedState.evaluationContext());
+            AnalyserResult analyserResult = analyser.analyse(shared);
             builder.add(analyserResult);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
         }
@@ -680,7 +685,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, this,
                 analyserContext, localAnalysers, 0,
                 ConditionManager.initialConditionManager(statementAnalysis.primitives()), null,
-                false);
+                false, false);
     }
 
     @Override

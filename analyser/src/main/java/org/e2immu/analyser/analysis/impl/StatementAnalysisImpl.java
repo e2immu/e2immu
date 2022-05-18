@@ -867,11 +867,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return messages.stream();
     }
 
-    public void ensureLocalVariableAssignedInThisLoop(String name) {
+    // return progress
+    public boolean ensureLocalVariableAssignedInThisLoop(String name) {
         if (!(localVariablesAssignedInThisLoop.isFrozen()) &&
                 !localVariablesAssignedInThisLoop.contains(name)) {
             localVariablesAssignedInThisLoop.add(name);
+            return true;
         }
+        return false;
     }
 
     // single point for adding to the variables map, but at the moment, not enforced
@@ -1401,36 +1404,36 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             groupPropertyValues.translate(translationMap);
         }
 
-        CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
+        AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
         Map<Variable, DV> cnnMap = groupPropertyValues.getMap(CONTEXT_NOT_NULL);
         for (Map.Entry<Variable, DV> e : setCnnVariables.entrySet()) {
             cnnMap.merge(e.getKey(), e.getValue(), DV::max);
         }
-        CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
+        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 cnnMap);
 
-        CausesOfDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
+        AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
+        AnalysisStatus extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
                 groupPropertyValues.getMap(EXTERNAL_CONTAINER));
 
-        CausesOfDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
+        AnalysisStatus extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
 
-        CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
+        AnalysisStatus cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
-        CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
+        AnalysisStatus cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
-        CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
+        AnalysisStatus cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        return AnalysisStatus.of(delay.merge(ennStatus).merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
-                .merge(extContStatus).merge(cImmStatus).merge(cContStatus).merge(extIgnModStatus)
-                .merge(externalDelaysOnIgnoredVariables));
+        return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
+                .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
+                .combine(AnalysisStatus.of(externalDelaysOnIgnoredVariables));
     }
 
     private void ensureDestination(Variable renamed,
@@ -2239,29 +2242,29 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Assert statements need special attention, because they may create additional precondition clauses
      */
     @Override
-    public CausesOfDelay applyPrecondition(Precondition precondition,
-                                           EvaluationContext evaluationContext,
-                                           ConditionManager localConditionManager) {
+    public boolean applyPrecondition(Precondition precondition,
+                                     EvaluationContext evaluationContext,
+                                     ConditionManager localConditionManager) {
         stateData.setPreconditionFromMethodCalls(Objects.requireNonNullElseGet(precondition,
                 () -> Precondition.empty(evaluationContext.getPrimitives())));
         if (statement instanceof AssertStatement || statement instanceof ThrowStatement) {
             // we'll not be writing the final precondition here, that's done in SASubBlocks
             // because there we write the local condition manager for the next statement
-            return CausesOfDelay.EMPTY;
+            return false;
         }
-
+        boolean progress;
         Location location = location(EVALUATION);
         if (precondition != null) {
             Expression preconditionExpression = precondition.expression();
             if (preconditionExpression.isBoolValueFalse()) {
                 ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
-                stateData.setPreconditionAllowEquals(Precondition.empty(primitives()));
+                progress = stateData.setPreconditionAllowEquals(Precondition.empty(primitives()));
             } else {
                 if (preconditionExpression.isDelayed()) {
                     LOGGER.debug("Apply of {}, {} is delayed because of precondition",
                             index(), methodAnalysis.getMethodInfo().fullyQualifiedName);
                     stateData.setPrecondition(new Precondition(preconditionExpression, precondition.causes()));
-                    return preconditionExpression.causesOfDelay();
+                    return false;
                 }
                 Expression translated;
                 if (precondition.singleCompanionCauseOrNull() != null) {
@@ -2271,21 +2274,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 }
                 if (translated != null) {
                     Precondition pc = new Precondition(translated, precondition.causes());
-                    stateData.setPrecondition(pc);
+                    progress = stateData.setPrecondition(pc);
                     EvaluationResult context = EvaluationResult.from(evaluationContext);
                     Expression result = localConditionManager.evaluate(context, translated, false);
                     if (result.isBoolValueFalse()) {
                         ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
                     }
                 } else {
-                    stateData.setPrecondition(Precondition.empty(primitives()));
+                    progress = stateData.setPrecondition(Precondition.empty(primitives()));
                 }
             }
         } else if (!stateData().preconditionIsFinal()) {
             // undo a potential previous delay, so that no precondition is seen to be present
-            stateData.setPrecondition(Precondition.noInformationYet(location, primitives));
+            progress = stateData.setPrecondition(Precondition.noInformationYet(location, primitives));
+        } else {
+            progress = false;
         }
-        return CausesOfDelay.EMPTY;
+        return progress;
     }
 
     /*
@@ -2363,21 +2368,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
 
     @Override
-    public void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
+    public boolean addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
         StatementAnalysis sa = this;
         String loopIndex = null;
+        boolean progress = false;
         while (sa != null) {
-            if (!sa.variableIsSet(fullyQualifiedName)) return;
+            if (!sa.variableIsSet(fullyQualifiedName)) return false;
             VariableInfoContainer localVic = sa.getVariable(fullyQualifiedName);
-            if (!(localVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) return;
+            if (!(localVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) return false;
             if (sa.statement() instanceof LoopStatement) {
-                ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
+                progress = ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
                 loopIndex = sa.index();
                 break; // we've found the loop
             }
             sa = sa.parent();
         }
         assert loopIndex != null;
+        return progress;
     }
 
     /*

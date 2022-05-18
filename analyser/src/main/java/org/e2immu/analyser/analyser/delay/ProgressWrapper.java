@@ -23,6 +23,12 @@ public record ProgressWrapper(CausesOfDelay causesOfDelay) implements AnalysisSt
         assert causesOfDelay.isDelayed();
     }
 
+    /* You cannot report progress when DONE!! progress is only when delayed. */
+    public static AnalysisStatus of(boolean progress, CausesOfDelay causes) {
+        if (causes.isDone()) return DONE;
+        return progress ? new ProgressWrapper(causes) : causes;
+    }
+
     @Override
     public int pos() {
         return 0;
@@ -51,8 +57,7 @@ public record ProgressWrapper(CausesOfDelay causesOfDelay) implements AnalysisSt
     @Override
     public AnalysisStatus combine(AnalysisStatus other) {
         if (other instanceof NotDelayed) return this;
-        assert other.isDelayed();
-        return new ProgressWrapper(causesOfDelay.merge(other.causesOfDelay()));
+        return of(true, causesOfDelay.merge(other.causesOfDelay()));
     }
 
     @Override

@@ -74,15 +74,19 @@ public class Properties implements Comparable<Properties> {
         return this;
     }
 
-    public void put(Property property, DV dv) {
+    // return progress
+    public boolean put(Property property, DV dv) {
         Objects.requireNonNull(dv);
         Objects.requireNonNull(property);
         DV inMap = map.get(property);
         if (inMap == null || inMap.isDelayed()) {
             map.put(property, dv);
-        } else if (!inMap.equals(dv)) {
+            return dv.isDone();
+        }
+        if (!inMap.equals(dv)) {
             throw new IllegalArgumentException("Changing value of " + property + " from " + inMap + " to " + dv);
         }
+        return false;
     }
 
     public Properties combine(Properties other) {

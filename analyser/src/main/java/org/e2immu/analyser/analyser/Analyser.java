@@ -27,6 +27,9 @@ import java.util.stream.Stream;
 
 public interface Analyser extends Comparable<Analyser> {
 
+    record SharedState(int iteration, boolean allowBreakDelay, EvaluationContext closure) {
+    }
+
     enum AnalyserIdentification {
         TYPE(null), // type does not have notNull
         FIELD(Property.EXTERNAL_NOT_NULL),
@@ -51,7 +54,7 @@ public interface Analyser extends Comparable<Analyser> {
      */
     @Modified
     @NotNull
-    AnalyserResult analyse(int iteration, EvaluationContext closure);
+    AnalyserResult analyse(SharedState sharedState);
 
     @Modified
     void write();

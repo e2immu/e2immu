@@ -432,6 +432,8 @@ public interface EvaluationContext {
         return Properties.EMPTY;
     }
 
+    default boolean allowBreakDelay() { return false; }
+
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).
     It is important to return the expression, because it may have a dynamic immutability higher than its formal value,

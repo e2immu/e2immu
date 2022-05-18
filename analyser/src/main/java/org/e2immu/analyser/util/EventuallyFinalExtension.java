@@ -32,8 +32,9 @@ public class EventuallyFinalExtension {
         throw new UnsupportedOperationException();
     }
 
-    public static <T> void setFinalAllowEquals(EventuallyFinal<T> eventuallyFinal, T t) {
-        if (eventuallyFinal.isVariable() || !Objects.equals(eventuallyFinal.get(), t)) {
+    public static <T> boolean setFinalAllowEquals(EventuallyFinal<T> eventuallyFinal, T t) {
+        boolean isVariable = eventuallyFinal.isVariable();
+        if (isVariable || !Objects.equals(eventuallyFinal.get(), t)) {
             try {
                 eventuallyFinal.setFinal(t);
             } catch (RuntimeException re) {
@@ -44,5 +45,6 @@ public class EventuallyFinalExtension {
                 throw re;
             }
         }
+        return isVariable;
     }
 }

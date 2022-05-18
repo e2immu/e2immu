@@ -15,14 +15,12 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.CausesOfDelay;
 
 /*
     delays on ENN are dealt with later than normal delays on values
      */
-record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
+record ApplyStatusAndEnnStatus(AnalysisStatus status, AnalysisStatus ennStatus) {
     public AnalysisStatus combinedStatus() {
-        CausesOfDelay delay = status.merge(ennStatus);
-        return AnalysisStatus.of(delay);
+        return status.combine(ennStatus);
     }
 }

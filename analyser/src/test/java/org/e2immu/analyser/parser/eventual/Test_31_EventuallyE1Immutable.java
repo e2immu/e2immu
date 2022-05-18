@@ -286,7 +286,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             if ("setNegativeJ".equals(d.methodInfo().name)) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
-                    case 1 -> "Precondition[expression=<f*:j><=0&&j<=0, causes=[escape, escape]]";
+                    case 1 -> "Precondition[expression=j<=0&&<f*:j><=0, causes=[escape, escape]]";
                     default -> "Precondition[expression=j<=0, causes=[escape, escape]]";
                 };
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());

@@ -27,23 +27,26 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Map;
 import java.util.Objects;
 
-public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManager,
+public record ForwardAnalysisInfo(DV execution,
+                                  ConditionManager conditionManager,
                                   LocalVariableCreation catchVariable,
                                   Map<String, Expression> switchIdToLabels,
                                   Expression switchSelector,
-                                  CausesOfDelay switchSelectorIsDelayed) {
+                                  CausesOfDelay switchSelectorIsDelayed,
+                                  boolean allowBreakDelay) {
 
     public ForwardAnalysisInfo {
         Objects.requireNonNull(switchSelectorIsDelayed);
     }
 
-    public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
+    public static ForwardAnalysisInfo startOfMethod(Primitives primitives, boolean allowBreakDelay) {
         return new ForwardAnalysisInfo(FlowData.ALWAYS, ConditionManager.initialConditionManager(primitives),
-                null, null, null, CausesOfDelay.EMPTY);
+                null, null, null, CausesOfDelay.EMPTY, allowBreakDelay);
     }
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {
-        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector, switchSelectorIsDelayed);
+        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
+                switchSelectorIsDelayed, allowBreakDelay);
     }
 
     /*

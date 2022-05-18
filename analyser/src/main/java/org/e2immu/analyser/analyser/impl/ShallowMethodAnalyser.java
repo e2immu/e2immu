@@ -71,9 +71,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(SharedState sharedState) {
         try {
-            return internalAnalyse(iteration);
+            return internalAnalyse(sharedState.iteration());
         } catch (RuntimeException re) {
             LOGGER.error("Error while analysing method {}", methodInfo.fullyQualifiedName);
             throw re;

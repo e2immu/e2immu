@@ -64,22 +64,22 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
     @Test
     public void test19() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        // FIXME where has mom@Parameter_setC gone to?
-                        String delayed = switch (d.iteration()) {
-                            case 0 -> "cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
-                            default -> "initial@Field_set";
+                        String link = switch (d.iteration()) {
+                            case 0 -> "c:-1,this:-1";
+                            case 1, 2 -> "c:-1";
+                            default -> "c:2";
                         };
-                        assertDv(d, delayed, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED); // FIXME 5
+                        assertEquals(link, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("c".equals(d.variableName())) {
@@ -87,47 +87,48 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
-                            case 1 -> "cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
-                            default -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial@Field_set;mom@Parameter_setC";
+                            case 1 -> "cm:return size@Method_size_0-E;cm:this.set@Method_size_0-E;cm:this@Method_size_0-E;cm@Parameter_setC;initial:this.set@Method_size_0-C;mom@Parameter_setC";
+                            case 2 -> "[12 delays]";
+                            case 3 -> "[13 delays]";
+                            default -> "xxx";
                         };
-                        assertCurrentValue(d, BIG, expectedDelay, expectValue); // FIXME 7
-                        String link = d.iteration() <= BIG ? "c:-1,this.s2:-1" : "c:0,this.s2:2"; // FIXME 5
+                        assertCurrentValue(d, 4, expectedDelay, expectValue);
+
+                        String link = switch (d.iteration()) {
+                            case 0 -> "this.s2:-1,this:-1";
+                            case 1, 2 -> "this.s2:-1";
+                            default -> "this.s2:2";
+                        };
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
 
-                        String cmDelay = switch (d.iteration()) {
-                            case 0 -> "cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
-                            default -> "initial@Field_set";
-                        };
-                        assertDv(d, cmDelay, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
+                    assertEquals("set", fr.fieldInfo.name);
                     if ("2".equals(d.statementId())) {
-                        assertEquals("set", fr.fieldInfo.name);
-                        String expectValue = d.iteration() <= BIG ? "<f:set>" : "nullable instance type Set<String>"; // FIXME 6
+                        String expectValue = d.iteration() <= 3 ? "<f:set>" : "nullable instance type Set<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String delay = switch (d.iteration()) {
-                            case 0 -> "cm@Parameter_c;cm@Parameter_d;initial:this.s2@Method_example1_0-C;initial@Field_set";
-                            case 1 -> "cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial@Field_set;mom@Parameter_setC";
-                            default -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial@Field_set;mom@Parameter_setC";
-                            //    default -> "cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial@Field_set;mom@Parameter_setC";
+                        String links = switch (d.iteration()) {
+                            case 0 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1,this:-1";
+                            case 1, 2, 3 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1";
+                            default -> "c:2,this.s2:2";
                         };
-                        assertEquals(delay, d.currentValue().causesOfDelay().toString());
-
-                        String links = "c.set:-1,c:-1,this.s2:-1";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = switch (d.iteration()) {
-                            case 0 -> "cm@Parameter_c;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
-                            default -> "initial@Field_set";
-                            // FIXME issue: mom@Parameter_setC not included!!
-                            // default -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial@Field_set";
-                        };
-                        assertDv(d, cmDelay, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // FIXME 5
+                        String cmDelay = d.iteration() == 0
+                                ? "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:return example1@Method_example1_2-E;cm:this.s2@Method_example1_2-E;cm:this@Method_example1_2-E;initial:this.s2@Method_example1_0-C"
+                                : "[12 delays]";
+                        assertDv(d, cmDelay, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("localD".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -136,14 +137,14 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:set>" : "nullable instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), BIG, DV.TRUE_DV, Property.MODIFIED_VARIABLE); // FIXME 6
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 String expectAssigned = d.iteration() == 0 ? "[]" : "[set]";
@@ -155,7 +156,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("size".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -167,14 +168,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertEquals("setC:0", d.fieldAnalysis().getLinkedVariables().toString());
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
-                String delay = switch (d.iteration()) {
-                    case 0 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E";
-                    case 1 -> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:localD.set@Method_example1_2-E;cm:localD@Method_example1_2-E;cm:this.s2@Method_example1_2-E;initial@Field_set";
-                    case 2 -> "mom@Parameter_setC";
-                    case 3-> "cm:c.set@Method_example1_2-E;cm:c@Method_example1_2-E;cm:this.s2@Method_example1_2-E;mom@Parameter_setC";
-                    default -> "xxx";
-                };
-                assertDv(d, delay, 4, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD); // FIXME 5
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -182,16 +176,16 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
 
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE); // FIXME 5
-                assertDv(d, 5, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 
         testClass("Modification_19", 0, 2, new DebugConfiguration.Builder()
-                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

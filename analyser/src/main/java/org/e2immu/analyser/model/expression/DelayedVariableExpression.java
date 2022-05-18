@@ -29,9 +29,9 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
@@ -276,9 +276,17 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
+        if (descendIntoFieldReferences) {
+            if (variable instanceof FieldReference fr) {
+                return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
+            }
+            if (variable instanceof DependentVariable dv) {
+                return Stream.concat(Stream.concat(Stream.of(variable),
+                                dv.arrayExpression().variables(true).stream()),
+                        dv.indexExpression().variables(true).stream()).toList();
+            }
         }
+
         return List.of(variable);
     }
 

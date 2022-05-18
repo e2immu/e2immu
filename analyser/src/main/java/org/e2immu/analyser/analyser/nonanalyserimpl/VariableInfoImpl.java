@@ -220,16 +220,17 @@ public class VariableInfoImpl implements VariableInfo {
 
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
-    void setProperty(Property property, DV value) {
+    // return progress
+    boolean setProperty(Property property, DV value) {
         try {
-            properties.put(property, value);
+           return  properties.put(property, value);
         } catch (RuntimeException e) {
             LOGGER.error("Error setting property {} of {} to {}", property, variable.fullyQualifiedName(), value);
             throw e;
         }
     }
 
-    void setLinkedVariables(LinkedVariables linkedVariables) {
+    boolean setLinkedVariables(LinkedVariables linkedVariables) {
         assert linkedVariables != null;
         assert this.linkedVariables.get() != null : "Please initialize LVs";
         assert !linkedVariables.contains(variable) : "Self references are not allowed";
@@ -238,7 +239,7 @@ public class VariableInfoImpl implements VariableInfo {
                 throw new IllegalStateException("Not allowed to change LVs anymore: old: " + this.linkedVariables.get()
                         + ", new " + linkedVariables);
             }
-            return;
+            return false;
         }
         if (this.linkedVariables.get() != LinkedVariables.NOT_YET_SET) {
             // the first time, there are no restrictions on statically assigned values
@@ -252,12 +253,14 @@ public class VariableInfoImpl implements VariableInfo {
         }
         if (linkedVariables.isDelayed()) {
             this.linkedVariables.setVariable(linkedVariables);
-        } else {
-            this.linkedVariables.setFinal(linkedVariables);
+            return false;
         }
+        this.linkedVariables.setFinal(linkedVariables);
+        return true;
     }
 
-    void setValue(Expression value) {
+    // return progress
+    boolean setValue(Expression value) {
         VariableExpression ve;
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
@@ -267,21 +270,21 @@ public class VariableInfoImpl implements VariableInfo {
         if (value.isDelayed() || variable instanceof FieldReference fr && fr.scope.isDelayed()) {
             try {
                 this.value.setVariable(value);
+                return false;
             } catch (IllegalStateException ise) {
                 LOGGER.error("Variable {}: value '{}' is delayed, but final value '{}' already present",
                         variable.fullyQualifiedName(), value, this.value.get());
                 throw ise;
             }
-        } else {
-            assert !(value.isInstanceOf(DelayedExpression.class)); // simple safeguard, others are more difficult to check
-            assert !(value.isInstanceOf(DelayedVariableExpression.class));
-            assert !(value.isInstanceOf(DelayedWrappedExpression.class));
-            try {
-                setFinalAllowEquals(this.value, value);
-            } catch (IllegalStateException ise) {
-                LOGGER.error("Variable {}: overwriting final value", variable.fullyQualifiedName());
-                throw ise;
-            }
+        }
+        assert !(value.isInstanceOf(DelayedExpression.class)); // simple safeguard, others are more difficult to check
+        assert !(value.isInstanceOf(DelayedVariableExpression.class));
+        assert !(value.isInstanceOf(DelayedWrappedExpression.class));
+        try {
+            return setFinalAllowEquals(this.value, value);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Variable {}: overwriting final value", variable.fullyQualifiedName());
+            throw ise;
         }
     }
 

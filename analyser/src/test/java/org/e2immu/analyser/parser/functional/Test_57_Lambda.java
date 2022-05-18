@@ -176,7 +176,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     } else fail("? " + fr.scope);
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
+                    String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
                     assertEquals(expected, d.currentValue().toString());
                     String linked = d.iteration() == 0
                             ? "new X(x.k).k:0,scope-36:37:-1,x.k:-1,x:-1"
@@ -250,7 +250,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     } else fail("Scope " + fr.scope);
                 }
                 if ("l".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
+                    String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
                     assertEquals(expected, d.currentValue().toString());
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -269,7 +269,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:new X(x.k).k>" : "x.k";
+                        String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0

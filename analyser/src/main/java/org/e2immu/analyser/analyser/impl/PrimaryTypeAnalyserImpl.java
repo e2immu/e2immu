@@ -66,9 +66,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
     private final FlipSwitch unreachable = new FlipSwitch();
-
-    record SharedState(int iteration, EvaluationContext closure) {
-    }
+    private final Set<Integer> iterationsWithAllowBreakDelay = new HashSet<>();
 
     public PrimaryTypeAnalyserImpl(AnalyserContext parent,
                                    TypeCycle typeCycle,
@@ -103,7 +101,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
-                AnalyserResult analyserResult = analyser.analyse(sharedState.iteration, sharedState.closure);
+                AnalyserResult analyserResult = analyser.analyse(sharedState);
                 analyserResultBuilder.add(analyserResult, true, true);
                 if (analyser instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
@@ -166,16 +164,19 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
         if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
         int iteration = 0;
+        boolean allowBreakDelay = false;
         AnalysisStatus analysisStatus;
 
         int MAX_ITERATION = 20;
         do {
-            LOGGER.debug("\n******\nStarting iteration {} of the primary type analyser on {}\n******",
-                    iteration, name);
+            LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}\n******",
+                    iteration, allowBreakDelay, name);
+            if (allowBreakDelay) iterationsWithAllowBreakDelay.add(iteration);
 
             analyserComponents.resetDelayHistogram();
 
-            AnalyserResult analyserResult = analyse(iteration, null);
+            SharedState sharedState = new SharedState(iteration, allowBreakDelay, null);
+            AnalyserResult analyserResult = analyse(sharedState);
             iteration++;
 
             dumpDelayHistogram(analyserComponents.getDelayHistogram());
@@ -194,11 +195,19 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             }
             analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
-        } while (analysisStatus.isProgress() && iteration < MAX_ITERATION);
+            if (allowBreakDelay && !analysisStatus.isProgress()) {
+                // no point in continuing
+                break;
+            }
+            allowBreakDelay = !analysisStatus.isProgress();
+        } while (iteration < MAX_ITERATION);
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Delays: {}", analysisStatus.causesOfDelay());
+            }
+            if (analysisStatus.isProgress() && iteration == MAX_ITERATION) {
+                throw new NoProgressException("Looks like there is an infinite PROGRESS going on, pt " + name);
             }
             throw new NoProgressException("No progress after " + iteration + " iterations for primary type(s) " + name);
         }
@@ -237,9 +246,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(SharedState sharedState) {
         patternMatcher.startNewIteration();
-        AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration, closure));
+        AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
         LOGGER.info("At end of PTA analysis, done {} of {} components",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
                 analyserComponents.getStatuses().size());
@@ -360,5 +369,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public boolean isUnreachable() {
         return unreachable.isSet();
+    }
+
+    public Set<Integer> getIterationsWithAllowBreakDelay() {
+        return Set.copyOf(iterationsWithAllowBreakDelay);
     }
 }

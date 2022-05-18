@@ -56,6 +56,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
     private final boolean preventAbsoluteStateComputation;
     private final boolean delayStatementBecauseOfECI;
+    private final boolean allowBreakDelay;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -66,9 +67,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         ConditionManager conditionManager,
                         EvaluationContext closure,
                         // NOTE: ECI = explicit constructor invocation
-                        boolean delayStatementBecauseOfECI) {
+                        boolean delayStatementBecauseOfECI,
+                        boolean allowBreakDelay) {
         this(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager, closure, false, true, false, delayStatementBecauseOfECI);
+                iteration, conditionManager, closure, false, true,
+                false, delayStatementBecauseOfECI, allowBreakDelay);
     }
 
     // base is used to distinguish between the context created in SAEvaluationOfMain, as compared to temporary ones
@@ -85,7 +88,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean disableEvaluationOfMethodCallsUsingCompanionMethods,
                         boolean base,
                         boolean preventAbsoluteStateComputation,
-                        boolean delayStatementBecauseOfECI) {
+                        boolean delayStatementBecauseOfECI,
+                        boolean allowBreakDelay) {
         super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
@@ -95,6 +99,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
         this.delayStatementBecauseOfECI = delayStatementBecauseOfECI;
+        this.allowBreakDelay = allowBreakDelay;
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
@@ -123,6 +128,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
+    public boolean allowBreakDelay() {
+        return allowBreakDelay;
+    }
+
+    @Override
     public boolean delayStatementBecauseOfECI() {
         return delayStatementBecauseOfECI;
     }
@@ -136,7 +146,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public EvaluationContext copyToPreventAbsoluteStateComputation() {
         return new SAEvaluationContext(statementAnalysis, myMethodAnalyser, statementAnalyser, analyserContext,
                 localAnalysers, iteration, conditionManager, closure, disableEvaluationOfMethodCallsUsingCompanionMethods,
-                false, true, delayStatementBecauseOfECI);
+                false, true, delayStatementBecauseOfECI, allowBreakDelay);
     }
 
     private MethodInfo methodInfo() {
@@ -202,7 +212,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
                 closure,
                 disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI);
+                delayStatementBecauseOfECI, allowBreakDelay);
     }
 
     @Override
@@ -212,7 +222,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods, false,
                 preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI);
+                delayStatementBecauseOfECI, allowBreakDelay);
     }
 
     public EvaluationContext childState(Expression state) {
@@ -220,7 +230,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration, conditionManager.addState(state), closure,
                 false, false, preventAbsoluteStateComputation,
-                delayStatementBecauseOfECI);
+                delayStatementBecauseOfECI, allowBreakDelay);
     }
 
         /*
@@ -354,8 +364,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (ignoreStateInConditionManager) {
             EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
                     myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                    iteration, conditionManager.withoutState(getPrimitives()), closure, false, false,
-                    preventAbsoluteStateComputation, delayStatementBecauseOfECI);
+                    iteration, conditionManager.withoutState(getPrimitives()), closure,
+                    false, false,
+                    preventAbsoluteStateComputation, delayStatementBecauseOfECI, allowBreakDelay);
             EvaluationResult context = EvaluationResult.from(customEc);
             return value.getProperty(context, NOT_NULL_EXPRESSION, true);
         }
@@ -851,10 +862,25 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         Expression evaluatedIndexValue = indexValue != null
                 ? conditionManager.evaluateNonBoolean(EvaluationResult.from(this), indexValue) : null;
         if (variable instanceof FieldReference fieldReference) {
-            if (evaluatedScopeValue != null && evaluatedScopeValue.isDelayed()) {
-                int initialStatementTime = getInitialStatementTime();
-                CausesOfDelay causesOfDelay = evaluatedScopeValue.causesOfDelay();
-                return DelayedVariableExpression.forField(fieldReference, initialStatementTime, causesOfDelay);
+            if (evaluatedScopeValue != null) {
+                if (evaluatedScopeValue.isDelayed()) {
+                    // we cannot have a shortcut without having a delay for that shortcut
+                    // see e.g. Modification_20, where c.set === s2
+                    // we prepare the shortCutDelay in ConstructorCall.evaluate()
+                    Expression shortCutDelay = evaluatedScopeValue instanceof DelayedExpression de
+                            ? de.shortCutDelay(fieldReference.fieldInfo) : null;
+                    if (shortCutDelay != null) {
+                        return shortCutDelay;
+                    }
+                    int initialStatementTime = getInitialStatementTime();
+                    CausesOfDelay causesOfDelay = evaluatedScopeValue.causesOfDelay();
+                    return DelayedVariableExpression.forField(fieldReference, initialStatementTime, causesOfDelay);
+                }
+                // given record X(int k){}, we know that new X(3).k === 3
+                Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
+                if (shortCut != null) {
+                    return shortCut;
+                }
             }
             FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
@@ -863,11 +889,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
             } else {
                 suffix = VariableExpression.NO_SUFFIX;
-            }
-            if (evaluatedScopeValue != null) {
-                // given record X(int k){}, we know that new X(3).k === 3
-                Expression shortCut = VariableExpression.tryShortCut(EvaluationResult.from(this), evaluatedScopeValue, fieldReference);
-                if (shortCut != null) return shortCut;
             }
         } else if (variable instanceof DependentVariable dv) {
             CausesOfDelay scopeCauses = evaluatedScopeValue == null ? CausesOfDelay.EMPTY : evaluatedScopeValue.causesOfDelay();

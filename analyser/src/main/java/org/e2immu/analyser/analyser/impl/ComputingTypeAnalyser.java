@@ -186,8 +186,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(SharedState sharedState) {
         assert !isUnreachable();
+        int iteration = sharedState.iteration();
         LOGGER.info("Analysing type {}, it {}, call #{}", typeInfo.fullyQualifiedName, iteration,
                 callCounterForDebugging.incrementAndGet());
         try {

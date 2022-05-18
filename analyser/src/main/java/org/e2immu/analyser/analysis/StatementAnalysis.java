@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.ChangeStatus;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
@@ -205,14 +206,16 @@ public interface StatementAnalysis extends Analysis,
 
     void potentiallyRaiseNullPointerWarningENN();
 
-    CausesOfDelay applyPrecondition(Precondition precondition,
-                                    EvaluationContext evaluationContext,
-                                    ConditionManager localConditionManager);
+    // return progress
+    boolean applyPrecondition(Precondition precondition,
+                                   EvaluationContext evaluationContext,
+                                   ConditionManager localConditionManager);
 
     void ensureVariable(EvaluationContext evaluationContext,
                         Variable variable,
                         EvaluationResult.ChangeData changeData,
                         int newStatementTime);
 
-    void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
+    // return progress
+    boolean addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
 }

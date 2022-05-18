@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -72,9 +73,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
      */
     AnalysisStatus evaluationOfMainExpression(StatementAnalyserSharedState sharedState) {
         try {
-            CausesOfDelay merged = evaluationOfMainExpression0(sharedState);
-            boolean progress = statementAnalysis.latestDelay(merged);
-            return AnalysisStatus.of(merged).addProgress(progress);
+            return evaluationOfMainExpression0(sharedState);
         } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
             throw rte;
@@ -82,7 +81,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
     }
 
-    private CausesOfDelay evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
+    private AnalysisStatus evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate = new SAInitializersAndUpdaters(statementAnalysis)
                 .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
         /*
@@ -141,8 +140,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         // post-process
 
-        AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status().merge(causes));
-        CausesOfDelay ennStatus = applyResult.ennStatus();
+        AnalysisStatus statusPost = applyResult.status().combine(AnalysisStatus.of(causes));
+        AnalysisStatus ennStatus = applyResult.ennStatus();
 
         if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
@@ -158,13 +157,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 LOGGER.debug("Assignment expressions: {}", assignments);
                 EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
                 ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, reResult, false);
-                statusPost = assignmentResult.status().merge(causes);
-                ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
+                statusPost = assignmentResult.status().combine(AnalysisStatus.of(causes));
+                ennStatus = applyResult.ennStatus().combine(assignmentResult.ennStatus());
                 result = reResult;
             } else {
                 // we have to write the precondition from method (there is no precondition in "assignments")
-                statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
-                        sharedState.localConditionManager());
+                boolean progress = statementAnalysis.applyPrecondition(null,
+                        sharedState.evaluationContext(), sharedState.localConditionManager());
+                if (progress && statusPost.isDelayed() && !statusPost.isProgress()) {
+                    statusPost = new ProgressWrapper(statusPost.causesOfDelay());
+                }
             }
         }
         if (ennStatus.isDelayed()) {
@@ -215,56 +217,58 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         statementAnalysis.stateData().setValueOfExpression(value);
 
-        return ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop);
+        return ennStatus.combine(statusPost).combine(AnalysisStatus.of(stateForLoop));
     }
 
-    private CausesOfDelay emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes, Structure structure) {
+    private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes, Structure structure) {
         // try-statement has no main expression, and it may not have initializers; break; continue; ...
+        boolean progress = false;
         if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
-            setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
+            progress = setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
         }
-        statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
-        statementAnalysis.stateData().setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= statementAnalysis.stateData().setPrecondition(Precondition.empty(sharedState.context().getPrimitives()));
+        progress |= statementAnalysis.stateData().setPreconditionFromMethodCalls(Precondition.empty(sharedState.context().getPrimitives()));
 
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterExecutionFromInitialTime();
+            progress = true;
         }
         if (statementAnalysis.statement() instanceof BreakStatement breakStatement) {
             if (statementAnalysis.parent().statement() instanceof SwitchStatementOldStyle) {
-                return causes;
+                return ProgressWrapper.of(progress, causes);
             }
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
             Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), correspondingLoop.steps());
-            correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
-            if (state.isDelayed()) return state.causesOfDelay();
+            progress |= correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
+            if (state.isDelayed()) return ProgressWrapper.of(progress, state.causesOfDelay());
             Expression condition = sharedState.localConditionManager().condition();
             if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-            return apply.apply(sharedState, builder.build(), false).combinedStatus().causesOfDelay();
+            return apply.apply(sharedState, builder.build(), false).combinedStatus();
         } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             // empty parameters: this(); or super(); this code is replicated a bit higher for the situation of parameters
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
                 CausesOfDelay eciDelay = DelayFactory.createDelay(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI);
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier, List.of(), eciDelay));
-                return eciDelay;
+                Expression value = DelayedExpression.forECI(eci.identifier, List.of(), eciDelay);
+                progress |= statementAnalysis.stateData().setValueOfExpression(value);
+                return ProgressWrapper.of(progress, eciDelay);
             }
             if (!assignments.isBooleanConstant()) {
                 EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
                         structure.forwardEvaluationInfo());
                 // FIXME clean up, AnalysisStatus -> Causes
                 AnalysisStatus applyResult = apply.apply(sharedState, result, false).combinedStatus();
-                return applyResult.causesOfDelay().merge(causes);
-            } else {
-                // we have to write the precondition from method (there is no precondition in "assignments")
-                statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
-                        sharedState.localConditionManager());
+                return ProgressWrapper.of(progress, applyResult.causesOfDelay().merge(causes));
             }
+            // we have to write the precondition from method (there is no precondition in "assignments")
+            statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
+                    sharedState.localConditionManager());
         }
-        return causes;
+        return ProgressWrapper.of(progress, causes);
     }
 
     private Expression toEvaluate(List<Expression> expressionsFromInitAndUpdate) {

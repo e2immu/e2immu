@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -36,7 +37,9 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -163,8 +166,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
                 .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
-            return DelayedExpression.forNewObject(identifier, translatedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    variables(true), causesOfDelay);
+            return createDelayedValue(identifier, null, translatedType, causesOfDelay);
         }
         return new ConstructorCall(identifier,
                 constructor,
@@ -405,8 +407,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 instance = this;
             } else {
                 instance = modifiedInstance.isDelayed()
-                        ? DelayedExpression.forNewObject(identifier, parameterizedType,
-                        MultiLevel.EFFECTIVELY_NOT_NULL_DV, variables, modifiedInstance.causesOfDelay())
+                        ? createDelayedValue(identifier, context, modifiedInstance.causesOfDelay())
                         : modifiedInstance;
             }
         } else {
@@ -442,8 +443,79 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public Expression createDelayedValue(Identifier identifier, EvaluationResult context, CausesOfDelay causes) {
+        return createDelayedValue(identifier, context, parameterizedType, causes);
+    }
+
+    private Expression createDelayedValue(Identifier identifier,
+                                          EvaluationResult context,
+                                          ParameterizedType parameterizedType,
+                                          CausesOfDelay causes) {
+        Map<FieldInfo, Expression> shortCutMap;
+        if (context == null || constructor == null || parameterExpressions.isEmpty()) {
+            shortCutMap = null;
+        } else {
+            List<Variable> varsOfAllParameters = parameterExpressions.stream()
+                    .flatMap(e -> e.variables(true).stream())
+                    .toList();
+            if (varsOfAllParameters.isEmpty()) {
+                shortCutMap = null;
+            } else {
+            /*
+            We have an explicit call new X(a, b, c);
+            The parameters a, b, c may be linked to the fields of x, x.f, x.g, ...
+            The shortcut will expand x.f to b when x.f turns out to be FINAL and linked to the parameter b.
+            This map anticipates this, by concocting special delay expressions for the field access operations x.f, x.g...
+            which are intercepted in SAEvaluationContext.makeVariableExpression().
+            Instead of expanding x.f into a DelayedVariableExpression, they'll be expanded into a DelayedExpression
+            containing the relevant variables:
+            1. if we don't know about FINAL, or assignment, all possible variables of all parameters
+            2. if we know about the assignment from field to parameter: only the variables of the relevant parameter
+            for each of the fields.
+            */
+                List<FieldInfo> fields = constructor.typeInfo.typeInspection.get().fields();
+                DV fieldsFinal = fields.stream()
+                        .map(fieldInfo -> context.getAnalyserContext().getFieldAnalysis(fieldInfo).getProperty(Property.FINAL))
+                        .reduce(DV.MIN_INT_DV, DV::min);
+                if (fieldsFinal.isDelayed()) {
+                    // we must be in iteration 0, and the type has not been analysed yet...
+                    String delayName = constructor.typeInfo.simpleName;
+                    shortCutMap = fields.stream().collect(Collectors.toUnmodifiableMap(f -> f, f ->
+                            DelayedExpression.forConstructorCallExpansion(identifier, delayName, f.type,
+                                    varsOfAllParameters, fieldsFinal.causesOfDelay().merge(causes))));
+                } else {
+                    shortCutMap = new HashMap<>();
+                    for (FieldInfo fieldInfo : fields) {
+                        FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fieldInfo);
+                        boolean isFinal = fieldAnalysis.getProperty(Property.FINAL).valueIsTrue();
+                        String delayName = constructor.typeInfo.simpleName + ":" + fieldInfo.name;
+                        if (isFinal) {
+                            CausesOfDelay linked = fieldAnalysis.getLinkedVariables().causesOfDelay();
+                            if (linked.isDone()) {
+                                fieldAnalysis.getLinkedVariables().variables().forEach((v, lv) -> {
+                                    if (v instanceof ParameterInfo pi
+                                            && pi.owner == constructor
+                                            && lv.equals(LinkedVariables.STATICALLY_ASSIGNED_DV)) {
+                                        // the field has been statically assigned to pi
+                                        List<Variable> varsOfThisParameter = parameterExpressions.get(pi.index)
+                                                .variables(true);
+                                        Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,
+                                                fieldInfo.type, varsOfThisParameter, causes);
+                                        shortCutMap.put(fieldInfo, de);
+                                    }
+                                });
+                            } else {
+                                // linking not done yet
+                                CausesOfDelay merged = fieldsFinal.causesOfDelay().merge(causes);
+                                shortCutMap.put(fieldInfo, DelayedExpression.forConstructorCallExpansion(identifier,
+                                        delayName, fieldInfo.type, varsOfAllParameters, merged));
+                            }
+                        } // else: definitely nothing for this field
+                    }
+                }
+            }
+        }
         return DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                variables(true), causes);
+                variables(true), causes, shortCutMap);
     }
 
     public MethodInfo constructor() {

@@ -101,8 +101,8 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
-        AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+    public AnalyserResult analyse(SharedState sharedState) {
+        AnalysisStatus analysisStatus = analyserComponents.run(sharedState.iteration());
         if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
             methodAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
@@ -110,7 +110,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                 .debugConfiguration().afterMethodAnalyserVisitors();
         if (!visitors.isEmpty()) {
             for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
-                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
+                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(sharedState.iteration(),
                         null, methodInfo, methodAnalysis,
                         parameterAnalyses, analyserComponents.getStatusesAsMap(),
                         analyserResultBuilder::getMessageStream));

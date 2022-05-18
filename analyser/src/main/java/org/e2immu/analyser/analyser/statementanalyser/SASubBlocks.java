@@ -243,11 +243,13 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                 switchStatement.startingPointToLabels(sharedState.context(),
                                         executionOfBlock.startOfBlock.getStatementAnalysis()),
                                 statementAnalysis.stateData().valueOfExpression.get(),
-                                statementAnalysis.stateData().valueOfExpression.get().causesOfDelay());
+                                statementAnalysis.stateData().valueOfExpression.get().causesOfDelay(),
+                                evaluationContext.allowBreakDelay());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                null, null, CausesOfDelay.EMPTY);
+                                null, null, CausesOfDelay.EMPTY,
+                                evaluationContext.allowBreakDelay());
                     }
                     AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),

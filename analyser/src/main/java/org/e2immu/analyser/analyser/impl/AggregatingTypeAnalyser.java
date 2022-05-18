@@ -87,8 +87,8 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
-        AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+    public AnalyserResult analyse(SharedState sharedState) {
+        AnalysisStatus analysisStatus = analyserComponents.run(sharedState.iteration());
         if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) typeAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
@@ -96,7 +96,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                 .debugConfiguration().afterTypePropertyComputations();
         if (!visitors.isEmpty()) {
             for (TypeAnalyserVisitor typeAnalyserVisitor : visitors) {
-                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration,
+                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(sharedState.iteration(),
                         analyserContext.getPrimitives(),
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),

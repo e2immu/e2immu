@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
@@ -40,13 +42,15 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     private final CausesOfDelay causesOfDelay;
     private final Properties priorityProperties;
     private final Map<Variable, DV> cnnMap;
+    private final Map<FieldInfo, Expression> shortCutMap;
 
     private DelayedExpression(Identifier identifier,
                               String msg,
                               ParameterizedType parameterizedType,
                               List<Variable> variables,
                               CausesOfDelay causesOfDelay) {
-        this(identifier, msg, parameterizedType, variables, causesOfDelay, Properties.EMPTY, Map.of());
+        this(identifier, msg, parameterizedType, variables, causesOfDelay, Properties.EMPTY, Map.of(),
+                null);
     }
 
     private DelayedExpression(Identifier identifier,
@@ -55,7 +59,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                               List<Variable> variables,
                               CausesOfDelay causesOfDelay,
                               Properties properties,
-                              Map<Variable, DV> cnnMap) {
+                              Map<Variable, DV> cnnMap,
+                              Map<FieldInfo, Expression> shortCutMap) {
         super(identifier);
         this.msg = msg;
         this.parameterizedType = parameterizedType;
@@ -64,6 +69,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         this.priorityProperties = properties;
         this.cnnMap = Objects.requireNonNull(cnnMap);
         this.variables = variables;
+        this.shortCutMap = shortCutMap;
     }
 
     private static String brackets(String msg) {
@@ -78,7 +84,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                               Map<Variable, DV> cnnMap) {
         String msg = brackets("m:" + methodInfo.name);
         return new DelayedExpression(identifier, msg, concreteReturnType, variables, causesOfDelay,
-                Properties.EMPTY, cnnMap);
+                Properties.EMPTY, cnnMap, null);
     }
 
     /*
@@ -104,10 +110,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                           ParameterizedType parameterizedType,
                                           DV notNull,
                                           List<Variable> variables,
-                                          CausesOfDelay causes) {
+                                          CausesOfDelay causes,
+                                          Map<FieldInfo, Expression> shortCutMap) {
         assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
         String msg = brackets("new:" + parameterizedType.printSimple());
-        return new DelayedExpression(identifier, msg, parameterizedType, variables, causes);
+        return new DelayedExpression(identifier, msg, parameterizedType, variables, causes, Properties.EMPTY,
+                Map.of(), shortCutMap);
     }
 
     public static Expression forArrayAccessValue(Identifier identifier,
@@ -180,7 +188,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
         String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
-        return new DelayedExpression(identifier, msg, parameterizedType, variables, causes, priorityProperties, Map.of());
+        return new DelayedExpression(identifier, msg, parameterizedType, variables, causes, priorityProperties,
+                Map.of(), null);
     }
 
     public static Expression forInlinedMethod(Identifier identifier,
@@ -229,6 +238,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                            List<Variable> variables,
                                            CausesOfDelay causes) {
         return new DelayedExpression(identifier, "<oos:" + variableName + ">", parameterizedType, variables, causes);
+    }
+
+    public static Expression forConstructorCallExpansion(Identifier identifier,
+                                                         String typeName,
+                                                         ParameterizedType parameterizedType,
+                                                         List<Variable> variables,
+                                                         CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "<cc-exp:" + typeName + ">", parameterizedType, variables, causes);
     }
 
     /*
@@ -338,5 +355,21 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         return new DelayedExpression(identifier, msg, parameterizedType, variables, this.causesOfDelay.merge(causesOfDelay));
+    }
+
+    // see VariableExpression.tryShortCut, ConstructorCall.evaluate
+    public Expression shortCutDelay(FieldInfo fieldInfo) {
+        if (shortCutMap != null) {
+            return shortCutMap.get(fieldInfo);
+        }
+        return null;
+    }
+
+    public Map<Variable, Expression> shortCutVariables(TypeInfo currentType, Expression scope) {
+        if(shortCutMap == null) return Map.of();
+        return shortCutMap.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey(),
+                                scope, currentType),
+                        Map.Entry::getValue));
     }
 }

@@ -312,6 +312,14 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
+        // FIXME this is a hack, see Modification_20/tryShortCut -- do we want to keep this?
+        if (currentValue instanceof DelayedExpression de) {
+            de.shortCutVariables(context.getCurrentType(), scopeValue).forEach((v, expr) -> {
+                expr.variables(true).forEach(vv -> {
+                    builder.variableOccursInNotNullContext(vv, expr, de.causesOfDelay(), forwardEvaluationInfo);
+                });
+            });
+        }
         builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo);
 
         DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);

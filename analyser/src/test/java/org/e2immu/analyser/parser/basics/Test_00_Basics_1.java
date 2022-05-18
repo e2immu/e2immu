@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.basics;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -143,6 +144,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
+
+                assertDv(d, 1, FALSE_DV, CONTEXT_MODIFIED);
             }
             if (d.variable() instanceof ReturnVariable) {
                 assertEquals(GET_F1_RETURN, d.variableName());
@@ -154,6 +157,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 1, FALSE_DV, CONTEXT_MODIFIED);
             }
         }
     };

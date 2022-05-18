@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Location;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
@@ -233,15 +235,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValue(Expression value,
-                         LinkedVariables linkedVariables,
-                         Properties properties,
-                         Stage stage) {
+    public boolean setValue(Expression value,
+                            LinkedVariables linkedVariables,
+                            Properties properties,
+                            Stage stage) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = getToWrite(stage);
+        AtomicBoolean progress = new AtomicBoolean();
         try {
-            variableInfo.setValue(value);
+            progress.set(variableInfo.setValue(value));
         } catch (IllegalStateException ise) {
             LOGGER.error("Variable {}: try to write value {}, already have {}", variableInfo.variable().fullyQualifiedName(),
                     value, variableInfo.getValue());
@@ -254,11 +257,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (v.isDelayed() && valueIsDone && vp.propertyType == Property.PropertyType.VALUE) {
                 throw new IllegalStateException("Not allowed to even try to set delay on a value property");
             }
-            variableInfo.setProperty(vp, v);
+            if (variableInfo.setProperty(vp, v)) {
+                progress.set(true);
+            }
         });
         if (linkedVariables != null) {
             try {
-                variableInfo.setLinkedVariables(linkedVariables);
+                if (variableInfo.setLinkedVariables(linkedVariables)) progress.set(true);
             } catch (IllegalStateException ise) {
                 LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
                         variableInfo.variable().fullyQualifiedName(),
@@ -266,6 +271,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 throw ise;
             }
         }
+        return progress.get();
     }
 
     @Override
@@ -296,31 +302,32 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
 
     @Override
-    public void setLinkedVariables(LinkedVariables linkedVariables, Stage level) {
+    public boolean setLinkedVariables(LinkedVariables linkedVariables, Stage level) {
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
         assert level != Stage.INITIAL;
         VariableInfoImpl variableInfo = getToWrite(level);
-        variableInfo.setLinkedVariables(linkedVariables);
+        return variableInfo.setLinkedVariables(linkedVariables);
     }
 
+    // return progress
     @Override
-    public void setProperty(Property property,
-                            DV value,
-                            boolean doNotFailWhenTryingToWriteALowerValue,
-                            Stage level) {
+    public boolean setProperty(Property property,
+                               DV value,
+                               boolean doNotFailWhenTryingToWriteALowerValue,
+                               Stage level) {
         // we do not write in some other VIC's merge or evaluation:
-        if (level == Stage.INITIAL && !isRecursivelyInitial()) return;
+        if (level == Stage.INITIAL && !isRecursivelyInitial()) return false;
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);
         if (doNotFailWhenTryingToWriteALowerValue) {
             DV current = variableInfo.getProperty(property, null);
             if (current != null && !current.isDelayed()) {
-                return;
+                return false;
             }
         }
-        variableInfo.setProperty(property, value);
+        return variableInfo.setProperty(property, value);
     }
 
     @Override
@@ -455,19 +462,25 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    public CausesOfDelay copyFromPreviousOrInitialIntoEvaluation() {
+    public AnalysisStatus copyFromPreviousOrInitialIntoEvaluation() {
         assert this.evaluation.isSet();
         VariableInfo previous = getPreviousOrInitial();
+        AtomicBoolean progress = new AtomicBoolean();
         previous.propertyStream()
                 .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                 .forEach(e -> {
                     assert e.getKey().propertyType != Property.PropertyType.VALUE
-                            || previous.getValue().isDelayed() || previous.getValue().isNotYetAssigned() || e.getValue().isDone();
-                    setProperty(e.getKey(), e.getValue(), false, Stage.EVALUATION);
+                            || previous.getValue().isDelayed()
+                            || previous.getValue().isNotYetAssigned()
+                            || e.getValue().isDone();
+                    boolean p = setProperty(e.getKey(), e.getValue(), false,
+                            Stage.EVALUATION);
+                    if (p) progress.set(true);
                 });
         VariableInfoImpl evaluation = this.evaluation.get();
-        evaluation.setValue(previous.getValue());
-        return previous.getValue().causesOfDelay().merge(previous.getLinkedVariables().causesOfDelay());
+        if (evaluation.setValue(previous.getValue())) progress.set(true);
+        CausesOfDelay causes = previous.getValue().causesOfDelay().merge(previous.getLinkedVariables().causesOfDelay());
+        return ProgressWrapper.of(progress.get(), causes);
     }
 
     // when a block changes to Execution.NEVER (see e.g. EvaluateToConstant)

@@ -69,8 +69,11 @@ public interface VariableInfoContainer {
         return subBlock.compareTo(current.getAssignmentIds().getLatestAssignment()) < 0;
     }
 
+    /*
+    return true on progress
+     */
     @Modified
-    void setLinkedVariables(LinkedVariables linkedVariables, Stage level);
+    boolean setLinkedVariables(LinkedVariables linkedVariables, Stage level);
 
     @Modified
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
@@ -124,17 +127,17 @@ public interface VariableInfoContainer {
     @NotNull
     VariableInfo getRecursiveInitialOrNull();
 
-    // writing operations
+    // writing operations; return progress
     @Modified
-    void setValue(Expression value, LinkedVariables linkedVariables, Properties propertiesToSet, Stage stage);
+    boolean setValue(Expression value, LinkedVariables linkedVariables, Properties propertiesToSet, Stage stage);
 
     // a version used to copy from an outer method into a sub-type
     @Modified
     void safeSetValue(Expression value, LinkedVariables linkedVariables, Properties valueProperties, Stage initial);
 
     @Modified
-    default void setProperty(Property property, DV value, Stage level) {
-        setProperty(property, value, false, level);
+    default boolean setProperty(Property property, DV value, Stage level) {
+        return setProperty(property, value, false, level);
     }
 
     /**
@@ -148,7 +151,7 @@ public interface VariableInfoContainer {
      * @param level                                 the level to write
      */
     @Modified
-    void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Stage level);
+    boolean setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Stage level);
 
     /*
     copy from one statement to the next.
@@ -160,7 +163,7 @@ public interface VariableInfoContainer {
     void copy();
 
     @Modified
-    CausesOfDelay copyFromPreviousOrInitialIntoEvaluation();
+    AnalysisStatus copyFromPreviousOrInitialIntoEvaluation();
 
     @Modified
     void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);

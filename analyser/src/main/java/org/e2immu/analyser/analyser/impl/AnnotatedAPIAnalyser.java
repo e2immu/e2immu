@@ -226,7 +226,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         methodAnalysers.forEach((methodInfo, analyser) -> {
             if (analyser instanceof ShallowMethodAnalyser) {
                 try {
-                    analyser.analyse(0, null);
+                    analyser.analyse(new Analyser.SharedState(0, false, null));
                 } catch (RuntimeException runtimeException) {
                     LOGGER.error("Caught exception while shallowly analysing method " + methodInfo.fullyQualifiedName);
                     throw runtimeException;
@@ -495,7 +495,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
-                    AnalyserResult analyserResult = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
+                    Analyser.SharedState shared = new Analyser.SharedState(effectivelyFinalIteration, false, null);
+                    AnalyserResult analyserResult = computingMethodAnalyser.analyse(shared);
                     AnalysisStatus analysisStatus = analyserResult.analysisStatus();
                     if (analysisStatus != AnalysisStatus.DONE) {
                         LOGGER.debug("{} in analysis of {}, computing method analyser", analysisStatus,

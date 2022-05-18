@@ -72,8 +72,8 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
-        return analyse(iteration);
+    public AnalyserResult analyse(SharedState sharedState) {
+        return analyse(sharedState.iteration());
     }
 
     public void check() {

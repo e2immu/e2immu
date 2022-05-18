@@ -258,13 +258,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     @Override
-    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(Analyser.SharedState sharedState) {
+        int iteration = sharedState.iteration();
         LOGGER.info("Analysing field {} iteration {}", fqn, iteration);
 
         // analyser visitors
         try {
-            SharedState sharedState = new SharedState(iteration, closure);
-            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            SharedState shared = new SharedState(iteration, sharedState.closure());
+            AnalysisStatus analysisStatus = analyserComponents.run(shared);
             if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
                 fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
@@ -273,7 +274,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
+                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
                             fieldInfo, fieldAnalysis, this::getMessageStream, analyserComponents.getStatusesAsMap()));
@@ -396,7 +397,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             AnalyserResult.Builder builder = new AnalyserResult.Builder();
             builder.setAnalysisStatus(NOT_YET_EXECUTED);
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
-            AnalyserResult lambdaResult = analyser.analyse(sharedState.iteration(), sharedState.closure());
+            Analyser.SharedState shared = new Analyser.SharedState(sharedState.iteration(),
+                    false, sharedState.closure());
+            AnalyserResult lambdaResult = analyser.analyse(shared);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
             builder.add(lambdaResult);
             return builder.build();

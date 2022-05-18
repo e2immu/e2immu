@@ -334,8 +334,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:o:container@Class_ConditionalChecks_4>/*(ConditionalChecks_4)*/";
-                            case 1 -> "<vp:o:cm:conditionalChecks.i@Method_method5_3-E;cm:conditionalChecks@Method_method5_3-E;cm:o@Method_method5_3-E;cm:return method5@Method_method5_3-E;cm:this.i@Method_method5_3-E;cm:this@Method_method5_3-E;cm@Parameter_o;initial:this.i@Method_method5_3-C>/*(ConditionalChecks_4)*/";
-                            case 2 -> "<vp:o:cm@Parameter_o>/*(ConditionalChecks_4)*/";
+                            case 1, 2 -> "<vp:o:cm:conditionalChecks.i@Method_method5_3-E;cm:conditionalChecks@Method_method5_3-E;cm:o@Method_method5_3-E;cm:return method5@Method_method5_3-E;cm:this.i@Method_method5_3-E;cm:this@Method_method5_3-E;cm@Parameter_o;initial:this.i@Method_method5_3-C>/*(ConditionalChecks_4)*/";
                             default -> "o/*(ConditionalChecks_4)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -440,11 +439,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         testClass("ConditionalChecks_4", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
