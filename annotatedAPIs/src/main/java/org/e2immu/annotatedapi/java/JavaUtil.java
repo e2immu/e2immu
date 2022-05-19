@@ -344,7 +344,8 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     /*
-     - IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
+     - FIXME we now have inheritance (2022 05 18), clean up!!! some are not consistent with Collection
+
      - Not in line with JDK, but we block null values in the set
      - @Dependent because of the remove() method in Iterator returned by iterator()
      */

@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -217,29 +218,51 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        final String CALL_CYCLE = "find, find2, test, test";
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("find".equals(d.methodInfo().name)) {
-                // cycles!!
-                String expected = d.iteration() == 0 ? "<m:find>"
-                        : "/*inline find*/s.length()<=1?InlinedMethod_10.find2(stream,s,s.length()):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 1) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("s, stream", inlinedMethod.variablesOfExpressionSorted());
-                    }
+                if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if ("find2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "s".equals(pi.name)) {
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
         };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("find2".equals(d.methodInfo().name)) {
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+                assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+            }
+            if ("find".equals(d.methodInfo().name)) {
+                // cycle!!
+                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+
+                String expected = d.iteration() <= 1 ? "<m:find>"
+                        : "/*inline find*/s.length()<=1?s.length()<=0?InlinedMethod_10.find(stream,s):stream.filter(/*inline test*/ff.equals(s)).findAny().orElse(s):stream.filter(/*inline test*/f.contains(s)).findFirst().orElse(null)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() >= 2) {
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("s, stream", inlinedMethod.variablesOfExpressionSorted());
+                    } else fail();
+                }
+                assertDv(d.p(1), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+        };
         testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
-    // a bit twisted, since compareTo is called from compare but with very different parameter types
-    public static final String CALL_CYCLE = "apply, compare, compareTo, variables";
-
     @Test
     public void test_11() throws IOException {
+
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("e.variables().stream()", d.evaluationResult().value().toString());
@@ -262,6 +285,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("apply, subElements, variables",
                         d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
+                assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 assertDv(d, "mm@Method_apply", 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
@@ -273,12 +298,15 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("variables".equals(d.methodInfo().name)) {
                 assertEquals("apply, subElements, variables",
                         d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
-                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+                assertEquals("apply, variables", d.methodInfo().methodResolution.get().callCycleSorted());
+                assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
+
                 // verified that the e.variables() call in apply is evaluated as recursive
                 assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
-                String expected = d.iteration() <= 1 ? "<m:variables>" : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
+                String expected = d.iteration() <= 1 ? "<m:variables>"
+                        : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -300,20 +328,20 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
-                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+                assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
             }
             if ("compareTo".equals(d.methodInfo().name)) {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
-                assertEquals(CALL_CYCLE, d.methodInfo().methodResolution.get().callCycleSorted());
+                assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
                 assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -376,9 +404,9 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
 
         testClass("InlinedMethod_13", 0, 5, new DebugConfiguration.Builder()
-                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -408,8 +436,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
         testClass("InlinedMethod_14", 0, 5, new DebugConfiguration.Builder()
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

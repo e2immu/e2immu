@@ -2125,7 +2125,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
         DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, nne, true);
+        Properties valueProperties = evaluationContext.defaultValuePropertiesAllowMyself(parameterizedType, nne);
 
         CausesOfDelay delayed = valueProperties.delays();
         Expression value;

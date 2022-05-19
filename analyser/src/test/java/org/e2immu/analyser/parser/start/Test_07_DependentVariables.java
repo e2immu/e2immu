@@ -265,7 +265,9 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                assertEquals("<m:getX>", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() <= 1 ? "<m:getX>" : "/*inline getX*/xs[index]";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                // has to be DEPENDENT, because X is not transparent
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("XS".equals(d.methodInfo().name)) {

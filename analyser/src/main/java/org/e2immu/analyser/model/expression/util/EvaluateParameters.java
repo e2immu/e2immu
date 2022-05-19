@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
@@ -123,8 +124,18 @@ public class EvaluateParameters {
             doContextContainer(methodInfo, recursivePartOfCallSelf, map);
             doContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-            if (contextNotNull.isDelayed() && recursivePartOfCallSelf) {
+            if (recursivePartOfCallSelf) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
+                if(contextNotNull.gt(MultiLevel.NULLABLE_DV)) {
+                    String msg;
+                    if(parameterExpression instanceof VariableExpression ve) {
+                        msg="Variable "+ve.variable().simpleName();
+                    } else {
+                        msg = "";
+                    }
+                    builder.raiseError(parameterExpression.getIdentifier(), Message.Label.CALL_CYCLE_NOT_NULL,
+                            msg);
+                }
             }
 
             ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().setNotAssignmentTarget()

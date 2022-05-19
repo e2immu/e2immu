@@ -223,7 +223,7 @@ public class VariableInfoImpl implements VariableInfo {
     // return progress
     boolean setProperty(Property property, DV value) {
         try {
-           return  properties.put(property, value);
+            return properties.put(property, value);
         } catch (RuntimeException e) {
             LOGGER.error("Error setting property {} of {} to {}", property, variable.fullyQualifiedName(), value);
             throw e;

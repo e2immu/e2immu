@@ -121,7 +121,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("/*inline method*/i$0*i$1", srv.toString());
+                assertEquals("/*inline method*/i$0*i$0", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
@@ -390,8 +390,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                // IMPROVE should be inner.i*inner.i$1
-                assertEquals("/*inline method*/`inner.i`.get()*inner.i$1", srv.toString());
+                assertEquals("/*inline method*/`inner.i`.get()*inner.i$0", srv.toString());
             }
         };
 

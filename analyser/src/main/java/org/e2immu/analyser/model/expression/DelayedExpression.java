@@ -224,8 +224,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                ParameterizedType returnType,
                                                List<Variable> variables,
                                                CausesOfDelay causes) {
-        // linked variables are empty, because the return type must be primitive
-        assert returnType.isPrimitiveExcludingVoid() : "Simplification must represent primitives";
         return new DelayedExpression(identifier, "<simplification>", returnType, variables, causes);
     }
 

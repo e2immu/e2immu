@@ -42,6 +42,7 @@ public record Message(Location location, Label message, String extra) {
         ASSIGNMENT_TO_CURRENT_VALUE(Severity.WARN),
         ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE,
         ASSIGNMENT_TO_SELF,
+        CALL_CYCLE_NOT_NULL(Severity.INFO),
         CALLING_MODIFYING_METHOD_ON_E2IMMU,
         CIRCULAR_TYPE_DEPENDENCY(Severity.WARN),
         CONDITION_EVALUATES_TO_CONSTANT_ENN(Severity.WARN),

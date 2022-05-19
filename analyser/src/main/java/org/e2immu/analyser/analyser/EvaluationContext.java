@@ -269,6 +269,19 @@ public interface EvaluationContext {
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
 
+    default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
+        AnalyserContext analyserContext = getAnalyserContext();
+        DV immutable = isMyself(formalType) ? MultiLevel.MUTABLE_DV
+                : analyserContext.defaultImmutable(formalType, true);
+        return Properties.ofWritable(Map.of(
+                IMMUTABLE, immutable,
+                INDEPENDENT, analyserContext.defaultIndependent(formalType),
+                NOT_NULL_EXPRESSION, nne,
+                CONTAINER, analyserContext.defaultContainer(formalType),
+                IDENTITY, IDENTITY.falseDv,
+                IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
+    }
+
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
         return getAnalyserContext().inAnnotatedAPIAnalysis();
     }
@@ -432,7 +445,9 @@ public interface EvaluationContext {
         return Properties.EMPTY;
     }
 
-    default boolean allowBreakDelay() { return false; }
+    default boolean allowBreakDelay() {
+        return false;
+    }
 
     /*
     if the formal type is T (hidden content), then the expression is returned is List.of(expression).

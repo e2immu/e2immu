@@ -1031,7 +1031,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
         if (typeHidden.isDelayed()) return typeHidden;
-        if (typeHidden.valueIsFalse() && minFields.le(MultiLevel.DEPENDENT_DV)) {
+        if (typeHidden.valueIsFalse() && minFields.le(LinkedVariables.DEPENDENT_DV)) {
             return MultiLevel.DEPENDENT_DV;
         }
         // on the sliding scale now

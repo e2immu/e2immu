@@ -262,7 +262,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         MethodInfo concreteMethod;
         if (methodInfo.isAbstract()) {
-            EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            DV notNullForward = notNullRequirementOnScope(methodInfo,
+                    forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
+            // IMPROVE which other conditions should we add here? important that the delayed value has sufficient properties
+            // modification has to be omitted, though.
+            ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                    .clearProperties()
+                    .addProperty(Property.CONTEXT_NOT_NULL, notNullForward)
+                    .setNotAssignmentTarget().build();
+            EvaluationResult objProbe = object.evaluate(context, fwd);
             Expression expression = objProbe.value();
             // situation A
             if (expression.isDone()) {
