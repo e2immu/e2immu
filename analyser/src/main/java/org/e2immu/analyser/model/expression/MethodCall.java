@@ -273,8 +273,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult objProbe = object.evaluate(context, fwd);
             Expression expression = objProbe.value();
             // situation A
-            if (expression.isDone()) {
-                MethodInfo concrete = expression.returnType().typeInfo.findMethodImplementing(methodInfo);
+            TypeInfo typeInfo = expression.returnType().typeInfo;
+            if (expression.isDone() && typeInfo != null) {
+                MethodInfo concrete = typeInfo.findMethodImplementing(methodInfo);
                 concreteMethod = concrete == null ? methodInfo : concrete;
             } else if (expression.concreteImplementationForthcoming()) {
                 // situation B

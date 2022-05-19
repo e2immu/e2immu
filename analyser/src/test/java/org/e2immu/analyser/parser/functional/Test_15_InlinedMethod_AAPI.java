@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -27,6 +28,7 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -278,6 +280,21 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                     default -> "";
                 };
                 assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                EvaluationResult.ChangeData cd = d.findValueChangeByToString("this");
+                assertEquals(DV.FALSE_DV, cd.getProperty(Property.CONTEXT_MODIFIED));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("variables".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    String delays = switch (d.iteration()) {
+                        case 0 -> "srv@Method_apply";
+                        case 1 -> "initial@Field_name;srv@Method_apply";
+                        default -> "";
+                    };
+                    assertDv(d, delays, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
             }
         };
 
@@ -288,7 +305,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
 
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, "mm@Method_apply", 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, "mm@Method_apply", 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD_ALT_TEMP);
 
@@ -302,8 +319,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertFalse(d.methodInfo().methodResolution.get().ignoreMeBecauseOfPartOfCallCycle());
 
                 // verified that the e.variables() call in apply is evaluated as recursive
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
                 String expected = d.iteration() <= 1 ? "<m:variables>"
                         : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
@@ -323,24 +340,25 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 }
             }
             if ("compare".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:compare>"
+                String expected = d.iteration() <= 1 ? "<m:compare>"
                         : "/*inline compare*/e1.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, BIG, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("compareTo".equals(d.methodInfo().name)) {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

@@ -924,8 +924,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (thisVariable != null) {
                 DV thisModified = thisVariable.getProperty(Property.CONTEXT_MODIFIED);
                 if (thisModified.isDelayed()) {
-                    LOGGER.debug("In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
-                            methodInfo.distinguishingName());
+                    LOGGER.debug("In {}: CONTEXT_MODIFIED of this is delayed", methodInfo.distinguishingName());
                     methodAnalysis.setProperty(property, thisModified);
                     return thisModified.causesOfDelay();
                 }
