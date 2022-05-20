@@ -262,34 +262,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         MethodInfo concreteMethod;
 
-        // abstract method... is there a concrete implementation? we should give preference to that one, and be careful with delays
+        // abstract method... is there a concrete implementation? we should give preference to that one
         if (methodInfo.isAbstract()) {
-            DV notNullForward = notNullRequirementOnScope(methodInfo,
-                    forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
-            // IMPROVE which other conditions should we add here? important that the delayed value has sufficient properties
-            // modification has to be omitted, though.
-            ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
-                    .clearProperties()
-                    .addProperty(Property.CONTEXT_NOT_NULL, notNullForward)
-                    .setNotAssignmentTarget().build();
-            EvaluationResult objProbe = object.evaluate(context, fwd);
+            EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
-            // situation A
-            TypeInfo typeInfo = expression.returnType().typeInfo;
+            TypeInfo typeInfo = expression.typeInfoOfReturnType();
             if (typeInfo != null) {
                 MethodInfo concrete = methodInfo.implementationIn(typeInfo);
-                if (expression.isDelayed() && !typeInfo.shallowAnalysis() && concrete != null) {
-                    builder.compose(objProbe);
-
-                    // we have to evaluate them, with default settings, to make sure the variables in the expressions get created
-                    for (Expression parameterExpression : parameterExpressions) {
-                        EvaluationResult er = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-                        builder.compose(er);
-                    }
-                    return delayedMethod(builder, expression.causesOfDelay(), CausesOfDelay.EMPTY);
-                } else {
-                    concreteMethod = concrete == null ? methodInfo : concrete;
-                }
+                concreteMethod = concrete == null ? methodInfo : concrete;
             } else {
                 concreteMethod = methodInfo;
             }

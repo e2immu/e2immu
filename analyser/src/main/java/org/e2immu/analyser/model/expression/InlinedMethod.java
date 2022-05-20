@@ -223,6 +223,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return expression.variables(descendIntoFieldReferences);
     }
 
+    @Override
+    public TypeInfo typeInfoOfReturnType() {
+        return methodInfo.typeInfo;
+    }
+
     public boolean canBeApplied(EvaluationResult context) {
         return !containsVariableFields || context.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
     }

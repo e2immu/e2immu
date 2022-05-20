@@ -262,4 +262,11 @@ public interface Expression extends Element, Comparable<Expression> {
     default DV hardCodedPropertyOrNull(Property property) {
         return null;
     }
+
+    /*
+    helps to make the conversion
+     */
+    default TypeInfo typeInfoOfReturnType() {
+        return returnType().typeInfo;
+    }
 }

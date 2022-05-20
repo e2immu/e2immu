@@ -118,8 +118,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
-                            case 0 -> "limit&&(other.numberOfDelays()><f:LIMIT>||<m:numberOfDelays>><f:LIMIT>)?<s:SimpleSet>:<s:CausesOfDelay>";
-                            case 1 -> "<mmc:merge>";
+                            case 0, 1 -> "limit&&(other.numberOfDelays()><f:LIMIT>||<m:numberOfDelays>><f:LIMIT>)?<s:SimpleSet>:<s:CausesOfDelay>";
                             default -> "this";
                         };
                         assertEquals(value, d.currentValue().toString());

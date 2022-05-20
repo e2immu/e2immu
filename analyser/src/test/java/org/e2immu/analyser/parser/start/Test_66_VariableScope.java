@@ -258,7 +258,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("", d.evaluationResult().causesOfDelay().toString());
                     }
                     String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
-                            : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                            : "typeInfo.packageName().startsWith(\"org\")";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -266,6 +266,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("qualification".equals(d.variableName())) {
+                    assertEquals("QualificationImpl", d.currentValue().returnType().typeInfo.simpleName);
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
@@ -296,6 +297,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 if ("qualification".equals(d.variableName())) {
+                    assertEquals("QualificationImpl", d.currentValue().returnType().typeInfo.simpleName);
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
@@ -309,13 +311,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("packageName".equals(d.variableName())) {
@@ -349,25 +351,32 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("nullable instance type TypeInfo/*@Identity*/", d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<p:typeInfo>" : "nullable instance type TypeInfo/*@Identity*/";
+                        String expected = d.iteration() <= 2 ? "<p:typeInfo>"
+                                : "nullable instance type TypeInfo/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d,3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                                Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("doImport".equals(d.variableName())) {
                     assertNotEquals("1", d.statementId());
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>" : "(new QualificationImpl()).addTypeReturnImport(typeInfo)";
+                        String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
+                                : "typeInfo.packageName().startsWith(\"org\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("perPackage".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<m:computeIfAbsent>" : "instance type PerPackage";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:PerPackage>";
+                            case 1 -> "<m:computeIfAbsent>";
+                            default -> "instance type PerPackage";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {

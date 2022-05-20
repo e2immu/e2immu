@@ -360,6 +360,9 @@ public class Test_57_Lambda extends CommonTestRunner {
                     assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
                 }
             }
+            if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d.p(0), MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
         };
         testClass("Lambda_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
