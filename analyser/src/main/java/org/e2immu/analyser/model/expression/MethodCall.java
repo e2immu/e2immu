@@ -111,7 +111,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
                     variables(true),
-                    causesOfDelay, Map.of(), false);
+                    causesOfDelay, Map.of());
         }
         return new MethodCall(identifier,
                 objectIsImplicit,
@@ -261,6 +261,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
         MethodInfo concreteMethod;
+
+        // abstract method... is there a concrete implementation? we should give preference to that one, and be careful with delays
         if (methodInfo.isAbstract()) {
             DV notNullForward = notNullRequirementOnScope(methodInfo,
                     forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
@@ -274,24 +276,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Expression expression = objProbe.value();
             // situation A
             TypeInfo typeInfo = expression.returnType().typeInfo;
-            if (expression.isDone() && typeInfo != null) {
-                MethodInfo concrete = typeInfo.findMethodImplementing(methodInfo);
-                concreteMethod = concrete == null ? methodInfo : concrete;
-            } else if (expression.concreteImplementationForthcoming()) {
-                // situation B
-                builder.compose(objProbe);
-                MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
+            if (typeInfo != null) {
+                MethodInfo concrete = methodInfo.implementationIn(typeInfo);
+                if (expression.isDelayed() && !typeInfo.shallowAnalysis() && concrete != null) {
+                    builder.compose(objProbe);
 
-                // we have to evaluate them, with default settings, to make sure the variables in the expressions get created
-                for (Expression parameterExpression : parameterExpressions) {
-                    EvaluationResult er = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-                    builder.compose(er);
+                    // we have to evaluate them, with default settings, to make sure the variables in the expressions get created
+                    for (Expression parameterExpression : parameterExpressions) {
+                        EvaluationResult er = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+                        builder.compose(er);
+                    }
+                    return delayedMethod(builder, expression.causesOfDelay(), CausesOfDelay.EMPTY);
+                } else {
+                    concreteMethod = concrete == null ? methodInfo : concrete;
                 }
-                return delayedMethod(builder, methodAnalysis, expression.causesOfDelay(), CausesOfDelay.EMPTY);
             } else {
                 concreteMethod = methodInfo;
             }
-            // default: C
         } else {
             concreteMethod = methodInfo;
         }
@@ -343,19 +344,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                context, forwardEvaluationInfo,
-                concreteMethod, recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
+                context, forwardEvaluationInfo, concreteMethod,
+                recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
         // precondition
-        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod, objectValue,
-                parameterValues);
+        Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod,
+                objectValue, parameterValues);
         builder.addPrecondition(precondition);
 
         LinkedVariables linkedVariables = objectValue.linkedVariables(context);
         if (object instanceof IsVariableExpression ive) {
-            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV));
+            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(),
+                    LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
         LinkedVariables linked1Scope = recursiveCall ? LinkedVariables.EMPTY : linked1VariablesScope(context);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
@@ -375,17 +377,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed() || modified.isDelayed() || objectResult.causesOfDelay().isDelayed()) {
-            CausesOfDelay causes = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
-                    .merge(objectResult.causesOfDelay());
-            return delayedMethod(builder, methodAnalysis, causes, modified);
-        }
 
-        // companion methods
+        CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
+                .merge(objectResult.causesOfDelay());
+
         Expression modifiedInstance;
-        if (modified.valueIsTrue()) {
-            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context, concreteMethod,
-                    methodAnalysis, object, objectValue, parameterValues, variables(true));
+        if (delays1.isDone() && modified.valueIsTrue()) {
+            // companion methods
+            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context,
+                    concreteMethod, object, objectValue, parameterValues, variables(true));
             if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
                 modifiedInstance = linkedVariables.isEmpty() ? unlinkedModifiedInstance
@@ -397,30 +397,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = null;
         }
 
-        Expression result;
-        if (!concreteMethod.isVoid()) {
-            MethodInspection methodInspection = concreteMethod.methodInspection.get();
+        CausesOfDelay delays2 = modifiedInstance == null ? delays1
+                : delays1.merge(modifiedInstance.causesOfDelay());
 
-            EvaluationResult mv = new EvaluateMethodCall(context, this).methodValue(modified,
-                    methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues,
-                    forwardEvaluationInfo, modifiedInstance);
-            builder.compose(mv);
-            result = mv.value();
+        EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
+                .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
+                        parameterValues, forwardEvaluationInfo, modifiedInstance);
+        builder.compose(mv);
 
-            complianceWithForwardRequirements(context, builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
-        } else {
-            result = EmptyExpression.NO_RETURN_VALUE;
-        }
-
-        builder.setExpression(result);
+        MethodInspection methodInspection = concreteMethod.methodInspection.get();
+        complianceWithForwardRequirements(context, builder, methodAnalysis, methodInspection, forwardEvaluationInfo);
 
         checkCommonErrors(builder, context, concreteMethod, objectValue);
-        if (objectValue.isDelayed() || modifiedInstance != null && modifiedInstance.isDelayed()) {
-            CausesOfDelay causes = modifiedInstance != null
-                    ? objectValue.causesOfDelay().merge(modifiedInstance.causesOfDelay())
-                    : objectValue.causesOfDelay();
-            return delayedMethod(builder, methodAnalysis, causes, modified);
-        }
+
         return builder.build();
     }
 
@@ -456,7 +445,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     CausesOfDelay initialTime = DelayFactory.createDelay(methodAnalysis.location(Stage.INITIAL),
                             CauseOfDelay.Cause.INITIAL_TIME);
                     CausesOfDelay causes = modified.causesOfDelay().merge(initialTime);
-                    return delayedMethod(builder, methodAnalysis, causes, modified);
+                    return delayedMethod(builder, causes, modified);
                 } else {
                     if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
                         increment = false;
@@ -555,15 +544,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     IMPORTANT!! keep in sync with very similar method in EvaluateMethodCall
     */
     private EvaluationResult delayedMethod(EvaluationResult.Builder builder,
-                                           MethodAnalysis methodAnalysis,
                                            CausesOfDelay causesOfDelay,
                                            DV modified) {
         assert causesOfDelay.isDelayed();
         // NOTE: we do not convert the linked variables to blanket delay! this is not necessary and holds back Context Modified
         Map<Variable, DV> cnnMap = builder.cnnMap();
         DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                variables(true), causesOfDelay, cnnMap,
-                methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
+                variables(true), causesOfDelay, cnnMap);
         builder.setExpression(delay);
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
@@ -625,7 +612,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult.Builder builder,
             EvaluationResult context,
             MethodInfo methodInfo,
-            MethodAnalysis methodAnalysis,
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues,
@@ -652,8 +638,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             cMap.keySet().stream()
                     .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
                     .sorted()
-                    .forEach(cmn -> companionMethod(context, methodInfo, methodAnalysis, parameterValues, newState,
-                            cmn, cMap.get(cmn)));
+                    .forEach(cmn -> companionMethod(context, methodInfo, parameterValues, newState, cmn, cMap.get(cmn)));
 
             if (containsEmptyExpression(newState.get())) {
                 newState.set(TRUE);
@@ -692,7 +677,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
-                            variables, causesOfDelay, Map.of(), false);
+                            variables, causesOfDelay, Map.of());
+                    // FIXME is this null correct? some type of createInstanceBasedOn??
                 }
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
@@ -714,7 +700,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static void companionMethod(EvaluationResult context,
                                         MethodInfo methodInfo,
-                                        MethodAnalysis methodAnalysis,
                                         List<Expression> parameterValues,
                                         AtomicReference<Expression> newState,
                                         CompanionMethodName companionMethodName,

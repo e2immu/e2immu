@@ -46,23 +46,22 @@ public class Test_41_E2InContext extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            int N = 4;
             if ("error".equals(d.methodInfo().name)) {
                 if ("eventually".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() < N ? "<new:Eventually<String>>" : "new Eventually<>()";
+                        String expect = d.iteration() < 4 ? "<new:Eventually<String>>" : "new Eventually<>()";
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
-                        assertDv(d, N - 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() < N ? "<mmc:eventually>" : "instance type Eventually<String>";
+                        String expect = d.iteration() < 4 ? "<new:Eventually<String>>" : "instance type Eventually<String>";
                         assertEquals(expect, d.currentValue().toString());
                         // so while the instance has value property ERE, the change from ConstructorCall to Instance does not change the value properties
-                        assertDv(d, N - 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                         // the change is reflected in the CONTEXT_IMMUTABLE
-                        assertDv(d, N - 1, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }
@@ -153,7 +152,8 @@ public class Test_41_E2InContext extends CommonTestRunner {
             if ("E2InContext_2".equals(d.methodInfo().name)) {
                 assert "0".equals(d.statementId());
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
+                    assertEquals("this", fr.scope.toString());
+                    assertDv(d, 4, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
                     assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                 }
             }

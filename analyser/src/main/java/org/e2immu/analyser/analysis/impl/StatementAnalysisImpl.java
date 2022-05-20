@@ -1170,9 +1170,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 scopeValue = lvr.assignmentExpression;
             }
-            newScopeVar.setValue(scopeValue, LinkedVariables.EMPTY, propertiesOfLvr, MERGE);
+            newScopeVar.setValue(scopeValue, null, propertiesOfLvr, MERGE);
             groupPropertyValues.setDefaultsForScopeVariable(lvr);
-            linkedVariablesMap.put(lvr, LinkedVariables.EMPTY);
         }
         TranslationMap translationMap = prepareMerge.translationMap.build();
 

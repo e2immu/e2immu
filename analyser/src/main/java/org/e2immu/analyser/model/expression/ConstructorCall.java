@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
@@ -37,10 +37,7 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -399,10 +396,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
-            MethodAnalysis constructorAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
             List<Variable> variables = variables(true);
             Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
-                    constructor, constructorAnalysis, null, this, res.v, variables);
+                    constructor, null, this, res.v, variables);
             if (modifiedInstance == null) {
                 instance = this;
             } else {

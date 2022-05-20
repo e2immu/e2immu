@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.resolver.impl.SortedType;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 

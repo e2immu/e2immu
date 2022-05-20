@@ -106,7 +106,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             }
             if ("test1".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    String expected = d.iteration() <= 1 ? "<mmc:i>" : "instance type I";
+                    String expected = d.iteration() <= 1 ? "<new:I>" : "instance type I";
                     if ("1".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -122,7 +122,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<mmc:list>"
+                        String expectValue = d.iteration() <= 1 ? "<v:list>"
                                 : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
@@ -131,7 +131,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
-                        assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {

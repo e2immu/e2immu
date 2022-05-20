@@ -31,7 +31,6 @@ import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 public interface Expression extends Element, Comparable<Expression> {
     int HARD_LIMIT_ON_COMPLEXITY = 1000;
@@ -263,6 +262,4 @@ public interface Expression extends Element, Comparable<Expression> {
     default DV hardCodedPropertyOrNull(Property property) {
         return null;
     }
-
-    default boolean concreteImplementationForthcoming() { return false; }
 }

@@ -83,7 +83,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<mmc:other>" :
+                        String expectValue = d.iteration() <= 1 ? "<p:other>" :
                                 "nullable instance type Basics_21<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
@@ -98,7 +98,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     } else {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "<mmc:other>";
+                            case 0, 1 -> "<p:other>";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());

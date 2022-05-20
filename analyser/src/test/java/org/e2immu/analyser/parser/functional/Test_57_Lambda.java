@@ -188,7 +188,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:x.k*i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -293,7 +293,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:x.k*i$1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:x.k*i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()

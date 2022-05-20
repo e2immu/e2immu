@@ -159,7 +159,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.getAnnotations()) {
             outputBuilder.add(annotation.output(qualification));
-            if (parameterAnalysis.isSet() && !owner.shallowAnalysis()) {
+            if (parameterAnalysis.isSet() && owner.computedAnalysis()) {
                 outputBuilder.add(peekIntoAnnotations(annotation, annotationsSeen, parameterAnalysis.get()));
             }
             outputBuilder.add(Space.ONE);

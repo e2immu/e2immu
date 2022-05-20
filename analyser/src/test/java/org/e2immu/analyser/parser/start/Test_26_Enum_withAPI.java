@@ -137,12 +137,12 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);
@@ -169,10 +169,9 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = switch (d.iteration()) {
-                        case 0, 1, 2 -> "1==<m:getCnt>";
-                        default -> "true"; // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
-                    };
+                    String expectValue = d.iteration() <= 6 ? "1==<m:getCnt>" : "true";
+                    // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
+
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }
@@ -180,7 +179,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getCnt".equals(d.methodInfo().name)) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expect = d.iteration() == 0 ? "<m:getCnt>" : "/*inline getCnt*/cnt";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -189,7 +188,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_4(1)", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 

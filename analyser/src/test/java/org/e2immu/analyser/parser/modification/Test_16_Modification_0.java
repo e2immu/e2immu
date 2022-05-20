@@ -45,7 +45,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set1".equals(fr.fieldInfo.name)) {
                     assertTrue(d.variableInfoContainer().hasEvaluation() && !d.variableInfoContainer().hasMerge());
                     assertTrue(d.variableInfo().isRead());
-                    String expectValue = d.iteration() == 0 ? "<mmc:set1>" : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
+                    String expectValue = d.iteration() == 0 ? "<f:set1>" : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

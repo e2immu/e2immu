@@ -148,7 +148,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
-                        assertEquals("ioe:0,return writeLine:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("ioe:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -172,8 +172,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         testClass("VariableScope_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
@@ -309,13 +309,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = d.iteration() <= 2 ? "<new:QualificationImpl>" : "new QualificationImpl()";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("packageName".equals(d.variableName())) {
@@ -325,10 +325,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<v:packageName>" : "typeInfo.packageName()";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "myPackage".equals(pi.name)) {
@@ -352,9 +352,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expected = d.iteration() <= 2 ? "<p:typeInfo>" : "nullable instance type TypeInfo/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d,3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("doImport".equals(d.variableName())) {
@@ -375,7 +376,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
                     if ("1.0.2.0.0".equals(d.statementId()) || "1.0.2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -383,7 +384,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 2, d.methodAnalysis().getLastStatement().variableStream()
+                assertEquals(d.iteration() >= BIG, d.methodAnalysis().getLastStatement().variableStream()
                         .peek(vi -> LOGGER.warn("CM of {}: {}", vi.variable(), vi.getProperty(Property.CONTEXT_MODIFIED)))
                         .allMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).isDone()));
             }

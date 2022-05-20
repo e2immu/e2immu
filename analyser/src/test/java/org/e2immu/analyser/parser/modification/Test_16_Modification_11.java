@@ -64,7 +64,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
 
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() == 0 ? "<mmc:set>"
+                    String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance type Set<String>/*this.contains(string)&&this.size()>=1*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));

@@ -28,8 +28,8 @@ import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.*;
-import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,16 +48,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
-    private final AddOnceSet<MethodInfo> implementations = new AddOnceSet<>();
+    // implementations of this abstract method, by type; NOTE: some functional interface methods will have large maps
+    private final SetOnceMap<TypeInfo, MethodInfo> implementations = new SetOnceMap<>();
 
     // -- a bit of primitives info
 
     public boolean isUnaryMinusOperatorInt() {
         return UNARY_MINUS_OPERATOR_INT.equals(fullyQualifiedName()) && this.methodInspection.get().getParameters().size() == 1;
-    }
-
-    public boolean isBinaryAnd() {
-        return this.name.equals("&&");
     }
 
     public boolean isUnaryNot() {
@@ -262,9 +259,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return !noReturnValue();
     }
 
-    public boolean shallowAnalysis() {
+    public boolean computedAnalysis() {
         assert methodInspection.isSet();
-        return !hasStatements();
+        return hasStatements();
     }
 
     public boolean explicitlyEmptyMethod() {
@@ -361,7 +358,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int getComplexity() {
-        return 1; // FIXME
+        return 1;
     }
 
     /*
@@ -379,8 +376,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return isConstructor || methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
+    public MethodInfo implementationIn(TypeInfo typeInfo) {
+        if (isAbstract()) {
+            return implementations.getOrDefaultNull(typeInfo);
+        }
+        return this;
+    }
+
     public void addImplementation(MethodInfo implementation) {
-        if (!implementations.contains(implementation)) implementations.add(implementation);
+        if (!implementations.isSet(implementation.typeInfo))
+            implementations.put(implementation.typeInfo, implementation);
     }
 
     public boolean hasImplementations() {
@@ -388,7 +393,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<MethodInfo> getImplementations() {
-        return implementations.toImmutableSet();
+        return implementations.stream().map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
     }
 
     public Expression extractSingleReturnExpression() {

@@ -43,15 +43,13 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     private final Properties priorityProperties;
     private final Map<Variable, DV> cnnMap;
     private final Map<FieldInfo, Expression> shortCutMap;
-    private final boolean concreteImplementationForthcoming; // see e.g. Lambda_6
 
     private DelayedExpression(Identifier identifier,
                               String msg,
                               ParameterizedType parameterizedType,
                               List<Variable> variables,
                               CausesOfDelay causesOfDelay) {
-        this(identifier, msg, parameterizedType, variables, causesOfDelay, Properties.EMPTY, Map.of(),
-                null, false);
+        this(identifier, msg, parameterizedType, variables, causesOfDelay, Properties.EMPTY, Map.of(), null);
     }
 
     private DelayedExpression(Identifier identifier,
@@ -61,8 +59,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                               CausesOfDelay causesOfDelay,
                               Properties properties,
                               Map<Variable, DV> cnnMap,
-                              Map<FieldInfo, Expression> shortCutMap,
-                              boolean concreteImplementationForthcoming) {
+                              Map<FieldInfo, Expression> shortCutMap) {
         super(identifier);
         this.msg = msg;
         this.parameterizedType = parameterizedType;
@@ -72,7 +69,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         this.cnnMap = Objects.requireNonNull(cnnMap);
         this.variables = variables;
         this.shortCutMap = shortCutMap;
-        this.concreteImplementationForthcoming = concreteImplementationForthcoming;
     }
 
     private static String brackets(String msg) {
@@ -84,11 +80,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                               ParameterizedType concreteReturnType,
                                               List<Variable> variables,
                                               CausesOfDelay causesOfDelay,
-                                              Map<Variable, DV> cnnMap,
-                                              boolean concreteImplementationForthcoming) {
+                                              Map<Variable, DV> cnnMap) {
         String msg = brackets("m:" + methodInfo.name);
         return new DelayedExpression(identifier, msg, concreteReturnType, variables, causesOfDelay,
-                Properties.EMPTY, cnnMap, null, concreteImplementationForthcoming);
+                Properties.EMPTY, cnnMap, null);
     }
 
     /*
@@ -119,7 +114,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
         String msg = brackets("new:" + parameterizedType.printSimple());
         return new DelayedExpression(identifier, msg, parameterizedType, variables, causes, Properties.EMPTY,
-                Map.of(), shortCutMap, false);
+                Map.of(), shortCutMap);
     }
 
     public static Expression forArrayAccessValue(Identifier identifier,
@@ -193,7 +188,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        Properties priorityProperties) {
         String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
         return new DelayedExpression(identifier, msg, parameterizedType, variables, causes, priorityProperties,
-                Map.of(), null, false);
+                Map.of(), null);
     }
 
     public static Expression forInlinedMethod(Identifier identifier,
@@ -373,10 +368,5 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                 .collect(Collectors.toUnmodifiableMap(e -> new FieldReference(InspectionProvider.DEFAULT, e.getKey(),
                                 scope, currentType),
                         Map.Entry::getValue));
-    }
-
-    @Override
-    public boolean concreteImplementationForthcoming() {
-        return concreteImplementationForthcoming;
     }
 }

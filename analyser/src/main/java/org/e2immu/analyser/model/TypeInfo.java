@@ -460,7 +460,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
         if (foundHere != null && !foundHere.isAbstract()
-                && (!foundHere.shallowAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
+                && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
         TypeInspection inspection = typeInspection.get();
         ParameterizedType parentClass = inspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {

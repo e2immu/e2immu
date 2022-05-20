@@ -341,10 +341,10 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),
                 0, 1, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                       // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                       // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMap.get(IFluent_1.class);

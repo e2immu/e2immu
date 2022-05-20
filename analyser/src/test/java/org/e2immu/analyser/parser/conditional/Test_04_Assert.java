@@ -117,9 +117,11 @@ public class Test_04_Assert extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        String value = d.iteration() <= 1
-                                ? "limit&&(other.numberOfDelays()><f:LIMIT>||<m:numberOfDelays>><f:LIMIT>)?<s:SimpleSet>:<s:CausesOfDelay>"
-                                : "this";
+                        String value = switch (d.iteration()) {
+                            case 0 -> "limit&&(other.numberOfDelays()><f:LIMIT>||<m:numberOfDelays>><f:LIMIT>)?<s:SimpleSet>:<s:CausesOfDelay>";
+                            case 1 -> "<mmc:merge>";
+                            default -> "this";
+                        };
                         assertEquals(value, d.currentValue().toString());
                         String linked = d.iteration() <= 1 ? "other:-1,return combine:0,this:0" : "return combine:0,this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

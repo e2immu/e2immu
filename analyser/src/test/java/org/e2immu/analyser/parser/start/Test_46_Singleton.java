@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_46_Singleton extends CommonTestRunner {
 
@@ -100,14 +101,18 @@ public class Test_46_Singleton extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 String delays = switch (d.iteration()) {
-                    case 0 -> "initial:SingletonClass.SINGLETON@Method_test_0-C";
-                    case 1 -> "container@Class_SingletonClass";
-                    case 2, 3 -> "initial@Field_created;initial@Field_k";
+                    case 0 -> "initial:SingletonClass.SINGLETON@Method_test_0-C;initial:this.k@Method_multiply_0-C";
+                    case 1, 2, 3, 4, 5 -> "initial:this.k@Method_multiply_0-C";
                     default -> "";
                 };
                 assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            assertFalse(d.context().evaluationContext().allowBreakDelay());
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("SINGLETON".equals(d.fieldInfo().name)) {
                 assertEquals("SingletonClass", d.fieldInfo().owner.simpleName);
@@ -124,6 +129,7 @@ public class Test_46_Singleton extends CommonTestRunner {
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

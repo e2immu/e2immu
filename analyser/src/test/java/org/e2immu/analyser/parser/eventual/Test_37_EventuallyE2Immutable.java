@@ -315,7 +315,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("error4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<mmc:other>"
+                        String expected = d.iteration() <= 1 ? "<p:other>"
                                 : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -324,7 +324,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<mmc:other>"
+                        String expected = d.iteration() <= 1 ? "<p:other>"
                                 : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -386,7 +386,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<mmc:set>" :
+                        String expectValue = d.iteration() == 0 ? "<f:set>" :
                                 "instance type HashSet<T>/*this.size()>=data.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -476,7 +476,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<mmc:set>" :
+                        String expectValue = d.iteration() == 0 ? "<f:set>" :
                                 "instance type HashSet<T>/*this.size()>=data.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -524,7 +524,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<mmc:set>" :
+                        String expectValue = d.iteration() == 0 ? "<f:set>" :
                                 "instance type HashSet<T>/*this.size()>=data.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }

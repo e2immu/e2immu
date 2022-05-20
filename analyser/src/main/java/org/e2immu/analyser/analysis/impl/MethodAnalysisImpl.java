@@ -18,7 +18,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.ContractMark;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -247,7 +250,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             assert precondition != null;
             if (precondition.isDelayed()) {
                 preconditionForEventual.setVariable(precondition);
-            } else if(!precondition.equals(preconditionForEventual.get())) {
+            } else if (!precondition.equals(preconditionForEventual.get())) {
                 preconditionForEventual.setFinal(precondition);
             }
         }
@@ -293,7 +296,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
                         methodInfo.returnType(),
                         List.of(),
-                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of(), false);
+                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of());
                 singleReturnValue.setVariable(de);
             }
         }

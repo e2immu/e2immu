@@ -41,42 +41,57 @@ public class EvaluateMethodCall {
     private final Identifier identifier;
     private final MethodCall methodCall;
     private final MethodInfo methodInfo;
+    // contains delays for: modified, objectValue, parameters, finalizer, modifiedInstance
+    private final CausesOfDelay earlierDelays;
 
-    public EvaluateMethodCall(EvaluationResult evaluationContext, MethodCall methodCall) {
+    public EvaluateMethodCall(EvaluationResult evaluationContext, MethodCall methodCall, CausesOfDelay earlierDelays) {
         this.context = Objects.requireNonNull(evaluationContext);
         this.primitives = evaluationContext.getPrimitives();
         this.analyserContext = evaluationContext.getAnalyserContext();
         this.identifier = Objects.requireNonNull(methodCall.identifier);
         this.methodCall = methodCall;
         this.methodInfo = methodCall.methodInfo;
+        this.earlierDelays = earlierDelays;
     }
 
     public EvaluationResult methodValue(DV modified,
                                         MethodAnalysis methodAnalysis,
                                         boolean objectIsImplicit,
                                         Expression objectValue,
-                                        ParameterizedType concreteReturnType,
+                                        ParameterizedType concreteReturnTypeIn,
                                         List<Expression> parameters,
                                         ForwardEvaluationInfo forwardEvaluationInfo,
                                         Expression modifiedInstance) {
+
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+
+        /*
+        It is of high importance that any delay that we return, contains the most concrete possible return type.
+        (See e.g. Lambda_6, start of MethodCall where we replace the abstract method by a concrete one.)
+         */
+        ParameterizedType concreteReturnType;
+        if (methodAnalysis.isComputed() && methodInfo.hasReturnValue()) {
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            concreteReturnType = srv.returnType();
+        } else {
+            concreteReturnType = concreteReturnTypeIn;
+        }
+
+        if (earlierDelays.isDelayed()) {
+            return delay(builder, methodInfo, concreteReturnType, earlierDelays);
+        }
+        if (methodInfo.noReturnValue()) {
+            return builder.setExpression(EmptyExpression.NO_RETURN_VALUE).build();
+        }
+
         boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
         if (recursiveCall) {
             MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
         }
 
-        // no value (method call on field that does not have effective value yet)
-        CausesOfDelay objectValueDelayed = objectValue.causesOfDelay();
-        if (objectValueDelayed.isDelayed()) {
-            return delay(builder, methodInfo, concreteReturnType, objectValueDelayed,
-                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
-        }
-
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
-          executing an inlined method, see Lambda_2
-
-          we also have to take care to take the concrete method, and not the formal functional interface
+          executing an inlined method, see Lambda_2.
          */
         InlinedMethod inlineValue;
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
@@ -197,8 +212,7 @@ public class EvaluateMethodCall {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay(),
-                        srv.concreteImplementationForthcoming());
+                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay());
             }
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
@@ -218,19 +232,18 @@ public class EvaluateMethodCall {
 
         Expression methodValue;
         if (modified.valueIsFalse()) {
-            methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
-        } else if (modified.valueIsTrue()) {
-            DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION).max(AnalysisProvider.defaultNotNull(concreteReturnType));
+            methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType,
+                    parameters);
+        } else {
+            assert modified.valueIsTrue();
+            DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION)
+                    .max(AnalysisProvider.defaultNotNull(concreteReturnType));
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
-                return delay(builder, methodInfo, concreteReturnType, delays,
-                        methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
+                return delay(builder, methodInfo, concreteReturnType, delays);
             }
             methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
-        } else {
-            return delay(builder, methodInfo, concreteReturnType, modified.causesOfDelay(),
-                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
         }
         return builder.setExpression(methodValue).build();
     }
@@ -249,12 +262,11 @@ public class EvaluateMethodCall {
     private EvaluationResult delay(EvaluationResult.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
-                                   CausesOfDelay causesOfDelay,
-                                   boolean concreteImplementationForthcoming) {
+                                   CausesOfDelay causesOfDelay) {
         Map<Variable, DV> cnnMap = builder.cnnMap();
+        CausesOfDelay finalDelays = earlierDelays.merge(causesOfDelay);
         DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                methodCall.variables(true), causesOfDelay, cnnMap,
-                concreteImplementationForthcoming);
+                methodCall.variables(true), finalDelays, cnnMap);
         return builder.setExpression(delay).build();
     }
 
@@ -306,7 +318,7 @@ public class EvaluateMethodCall {
             if (modifying.isDelayed()) {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay(), false);
+                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
@@ -385,7 +397,7 @@ public class EvaluateMethodCall {
         Expression state = context.evaluationContext().state(objectValue);
 
         TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
-        Map<CompanionMethodName,CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
+        Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
         cMap.entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
                 .forEach(e -> {
@@ -472,8 +484,7 @@ public class EvaluateMethodCall {
                                            EvaluationResult.Builder builder) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay(),
-                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
+            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay());
         }
         if (!fluent.valueIsTrue()) return null;
         Expression toReturn = modifiedInstance != null ? modifiedInstance : scope;
@@ -496,8 +507,7 @@ public class EvaluateMethodCall {
                                              EvaluationResult.Builder builder) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay(),
-                    methodAnalysis.getSingleReturnValue().concreteImplementationForthcoming());
+            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay());
         }
         if (!identity.valueIsTrue()) return null;
 

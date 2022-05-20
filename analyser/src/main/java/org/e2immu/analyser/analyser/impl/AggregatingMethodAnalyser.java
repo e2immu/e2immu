@@ -125,7 +125,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                return delayedSrv(delays, true, false);
+                return delayedSrv(methodInfo.returnType(), delays, true);
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
             // unless it is a constant, a parameter of the method, or statically assigned to a constructor (?) we can't do much

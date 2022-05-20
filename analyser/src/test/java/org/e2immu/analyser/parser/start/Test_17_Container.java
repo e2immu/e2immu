@@ -101,7 +101,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mmc:s>" : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
+                        String expected = d.iteration() == 0 ? "<f:s>" : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
