@@ -236,7 +236,8 @@ public class VariableInfoImpl implements VariableInfo {
         assert !linkedVariables.contains(variable) : "Self references are not allowed";
         if (this.linkedVariables.isFinal()) {
             if (!this.linkedVariables.get().equals(linkedVariables)) {
-                throw new IllegalStateException("Not allowed to change LVs anymore: old: " + this.linkedVariables.get()
+                throw new IllegalStateException("Variable " + variable.fullyQualifiedName()
+                        + ": not allowed to change LVs anymore: old: " + this.linkedVariables.get()
                         + ", new " + linkedVariables);
             }
             return false;

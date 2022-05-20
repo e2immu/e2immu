@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -26,9 +27,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -334,7 +333,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return LinkedVariables.EMPTY;
+        Set<Variable> set = new HashSet<>(variables);
+        return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> causesOfDelay)));
     }
 
     public CausesOfDelay causesOfDelay() {

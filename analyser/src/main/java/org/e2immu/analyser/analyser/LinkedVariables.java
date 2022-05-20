@@ -323,7 +323,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                             result.put(target, canIncrease);
                         } else if (canIncrease.valueIsTrue()) {
                             DV immutableHidden = computeImmutableHiddenContent.apply(target);
-                            if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+                            if (immutableHidden.isDelayed()) {
+                                result.put(target, immutableHidden);
+                            } else
+                                if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
                                 result.put(target, linkLevel);
                             }
                         } else {

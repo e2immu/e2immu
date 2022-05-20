@@ -29,9 +29,8 @@ public class JavaUtil extends AnnotatedAPI {
     // method analyser only considers public methods
 
     /**
-     *
-     * @param i the "post" value
-     * @param j the "pre" value, null when it is not known
+     * @param i         the "post" value
+     * @param j         the "pre" value, null when it is not known
      * @param containsE a placeholder for the actual clause
      * @return an expression indicating the new state
      */
@@ -687,7 +686,21 @@ public class JavaUtil extends AnnotatedAPI {
             return i;
         }
 
-        // @Dependent!
+        /* @Dependent, as it is a view on the map: changes to the set are also changes to the map.
+         Note also that Iterable<T> iterable() as a method of Set, Collection etc. is @Dependent on the collection
+         (via the iterator.remove()). So map.entrySet().iterator().remove() is a possible chain of events that
+         modifies the map!
+
+         Also note that Entry is mutable, because of the setValue() method.
+         It is not a transparent type in Map (only type parameters are in shallow analysis).
+         So if write
+            for(Map.Entry<K, V> e: map.entrySet()) {
+                ...
+            }
+         then e is linked to map, in a @Dependent way!
+         e.getKey() and e.getValue() are linked to map at the @Independent1 level.
+         See e.g. Loops_18
+         */
         @NotNull1
         Set<Map.Entry<K, V>> entrySet();
 

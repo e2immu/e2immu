@@ -70,7 +70,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
 
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
-                        String expected =  "instance type int";
+                        String expected = "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
@@ -105,7 +105,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                                 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:0"
                                 : "1==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectVars = "[]";
+                        String expectVars = d.iteration() == 0 ? "[i]" : "[]";
                         assertEquals(expectVars, d.currentValue().variables(true).toString());
                     }
                 }
