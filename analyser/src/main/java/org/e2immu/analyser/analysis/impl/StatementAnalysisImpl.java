@@ -1271,7 +1271,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         });
 
         AnalysisStatus mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap, delay)
+                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap, delay)
                 .addProgress(progress);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
@@ -1342,6 +1342,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      GroupPropertyValues groupPropertyValues,
                                                      Map<Variable, LinkedVariables> linkedVariablesMap,
                                                      Set<Variable> variablesWhereMergeOverwrites,
+                                                     Set<LocalVariableReference> newlyCreatedScopeVariables,
                                                      PrepareMerge prepareMerge,
                                                      Map<Variable, DV> setCnnVariables,
                                                      TranslationMap translationMap,
@@ -1361,11 +1362,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         // we include -E in touched, see Basics_8 (j, k in statement 4)
-        Set<Variable> touched = Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
+        Set<Variable> touched = Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
                                 linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
                         variables.stream().map(Map.Entry::getValue)
                                 .filter(VariableInfoContainer::hasEvaluation)
-                                .map(e -> e.current().variable()))
+                                .map(e -> e.current().variable())))
                 .filter(v -> !prepareMerge.toRemove.contains(v) && variables.isSet(v.fullyQualifiedName()))
                 .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
@@ -1382,7 +1383,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 prepareMerge.toRemove);
 
         for (Variable variable : touched) {
-            if (!linkedVariablesMap.containsKey(variable)) {
+            if (!linkedVariablesMap.containsKey(variable) && !newlyCreatedScopeVariables.contains(variable)) {
                 VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null;
                 Variable renamed = prepareMerge.renames.get(variable);

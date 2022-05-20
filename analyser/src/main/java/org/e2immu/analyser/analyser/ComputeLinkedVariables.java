@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -276,8 +275,12 @@ public class ComputeLinkedVariables {
                     .reduce(DV.FALSE_DV, DV::max);
 
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
-            if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed() && !allowBreakDelay) {
-                summary = summary.causesOfDelay().merge(cluster.delays);
+            if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
+                if (allowBreakDelay && summary.valueIsFalse()) {
+                    LOGGER.debug("Breaking linking delay on CM==FALSE");
+                } else {
+                    summary = summary.causesOfDelay().merge(cluster.delays);
+                }
             }
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
