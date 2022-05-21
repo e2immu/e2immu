@@ -40,7 +40,7 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
@@ -65,8 +65,8 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d.p(0), MultiLevel.NOT_IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
-                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -101,7 +101,7 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

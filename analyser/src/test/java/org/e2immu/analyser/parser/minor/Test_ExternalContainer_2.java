@@ -40,7 +40,7 @@ public class Test_ExternalContainer_2 extends CommonTestRunner {
 
                 assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
@@ -71,7 +71,7 @@ public class Test_ExternalContainer_2 extends CommonTestRunner {
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

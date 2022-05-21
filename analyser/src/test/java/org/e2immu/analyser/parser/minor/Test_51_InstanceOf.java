@@ -29,7 +29,6 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -149,7 +148,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = d.iteration() == 0
                                 ? "<p:collection>/*(List<String>)*/" : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "collection:-1,list:-1" : "collection:1,list:0";
+                        String expectLv = d.iteration() == 0 ? "collection:-1,return add:-1" : "collection:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -166,7 +165,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 ? "<m:isEmpty>?\"Empty\":<m:get>"
                                 : "collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0)";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = "return add:0";
+                        String expectLv = d.iteration() == 0 ? "collection:-1,list:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
@@ -175,7 +174,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 : "collection instanceof List<String>&&null!=collection?collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0):<return value>";
                         assertEquals(expected, d.currentValue().toString());
 
-                        String expectedLv = "return add:0";
+                        String expectedLv = d.iteration() == 0 ? "collection:-1" : "";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -194,12 +193,18 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<m:getBase>" : "/*inline getBase*/base.stream()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("InstanceOf_3".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -310,11 +315,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
 
-                        String expect ="nullable instance type Object/*@Identity*/";
+                        String expect = "nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
 
-                        String expectLv = d.iteration() == 0 ? "object:0,return create:-1,string:-1" : "object:0,string:1";
+                        String expectLv = d.iteration() == 0 ? "return create:-1,string:-1" : "string:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -332,7 +337,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
-                        String expectLv = d.iteration() == 0 ? "object:1,return create:-1,string:-1" : "object:1,string:0";
+                        String expectLv = d.iteration() == 0 ? "object:-1,return create:-1" : "object:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -658,10 +663,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
@@ -1119,7 +1124,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertTrue(d.statementAnalysis().havePropertiesFromSubAnalysers());
                     assertEquals(6L, d.statementAnalysis().propertiesFromSubAnalysers().count());
                     DV reduced = d.statementAnalysis().propertiesFromSubAnalysers()
-                            .map(e->e.getValue().get(Property.CONTEXT_MODIFIED))
+                            .map(e -> e.getValue().get(Property.CONTEXT_MODIFIED))
                             .reduce(DV.MIN_INT_DV, DV::max);
                     assertEquals(d.iteration() <= 3, reduced.isDelayed());
                 }

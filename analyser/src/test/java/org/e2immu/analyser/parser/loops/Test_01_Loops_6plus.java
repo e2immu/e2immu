@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -572,7 +573,25 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
-        testClass("Loops_17", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 3, d.context().evaluationContext().allowBreakDelay());
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            assertFalse(d.evaluationContext().allowBreakDelay());
+            if ("map".equals(d.fieldInfo().name)) {
+                long errors = d.iteration() <= 2 ? 0 : 1;
+                assertEquals(errors, d.messageStream().get()
+                        .filter(m -> m.message().equals(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT))
+                        .count());
+            }
+        };
+        testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

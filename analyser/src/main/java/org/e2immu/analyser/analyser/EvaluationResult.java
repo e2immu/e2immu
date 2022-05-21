@@ -381,47 +381,61 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * DGSimplified_4, backupComparator line 135 shows a dilemma: bc == null ? 0 : bc.compare(...)
          * requires content not null in the "ifFalse" clause, but allows for null. Should we make the parameter
          * Nullable, or NotNull1? We prefer nullable.
+         * <p>
+         * we're breaking delays one variable at a time, so if we need to go into sources of loops, we'll do that
+         * first. See e.g. Project_0
          *
          * @param variable        the variable which occurs in the not null context
          * @param value           the variable's value. This can be a variable expression again (redirect).
          * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
          */
-        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public boolean variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, ForwardEvaluationInfo forwardEvaluationInfo) {
             assert evaluationContext != null;
             assert value != null;
-            if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
-            if (variable instanceof This) return; // nothing to be done here
+            if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return false;
+            if (variable instanceof This) return false; // nothing to be done here
 
+            boolean brokeDelayHigherUp = false;
             for (Variable sourceOfLoop : evaluationContext.loopSourceVariables(variable)) {
                 markRead(sourceOfLoop);  // TODO not correct, but done to trigger merge (no mechanism for that a t m)
                 Expression sourceValue = evaluationContext.currentValue(sourceOfLoop);
                 DV higher = MultiLevel.composeOneLevelMoreNotNull(notNullRequired);
-                variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, forwardEvaluationInfo);
+                brokeDelayHigherUp |= variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, forwardEvaluationInfo);
             }
 
             if (notNullRequired.isDelayed()) {
                 // simply set the delay
                 setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
-                return;
+                return false;
             }
 
-            CausesOfDelay cmDelays = evaluationContext.getConditionManager().causesOfDelay();
+            ConditionManager cm = evaluationContext.getConditionManager();
+            CausesOfDelay cmDelays = cm.causesOfDelay();
+            boolean brokeDelay;
             if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
                     forwardEvaluationInfo.getAssignmentTarget(), variable)) {
-                setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
-                return;
+                if (evaluationContext.allowBreakDelay() && !brokeDelayHigherUp &&
+                        causeOfConditionManagerDelayIsExternalNotNullInjected(cm.variables(), cmDelays)) {
+                    LOGGER.debug("Breaking condition manager delay based on {}", cmDelays);
+                    brokeDelay = true;
+                } else {
+                    setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
+                    return false;
+                }
+            } else {
+                brokeDelay = false;
             }
             DV effectivelyNotNull = evaluationContext.notNullAccordingToConditionManager(variable)
                     .maxIgnoreDelay(evaluationContext.notNullAccordingToConditionManager(value));
             if (effectivelyNotNull.isDelayed()) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, effectivelyNotNull);
-                return;
+                return false;
             }
 
             // using le() instead of equals() here is controversial. if a variable is not null according to the
             // condition manager, and we're requesting content not null, e.g., then what to do? see header of this method.
             if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull.valueIsTrue()) {
-                return; // great, no problem, no reason to complain nor increase the property
+                return false; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             boolean complain = forwardEvaluationInfo.isComplainInlineConditional();
@@ -430,6 +444,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
+            return brokeDelay;
+        }
+
+        private boolean causeOfConditionManagerDelayIsExternalNotNullInjected(List<Variable> variables,
+                                                                              CausesOfDelay cmDelays) {
+            Set<FieldInfo> delayedFields = cmDelays.causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.EXTERNAL_NOT_NULL)
+                    .map(c -> {
+                        if (c instanceof VariableCause vc && vc.variable() instanceof FieldReference fr)
+                            return fr.fieldInfo;
+                        if (c.location().getInfo() instanceof FieldInfo fi) return fi;
+                        return null;
+                    }).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
+            return variables.stream().anyMatch(v -> v instanceof FieldReference fr && delayedFields.contains(fr.fieldInfo));
         }
 
         private static final Set<CauseOfDelay.Cause> CM_CAUSES = Set.of(CauseOfDelay.Cause.BREAK_INIT_DELAY, CauseOfDelay.Cause.INITIAL_VALUE);

@@ -57,8 +57,8 @@ public class Test_04_NotNull extends CommonTestRunner {
             }
         };
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+        //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

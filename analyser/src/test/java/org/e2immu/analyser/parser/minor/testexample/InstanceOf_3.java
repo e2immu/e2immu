@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E2Immutable // not a container, see "add"'s parameter
+@E1Immutable // not a container, see "add"'s parameter; getBase is dependent
 public class InstanceOf_3 {
 
     @NotModified

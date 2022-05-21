@@ -122,7 +122,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                     // and therefore "1" remains nullable, 1st round
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>?<m:get>:<vl:sa>" : "null";

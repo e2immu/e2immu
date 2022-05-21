@@ -98,9 +98,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private List<MethodAnalyser> myStaticBlocks;
     private TypeAnalyser myTypeAnalyser;
 
-    private record SharedState(int iteration, EvaluationContext closure) {
-    }
-
     public FieldAnalyserImpl(FieldInfo fieldInfo,
                              TypeInfo primaryType,
                              TypeAnalysis ownerTypeAnalysis,
@@ -134,7 +131,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
-                .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
+                .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
                 .add(ANALYSE_IGNORE_MODIFICATIONS, sharedState -> analyseIgnoreModifications())
@@ -258,14 +255,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     @Override
-    public AnalyserResult analyse(Analyser.SharedState sharedState) {
+    public AnalyserResult analyse(SharedState sharedState) {
         int iteration = sharedState.iteration();
         LOGGER.info("Analysing field {} iteration {}", fqn, iteration);
 
         // analyser visitors
         try {
-            SharedState shared = new SharedState(iteration, sharedState.closure());
-            AnalysisStatus analysisStatus = analyserComponents.run(shared);
+            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
             if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
                 fieldAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
@@ -397,7 +393,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             AnalyserResult.Builder builder = new AnalyserResult.Builder();
             builder.setAnalysisStatus(NOT_YET_EXECUTED);
             LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
-            Analyser.SharedState shared = new Analyser.SharedState(sharedState.iteration(),
+            SharedState shared = new SharedState(sharedState.iteration(),
                     false, sharedState.closure());
             AnalyserResult lambdaResult = analyser.analyse(shared);
             LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
@@ -529,7 +525,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return null;
     }
 
-    private AnalysisStatus analyseNotNull() {
+    private AnalysisStatus analyseNotNull(SharedState sharedState) {
         if (fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL).isDone()) return DONE;
 
         if (fieldInfo.type.isPrimitiveExcludingVoid()) {
@@ -593,12 +589,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     CausesOfDelay causes = vi.getProperty(CONTEXT_NOT_NULL).causesOfDelay();
                     // are the delays on CNN directly linked to the variables that we are linked to?
                     // see Project_0bis
-                    return !causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
-                        if (c instanceof VariableCause vc) return filter.contains(vc.variable());
-                        if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
-                        if (c.location().getInfo() instanceof FieldInfo fi) return fieldInfo.equals(fi);
-                        return false;
-                    });
+                    boolean breakDelay = sharedState.allowBreakDelay() &&
+                            causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
+                                if (c instanceof VariableCause vc) return filter.contains(vc.variable());
+                                if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
+                                if (c.location().getInfo() instanceof FieldInfo fi) return fieldInfo.equals(fi);
+                                return false;
+                            });
+                    return !breakDelay;
                 })
                 .map(vi -> vi.getProperty(CONTEXT_NOT_NULL));
         DV bestOverContext = StreamUtil.reduceWithCancel(cnnStream, MultiLevel.NULLABLE_DV, DV::max, DV::isDelayed);
@@ -1382,7 +1380,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private AnalysisStatus analyseFinal(SharedState sharedState) {
         assert fieldAnalysis.getProperty(Property.FINAL).isDelayed();
-        assert sharedState.iteration == 0;
+        assert sharedState.iteration() == 0;
 
         if (fieldInfo.isExplicitlyFinal()) {
             fieldAnalysis.setProperty(Property.FINAL, DV.TRUE_DV);

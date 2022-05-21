@@ -69,14 +69,14 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // MUTABLE because without A API
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/`properties`.get(s)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -90,7 +90,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
@@ -130,14 +130,8 @@ public class Test_25_FieldReference extends CommonTestRunner {
             }
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    }
-                    if ("2".equals(d.statementId())) {
-                        String delayed = d.iteration() == 0
-                                ? "cm:newSet@Method_copy_2-E;cm:return copy@Method_copy_2-E;cm:this.setP@Method_copy_2-E;cm:this@Method_copy_2-E;initial:this.setP@Method_copy_0-C"
-                                : "mom@Parameter_setP";
-                        assertDv(d, delayed, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -165,17 +159,12 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("ParameterAnalysis".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                String delayed = switch (d.iteration()) {
-                    case 0, 1 -> "mom@Parameter_setP";
-                    case 2 -> "break_mom_delay@Parameter_setP;mom@Parameter_setP";
-                    default -> "xx";
-                };
-                assertDv(d.p(0), delayed, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("setP".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
