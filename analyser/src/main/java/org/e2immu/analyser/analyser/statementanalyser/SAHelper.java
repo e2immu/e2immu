@@ -24,7 +24,10 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.slf4j.Logger;
@@ -56,6 +59,30 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         return null;
     }
 
+    static void mergePreviousAndChangeOnlyGroupPropertyValues(
+            EvaluationContext evaluationContext,
+            Variable variable,
+            Map<Property, DV> previous,
+            Map<Property, DV> changeData,
+            GroupPropertyValues groupPropertyValues) {
+        GroupPropertyValues.PROPERTIES.forEach(k -> {
+            DV prev = previous.getOrDefault(k, k.valueWhenAbsent());
+            DV change = changeData == null ? k.valueWhenAbsent() : changeData.getOrDefault(k, k.valueWhenAbsent());
+            DV value = groupPropertyValue(k, prev, change, evaluationContext, variable);
+            groupPropertyValues.set(k, variable, value);
+        });
+    }
+
+    private static DV groupPropertyValue(Property k, DV prev, DV change, EvaluationContext evaluationContext, Variable variable) {
+        return switch (k) {
+            case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
+            case CONTEXT_MODIFIED, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL -> prev.max(change);
+            case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
+            case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);
+            case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
+            default -> throw new UnsupportedOperationException();
+        };
+    }
 
     static Map<Property, DV> mergePreviousAndChange(
             EvaluationContext evaluationContext,
@@ -77,14 +104,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             DV prev = previous.getOrDefault(k, k.valueWhenAbsent());
             DV change = changeData.getOrDefault(k, k.valueWhenAbsent());
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
-                DV value = switch (k) {
-                    case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
-                    case CONTEXT_MODIFIED, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL -> prev.max(change);
-                    case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
-                    case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);
-                    case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
-                    default -> throw new UnsupportedOperationException();
-                };
+                DV value = groupPropertyValue(k, prev, change, evaluationContext, variable);
                 groupPropertyValues.set(k, variable, value);
             } else {
                 switch (k) {
@@ -108,7 +128,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         DV change = res.getOrDefault(IN_NOT_NULL_CONTEXT, null);
         if (change != null) {
             assert change.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-            if(prev != null) {
+            if (prev != null) {
                 res.put(IN_NOT_NULL_CONTEXT, prev.min(change));
             }
         } else {
@@ -141,7 +161,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
 
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
-        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV: cImm);
+        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
 
         DV cCont = res.remove(CONTEXT_CONTAINER);
         groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);

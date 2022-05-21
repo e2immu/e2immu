@@ -401,13 +401,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
                 vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
                 boolean progress = vic.setValue(delayedValue, null, delayedVPs, EVALUATION);
-                if (changeData != null) {
-                    changeData.properties().forEach((p, dv) -> {
-                        if (GroupPropertyValues.PROPERTIES.contains(p)) {
-                            groupPropertyValues.set(p, variable, dv);
-                        }
-                    });
-                }
+                Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
+                SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
+                        previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
                 return new LoopResult(true, causes, progress);
             }
             // is the variable assigned inside the loop, but not in -E ?
@@ -425,14 +421,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
                     }
                     boolean progress = vic.setValue(value, null, properties, EVALUATION);
-                    // FIXME clean up, duplicate code
-                    if (changeData != null) {
-                        changeData.properties().forEach((p, dv) -> {
-                            if (GroupPropertyValues.PROPERTIES.contains(p)) {
-                                groupPropertyValues.set(p, variable, dv);
-                            }
-                        });
-                    }
+                    Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
+                    SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
+                            previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
                     return new LoopResult(true, causes, progress);
                 }
             }
