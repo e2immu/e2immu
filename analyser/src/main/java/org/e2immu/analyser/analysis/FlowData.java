@@ -79,7 +79,10 @@ public class FlowData {
     }
 
     public void makeUnreachable() {
-        setGuaranteedToBeReached(FlowData.NEVER);
+        setGuaranteedToBeReachedInMethod(FlowData.NEVER);
+        if(!guaranteedToBeReachedInCurrentBlock.isSet()) {
+            guaranteedToBeReachedInCurrentBlock.set(FlowData.NEVER);
+        }
         if (!initialTime.isSet()) initialTime.set(ILLEGAL_STATEMENT_TIME);
         if (!timeAfterEvaluation.isSet()) timeAfterEvaluation.set(ILLEGAL_STATEMENT_TIME);
         if (!timeAfterSubBlocks.isSet()) timeAfterSubBlocks.set(ILLEGAL_STATEMENT_TIME);
@@ -205,6 +208,7 @@ public class FlowData {
                 } catch (IllegalStateException ise) {
                     LOGGER.error("Overwriting guaranteedToBeReachedInCurrentBlock: old {}, new {}", guaranteedToBeReachedInCurrentBlock.get(),
                             executionInBlock);
+                    throw ise;
                 }
             }
         } else {

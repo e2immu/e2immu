@@ -14,20 +14,19 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Map;
 
 /*
 Variant on _1; without getter and setter
+
+map is never assigned, found to be null, which kills branch 0.1 in add
  */
-@E1Container
+@ERContainer
 public class TrieSimplified_1_2<T> {
 
-    @Modified
+    @NotModified
     private final TrieNode<T> root = new TrieNode<>();
 
     private static class TrieNode<T> {
@@ -35,7 +34,7 @@ public class TrieSimplified_1_2<T> {
     }
 
     @NotNull
-    @Modified
+    @NotModified
     public TrieNode<T> add(@NotNull String s) {
         if (root.map == null) {
             //
@@ -50,7 +49,7 @@ public class TrieSimplified_1_2<T> {
     }
 
     @NotNull
-    @Modified
+    @NotModified
     public synchronized TrieNode<T> addSynchronized(@NotNull String s) {
         if (root.map == null) {
             //

@@ -93,7 +93,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<T>";
+                        String expected = d.iteration() == 0 ? "<vl:it2>" : "instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -107,12 +107,11 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
             if ("joinLists".equals(d.methodInfo().name)) {
                 if ("it2".equals(d.variableName())) {
+                    String expected = d.iteration() == 0 ? "<vl:it2>" : "instance type Iterator<L>";
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<L>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<mmc:it2>" : "instance type Iterator<L>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
