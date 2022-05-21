@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
@@ -57,7 +58,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         AnalysisStatus statusFromLocalCm = AnalysisStatus.of(sharedState.localConditionManager().causesOfDelay());
 
         if (!startOfBlocks.isEmpty()) {
-            AnalysisStatus analysisStatus = haveSubBlocks(sharedState, startOfBlocks).combine(statusFromLocalCm);
+            AnalysisStatus analysisStatus = haveSubBlocks(sharedState, startOfBlocks).combine(statusFromLocalCm)
+                    .toAnalysisStatus();
             ensureEmptyPrecondition();
             return analysisStatus;
         }
@@ -226,12 +228,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         }
     }
 
-    private AnalysisStatus haveSubBlocks(StatementAnalyserSharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
+    private ProgressAndDelay haveSubBlocks(StatementAnalyserSharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         EvaluationContext evaluationContext = sharedState.evaluationContext();
 
         List<ExecutionOfBlock> executions = subBlocks_determineExecution(sharedState, startOfBlocks);
-        AnalysisStatus analysisStatus = DONE;
-
+        ProgressAndDelay analysisStatus = ProgressAndDelay.EMPTY;
 
         int blocksExecuted = 0;
         for (ExecutionOfBlock executionOfBlock : executions) {
@@ -352,10 +353,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         // whatever we do, we do not return DONE in the first iteration inside a loop, because of delayed values lingering
         // because we need to decide whether variables defined outside the loop are assigned in it.
-        if (statementAnalysis.inLoop() && sharedState.evaluationContext().getIteration() == 0 && analysisStatus == DONE) {
+        if (statementAnalysis.inLoop() && sharedState.evaluationContext().getIteration() == 0 && analysisStatus.isDone()) {
             CausesOfDelay delay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(Stage.MERGE),
                     CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
-            return ProgressWrapper.of(true, delay);
+            return new ProgressAndDelay(true, delay);
         }
         return analysisStatus.addProgress(progress);
     }

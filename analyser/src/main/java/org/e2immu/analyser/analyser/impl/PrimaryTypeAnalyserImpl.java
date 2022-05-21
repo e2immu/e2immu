@@ -111,7 +111,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
             builder.add(analyser, supplier);
         }
-        analyserComponents = builder.build();
+        // TODO in larger contexts, removing the allowBreakDelay immediately may be excessively slow
+        // maybe we should do that per PrimaryType, keeping a map?
+        analyserComponents = builder
+                .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
+                .build();
         LOGGER.debug("List of analysers: {}", analysers);
     }
 

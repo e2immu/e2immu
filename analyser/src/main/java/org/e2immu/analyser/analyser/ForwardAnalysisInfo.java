@@ -97,4 +97,9 @@ public record ForwardAnalysisInfo(DV execution,
         }
         return previous;
     }
+
+    public ForwardAnalysisInfo removeAllowBreakDelay() {
+        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
+                switchSelectorIsDelayed, false);
+    }
 }

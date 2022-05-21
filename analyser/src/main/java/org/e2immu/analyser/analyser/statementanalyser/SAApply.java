@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.ProgressWrapper;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.delay.*;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -168,9 +165,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus;
-        AnalysisStatus delayStatus = ProgressWrapper.of(progress, delay);
+        ProgressAndDelay delayStatus = new ProgressAndDelay(progress, delay);
         if (firstOfTwoCallsForECI) {
-            applyStatusAndEnnStatus = new ApplyStatusAndEnnStatus(delayStatus, CausesOfDelay.EMPTY);
+            applyStatusAndEnnStatus = new ApplyStatusAndEnnStatus(delayStatus, ProgressAndDelay.EMPTY);
         } else {
             applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
                     delayStatus, analyserContext, groupPropertyValues);
@@ -576,7 +573,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
      */
     private ApplyStatusAndEnnStatus contextProperties(StatementAnalyserSharedState sharedState,
                                                       EvaluationResult evaluationResult,
-                                                      AnalysisStatus delayIn,
+                                                      ProgressAndDelay delayIn,
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
@@ -606,26 +603,23 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 sharedState.evaluationContext());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        AnalysisStatus linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(computeLinkedVariables);
-        AnalysisStatus delay = delayIn.combine(linkDelays);
-
+        ProgressAndDelay linkDelays = computeLinkedVariablesCm.writeClusteredLinkedVariables(computeLinkedVariables);
 
         // 1
-        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
+        ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL));
-        delay = delay.combine(cnnStatus);
 
         // 2
-        AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
+        ProgressAndDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
+        boolean travelProgress;
         if (sharedState.evaluationContext().getIteration() == 0) {
             boolean cnnTravelsToFields = analyserContext.getConfiguration().analyserConfiguration()
                     .computeContextPropertiesOverAllMethods();
-            boolean progress = computeLinkedVariables.writeCnnTravelsToFields(cnnTravelsToFields);
-            if (progress && !delay.isProgress()) {
-                delay = new ProgressWrapper(delay.causesOfDelay());
-            }
-        } // else: static linking takes place in the first iteration
+            travelProgress = computeLinkedVariables.writeCnnTravelsToFields(cnnTravelsToFields);
+        } else {
+            travelProgress = false;
+        }
         statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
         // the following statement is necessary to keep this statement from disappearing if it still has to process
@@ -644,7 +638,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 3
-        AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
+        ProgressAndDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
         CausesOfDelay anyExtImm = statementAnalysis.variableStream()
@@ -659,12 +653,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 4
-        AnalysisStatus cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
+        ProgressAndDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
-        delay = delay.combine(cImmStatus);
 
         // 5
-        AnalysisStatus extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
                 groupPropertyValues.getMap(EXTERNAL_CONTAINER));
         CausesOfDelay anyExtCont = statementAnalysis.variableStream()
                 .map(vi -> {
@@ -678,15 +671,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 6
-        AnalysisStatus cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
-        delay = delay.combine(cContStatus);
+        ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         // 7
-        AnalysisStatus cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        delay = delay.combine(cmStatus);
+        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
         // 8
-        AnalysisStatus extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
+        ProgressAndDelay extIgnMod = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
         CausesOfDelay anyExtIgnMod = statementAnalysis.variableStream()
                 .map(vi -> {
@@ -710,17 +701,19 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         Precondition precondition = evaluationResult.precondition();
-        boolean progress = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
+        boolean preconditionProgress = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager());
-        if (progress && delay.isDelayed() && !delay.isProgress()) {
-            delay = new ProgressWrapper(delay.causesOfDelay());
-        }
 
-        AnalysisStatus anyDelays = AnalysisStatus.of(anyEnn.merge(anyExtImm).merge(anyExtCont).merge(anyExtIgnMod));
-        AnalysisStatus externalDelay = ennStatus.combine(extImmStatus).combine(extContStatus).combine(extIgnMod)
-                .combine(anyDelays);
 
-        return new ApplyStatusAndEnnStatus(delay, externalDelay);
+        ProgressAndDelay status = delayIn.combine(linkDelays).combine(cContStatus).combine(cnnStatus)
+                .combine(cImmStatus).combine(cnnStatus).combine(cmStatus)
+                .addProgress(travelProgress || preconditionProgress);
+
+        CausesOfDelay anyDelays = anyEnn.merge(anyExtImm).merge(anyExtCont).merge(anyExtIgnMod);
+        ProgressAndDelay externalDelay = ennStatus.combine(extImmStatus).combine(extContStatus).combine(extIgnMod);
+        ProgressAndDelay externalStatus = externalDelay.merge(anyDelays);
+
+        return new ApplyStatusAndEnnStatus(status, externalStatus);
     }
 
     // filter out inline conditional on throws statements, when the state becomes "false"

@@ -205,13 +205,13 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * Main recursive method, which follows the navigation chain for all statements in a block. When called from the method analyser,
      * it loops over the statements of the method.
      *
-     * @param iteration           the current iteration
-     * @param forwardAnalysisInfo information from the level above
+     * @param iteration             the current iteration
+     * @param forwardAnalysisInfoIn information from the level above
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     public AnalyserResult analyseAllStatementsInBlock(int iteration,
-                                                      ForwardAnalysisInfo forwardAnalysisInfo,
+                                                      ForwardAnalysisInfo forwardAnalysisInfoIn,
                                                       EvaluationContext closure) {
         try {
             // skip all the statements that are already in the DONE state...
@@ -227,6 +227,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             StatementAnalyser previousStatement = previousAndFirst.previous;
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
+            ForwardAnalysisInfo forwardAnalysisInfo = forwardAnalysisInfoIn;
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
@@ -255,6 +256,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 previousStatement = statementAnalyser;
 
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
+
+                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
+                    LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
+                    forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
+                }
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {

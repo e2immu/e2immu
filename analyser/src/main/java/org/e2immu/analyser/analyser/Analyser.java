@@ -21,13 +21,22 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.stream.Stream;
 
 public interface Analyser extends Comparable<Analyser> {
 
+
     record SharedState(int iteration, boolean allowBreakDelay, EvaluationContext closure) {
+        private static final Logger LOGGER = LoggerFactory.getLogger(Analyser.class);
+
+        public SharedState removeAllowBreakDelay() {
+            if (allowBreakDelay) LOGGER.debug("**** Removing allow break delay ****");
+            return new SharedState(iteration, false, closure);
+        }
     }
 
     enum AnalyserIdentification {

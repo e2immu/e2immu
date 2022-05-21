@@ -14,8 +14,45 @@
 
 package org.e2immu.analyser.analyser.delay;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.Properties;
 
 // used for situations where progress can be true while causes is done.
 public record ProgressAndDelay(boolean progress, CausesOfDelay causes) {
+    public static ProgressAndDelay EMPTY = new ProgressAndDelay(false, CausesOfDelay.EMPTY);
+
+    public ProgressAndDelay combine(ProgressAndDelay other) {
+        return new ProgressAndDelay(progress || other.progress, causes.merge(other.causes));
+    }
+
+    public ProgressAndDelay combine(AnalysisStatus other) {
+        return new ProgressAndDelay(progress || other.isProgress(), causes.merge(other.causesOfDelay()));
+    }
+
+    public ProgressAndDelay addProgress(boolean progress) {
+        if(progress) {
+            return new ProgressAndDelay(true, causes);
+        }
+        return this;
+    }
+
+    public ProgressAndDelay merge(CausesOfDelay anyDelays) {
+        if(anyDelays.isDelayed()) {
+            return new ProgressAndDelay(progress, causes.merge(anyDelays));
+        }
+        return this;
+    }
+
+    public boolean isDelayed() {
+        return causes.isDelayed();
+    }
+
+    public AnalysisStatus toAnalysisStatus() {
+        return AnalysisStatus.of(causes).addProgress(progress);
+    }
+
+    public boolean isDone() {
+        return causes().isDone();
+    }
 }

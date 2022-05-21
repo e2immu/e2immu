@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.FlowData;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.MARK_CLEAR_INCREMENTAL;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
@@ -140,8 +140,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         // post-process
 
-        AnalysisStatus statusPost = applyResult.status().combine(AnalysisStatus.of(causes));
-        AnalysisStatus ennStatus = applyResult.ennStatus();
+        ProgressAndDelay statusPost = applyResult.status().merge(causes);
+        ProgressAndDelay ennStatus = applyResult.ennStatus();
 
         if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
@@ -157,16 +157,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 LOGGER.debug("Assignment expressions: {}", assignments);
                 EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
                 ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, reResult, false);
-                statusPost = assignmentResult.status().combine(AnalysisStatus.of(causes));
+                statusPost = assignmentResult.status().merge(causes);
                 ennStatus = applyResult.ennStatus().combine(assignmentResult.ennStatus());
                 result = reResult;
             } else {
                 // we have to write the precondition from method (there is no precondition in "assignments")
                 boolean progress = statementAnalysis.applyPrecondition(null,
                         sharedState.evaluationContext(), sharedState.localConditionManager());
-                if (progress && statusPost.isDelayed() && !statusPost.isProgress()) {
-                    statusPost = new ProgressWrapper(statusPost.causesOfDelay());
-                }
+                statusPost = statusPost.addProgress(progress);
             }
         }
         if (ennStatus.isDelayed()) {
@@ -176,7 +174,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         Expression value = result.value();
         assert value != null; // EmptyExpression in case there really is no value
-        boolean valueIsDelayed = value.isDelayed() || statusPost != DONE;
+        boolean valueIsDelayed = value.isDelayed() || statusPost.isDelayed();
 
         CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
         if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
@@ -217,7 +215,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         statementAnalysis.stateData().setValueOfExpression(value);
 
-        return ennStatus.combine(statusPost).combine(AnalysisStatus.of(stateForLoop));
+        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
+        return endResult.toAnalysisStatus();
     }
 
     private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes, Structure structure) {

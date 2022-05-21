@@ -12,17 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.statementanalyser;
+package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
+public class NotNull_2 {
 
-/*
-    delays on ENN are dealt with later than normal delays on values
-     */
-record ApplyStatusAndEnnStatus(ProgressAndDelay status, ProgressAndDelay ennStatus) {
-    public AnalysisStatus combinedStatus() {
-        return AnalysisStatus.of(status.causes().merge(ennStatus.causes()))
-                .addProgress(status().progress() || ennStatus().progress());
+    private final String s;
+
+    public NotNull_2(String input) {
+        s = input;
+    }
+
+    public String lowerCase() {
+        return s == null ? "?" : s.toLowerCase();
     }
 }

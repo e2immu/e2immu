@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
@@ -61,8 +62,10 @@ public class AnalyserComponents<T, S> {
     private final AnalysisStatus[] state;
     private final boolean limitCausesOfDelay;
     private final Map<WithInspectionAndAnalysis, Info> delayHistogram;
+    private final Function<S, S> updateUponProgress;
 
-    private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
+    private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers,
+                               Function<S, S> updateUponProgress) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
@@ -72,6 +75,7 @@ public class AnalyserComponents<T, S> {
         } else {
             delayHistogram = null;
         }
+        this.updateUponProgress = updateUponProgress;
     }
 
     public AnalysisStatus getStatus(String t) {
@@ -86,6 +90,7 @@ public class AnalyserComponents<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
         private final AnalyserProgram analyserProgram;
         private boolean limitCausesOfDelay;
+        private Function<S, S> updateUponProgress;
 
         public Builder(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
@@ -107,8 +112,13 @@ public class AnalyserComponents<T, S> {
             return this;
         }
 
+        public Builder<T, S> setUpdateUponProgress(Function<S, S> updateUponProgress) {
+            this.updateUponProgress = updateUponProgress;
+            return this;
+        }
+
         public AnalyserComponents<T, S> build() {
-            return new AnalyserComponents<>(limitCausesOfDelay, suppliers);
+            return new AnalyserComponents<>(limitCausesOfDelay, suppliers, updateUponProgress);
         }
     }
 
@@ -122,10 +132,11 @@ public class AnalyserComponents<T, S> {
 
     // all done -> mark done for this and all subsequent steps, don't execute them
     // run-again -> will be run again, but does not delay
-    public AnalysisStatus run(S s) {
+    public AnalysisStatus run(S sIn) {
         int i = 0;
         AnalysisStatus combined = DONE;
         boolean progress = false;
+        S s = sIn;
         for (AnalysisStatus.AnalysisResultSupplier<S> supplier : suppliers.values()) {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
@@ -134,6 +145,9 @@ public class AnalyserComponents<T, S> {
                 assert afterExec != NOT_YET_EXECUTED;
                 if (afterExec == DONE || afterExec == DONE_ALL) {
                     progress = true;
+                    if (updateUponProgress != null) {
+                        s = updateUponProgress.apply(s);
+                    }
                 }
                 if (afterExec == DONE_ALL) {
                     while (i < state.length) {

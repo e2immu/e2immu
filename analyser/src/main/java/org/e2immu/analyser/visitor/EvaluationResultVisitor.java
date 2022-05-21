@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 
@@ -33,8 +34,8 @@ public interface EvaluationResultVisitor {
                 String statementId,
                 StatementAnalysis statementAnalysis,
                 EvaluationResult evaluationResult,
-                AnalysisStatus status,
-                AnalysisStatus externalStatus) {
+                ProgressAndDelay status,
+                ProgressAndDelay externalStatus) {
 
         public boolean haveSetProperty(String variableName, Property property) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)

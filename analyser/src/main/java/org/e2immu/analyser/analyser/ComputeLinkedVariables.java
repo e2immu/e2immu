@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -255,7 +256,7 @@ public class ComputeLinkedVariables {
         return propertyValue;
     }
 
-    public AnalysisStatus write(Property property, Map<Variable, DV> propertyValues) {
+    public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
         try {
             return writeProperty(property, propertyValues);
         } catch (IllegalStateException ise) {
@@ -264,7 +265,7 @@ public class ComputeLinkedVariables {
         }
     }
 
-    private AnalysisStatus writeProperty(Property property, Map<Variable, DV> propertyValues) {
+    private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
         for (Cluster cluster : clusters) {
@@ -313,7 +314,7 @@ public class ComputeLinkedVariables {
                 }
             }
         }
-        return ProgressWrapper.of(progress, causes);
+        return new ProgressAndDelay(progress, causes);
     }
 
     private Map<Variable, Set<Variable>> staticallyAssignedVariables() {
@@ -336,7 +337,7 @@ public class ComputeLinkedVariables {
      * only used on the CM version (not statically assigned) with the statically assigned variables forming
      * the core.
      */
-    public AnalysisStatus writeClusteredLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV) {
+    public ProgressAndDelay writeClusteredLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV) {
         Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedCLV.staticallyAssignedVariables();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
@@ -363,7 +364,7 @@ public class ComputeLinkedVariables {
             vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
             progress |= writeLinkedVariables(null, variable, vic, LinkedVariables.EMPTY);
         }
-        return ProgressWrapper.of(progress, causes);
+        return new ProgressAndDelay(progress, causes);
     }
 
     private boolean writeLinkedVariables(Cluster cluster, Variable variable, VariableInfoContainer vic, LinkedVariables linkedVariables) {

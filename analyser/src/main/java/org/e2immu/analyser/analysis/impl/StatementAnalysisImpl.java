@@ -1072,7 +1072,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                             boolean alwaysEscapesOrReturns) {
     }
 
-    public record MergeResult(AnalysisStatus analysisStatus, Expression translatedAddToStateAfterMerge) {
+    public record MergeResult(ProgressAndDelay analysisStatus, Expression translatedAddToStateAfterMerge) {
     }
 
     /**
@@ -1270,8 +1270,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         });
 
-        AnalysisStatus mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap, delay)
+        ProgressAndDelay soFar = new ProgressAndDelay(progress, delay );
+        ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
+                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap, soFar)
                 .addProgress(progress);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
@@ -1338,15 +1339,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
-    private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext,
-                                                     GroupPropertyValues groupPropertyValues,
-                                                     Map<Variable, LinkedVariables> linkedVariablesMap,
-                                                     Set<Variable> variablesWhereMergeOverwrites,
-                                                     Set<LocalVariableReference> newlyCreatedScopeVariables,
-                                                     PrepareMerge prepareMerge,
-                                                     Map<Variable, DV> setCnnVariables,
-                                                     TranslationMap translationMap,
-                                                     CausesOfDelay delay) {
+    private ProgressAndDelay linkingAndGroupProperties(EvaluationContext evaluationContext,
+                                                       GroupPropertyValues groupPropertyValues,
+                                                       Map<Variable, LinkedVariables> linkedVariablesMap,
+                                                       Set<Variable> variablesWhereMergeOverwrites,
+                                                       Set<LocalVariableReference> newlyCreatedScopeVariables,
+                                                       PrepareMerge prepareMerge,
+                                                       Map<Variable, DV> setCnnVariables,
+                                                       TranslationMap translationMap,
+                                                       ProgressAndDelay delay) {
 
         for (VariableInfoContainer vic : prepareMerge.toIgnore) {
             Variable variable = vic.current().variable();
@@ -1411,35 +1412,35 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             groupPropertyValues.translate(translationMap);
         }
 
-        AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
+        ProgressAndDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
         Map<Variable, DV> cnnMap = groupPropertyValues.getMap(CONTEXT_NOT_NULL);
         for (Map.Entry<Variable, DV> e : setCnnVariables.entrySet()) {
             cnnMap.merge(e.getKey(), e.getValue(), DV::max);
         }
-        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL, cnnMap);
+        ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL, cnnMap);
 
-        AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
+        ProgressAndDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        AnalysisStatus extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
+        ProgressAndDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
                 groupPropertyValues.getMap(EXTERNAL_CONTAINER));
 
-        AnalysisStatus extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
+        ProgressAndDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
 
-        AnalysisStatus cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
+        ProgressAndDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
-        AnalysisStatus cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
+        ProgressAndDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
-        AnalysisStatus cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
+        ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
         return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
-                .combine(AnalysisStatus.of(externalDelaysOnIgnoredVariables))
+                .merge(externalDelaysOnIgnoredVariables)
                 .addProgress(progress);
     }
 
