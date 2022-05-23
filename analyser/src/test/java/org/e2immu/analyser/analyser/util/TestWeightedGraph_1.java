@@ -34,7 +34,7 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestWeightedGraph {
+public class TestWeightedGraph_1 {
 
     Variable thisVar, toDo, nodeMap, cycle, smallerCycle, removed;
     CausesOfDelay delay;
@@ -95,10 +95,10 @@ public class TestWeightedGraph {
         Map<Variable, DV> startAtToDo = wg.links(toDo, INDEPENDENT1_DV, true);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(v3, startAtToDo.get(cycle));
-        assertEquals(v3, startAtToDo.get(nodeMap));
-        assertEquals(v3, startAtToDo.get(smallerCycle));
-        assertEquals(delay, startAtToDo.get(thisVar)); // this one may be a bit surprising (expect v3), but it is difficult to avoid
+        assertEquals(delay, startAtToDo.get(cycle));
+        assertEquals(delay, startAtToDo.get(nodeMap));
+        assertEquals(delay, startAtToDo.get(smallerCycle));
+        assertEquals(delay, startAtToDo.get(thisVar));
         assertEquals(delay, startAtToDo.get(removed));
     }
 

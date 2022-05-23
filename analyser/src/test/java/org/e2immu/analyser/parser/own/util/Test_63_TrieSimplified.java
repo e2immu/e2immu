@@ -511,7 +511,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
@@ -525,7 +525,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -541,7 +541,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             default -> "root";
                         };
                         assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -576,28 +576,27 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String linked = "strings:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.0.0".equals(d.statementId()) || "1.0.1.0.1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("strings:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertFalse(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("2.0.0".equals(d.statementId())) {
-                        assertEquals("strings:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertFalse(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
@@ -653,6 +652,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             default -> "";
                         };
                         assertEquals(expected, d.currentValue().causesOfDelay().toString());
+                        String linked = d.iteration() <= 2 ? "this.root:0,this:-1" : "this.root:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String linkDelay = switch (d.iteration()) {
+                            case 0 -> "initial:this.root@Method_add_0-C";
+                            case 1 -> "initial@Field_data;initial@Field_map;initial@Field_root";
+                            case 2 -> "initial@Field_root";
+                            default -> "";
+                        };
+                        assertEquals(linkDelay, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
@@ -684,14 +692,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(merge, d.currentValue().toString());
                         assertEquals(d.iteration() >= 2, d.currentValue().isDone());
 
-                        String links = switch (d.iteration()) {
-                            case 0, 1 -> "node.map:-1,node:-1,this.root:-1";
-                            default -> "node.map:2,node:0,this.root:0";
-                        };
+                        String links = d.iteration() <= 2 ? "node.map:-1,this.root:0,this:-1" : "node.map:2,this.root:0";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String current = switch (d.iteration()) {
                             case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
                             case 1 -> "null==<f:node.map>?<vp:TrieNode<T>:container@Class_TrieNode>:<vl:node>";
@@ -701,7 +706,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String val = switch (d.iteration()) {
                             case 0 -> "<vp:TrieNode<T>:container@Class_TrieNode>";
                             case 1 -> "<vp:TrieNode<T>:initial@Field_data;initial@Field_map>";
@@ -710,7 +715,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(val, d.currentValue().toString());
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>?<vp:TrieNode<T>:container@Class_TrieNode>:strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<vl:node>";
@@ -783,76 +788,67 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     } else fail("Have scope " + fr.scope + " in iteration " + d.iteration() + ", " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    if ("node".equals(fr.scope.toString())) {
+                    if (fr.scopeVariable != null && "node".equals(fr.scopeVariable.simpleName())) {
+                        String linked101 = switch (d.iteration()) {
+                            case 0, 1 -> "newTrieNode:-1,node:-1,s:-1,this.root:-1,this:-1";
+                            case 2 -> "newTrieNode:-1,node:-1,this.root:-1,this:-1";
+                            default -> "newTrieNode:3,node:2,this.root:2";
+                        };
                         if ("1.0.1.0.0".equals(d.statementId())) {
-                            String linked = d.iteration() <= 1 ? "node.map:-1,node:-1,this.root:-1" : "node.map:0,node:2,this.root:2"; // missing: node$1.map
+                            // checking eval of 1.0.1
+                            VariableInfo eval = d.variableInfoContainer().getPreviousOrInitial();
+                            String linkedE = d.iteration() <= 2 ? "node:-1,this.root:-1,this:-1" : "node:2,this.root:2";
+                            assertEquals(linkedE, eval.getLinkedVariables().toString());
+                            String delayE = switch (d.iteration()) {
+                                case 0 -> "initial:this.root@Method_add_0-C";
+                                case 1 -> "initial@Field_data;initial@Field_map;initial@Field_root";
+                                case 2 -> "initial@Field_root";
+                                default -> "";
+                            };
+                            assertEquals(delayE, eval.getLinkedVariables().causesOfDelay().toString());
+
+                            String linked = d.iteration() <= 2 ? "node:-1,this.root:-1,this:-1" : "node:2,this.root:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                            assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
+                            assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                                    d.currentValue().toString());
                         }
                         if ("1.0.1.0.1".equals(d.statementId())) {
-                            assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
+                            assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                                    d.currentValue().toString());
                         }
                         if ("1.0.1.0.2".equals(d.statementId())) {
-                            String expected = d.iteration() <= 1 ? "<mmc:map>" : "instance type HashMap<String,TrieNode<T>>";
+                            String expected = d.iteration() <= 1 ? "<f:node.map>" : "instance type HashMap<String,TrieNode<T>>";
                             assertEquals(expected, d.currentValue().toString());
-                            String linked = d.iteration() <= 1 ? "newTrieNode:-1,node.map:-1,node:-1,this.root:-1"
-                                    : "newTrieNode:3,node.map:0,node:2,this.root:2";
+                            String linked = d.iteration() <= 2 ? "newTrieNode:-1,node:-1,this.root:-1,this:-1"
+                                    : "newTrieNode:3,node:2,this.root:2";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         }
                         if ("1.0.1.1.0".equals(d.statementId())) {
                             // newTrieNode = node.map.get(s)
-                            String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
-                                default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
-                            };
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "immutable@Class_TrieNode";
-                                case 1 -> "initial@Field_data;initial@Field_map";
-                                default -> "";
-                            };
-                            assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+
+                            assertEquals(linked101, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("1.0.1.1.1".equals(d.statementId())) {
-                            String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
-                                default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
-                            };
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "immutable@Class_TrieNode";
-                                case 1 -> "initial@Field_data;initial@Field_map";
-                                default -> "";
-                            };
-                            assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                            assertEquals(linked101, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("1.0.1".equals(d.statementId())) {
-                            String linked = switch (d.iteration()) {
-                                case 0, 1 -> "newTrieNode:-1,node.map:-1,node:-1,this.root:-1";
-                                default -> "newTrieNode:3,node.map:0,node:2,this.root:2";
-                            };
-                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "immutable@Class_TrieNode";
-                                case 1 -> "initial@Field_data;initial@Field_map";
-                                default -> "";
-                            };
-                            assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                            assertEquals(linked101, d.variableInfo().getLinkedVariables().toString());
                         }
                         String value = switch (d.iteration()) {
-                            case 0 -> "strings.length>0&&(<null-check>||<null-check>)?<mmc:map>:<f:map>";
-                            case 1 -> "strings.length>0?<null-check>||<null-check>?<mmc:map>:<f:map>:nullable instance type Map<String,TrieNode<T>>";
+                            case 0 -> "<null-check>&&strings.length>0?<f:node.map>:<f:map>";
+                            case 1 -> "strings.length>0?<null-check>?<f:node.map>:<f:map>:nullable instance type Map<String,TrieNode<T>>";
                             default -> "strings.length>0&&null==node$1.map$0?instance type HashMap<String,TrieNode<T>>:nullable instance type Map<String,TrieNode<T>>";
                         };
                         if ("3".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
-                            String expectLinked = d.iteration() <= 1 ? "data:-1,node.data:-1,node.map:-1,node:-1,this.root:-1"
-                                    : "data:3,node.data:2,node.map:0,node:2,this.root:2";
+                            String expectLinked = d.iteration() <= 2 ? "data:-1,node.data:-1,node:-1,this.root:-1,this:-1"
+                                    : "data:3,node.data:2,node:2,this.root:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
-                                case 0 -> "immutable@Class_TrieNode";
-                                case 1 -> "initial@Field_data;initial@Field_map";
+                                case 0 -> "initial:node@Method_add_1.0.1.1.0-C;initial:this.root@Method_add_0-C";
+                                case 1 -> "initial:node@Method_add_1.0.1-C;initial@Field_data;initial@Field_map;initial@Field_root";
+                                case 2 -> "initial@Field_root";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -860,23 +856,50 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         }
                         if ("4".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
-                            String linkedVars = switch (d.iteration()) {
-                                case 0, 1 -> "data:-1,node.data:-1,node.map:-1,node:-1,return add:-1,this.root:-1";
-                                default -> "data:3,node.data:2,node.map:0,node:2,return add:2,this.root:2";
-                            };
+                            String linkedVars = d.iteration() <= 2 ? "data:-1,node.data:-1,node:-1,return add:-1,this.root:-1,this:-1"
+                                    : "data:3,node.data:2,node:2,return add:2,this.root:2";
                             assertEquals(linkedVars, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
-                                case 0 -> "immutable@Class_TrieNode";
-                                case 1 -> "initial@Field_data;initial@Field_map";
+                                case 0 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial:this.root@Method_add_0-C";
+                                case 1 -> "initial:node@Method_add_1.0.1-C;initial:s@Method_add_1.0.1.1.0-E;initial@Field_data;initial@Field_map;initial@Field_root";
+                                case 2 -> "initial@Field_root";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
                         }
-                    } else fail("Have scope " + fr.scope + " in iteration " + d.iteration() + ", " + d.statementId());
+                    } else
+                        fail("Have scope variable " + fr.scopeVariable + " in iteration " + d.iteration() + ", "
+                                + d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() <= 2 ? "node:0,this:-1" : "node:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String linkDelay = switch (d.iteration()) {
+                            case 0 -> "initial:this.root@Method_add_0-C";
+                            case 1 -> "initial@Field_data;initial@Field_map;initial@Field_root";
+                            case 2 -> "initial@Field_root";
+                            default -> "";
+                        };
+                        assertEquals(linkDelay, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        // checking on 1-E
+                        VariableInfo eval1E = d.variableInfoContainer().getPreviousOrInitial();
+                        String linked = d.iteration() <= 2 ? "node:0,this:-1" : "node:0";
+                        assertEquals(linked, eval1E.getLinkedVariables().toString());
+                        String linkDelay = switch (d.iteration()) {
+                            case 0 -> "initial:this.root@Method_add_0-C";
+                            case 1 -> "initial@Field_data;initial@Field_map;initial@Field_root";
+                            case 2 -> "initial@Field_root";
+                            default -> "";
+                        };
+                        assertEquals(linkDelay, eval1E.getLinkedVariables().causesOfDelay().toString());
                     }
                 }
             }
@@ -910,6 +933,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                }
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.evaluationResult().value().toString());
@@ -972,11 +998,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertEquals("null", ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                String linked = d.iteration() <= 1 ? "" : "data:3,node.data:2,this.root:2";
+                String linked = d.iteration() <= 2 ? "NOT_YET_SET" : "data:3,node.data:2,this.root:2";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 String expected = switch (d.iteration()) {
-                    case 0 -> "immutable@Class_TrieNode";
-                    case 1 -> "initial@Field_data;initial@Field_map";
+                    case 0, 1, 2 -> "link@NOT_YET_SET";
                     default -> "";
                 };
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().toString());

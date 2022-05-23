@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
-import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.WeightedGraph;
@@ -182,7 +181,7 @@ public class ComputeLinkedVariables {
         }
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        weightedGraph.addNode(variable, curated.variables(), true);
+        weightedGraph.addNode(variable, curated.variables(), true, DV::min);
         boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
         // context modified for the return variable is never linked, but the variables themselves must be present
         if (accountForDelay && curated.isDelayed()) {
@@ -229,6 +228,7 @@ public class ComputeLinkedVariables {
                 }
                 Cluster cluster = new Cluster(reachable, clusterDelay);
                 result.add(cluster);
+                assert Collections.disjoint(reachable, done): "This is not good";
                 done.addAll(reachable);
             }
         }

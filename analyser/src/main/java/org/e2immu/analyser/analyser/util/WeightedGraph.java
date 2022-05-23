@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.STATICALLY_ASSIGNED_DV;
 
@@ -94,6 +95,9 @@ public class WeightedGraph extends Freezable {
                     } else {
                         DV newDistanceToN = min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
+                        if (newDistanceToN.lt(currentDistanceToN)) {
+                            recursivelyComputeLinks(n, distanceToStartingPoint, maxValueIncl, followDelayed);
+                        }
                     }
                 } // else: ignore delayed links!
             });
@@ -133,21 +137,21 @@ public class WeightedGraph extends Freezable {
     @Only(before = "frozen")
     @Modified
     public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn) {
-        addNode(v, dependsOn, false);
+        addNode(v, dependsOn, false, (o, n)->o);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn, boolean bidirectional, BinaryOperator<DV> merger) {
         ensureNotFrozen();
         Node node = getOrCreate(v);
         for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {
             if (node.dependsOn == null) node.dependsOn = new TreeMap<>();
-            node.dependsOn.put(e.getKey(), e.getValue());
+            node.dependsOn.merge(e.getKey(), e.getValue(), merger);
             if (bidirectional) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) n.dependsOn = new TreeMap<>();
-                n.dependsOn.put(v, e.getValue());
+                n.dependsOn.merge(v, e.getValue(), merger);
             }
         }
     }

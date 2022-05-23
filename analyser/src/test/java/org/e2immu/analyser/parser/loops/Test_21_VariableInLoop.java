@@ -123,6 +123,12 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     // and therefore "1" remains nullable, 1st round
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "firstStatementAnalyser:0,return findFirstStatementWithDelays:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
+                            case 1 -> "firstStatementAnalyser:0,return findFirstStatementWithDelays:0,sa.navigationData().next:3,scope-59:18:-1,scope-60:47:-1";
+                            default -> "firstStatementAnalyser:0,return findFirstStatementWithDelays:0,sa.navigationData().next:3,scope-59:18:3,scope-60:47:3";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>?<m:get>:<vl:sa>" : "null";

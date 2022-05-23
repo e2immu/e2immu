@@ -528,7 +528,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected2, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() <= 4
                                 ? "<new:OutputBuilder>"
                                 : "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
@@ -650,63 +650,62 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor8_1_2 = d -> {
-        assertEquals(d.iteration() == 8, d.context().evaluationContext().allowBreakDelay());
-
-        if ("output2".equals(d.methodInfo().name)) {
-            if ("outputBuilder".equals(d.variableName())) {
-                if ("2.0.0.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
-                    assertEquals(expected, d.currentValue().toString());
-                }
-                if ("3".equals(d.statementId())) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    String expected = d.iteration() <= 4
-                            ? "<new:OutputBuilder>"
-                            : "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
-                    assertEquals(expected, d.currentValue().toString());
-                }
-            }
-            if (d.variable() instanceof ReturnVariable) {
-                if ("3".equals(d.statementId())) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    String expected = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<new:OutputBuilder>";
-                        case 3, 4 -> "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):<new:OutputBuilder>";
-                        default -> "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
-                    };
-                    assertEquals(expected, d.currentValue().toString());
-                }
-            }
-            if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
-                assertEquals("this", fr.scope.toString());
-                if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<f:object>" : "nullable instance type Expression";
-
-                    // delay is on 2-C
-                    VariableInfo init = d.variableInfoContainer().getPreviousOrInitial();
-                    assertTrue(d.variableInfoContainer().isInitial());
-                    assertEquals(expected, init.getValue().toString());
-
-                    // merge:
-                    assertEquals(expected, d.currentValue().toString());
-
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                }
-            }
-        }
-    };
-
     // with the recursive call, the second call commented out
     @Test
     public void test_8_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            assertEquals(d.iteration() == 8, d.context().evaluationContext().allowBreakDelay());
+
+            if ("output2".equals(d.methodInfo().name)) {
+                if ("outputBuilder".equals(d.variableName())) {
+                    if ("2.0.0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 4 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() <= 4
+                                ? "<new:OutputBuilder>"
+                                : "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2 -> "<new:OutputBuilder>";
+                            case 3, 4 -> "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):<new:OutputBuilder>";
+                            default -> "!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "object".equals(fr.fieldInfo.name)) {
+                    assertEquals("this", fr.scope.toString());
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:object>" : "nullable instance type Expression";
+
+                        // delay is on 2-C
+                        VariableInfo init = d.variableInfoContainer().getPreviousOrInitial();
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        assertEquals(expected, init.getValue().toString());
+
+                        // merge:
+                        assertEquals(expected, d.currentValue().toString());
+
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() <= 2 ? "<m:output2>" : "/*inline output2*/nullable instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -715,7 +714,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8_1", 0, DONT_CARE, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor8_1_2)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
