@@ -1039,7 +1039,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return object.linkedVariables(context)
                     .merge(parameterExpressions.get(0).linkedVariables(context))
                     .minimum(LinkedVariables.ASSIGNED_DV)
-                    .changeAllToDelay(identity);
+                    .changeNonStaticallyAssignedToDelay(identity);
         }
 
         // RULE 3: in a factory method, the result links to the parameters, directly

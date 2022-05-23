@@ -119,11 +119,12 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     assertEquals("this", fr.scope.toString());
                     assertNotNull(fr.scopeVariable);
                     assertEquals("this", fr.scopeVariable.toString());
-                    assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                     if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertEquals("1.0.1-E", d.variableInfo().getAssignmentIds().getLatestAssignment());
                     }
                     if ("1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertEquals("1:M", d.variableInfo().getAssignmentIds().getLatestAssignment());
                     }
                 }

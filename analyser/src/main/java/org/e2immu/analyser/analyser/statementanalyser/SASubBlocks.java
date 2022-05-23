@@ -285,12 +285,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             } else {
                 lastStatements = executions.stream()
                         .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.getStatementAnalysis().flowData().isUnreachable())
-                        .map(ex -> new StatementAnalysisImpl.ConditionAndLastStatement(ex.condition,
-                                ex.absoluteState,
-                                ex.startOfBlock.index(),
-                                ex.startOfBlock.lastStatement(),
-                                ex.startOfBlock.lastStatement().getStatementAnalysis().isReturnOrEscapeAlwaysExecutedInCurrentBlock(true).valueIsTrue(),
-                                ex.startOfBlock.lastStatement().getStatementAnalysis().isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue()))
+                        .map(ex -> {
+                            StatementAnalyser lastStatement = ex.startOfBlock.lastStatement();
+                            StatementAnalysis lastAnalysis = lastStatement.getStatementAnalysis();
+                            return new StatementAnalysisImpl.ConditionAndLastStatement(ex.condition,
+                                    ex.absoluteState,
+                                    ex.startOfBlock.index(),
+                                    lastStatement,
+                                    lastAnalysis.flowData().getGuaranteedToBeReachedInCurrentBlock(),
+                                    lastAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(true).valueIsTrue(),
+                                    lastAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue());
+                        })
                         .toList();
                 /*
                  See VariableField_0; because we don't know which sub-block gets executed, we cannot use either
@@ -383,7 +388,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             boolean alwaysEscapesOrReturns = statementAnalysis.isReturnOrEscapeAlwaysExecutedInCurrentBlock(false).valueIsTrue();
             return new StatementAnalysisImpl.ConditionAndLastStatement(e.getValue(),
                     e.getValue(), // TODO not verified (absolute state == condition)
-                    e.getKey(), lastStatement, alwaysEscapes,
+                    e.getKey(), lastStatement,
+                    lastStatement.getStatementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock(),
+                    alwaysEscapes,
                     alwaysEscapesOrReturns);
         }).toList();
     }

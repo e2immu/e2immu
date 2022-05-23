@@ -34,7 +34,8 @@ import java.util.Objects;
 import static org.e2immu.analyser.analyser.Stage.MERGE;
 
 public record Merge(EvaluationContext evaluationContext,
-                    VariableInfoContainer vic) {
+                    VariableInfoContainer vic,
+                    CausesOfDelay executionDelay) {
     private static final Logger LOGGER = LoggerFactory.getLogger(Merge.class);
 
     public enum Action {
@@ -64,14 +65,14 @@ public record Merge(EvaluationContext evaluationContext,
 
         VariableInfoImpl existing = breakInitDelay(vici);
         if (!vic.hasMerge()) {
-            MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing);
+            MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing, executionDelay);
             MergeHelper.MergeHelperResult mhr = mergeHelper.mergeIntoNewObject(stateOfDestination,
                     overwriteValue, atLeastOneBlockExecuted,
                     mergeSources, groupPropertyValues, translationMap);
             vici.setMerge(mhr.vii());
             return new ProgressAndDelay(true, mhr.progressAndDelay().causes());
         }
-        MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
+        MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge(), executionDelay);
         return mergeHelper.mergeIntoMe(stateOfDestination,
                 overwriteValue, atLeastOneBlockExecuted, existing,
                 mergeSources, groupPropertyValues, translationMap);

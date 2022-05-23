@@ -260,11 +260,14 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return of(map);
     }
 
-    public LinkedVariables changeAllToDelay(DV delay) {
+    public LinkedVariables changeNonStaticallyAssignedToDelay(DV delay) {
         if (isEmpty() || this == NOT_YET_SET) return this;
         assert delay.isDelayed();
         Map<Variable, DV> map = variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> delay.max(e.getValue())));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                    DV lv = e.getValue();
+                    return STATICALLY_ASSIGNED_DV.equals(lv) ? STATICALLY_ASSIGNED_DV : delay.max(lv);
+                }));
         return of(map);
     }
 
@@ -325,8 +328,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                             DV immutableHidden = computeImmutableHiddenContent.apply(target);
                             if (immutableHidden.isDelayed()) {
                                 result.put(target, immutableHidden);
-                            } else
-                                if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+                            } else if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
                                 result.put(target, linkLevel);
                             }
                         } else {

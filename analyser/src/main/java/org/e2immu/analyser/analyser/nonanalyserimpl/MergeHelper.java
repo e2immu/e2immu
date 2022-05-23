@@ -56,10 +56,14 @@ There are no other situations!
 The state on assignment reflects both situations. In the latter, we expect to find s and !s in the state,
 and potentially already in the value as well. In the former, the state of 1 should be contained in the state of 2.
 
-
+IMPORTANT: at this point, the execution delay only influences the non-value properties, it has no bearing on value
+and/or value properties. This should be fine, as the value of the last statement in a block can only be known
+when the execution of that statement is known. See TrieSimplified_3 as an example of why the delay is relevant.
 
  */
-public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
+public record MergeHelper(EvaluationContext evaluationContext,
+                          VariableInfoImpl vi,
+                          CausesOfDelay executionDelay) {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeHelper.class);
 
     record MergeHelperResult(VariableInfoImpl vii, ProgressAndDelay progressAndDelay) {
@@ -79,8 +83,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
-        ProgressAndDelay pad = new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, overwriteValue,
-                atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
+        ProgressAndDelay pad = new MergeHelper(evaluationContext, newObject, executionDelay)
+                .mergeIntoMe(stateOfDestination, overwriteValue, atLeastOneBlockExecuted, vi, mergeSources,
+                        groupPropertyValues, translationMap);
         return new MergeHelperResult(newObject, pad);
     }
 
@@ -103,7 +108,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         if (overwriteValue != null) {
             mergeValue = overwriteValue;
         } else {
-            mergeValue = new MergeHelper(evaluationContext, previous)
+            mergeValue = new MergeHelper(evaluationContext, previous, executionDelay)
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
@@ -198,21 +203,29 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         }
         boolean progress = false;
         for (VariableInfo.MergeOp mergeOp : MERGE_WITHOUT_VALUE_PROPERTIES) {
-            DV commonValue = mergeOp.initial();
+            Property property = mergeOp.property();
+            Variable variable = previous.variable();
 
-            for (VariableInfo vi : list) {
-                if (vi != null) {
-                    DV value = vi.getProperty(mergeOp.property());
-                    commonValue = mergeOp.operator().apply(commonValue, value);
+            DV commonValue;
+            if (executionDelay.isDelayed()) {
+                commonValue = executionDelay;
+            } else {
+                commonValue = mergeOp.initial();
+
+                for (VariableInfo vi : list) {
+                    if (vi != null) {
+                        DV value = vi.getProperty(property);
+                        commonValue = mergeOp.operator().apply(commonValue, value);
+                    }
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
-            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.property())) {
-                groupPropertyValues.set(mergeOp.property(), previous.variable(), commonValue);
+            if (GroupPropertyValues.PROPERTIES.contains(property)) {
+                groupPropertyValues.set(property, variable, commonValue);
             } else {
                 if (commonValue.isDone()) {
-                    progress |= vi.setProperty(mergeOp.property(), commonValue);
-                }
+                    progress |= vi.setProperty(property, commonValue);
+                } // else: the remaining properties (not value, not group property), have no meaningful delay
             }
         }
         return progress;

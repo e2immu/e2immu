@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analysis;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
@@ -31,13 +32,14 @@ public record ConditionAndVariableInfo(Expression condition,
                                        String indexOfLastStatement,
                                        String indexOfCurrentStatement,
                                        StatementAnalysis lastStatement,
+                                       DV executionOfLastStatement,
                                        Variable myself,
                                        EvaluationContext evaluationContext) {
     // for testing
     public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, EvaluationContext evaluationContext) {
         this(condition, condition, variableInfo, false, false, VariableNature.METHOD_WIDE,
                 null, "0", "-",
-                null, variableInfo.variable(), evaluationContext);
+                null, FlowData.ALWAYS, variableInfo.variable(), evaluationContext);
     }
 
     public Expression value() {

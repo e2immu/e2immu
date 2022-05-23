@@ -1068,6 +1068,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                             Expression absoluteState,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
+                                            DV executionOfLastStatement,
                                             boolean alwaysEscapes,
                                             boolean alwaysEscapesOrReturns) {
     }
@@ -1227,7 +1228,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
             if (toMerge.size() > 0) {
                 try {
-                    Merge merge = new Merge(evaluationContext, destination);
+                    CausesOfDelay executionDelay = toMerge.stream().map(cavi -> cavi.executionOfLastStatement().causesOfDelay())
+                            .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                    Merge merge = new Merge(evaluationContext, destination, executionDelay);
 
                     // the main merge operation
                     ProgressAndDelay pad = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
@@ -1238,8 +1241,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .map(lv -> lv.translate(translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-                    linkedVariablesMap.put(renamed, linkedVariables);
-
+                    if(executionDelay.isDelayed()) {
+                        linkedVariablesMap.put(renamed, linkedVariables.changeNonStaticallyAssignedToDelay(executionDelay));
+                    } else {
+                        linkedVariablesMap.put(renamed, linkedVariables);
+                    }
                     if (localAtLeastOneBlock) variablesWhereMergeOverwrites.add(renamed);
 
                     if (localAtLeastOneBlock &&
@@ -1270,7 +1276,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         });
 
-        ProgressAndDelay soFar = new ProgressAndDelay(progress, delay );
+        ProgressAndDelay soFar = new ProgressAndDelay(progress, delay);
         ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap, soFar)
                 .addProgress(progress);
@@ -1319,6 +1325,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             e2.lastStatement().getStatementAnalysis().index(),
                             index,
                             e2.lastStatement().getStatementAnalysis(),
+                            e2.executionOfLastStatement,
                             variable,
                             evaluationContext);
                 })
@@ -1384,7 +1391,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 prepareMerge.toRemove);
 
         for (Variable variable : touched) {
-            if (!linkedVariablesMap.containsKey(variable) && !newlyCreatedScopeVariables.contains(variable)) {
+            if (!linkedVariablesMap.containsKey(variable) &&
+                    !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
                 VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null;
                 Variable renamed = prepareMerge.renames.get(variable);
@@ -2123,7 +2131,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         vic.ensureEvaluation(location(EVALUATION), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 Set.of());
         ParameterizedType parameterizedType = loopVar.parameterizedType();
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
         DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
         Properties valueProperties = evaluationContext.defaultValuePropertiesAllowMyself(parameterizedType, nne);

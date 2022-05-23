@@ -221,8 +221,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         LOGGER.info("Delay histogram:\n{}",
                 delayHistogram.entrySet().stream().sorted((e1, e2) -> e2.getValue().getCnt() - e1.getValue().getCnt())
                         .limit(20)
-                        .map(e -> e.getValue().getCnt() + ": " + e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName() + ": " + e.getValue())
-                        .collect(Collectors.joining("\n")));
+                        .map(e -> e.getValue().getCnt() + ": " + (e.getKey() == null ? "?" : (e.getKey().niceClassName() + " " + e.getKey().fullyQualifiedName()) + ": " + e.getValue()))
+                                .collect(Collectors.joining("\n")));
     }
 
     private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
