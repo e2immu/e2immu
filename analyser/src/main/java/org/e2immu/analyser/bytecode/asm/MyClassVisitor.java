@@ -297,7 +297,7 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_ENUM) != 0) fieldInspectionBuilder.setSynthetic(true); // what we use synthetic for
 
         if (value != null) {
-            Expression expression = ExpressionFactory.from(typeContext, value);
+            Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 fieldInspectionBuilder.setInspectedInitialiserExpression(expression);
             }

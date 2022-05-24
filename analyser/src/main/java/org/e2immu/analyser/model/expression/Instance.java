@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -137,9 +136,8 @@ public final class Instance extends BaseExpression implements Expression {
         Properties properties = context.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement);
         CausesOfDelay delays = properties.delays();
         if (delays.isDelayed()) {
-            Stream<Variable> variableStream = Stream.concat(Stream.of(variable), array.variables(true).stream());
             return DelayedExpression.forArrayAccessValue(identifier, variable.parameterizedType(),
-                    List.of(variable), delays);
+                    new VariableExpression(variable), delays);
         }
         return new Instance(identifier, variable.parameterizedType(), properties);
     }

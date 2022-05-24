@@ -204,7 +204,7 @@ public class TestLinkingExpression {
 
         // Collections.addAll(v, i, j)
         MethodCall methodCall = new MethodCall(Identifier.constant("addAll"),
-                new TypeExpression(collectionInteger, Diamond.NO), addAll,
+                new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll,
                 List.of(ve, vi, vj));
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);

@@ -68,8 +68,7 @@ public class Equals extends BinaryOperator {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
         Expression expression = internalEquals(identifier, context, l, r, checkForNull, forwardEvaluationInfo);
         return causes.isDelayed() && expression.isDone()
-                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
-                expression.variables(true), causes)
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(), expression, causes)
                 : expression;
     }
 
@@ -87,16 +86,14 @@ public class Equals extends BinaryOperator {
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
-                            r.variables(true),
-                            dv.causesOfDelay().merge(r.causesOfDelay()));
+                            r, dv.causesOfDelay().merge(r.causesOfDelay()));
             }
             if (r instanceof NullConstant) {
                 DV dv = context.evaluationContext().isNotNull0(l, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
-                            l.variables(true),
-                            dv.causesOfDelay().merge(l.causesOfDelay()));
+                            l, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
         }
 

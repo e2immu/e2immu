@@ -48,8 +48,7 @@ public class Product extends BinaryOperator {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
         Expression expression = internalProduct(identifier, evaluationContext, l, r);
         return causes.isDelayed() && expression.isDone()
-                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
-                expression.variables(true), causes)
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(), expression, causes)
                 : expression;
     }
 

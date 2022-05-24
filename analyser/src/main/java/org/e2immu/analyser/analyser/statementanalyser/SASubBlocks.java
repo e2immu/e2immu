@@ -532,7 +532,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (range.isDelayed()) {
                 negatedConditionOrExitState = DelayedExpression.forState(loopStatement.identifier,
                         statementAnalysis.primitives().booleanParameterizedType(),
-                        range.variables(),
+                        range.expression(statement.getIdentifier()),
                         range.causesOfDelay());
             } else {
                 // at the moment there is no Range which does not return a boolean constant
@@ -682,18 +682,19 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition);
         }
         if (statement() instanceof LoopStatement) {
+            Identifier identifier = statement().getIdentifier();
             Range range = statementAnalysis.rangeData().getRange();
             if (range.isDelayed()) {
                 CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         DelayedExpression.forUnspecifiedLoopCondition(statement().getIdentifier(),
                                 primitives.booleanParameterizedType(),
-                                range.variables(),
+                                range.expression(identifier),
                                 causesOfDelay));
             }
 
             if (range != Range.NO_RANGE) {
-                Expression condition = statementAnalysis.rangeData().extraState(context.evaluationContext());
+                Expression condition = statementAnalysis.rangeData().extraState(identifier, context.evaluationContext());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         condition);
             }
@@ -713,9 +714,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     private Expression isNotEmpty(EvaluationResult context, Expression value, boolean valueIsDelayed) {
         if (valueIsDelayed) {
             return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
-                    context.getPrimitives().booleanParameterizedType(),
-                    value.variables(true),
-                    value.causesOfDelay());
+                    context.getPrimitives().booleanParameterizedType(), value, value.causesOfDelay());
         }
         if (value instanceof ArrayInitializer ai) {
             return new BooleanConstant(context.getPrimitives(), ai.multiExpression.expressions().length > 0);
@@ -723,7 +722,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
             return new GreaterThanZero(Identifier.generate("gt0"), context.getPrimitives().booleanParameterizedType(),
-                    new ArrayLength(context.getPrimitives(), value), false);
+                    new ArrayLength(value.getIdentifier(), context.getPrimitives(), value), false);
         }
         if (returnType.typeInfo != null) {
             TypeInfo collection = returnType.typeInfo.recursivelyImplements(context.getAnalyserContext(),

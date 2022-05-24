@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.support.SetOnce;
@@ -125,7 +126,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                return delayedSrv(methodInfo.returnType(), delays, true);
+                return delayedSrv(methodInfo.returnType(), EmptyExpression.EMPTY_EXPRESSION, delays, true);
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
             // unless it is a constant, a parameter of the method, or statically assigned to a constructor (?) we can't do much

@@ -84,9 +84,7 @@ public class And extends ExpressionCanBeTooComplex {
             CausesOfDelay causes = Arrays.stream(values).map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (causes.isDelayed()) {
                 return DelayedExpression.forSimplification(identifier,
-                        context.getPrimitives().booleanParameterizedType(),
-                        expression.variables(true),
-                        causes);
+                        context.getPrimitives().booleanParameterizedType(), expression, causes);
             }
         }
         return expression;

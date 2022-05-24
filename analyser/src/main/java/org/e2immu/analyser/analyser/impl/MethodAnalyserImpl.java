@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -250,15 +251,16 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     protected AnalysisStatus delayedSrv(ParameterizedType concreteReturnType,
-                                        CausesOfDelay causesOfDelay
-            , boolean addSrvDelay) {
+                                        Expression original,
+                                        CausesOfDelay causesOfDelay,
+                                        boolean addSrvDelay) {
         CausesOfDelay merge = addSrvDelay
                 ? methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay)
                 : causesOfDelay;
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.FLUENT, merge);
         methodAnalysis.setPropertyDelayWhenNotFinal(Property.IDENTITY, merge);
         Expression srv = DelayedExpression.forMethod(methodInfo.identifier, methodInfo, concreteReturnType,
-                List.of(), merge, Map.of());
+                original, merge, Map.of());
         methodAnalysis.setSingleReturnValue(srv);
         return merge;
     }

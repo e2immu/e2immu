@@ -18,13 +18,14 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.stream.Stream;
 
 public interface RangeData {
 
-    Expression extraState(EvaluationContext evaluationContext);
+    Expression extraState(Identifier identifier, EvaluationContext evaluationContext);
 
     Range getRange();
 

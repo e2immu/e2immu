@@ -69,7 +69,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
         if (expression instanceof VariableExpression ve) {
             return ve.variable();
         }
-        assert identifier instanceof Identifier.PositionalIdentifier;
+        assert identifier instanceof Identifier.PositionalIdentifier || identifier instanceof Identifier.ConstantIdentifier;
         String name = variablePrefix + identifier.compact();
         VariableNature vn = new VariableNature.ScopeVariable();
         LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, expression.returnType(),
@@ -151,7 +151,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        VariableExpression ve = new VariableExpression(dependentVariable, VariableExpression.NO_SUFFIX, expression, index);
+        VariableExpression ve = new VariableExpression(dependentVariable.getIdentifier(),
+                dependentVariable, VariableExpression.NO_SUFFIX, expression, index);
         return ve.evaluate(context, forwardEvaluationInfo);
     }
 }

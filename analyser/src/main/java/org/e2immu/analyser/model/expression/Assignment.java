@@ -403,8 +403,7 @@ public class Assignment extends BaseExpression implements Expression {
                 Expression instance;
                 if (causesOfDelay.isDelayed()) {
                     instance = DelayedExpression.forDelayedValueProperties(identifier, returnType,
-                            fieldReference.scope.variables(true),
-                            causesOfDelay, Properties.EMPTY);
+                            fieldReference.scope, causesOfDelay, Properties.EMPTY);
                 } else {
                     instance = Instance.forGetInstance(identifier, returnType, valueProperties);
                 }

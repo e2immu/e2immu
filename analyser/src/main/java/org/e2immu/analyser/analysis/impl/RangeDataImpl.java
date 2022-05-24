@@ -48,7 +48,8 @@ public class RangeDataImpl implements RangeData {
     private final SetOnce<Message> uselessAssignment = new SetOnce<>();
 
     public RangeDataImpl(Location location) {
-        range.setVariable(new Range.Delayed(DelayFactory.createDelay(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE))));
+        SimpleCause delay = new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE);
+        range.setVariable(new Range.Delayed(DelayFactory.createDelay(delay), EmptyExpression.EMPTY_EXPRESSION));
         this.location = location;
     }
 
@@ -145,7 +146,7 @@ public class RangeDataImpl implements RangeData {
             Variable variable = updater.variableTarget;
             DV modified = loopVariableIsModified(statementAnalysis, variable);
             if (modified.isDelayed()) {
-                return new Range.Delayed(modified.causesOfDelay());
+                return new Range.Delayed(modified.causesOfDelay(), updater);
             }
             if (modified.equals(DV.TRUE_DV)) {
                 return Range.NO_RANGE;
@@ -169,7 +170,7 @@ public class RangeDataImpl implements RangeData {
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
                 LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
-                return new Range.Delayed(causes);
+                return new Range.Delayed(causes, condition);
             }
             return computeRange(result.evaluationContext(), ve, init, update, condition);
         }
@@ -186,7 +187,7 @@ public class RangeDataImpl implements RangeData {
             Variable variable = assignment.variableTarget;
             DV modified = loopVariableIsModified(statementAnalysis, variable);
             if (modified.isDelayed()) {
-                return new Range.Delayed(modified.causesOfDelay());
+                return new Range.Delayed(modified.causesOfDelay(), assignment);
             }
             if (modified.equals(DV.TRUE_DV)) {
                 return Range.NO_RANGE;
@@ -220,7 +221,7 @@ public class RangeDataImpl implements RangeData {
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
                 LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
-                return new Range.Delayed(causes);
+                return new Range.Delayed(causes, condition);
             }
             return computeRange(result.evaluationContext(), ve, init, update, condition);
         }
@@ -237,7 +238,7 @@ public class RangeDataImpl implements RangeData {
             LocalVariableReference lvr = lvc.declarations.get(0).localVariableReference();
             DV modified = loopVariableIsModified(statementAnalysis, lvr);
             if (modified.isDelayed()) {
-                return new Range.Delayed(modified.causesOfDelay());
+                return new Range.Delayed(modified.causesOfDelay(), lvc);
             }
             if (modified.equals(DV.TRUE_DV)) {
                 return Range.NO_RANGE;
@@ -275,7 +276,7 @@ public class RangeDataImpl implements RangeData {
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
                 LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
-                return new Range.Delayed(causes);
+                return new Range.Delayed(causes, condition);
             }
             return computeRange(result.evaluationContext(), variable, init, update, condition);
         }
@@ -301,13 +302,13 @@ public class RangeDataImpl implements RangeData {
         return DV.FALSE_DV;
     }
 
-    public Expression extraState(EvaluationContext evaluationContext) {
+    public Expression extraState(Identifier identifier, EvaluationContext evaluationContext) {
         if (range.isFinal()) {
             return range.get().conditions(evaluationContext);
         }
         CausesOfDelay causes = range.get().causesOfDelay();
         return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
-                evaluationContext.getPrimitives().booleanParameterizedType(), range.get().variables(), causes);
+                evaluationContext.getPrimitives().booleanParameterizedType(), range.get().expression(identifier), causes);
     }
 
     /**

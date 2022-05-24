@@ -60,8 +60,7 @@ public record ForwardAnalysisInfo(DV execution,
                 statementAnalysis);
         if (switchSelectorIsDelayed.isDelayed()) {
             return DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector"),
-                    evaluationContext.getPrimitives(),
-                    switchSelector.variables(true),
+                    evaluationContext.getPrimitives(), switchSelector,
                     switchSelector.causesOfDelay().merge(expression.causesOfDelay()));
         }
         return expression;

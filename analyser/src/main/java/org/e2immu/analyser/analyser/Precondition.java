@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -198,16 +197,16 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     }
 
     public static Precondition forDelayed(Identifier identifier,
-                                          List<Variable> variables,
+                                          Expression original,
                                           CausesOfDelay causesOfDelay,
                                           Primitives primitives) {
-        Expression de = DelayedExpression.forPrecondition(identifier, primitives, variables, causesOfDelay);
+        Expression de = DelayedExpression.forPrecondition(identifier, primitives, original, causesOfDelay);
         return new Precondition(de, List.of());
     }
 
     public static Precondition noInformationYet(Location location, Primitives primitives) {
         CausesOfDelay causes = DelayFactory.createDelay(location, CauseOfDelay.Cause.NO_PRECONDITION_INFO);
-        return forDelayed(location.identifier(), List.of(), causes, primitives);
+        return forDelayed(location.identifier(), EmptyExpression.EMPTY_EXPRESSION, causes, primitives);
     }
 
     public boolean isNoInformationYet(MethodInfo currentMethod) {

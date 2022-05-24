@@ -965,7 +965,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     LocalVariableReference scopeVariable = new LocalVariableReference(lv, newScope);
                     Expression scope = new VariableExpression(scopeVariable);
                     FieldReference newFr = new FieldReference(evaluationContext.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
-                    VariableExpression ve = new VariableExpression(newFr, VariableExpression.NO_SUFFIX, scope, null);
+                    VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX, scope, null);
                     return new RenameVariableResult(newFr, ve, List.of(scopeVariable));
                 }
                 if (fr.scopeVariable instanceof FieldReference) {
@@ -1115,7 +1115,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     CausesOfDelay causes = best.getValue().causesOfDelay().merge(bestProperties.delays().causesOfDelay());
                     outOfScopeValue = DelayedExpression.forOutOfScope(identifier, toRemove.simpleName(),
                             toRemove.parameterizedType(),
-                            best.getValue().variables(true),
+                            best.getValue(),
                             causes);
                     afterFiltering.put(toRemove, outOfScopeValue);
                 } else {
@@ -1165,9 +1165,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causesOfDelay = propertiesOfLvr.delays();
             if (causesOfDelay.isDelayed() && lvr.assignmentExpression.isDone()) {
                 scopeValue = DelayedExpression.forDelayedValueProperties(lvr.assignmentExpression.getIdentifier(),
-                        lvr.assignmentExpression.returnType(),
-                        lvr.assignmentExpression.variables(true),
-                        causesOfDelay, Properties.EMPTY);
+                        lvr.assignmentExpression.returnType(), lvr.assignmentExpression, causesOfDelay, Properties.EMPTY);
             } else {
                 scopeValue = lvr.assignmentExpression;
             }
@@ -1241,7 +1239,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .map(lv -> lv.translate(translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-                    if(executionDelay.isDelayed()) {
+                    if (executionDelay.isDelayed()) {
                         linkedVariablesMap.put(renamed, linkedVariables.changeNonStaticallyAssignedToDelay(executionDelay));
                     } else {
                         linkedVariablesMap.put(renamed, linkedVariables);

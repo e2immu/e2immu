@@ -47,19 +47,19 @@ public class ExplicitConstructorInvocation_7 {
     private final List<Expression> expressions;
     private final int complexity;
 
-    public ExplicitConstructorInvocation_7(Primitives primitives, List<Expression> expressions) {
-        this(null, primitives, expressions);
+    public ExplicitConstructorInvocation_7(Primitives primitives1, List<Expression> expressions) {
+        this(null, primitives1, expressions);
     }
 
-    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives, List<Expression> expressions) {
+    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives2, List<Expression> expressions) {
         this.complexity = COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum()
                 + (identifier == null ? 0 : identifier.getComplexity());
-        this.primitives = requireNonNull(primitives);
+        this.primitives = requireNonNull(primitives2);
         this.expressions = requireNonNull(expressions);
     }
 
-    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives) {
-        this(identifier, primitives, List.of());
+    private ExplicitConstructorInvocation_7(Identifier identifier, Primitives primitives3) {
+        this(identifier, primitives3, List.of());
     }
 
     public List<Expression> getExpressions() {

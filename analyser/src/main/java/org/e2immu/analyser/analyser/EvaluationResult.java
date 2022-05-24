@@ -725,9 +725,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)) {
                 return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
-                        resultOfExpression.returnType(),
-                        resultOfExpression.variables(true),
-                        stateIsDelayed);
+                        resultOfExpression.returnType(), resultOfExpression, stateIsDelayed);
             }
             return resultOfExpression;
         }

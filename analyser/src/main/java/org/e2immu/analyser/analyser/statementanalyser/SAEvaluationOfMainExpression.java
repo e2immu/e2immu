@@ -149,7 +149,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
                 CausesOfDelay eciDelay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
                 statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier,
-                        List.of(), eciDelay));
+                        eciVariables(), eciDelay));
                 return eciDelay;
             }
             EvaluationResult toApply;
@@ -209,7 +209,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (value.isDone() && statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
             value = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
                     value.returnType(),
-                    sharedState.localConditionManager().variables(),
+                    sharedState.localConditionManager().multiExpression(),
                     sharedState.localConditionManager().causesOfDelay());
         }
         statementAnalysis.stateData().setValueOfExpression(value);
@@ -251,7 +251,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
             if (assignments == null) {
                 CausesOfDelay eciDelay = DelayFactory.createDelay(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI);
-                Expression value = DelayedExpression.forECI(eci.identifier, List.of(), eciDelay);
+                Expression value = DelayedExpression.forECI(eci.identifier, eciVariables(), eciDelay);
                 progress |= statementAnalysis.stateData().setValueOfExpression(value);
                 return ProgressWrapper.of(progress, eciDelay);
             }
@@ -267,6 +267,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager());
         }
         return ProgressWrapper.of(progress, causes);
+    }
+
+    private Expression eciVariables() {
+        List<Variable> variables = methodInfo().methodInspection.get().getParameters().stream()
+                .map(v -> (Variable) v).toList();
+        return MultiExpressions.from(statement().getIdentifier(), variables);
     }
 
     private Expression toEvaluate(List<Expression> expressionsFromInitAndUpdate) {
@@ -423,7 +429,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     // TODO this assignment should result in a delayed link...
                     FieldReference fr = new FieldReference(analyserContext, fieldInfo);
                     CauseOfDelay causeOfDelay = new SimpleCause(sharedState.evaluationContext().getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
-                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), List.of(), DelayFactory.createDelay(causeOfDelay));
+                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(), DelayFactory.createDelay(causeOfDelay));
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
@@ -535,8 +541,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             } else {
                 Identifier identifier = statement().getStructure().expression().getIdentifier();
                 return DelayedExpression.forCondition(identifier,
-                        statementAnalysis.primitives().booleanParameterizedType(),
-                        evaluated.variables(true), causes);
+                        statementAnalysis.primitives().booleanParameterizedType(), evaluated, causes);
             }
         }
 

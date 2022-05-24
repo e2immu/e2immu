@@ -29,9 +29,13 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
+import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements IsVariableExpression {
@@ -262,8 +266,16 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                     FieldReference newFr = new FieldReference(inspectionProvider, fr.fieldInfo, translated, fr.getOwningType());
                     return DelayedVariableExpression.forField(newFr, statementTime, causesOfDelay);
                 }
-            } else if (variable instanceof DependentVariable) {
-                throw new UnsupportedOperationException("NYI");
+            } else if (variable instanceof DependentVariable dv) {
+                Expression translatedArray = dv.arrayExpression().translate(inspectionProvider, translationMap);
+                Expression translatedIndex = dv.indexExpression().translate(inspectionProvider, translationMap);
+                if (translatedArray != dv.arrayExpression() || translatedIndex != dv.indexExpression()) {
+                    Variable av = ArrayAccess.makeVariable(translatedArray, translatedArray.getIdentifier(), ARRAY_VARIABLE, dv.getOwningType());
+                    Variable iv = ArrayAccess.makeVariable(translatedIndex, translatedIndex.getIdentifier(), INDEX_VARIABLE, dv.getOwningType());
+                    DependentVariable newDv = new DependentVariable(dv.getIdentifier(), translatedArray,
+                            Objects.requireNonNull(av), translatedIndex, iv, dv.parameterizedType, dv.statementIndex);
+                    return DelayedVariableExpression.forDependentVariable(newDv, causesOfDelay);
+                }
             }
         }
         return this;

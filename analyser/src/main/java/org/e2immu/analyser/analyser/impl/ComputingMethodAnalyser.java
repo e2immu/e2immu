@@ -335,7 +335,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        List.of(), finalOverFields.causesOfDelay(), primitives));
+                        EmptyExpression.EMPTY_EXPRESSION, finalOverFields.causesOfDelay(), primitives));
                 return finalOverFields.causesOfDelay();
             }
             if (finalOverFields.valueIsFalse()) {
@@ -362,7 +362,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (haveEventuallyImmutableFields.isDelayed()) {
                 LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        List.of(), haveEventuallyImmutableFields.causesOfDelay(), primitives));
+                        EmptyExpression.EMPTY_EXPRESSION, haveEventuallyImmutableFields.causesOfDelay(), primitives));
                 return haveEventuallyImmutableFields.causesOfDelay();
             }
             if (haveEventuallyImmutableFields.valueIsTrue()) {
@@ -387,7 +387,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                        List.of(), haveContentChangeableField.causesOfDelay(), primitives));
+                        EmptyExpression.EMPTY_EXPRESSION, haveContentChangeableField.causesOfDelay(), primitives));
                 return haveContentChangeableField.causesOfDelay();
             }
             if (haveContentChangeableField.valueIsTrue()) {
@@ -470,8 +470,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                 methodInfo.fullyQualifiedName);
                         methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
-                                cm.state().variables(true),
-                                cm.state().causesOfDelay(), primitives));
+                                cm.state(), cm.state().causesOfDelay(), primitives));
                         return cm.state().causesOfDelay();
                     }
                     Expression state = cm.state();
@@ -617,7 +616,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     if (!methodAnalysis.properties.isDone(CONTAINER))
                         methodAnalysis.setProperty(CONTAINER, container);
                 } else {
-                    return delayedSrv(concreteReturnType, variableInfo.getValue().causesOfDelay(), true);
+                    return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
                 }
             } else {
                 throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
@@ -631,7 +630,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
             if (modified.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
-                return delayedSrv(concreteReturnType, modified.causesOfDelay(), false);
+                return delayedSrv(concreteReturnType, value, modified.causesOfDelay(), false);
             }
             if (modified.valueIsFalse()) {
                 /*
@@ -642,7 +641,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDone();
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
-                    return delayedSrv(concreteReturnType, value.causesOfDelay(), true);
+                    return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
                 }
             }
         }
@@ -652,7 +651,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // see e.g. Identity_2
         if (contextNotNull.isDelayed()) {
             LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
-            return delayedSrv(concreteReturnType, contextNotNull.causesOfDelay(), false);
+            return delayedSrv(concreteReturnType, value, contextNotNull.causesOfDelay(), false);
         }
         assert contextNotNull.isDone();
 
@@ -665,7 +664,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-                return delayedSrv(concreteReturnType, externalNotNull.causesOfDelay(), false);
+                return delayedSrv(concreteReturnType, value, externalNotNull.causesOfDelay(), false);
             }
         } else {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
@@ -685,7 +684,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (constantField.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
-                return delayedSrv(concreteReturnType, constantField.causesOfDelay(), false);
+                return delayedSrv(concreteReturnType, value, constantField.causesOfDelay(), false);
             }
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;

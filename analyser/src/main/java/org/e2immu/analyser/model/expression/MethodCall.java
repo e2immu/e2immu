@@ -110,8 +110,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .merge(translatedObject.causesOfDelay());
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forMethod(identifier, translatedMethod, translatedMethod.returnType(),
-                    variables(true),
-                    causesOfDelay, Map.of());
+                    this, causesOfDelay, Map.of());
         }
         return new MethodCall(identifier,
                 objectIsImplicit,
@@ -365,7 +364,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (delays1.isDone() && modified.valueIsTrue()) {
             // companion methods
             Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context,
-                    concreteMethod, object, objectValue, parameterValues, variables(true));
+                    concreteMethod, object, objectValue, parameterValues, this);
             if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
                 modifiedInstance = linkedVariables.isEmpty() ? unlinkedModifiedInstance
@@ -529,8 +528,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         assert causesOfDelay.isDelayed();
         // NOTE: we do not convert the linked variables to blanket delay! this is not necessary and holds back Context Modified
         Map<Variable, DV> cnnMap = builder.cnnMap();
-        DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
-                variables(true), causesOfDelay, cnnMap);
+        DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType, this,
+                causesOfDelay, cnnMap);
         builder.setExpression(delay);
         if (!modified.valueIsFalse()) {
             // no idea yet whether this method call will change the object from some variable to Instance
@@ -595,7 +594,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues,
-            List<Variable> variables) {
+            Expression original) {
         if (objectValue.isDelayed()) return objectValue; // don't even try
         if (objectValue.cannotHaveState()) return null; // ditto
 
@@ -657,7 +656,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
-                            variables, causesOfDelay, Map.of());
+                            original, causesOfDelay, Map.of());
                     // FIXME is this null correct? some type of createInstanceBasedOn??
                 }
             }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.bytecode.ExpressionFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Inspection;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -57,7 +58,7 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     @Override
     public void visit(String name, Object value) {
         LOGGER.debug("Assignment: {} to {}", name, value);
-        Expression expression = ExpressionFactory.from(typeContext, value);
+        Expression expression = ExpressionFactory.from(typeContext, Identifier.constant(value), value);
         MemberValuePair mvp = new MemberValuePair(name, expression);
         expressionBuilder.addExpression(mvp);
     }

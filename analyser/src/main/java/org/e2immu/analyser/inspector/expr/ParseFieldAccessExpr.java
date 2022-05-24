@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.inspector.expr;
 
-import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
@@ -26,7 +25,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 
-import java.lang.reflect.Type;
 import java.util.Optional;
 
 public class ParseFieldAccessExpr {
@@ -38,6 +36,9 @@ public class ParseFieldAccessExpr {
         Expression object = expressionContext.parseExpression(fieldAccessExpr.getScope(), forward);
         String name = fieldAccessExpr.getName().asString();
 
+        Identifier identifier = Identifier.from(fieldAccessExpr.getBegin().orElseThrow(),
+                fieldAccessExpr.getEnd().orElseThrow());
+
         if (object instanceof PackagePrefixExpression) {
             PackagePrefix packagePrefix = ((PackagePrefixExpression) object).packagePrefix();
             PackagePrefix combined = packagePrefix.append(name);
@@ -47,38 +48,41 @@ public class ParseFieldAccessExpr {
             String fullyQualifiedName = String.join(".", packagePrefix.prefix()) + "." + name;
             TypeInfo typeInfo = expressionContext.typeContext().getFullyQualified(fullyQualifiedName, true);
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
-            return new TypeExpression(objectType, Diamond.NO);
+            return new TypeExpression(identifier, objectType, Diamond.NO);
         }
-        return createFieldAccess(expressionContext.typeContext(), object, name, fieldAccessExpr.getBegin().orElseThrow(),
+
+        return createFieldAccess(expressionContext.typeContext(), object, name, identifier,
                 expressionContext.enclosingType());
     }
 
     public static Expression createFieldAccess(InspectionProvider inspectionProvider,
                                                Expression object,
                                                String name,
-                                               Position positionForErrorReporting,
+                                               Identifier identifier,
                                                TypeInfo enclosingType) {
         ParameterizedType objectType = object.returnType();
         if (objectType.arrays > 0 && "length".equals(name)) {
-            return new ArrayLength(inspectionProvider.getPrimitives(), object);
+            return new ArrayLength(identifier, inspectionProvider.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Expression res = findFieldOrSubType(objectType.typeInfo, object, name, inspectionProvider, enclosingType);
+            Expression res = findFieldOrSubType(identifier, objectType.typeInfo, object, name, inspectionProvider, enclosingType);
             if (res == null) {
                 throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
-                        + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
+                        + objectType.typeInfo.fullyQualifiedName + " at " + identifier);
             }
             return res;
         }
-        throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
+        throw new UnsupportedOperationException("Object type has no typeInfo? at " + identifier);
     }
 
-    private static Expression findFieldOrSubType(TypeInfo typeInfo,
+    private static Expression findFieldOrSubType(Identifier identifier,
+                                                 TypeInfo typeInfo,
                                                  Expression object,
                                                  String name,
                                                  InspectionProvider inspectionProvider,
                                                  TypeInfo enclosingType) {
-        Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo.primaryType())
+        Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(inspectionProvider, typeInfo,
+                        typeInfo.primaryType())
                 .filter(f -> name.equals(f.name)).findFirst();
         if (oFieldInfo.isPresent()) {
             return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object, enclosingType));
@@ -86,16 +90,17 @@ public class ParseFieldAccessExpr {
         TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
         if (oSubType.isPresent()) {
-            return new TypeExpression(oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
+            return new TypeExpression(identifier, oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
         }
         ParameterizedType parent = objectTypeInspection.parentClass();
-        if(parent != null && !parent.isJavaLangObject()) {
-            Expression res = findFieldOrSubType(parent.typeInfo, object, name, inspectionProvider, enclosingType);
-            if(res != null) return res;
+        if (parent != null && !parent.isJavaLangObject()) {
+            Expression res = findFieldOrSubType(identifier, parent.typeInfo, object, name, inspectionProvider, enclosingType);
+            if (res != null) return res;
         }
         for (ParameterizedType interfaceImplemented : objectTypeInspection.interfacesImplemented()) {
-            Expression res = findFieldOrSubType(interfaceImplemented.typeInfo, object, name, inspectionProvider, enclosingType);
-            if(res != null) return res;
+            Expression res = findFieldOrSubType(identifier, interfaceImplemented.typeInfo, object, name,
+                    inspectionProvider, enclosingType);
+            if (res != null) return res;
         }
         return null;
     }

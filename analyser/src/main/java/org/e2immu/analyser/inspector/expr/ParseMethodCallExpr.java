@@ -96,7 +96,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             assert candidate != null : "Should have found a unique candidate for " + errorInfo.toString(typeContext);
             LOGGER.debug("Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
-            Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
+            Expression newScope = scope.ensureExplicit(candidate.method.methodInspection,
+                    Identifier.from(methodCallExpr), typeContext, expressionContext);
             ParameterizedType returnType = candidate.returnType(typeContext.getPrimitives());
             LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 

@@ -595,10 +595,10 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                             scope = new VariableExpression(variable);
                         } else {
                             ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
-                            scope = new TypeExpression(parameterizedType, Diamond.NO);
+                            scope = new TypeExpression(identifier, parameterizedType, Diamond.NO);
                         }
                         return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, cit.getNameAsString(),
-                                expression.getBegin().orElseThrow(), enclosingType);
+                                identifier, enclosingType);
                     }
                     // there is a real possibility that the type expression is NOT a type but a local field...
                     // therefore we check the variable context first
@@ -608,7 +608,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     }
                 }
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, typeExpr.getType());
-                return new TypeExpression(parameterizedType, Diamond.SHOW_ALL);
+                return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
             }
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;

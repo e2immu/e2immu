@@ -49,6 +49,12 @@ public class MultiExpressions extends BaseExpression implements Expression {
         this.inspectionProvider = inspectionProvider;
     }
 
+    public static Expression from(Identifier identifier, List<Variable> variables) {
+        if (variables.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
+        MultiExpression multi = MultiExpression.create(variables.stream().map(v -> (Expression) new VariableExpression(v)).toList());
+        return new MultiExpressions(identifier, InspectionProvider.DEFAULT, multi);
+    }
+
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Expression> multi = multiExpression.stream().toList();
@@ -127,7 +133,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        if(multiExpression.lastExpression().isDelayed()) {
+        if (multiExpression.lastExpression().isDelayed()) {
             return new MultiExpressions(identifier, inspectionProvider, multiExpression.mergeDelaysOnLastExpression(causesOfDelay));
         }
         return this;

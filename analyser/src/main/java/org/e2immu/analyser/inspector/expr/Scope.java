@@ -51,11 +51,12 @@ public record Scope(Expression expression,
     }
 
     public Expression ensureExplicit(MethodInspection methodInspection,
+                                     Identifier identifier,
                                      InspectionProvider inspectionProvider,
                                      ExpressionContext expressionContext) {
         if (objectIsImplicit()) {
             if (methodInspection.isStatic()) {
-                return new TypeExpression(methodInspection.getMethodInfo()
+                return new TypeExpression(identifier, methodInspection.getMethodInfo()
                         .typeInfo.asParameterizedType(inspectionProvider), Diamond.NO);
             }
             Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType());

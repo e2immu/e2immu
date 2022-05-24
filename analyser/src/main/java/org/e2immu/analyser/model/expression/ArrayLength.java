@@ -35,8 +35,8 @@ public class ArrayLength extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final Expression scope;
 
-    public ArrayLength(Primitives primitives, @NotNull Expression scope) {
-        super(Identifier.joined("array length", List.of(scope.getIdentifier())));
+    public ArrayLength(Identifier identifier, Primitives primitives, @NotNull Expression scope) {
+        super(identifier);
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;
     }
@@ -58,7 +58,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translated = scope.translate(inspectionProvider, translationMap);
         if (translated == scope) return this;
-        return new ArrayLength(primitives, translated);
+        return new ArrayLength(identifier, primitives, translated);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         if (scope.isDelayed()) {
-            return new ArrayLength(primitives, scope.mergeDelays(causesOfDelay));
+            return new ArrayLength(identifier, primitives, scope.mergeDelays(causesOfDelay));
         }
         return this;
     }
@@ -121,8 +121,7 @@ public class ArrayLength extends BaseExpression implements Expression {
             Expression size = new IntConstant(context.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
             builder.setExpression(size);
         } else if (result.value().isDelayed()) {
-            builder.setExpression(DelayedExpression.forArrayLength(identifier, context.getPrimitives(),
-                    variables(true),
+            builder.setExpression(DelayedExpression.forArrayLength(identifier, context.getPrimitives(), this,
                     result.value().causesOfDelay()));
         } else {
             builder.setExpression(this);

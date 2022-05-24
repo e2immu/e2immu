@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -22,6 +21,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
@@ -37,7 +37,10 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -104,8 +107,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         assert arrayInitializer == null;
         CausesOfDelay causesOfDelay = valueProperties.delays();
         if (causesOfDelay.isDelayed()) {
-            return DelayedExpression.forInstanceOf(identifier, primitives, parameterizedType,
-                    variables(true), causesOfDelay);
+            return DelayedExpression.forInstanceOf(identifier, primitives, parameterizedType, this, causesOfDelay);
         }
         return new Instance(identifier, parameterizedType, valueProperties);
     }
@@ -398,7 +400,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (constructor != null) {
             List<Variable> variables = variables(true);
             Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
-                    constructor, null, this, res.v, variables);
+                    constructor, null, this, res.v, this);
             if (modifiedInstance == null) {
                 instance = this;
             } else {
@@ -450,10 +452,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (context == null || constructor == null || parameterExpressions.isEmpty()) {
             shortCutMap = null;
         } else {
-            List<Variable> varsOfAllParameters = parameterExpressions.stream()
-                    .flatMap(e -> e.variables(true).stream())
-                    .toList();
-            if (varsOfAllParameters.isEmpty()) {
+            boolean haveNoVariables = parameterExpressions.stream()
+                    .allMatch(e -> e.variables(true).isEmpty());
+            if (haveNoVariables) {
                 shortCutMap = null;
             } else {
             /*
@@ -475,9 +476,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 if (fieldsFinal.isDelayed()) {
                     // we must be in iteration 0, and the type has not been analysed yet...
                     String delayName = constructor.typeInfo.simpleName;
+                    Expression originalForDelay = new MultiExpressions(identifier, context.getAnalyserContext(),
+                            MultiExpression.create(parameterExpressions));
                     shortCutMap = fields.stream().collect(Collectors.toUnmodifiableMap(f -> f, f ->
                             DelayedExpression.forConstructorCallExpansion(identifier, delayName, f.type,
-                                    varsOfAllParameters, fieldsFinal.causesOfDelay().merge(causes))));
+                                    originalForDelay, fieldsFinal.causesOfDelay().merge(causes))));
                 } else {
                     shortCutMap = new HashMap<>();
                     for (FieldInfo fieldInfo : fields) {
@@ -492,18 +495,19 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                             && pi.owner == constructor
                                             && lv.equals(LinkedVariables.STATICALLY_ASSIGNED_DV)) {
                                         // the field has been statically assigned to pi
-                                        List<Variable> varsOfThisParameter = parameterExpressions.get(pi.index)
-                                                .variables(true);
+                                        Expression original = parameterExpressions.get(pi.index);
                                         Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,
-                                                fieldInfo.type, varsOfThisParameter, causes);
+                                                fieldInfo.type, original, causes);
                                         shortCutMap.put(fieldInfo, de);
                                     }
                                 });
                             } else {
                                 // linking not done yet
                                 CausesOfDelay merged = fieldsFinal.causesOfDelay().merge(causes);
+                                Expression originalForDelay = new MultiExpressions(identifier, context.getAnalyserContext(),
+                                        MultiExpression.create(parameterExpressions));
                                 shortCutMap.put(fieldInfo, DelayedExpression.forConstructorCallExpansion(identifier,
-                                        delayName, fieldInfo.type, varsOfAllParameters, merged));
+                                        delayName, fieldInfo.type, originalForDelay, merged));
                             }
                         } // else: definitely nothing for this field
                     }
@@ -511,7 +515,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             }
         }
         return DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                variables(true), causes, shortCutMap);
+                this, causes, shortCutMap);
     }
 
     public MethodInfo constructor() {

@@ -461,8 +461,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     CausesOfDelay causes = forwardAnalysisInfo.conditionManager().condition().causesOfDelay()
                             .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
                     condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
-                            statementAnalysis.primitives(),
-                            forwardAnalysisInfo.switchSelector().variables(true), causes);
+                            statementAnalysis.primitives(), forwardAnalysisInfo.switchSelector(), causes);
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                 }

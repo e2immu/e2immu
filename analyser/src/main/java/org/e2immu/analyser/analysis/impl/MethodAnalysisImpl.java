@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.UnknownExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -284,7 +281,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.noInformationYet(methodInfo.newLocation(), primitives));
             Expression delayedPreconditionForEventual = DelayedExpression.forPrecondition(methodInfo.identifier,
-                    primitives, List.of(), initialDelay(methodInfo));
+                    primitives, EmptyExpression.EMPTY_EXPRESSION, initialDelay(methodInfo));
             preconditionForEventual.setVariable(Precondition.forDelayed(delayedPreconditionForEventual));
             eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));
             if (!methodInfo.hasReturnValue()) {
@@ -295,7 +292,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 // same as in MethodAnalyserImpl, which we don't have access to here
                 DelayedExpression de = DelayedExpression.forMethod(methodInfo.identifier, methodInfo,
                         methodInfo.returnType(),
-                        List.of(),
+                        EmptyExpression.EMPTY_EXPRESSION,
                         methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE), Map.of());
                 singleReturnValue.setVariable(de);
             }

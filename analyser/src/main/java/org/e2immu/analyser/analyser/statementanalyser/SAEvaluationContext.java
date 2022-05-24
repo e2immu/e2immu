@@ -644,7 +644,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             if (bestValue.isDone()) {
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression veSuffix = new VariableExpression(variable, suffix, null, null); // FIXME
+                VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME
 
                 VariableExpression ve = new VariableExpression(variable);
                 translationMap.put(veSuffix, ve);
@@ -662,11 +662,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
                         valueProperties);
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression ve = new VariableExpression(variable, suffix, null, null); // FIXME implement
+                VariableExpression ve = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME implement
                 translationMap.put(ve, newObject);
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                        bestValue.variables(true), delays);
+                        bestValue, delays);
                 translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
                 // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
                 // see VariableScope_10
@@ -709,8 +709,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 return translated;
             }
             if (modified.isDelayed()) {
-                return DelayedExpression.forPrecondition(identifier, getPrimitives(),
-                        variables, modified.causesOfDelay());
+                return DelayedExpression.forPrecondition(identifier, getPrimitives(), translated, modified.causesOfDelay());
             }
         }
         return precondition.isDelayed() ? precondition : null;
@@ -833,7 +832,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 // variables in loop defined outside
                 if (isInstance) {
                     VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                    return new VariableExpression(v, suffix2, sv, iv);
+                    return new VariableExpression(expression.getIdentifier(), v, suffix2, sv, iv);
                 }
                 // do not return a value when it has not yet been written to
                 if (!value.isDelayed()) {
@@ -843,7 +842,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                             && statementIndex().startsWith(outside.statementIndex())) {
                         // has not yet been assigned in the loop, and we're in that loop
                         VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
-                        return new VariableExpression(v, suffix2, sv, iv);
+                        return new VariableExpression(expression.getIdentifier(), v, suffix2, sv, iv);
                     }
                 }
             }

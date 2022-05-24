@@ -121,7 +121,8 @@ public class EnumMethods {
         valueOfBuilder.readyToComputeFQN(typeContext);
 
         if (insertCode(typeContext)) {
-            var codeBlock = returnValueOf(expressionContext, enumType, valuesBuilder,
+            var identifier = Identifier.generate("return value-of");
+            var codeBlock = returnValueOf(expressionContext, identifier, enumType, valuesBuilder,
                     nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
             valueOfBuilder.setInspectedBlock(codeBlock);
         } else {
@@ -145,6 +146,7 @@ public class EnumMethods {
      Later we can add a filter
      */
     private static Block returnValueOf(ExpressionContext expressionContext,
+                                       Identifier identifier,
                                        TypeInfo enumType,
                                        MethodInspection.Builder valuesMethod,
                                        MethodInspection nameMethod,
@@ -152,7 +154,7 @@ public class EnumMethods {
                                        AnnotationExpression notModifiedContract) {
         var typeContext = expressionContext.typeContext();
 
-        var enumTypeExpression = new TypeExpression(valuesMethod.getMethodInfo().typeInfo
+        var enumTypeExpression = new TypeExpression(identifier, valuesMethod.getMethodInfo().typeInfo
                 .asParameterizedType(typeContext), Diamond.NO);
         var values = new MethodCall(Identifier.generate("enum valueOf values"), true, enumTypeExpression,
                 valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
@@ -167,7 +169,7 @@ public class EnumMethods {
                     }
                     return false;
                 }).findFirst().orElseThrow();
-        var arraysType = new TypeExpression(arrays.asParameterizedType(typeContext), Diamond.NO);
+        var arraysType = new TypeExpression(identifier, arrays.asParameterizedType(typeContext), Diamond.NO);
         var streamArrayInspection = typeContext.getMethodInspection(streamArray);
         var callStream = new MethodCall(Identifier.generate("enum call stream"), false, arraysType, streamArray,
                 streamArrayInspection.getReturnType(), List.of(values));

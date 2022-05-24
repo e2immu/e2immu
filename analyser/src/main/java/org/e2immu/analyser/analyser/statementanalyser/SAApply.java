@@ -171,16 +171,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         } else {
             applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
                     delayStatus, analyserContext, groupPropertyValues);
-        }
-        // debugging...
 
-        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
-                .debugConfiguration().evaluationResultVisitors()) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
-                    applyStatusAndEnnStatus.ennStatus()));
-        }
+            // debugging...
 
+            for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
+                    .debugConfiguration().evaluationResultVisitors()) {
+                evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
+                        methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
+                        applyStatusAndEnnStatus.ennStatus()));
+            }
+        }
         return applyStatusAndEnnStatus;
     }
 
@@ -306,9 +306,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (changeData.value().isDone() && causesOfDelay.isDelayed()) {
             // cannot yet change to changeData.value()...
             toWrite = DelayedExpression.forDelayedValueProperties(changeData.value().getIdentifier(),
-                    changeData.value().returnType(),
-                    changeData.value().variables(true),
-                    causesOfDelay, Properties.EMPTY);
+                    changeData.value().returnType(), changeData.value(), causesOfDelay, Properties.EMPTY);
         } else {
             toWrite = changeData.value();
         }
@@ -789,8 +787,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 if (merged.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY)) {
                     return value;
                 }
-                return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(),
-                        value.variables(true), merged);
+                return DelayedExpression.forState(Identifier.state(index()), variable.parameterizedType(), value, merged);
             }
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {

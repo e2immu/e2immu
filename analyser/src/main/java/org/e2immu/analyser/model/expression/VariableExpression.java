@@ -115,14 +115,25 @@ public final class VariableExpression extends BaseExpression implements IsVariab
     // only used when the variable is a DependentVariable
     private final Expression indexValue;
 
+    public VariableExpression(Identifier identifier, Variable variable) {
+        this(identifier, variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
+                        variable instanceof DependentVariable dv ? dv.arrayExpression() : null,
+                variable instanceof DependentVariable dv ? dv.indexExpression() : null);
+    }
+
     public VariableExpression(Variable variable) {
-        this(variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
+        this(Identifier.constant(variable.fullyQualifiedName() + NO_SUFFIX),
+                variable, NO_SUFFIX, variable instanceof FieldReference fr && !fr.isStatic ? fr.scope :
                         variable instanceof DependentVariable dv ? dv.arrayExpression() : null,
                 variable instanceof DependentVariable dv ? dv.indexExpression() : null);
     }
 
     public VariableExpression(Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
-        super(Identifier.constant(variable.fullyQualifiedName() + suffix));
+        this(Identifier.constant(variable.fullyQualifiedName() + suffix), variable, suffix, scopeValue, indexValue);
+    }
+
+    public VariableExpression(Identifier identifier, Variable variable, Suffix suffix, Expression scopeValue, Expression indexValue) {
+        super(identifier);
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
         if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic ||
@@ -221,7 +232,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                         int statementTime = translated instanceof DelayedVariableExpression dve ? dve.statementTime : 0;
                         return DelayedVariableExpression.forField(newFr, statementTime, translated.causesOfDelay());
                     }
-                    return new VariableExpression(newFr, suffix, translated, null);
+                    return new VariableExpression(fr.scope.getIdentifier(), newFr, suffix, translated, null);
                 }
             } else if (variable instanceof DependentVariable dv) {
                 Expression translatedScope = dv.arrayExpression().translate(inspectionProvider, translationMap);
@@ -237,7 +248,7 @@ public final class VariableExpression extends BaseExpression implements IsVariab
                     if (newDv.causesOfDelay().isDelayed()) {
                         return DelayedVariableExpression.forDependentVariable(newDv, newDv.causesOfDelay());
                     }
-                    return new VariableExpression(newDv, suffix, translatedScope, translatedIndex);
+                    return new VariableExpression(dv.getIdentifier(), newDv, suffix, translatedScope, translatedIndex);
                 }
             }
         }

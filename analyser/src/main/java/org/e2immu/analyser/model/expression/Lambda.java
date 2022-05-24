@@ -117,7 +117,8 @@ public class Lambda extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        throw new UnsupportedOperationException();
+        return this; // translation will be used by DelayedExpression, we cannot simply throw an exception
+        //throw new UnsupportedOperationException();
         //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
     }
 
@@ -245,8 +246,7 @@ public class Lambda extends BaseExpression implements Expression {
                 }
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
-                result = DelayedExpression.forMethod(identifier, methodInfo, implementation,
-                        variables(true), causes, Map.of());
+                result = DelayedExpression.forMethod(identifier, methodInfo, implementation, this, causes, Map.of());
             }
         } else {
             // the lambda
@@ -268,9 +268,8 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     private Expression noLocalAnalysersYet(EvaluationResult evaluationContext) {
-        return DelayedExpression.forMethod(identifier, methodInfo, implementation,
-                variables(true), DelayFactory.createDelay(evaluationContext.getCurrentType(),
-                        CauseOfDelay.Cause.TYPE_ANALYSIS), Map.of());
+        CausesOfDelay delay = DelayFactory.createDelay(evaluationContext.getCurrentType(), CauseOfDelay.Cause.TYPE_ANALYSIS);
+        return DelayedExpression.forMethod(identifier, methodInfo, implementation, this, delay, Map.of());
     }
 
     @Override

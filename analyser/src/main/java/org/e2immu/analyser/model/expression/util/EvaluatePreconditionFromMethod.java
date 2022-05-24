@@ -53,16 +53,14 @@ public class EvaluatePreconditionFromMethod {
         }
         if (precondition.isDelayed() || scopeObject.isDelayed()) {
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay());
-            List<Variable> variables = precondition.expression().variables(true);
-            return Precondition.forDelayed(identifierOfMethodCall, variables, causes, context.getPrimitives());
+            return Precondition.forDelayed(identifierOfMethodCall, precondition.expression(), causes, context.getPrimitives());
         }
 
         // we use the machinery of inlined methods to do proper translations.
         Expression inlinedMethod = InlinedMethod.of(identifierOfMethodCall, methodInfo, precondition.expression(), context.getAnalyserContext());
         if (inlinedMethod.isDelayed()) {
-            List<Variable> variables = precondition.expression().variables(true);
             CausesOfDelay causes = scopeObject.causesOfDelay().merge(precondition.causesOfDelay()).merge(inlinedMethod.causesOfDelay());
-            return Precondition.forDelayed(identifierOfMethodCall, variables, causes, context.getPrimitives());
+            return Precondition.forDelayed(identifierOfMethodCall, precondition.expression(), causes, context.getPrimitives());
         }
         InlinedMethod iv = (InlinedMethod) inlinedMethod;
         TranslationMap translationMap = iv.translationMap(context, parameterValues, scopeObject,

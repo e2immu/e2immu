@@ -17,16 +17,17 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Diamond;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.objectweb.asm.Type;
 
 public class ExpressionFactory {
 
-    public static Expression from(TypeContext typeContext, Object value) {
+    public static Expression from(TypeContext typeContext, Identifier identifier, Object value) {
         Primitives primitives = typeContext.getPrimitives();
         if (value == null) return NullConstant.NULL_CONSTANT;
-        if (value instanceof String s) return new StringConstant(primitives, s);
+        if (value instanceof String s) return new StringConstant(identifier, primitives, s);
         if (value instanceof Integer i) return new IntConstant(primitives, i);
         if (value instanceof Short s) return new ShortConstant(primitives, s);
         if (value instanceof Long l) return new LongConstant(primitives, l);
@@ -36,7 +37,7 @@ public class ExpressionFactory {
         if (value instanceof Character c) return new CharConstant(primitives, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
         if (value instanceof Type t)
-            return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true)
+            return new TypeExpression(identifier, typeContext.getFullyQualified(t.getClassName(), true)
                     .asParameterizedType(typeContext), Diamond.SHOW_ALL);
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }

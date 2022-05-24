@@ -249,7 +249,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
 
                         FieldReference newFr = new FieldReference(evaluationResult2.getAnalyserContext(), fr.fieldInfo, scope, scopeVariable, fr.getOwningType());
-                        VariableExpression ve = new VariableExpression(newFr, VariableExpression.NO_SUFFIX, scope, null);
+                        VariableExpression ve = new VariableExpression(identifier, newFr, VariableExpression.NO_SUFFIX, scope, null);
                         builder.addVariableExpression(fr, ve);
                         builder.put(fr, newFr);
                     }

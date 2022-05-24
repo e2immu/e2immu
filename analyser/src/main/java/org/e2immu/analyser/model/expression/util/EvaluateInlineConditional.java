@@ -48,8 +48,7 @@ public class EvaluateInlineConditional {
                 Identifier identifier = Identifier.joined("inline", List.of(condition.getIdentifier(),
                         ifTrue.getIdentifier(), ifFalse.getIdentifier()));
                 Expression delay = DelayedExpression.forSimplification(identifier, evaluationResult.value().returnType(),
-                        evaluationResult.value().variables(true),
-                        causes);
+                        evaluationResult.value(), causes);
                 return new EvaluationResult.Builder(evaluationContext).setExpression(delay).build();
             }
         }

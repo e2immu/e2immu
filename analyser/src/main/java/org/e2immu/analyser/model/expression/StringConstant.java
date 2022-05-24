@@ -34,10 +34,14 @@ public final class StringConstant extends BaseExpression implements ConstantExpr
     private final Primitives primitives;
     private final String constant;
 
-    public StringConstant(Primitives primitives, String constant) {
-        super(Identifier.constant(constant));
+    public StringConstant(Identifier identifier, Primitives primitives, String constant) {
+        super(identifier);
         this.primitives = primitives;
         this.constant = constant;
+    }
+
+    public StringConstant(Primitives primitives, String constant) {
+        this(Identifier.constant(constant), primitives, constant);
     }
 
     @Override

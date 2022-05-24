@@ -53,8 +53,7 @@ public class Sum extends BinaryOperator {
         Expression expression = sum(identifier,
                 evaluationContext, l, r, true);
         return causes.isDelayed() && !expression.isDelayed()
-                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
-                expression.variables(true), causes)
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(), expression, causes)
                 : expression;
     }
 
@@ -62,8 +61,7 @@ public class Sum extends BinaryOperator {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
         Expression expression = sum(identifier, evaluationContext, l, r, true);
         return causes.isDelayed() && !expression.isDelayed()
-                ? DelayedExpression.forSimplification(identifier, expression.returnType(),
-                expression.variables(true), causes)
+                ? DelayedExpression.forSimplification(identifier, expression.returnType(), expression, causes)
                 : expression;
     }
 

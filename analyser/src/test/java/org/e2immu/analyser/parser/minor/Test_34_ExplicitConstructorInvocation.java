@@ -16,18 +16,16 @@
 package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.minor.testexample.ExplicitConstructorInvocation_7;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -164,26 +162,97 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
             int numParams = d.methodInfo().methodInspection.get().getParameters().size();
-            if ("ExplicitConstructorInvocation_7".equals(d.methodInfo().name) && numParams == 2) {
+            if ("ExplicitConstructorInvocation_7".equals(d.methodInfo().name)) {
                 ParameterizedType typeOfParam1 = d.methodInfo().methodInspection.get().getParameters().get(1).parameterizedType;
                 assertNotNull(typeOfParam1.typeInfo);
-                if ("Primitives".equals(typeOfParam1.typeInfo.simpleName)) {
-                    if ("0".equals(d.statementId())) {
-                        VariableInfoContainer vic = d.statementAnalysis().getVariable(ExplicitConstructorInvocation_7.class.getCanonicalName() + ".primitives");
+                if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
+                    EvaluationResult.ChangeData cd = d.findValueChangeByToString("primitives");
+                    assertTrue(cd.markAssignment());
+
+                    Expression value = cd.value();
+                    assertEquals("<s:Primitives>", value.toString());
+                    if (value instanceof DelayedExpression de) {
+                        List<String> parameters = de.variables(true).stream()
+                                .filter(v -> v instanceof ParameterInfo).map(Variable::simpleName).toList();
+                        assertEquals("[primitives1]", parameters.toString());
+                    } else fail();
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int numParams = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("ExplicitConstructorInvocation_7".equals(d.methodInfo().name)) {
+                ParameterizedType typeOfParam1 = d.methodInfo().methodInspection.get().getParameters().get(1).parameterizedType;
+                assertNotNull(typeOfParam1.typeInfo);
+                if ("Primitives".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
+                    assertEquals("0", d.statementId());
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
                             case 1 -> "<s:Primitives>";
                             default -> "primitives/*@NotNull*/";
                         };
-                        assertEquals(expected, vic.current().getValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1";
+                            case 1 -> "primitives3:-1";
+                            default -> "";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<eci>";
+                            case 1 -> "List.of().stream().mapToInt(Expression::getComplexity).sum()+`ExplicitConstructorInvocation_7.COMPLEXITY`+(null==identifier?0:<m:getComplexity>)";
+                            default -> "primitives/*@NotNull*/";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "identifier:-1,primitives3:-1,this.expressions:-1,this.primitives:-1";
+                            case 1 -> "identifier:-1";
+                            default -> "";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                } else if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
+                    assertEquals("0", d.statementId());
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<s:Primitives>";
+                            default -> "primitives/*@NotNull*/";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("primitives1:-1", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "expressions.stream().mapToInt(Expression::getComplexity).sum()+<f:COMPLEXITY>+<simplification>";
+                            default -> "";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,this.expressions:-1";
+                            default -> "";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                } else {
+                    assertEquals(3, numParams);
+                    if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
+                        String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives2/*@NotNull*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "primitives2:-1" : "primitives2:1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
         };
         testClass("ExplicitConstructorInvocation_7", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
 
@@ -312,7 +381,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

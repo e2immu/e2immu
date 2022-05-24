@@ -196,7 +196,7 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void testReturnType() {
         CausesOfDelay delay = DelayFactory.createDelay(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
         Expression a = DelayedExpression.forState(Identifier.generate("test"), PRIMITIVES.booleanParameterizedType(),
-              List.of(),  delay);
+              EmptyExpression.EMPTY_EXPRESSION,  delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = UnknownExpression.forReturnVariable(Identifier.constant("unknown"), boxed);
         Expression inline = inline(c, a, b);

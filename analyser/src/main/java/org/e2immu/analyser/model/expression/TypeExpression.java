@@ -35,8 +35,8 @@ public class TypeExpression extends BaseExpression implements Expression {
     public final ParameterizedType parameterizedType;
     public final Diamond diamond;
 
-    public TypeExpression(ParameterizedType parameterizedType, Diamond diamond) {
-        super(Identifier.constant(parameterizedType));
+    public TypeExpression(Identifier identifier, ParameterizedType parameterizedType, Diamond diamond) {
+        super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = diamond;
     }
@@ -87,14 +87,14 @@ public class TypeExpression extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        return builder.setExpression(new TypeExpression(parameterizedType, diamond)).build();
+        return builder.setExpression(new TypeExpression(identifier, parameterizedType, diamond)).build();
     }
 
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         ParameterizedType translated = translationMap.translateType(parameterizedType);
         if (translated == parameterizedType) return this;
-        return new TypeExpression(translated, diamond);
+        return new TypeExpression(identifier, translated, diamond);
     }
 
     @Override

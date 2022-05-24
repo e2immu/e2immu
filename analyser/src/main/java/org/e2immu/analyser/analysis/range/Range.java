@@ -17,7 +17,9 @@ package org.e2immu.analyser.analysis.range;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MultiExpressions;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -127,7 +129,11 @@ public interface Range {
         return List.of();
     }
 
-    record Delayed(CausesOfDelay causesOfDelay) implements Range {
+    default Expression expression(Identifier identifier) {
+        return MultiExpressions.from(identifier, variables());
+    }
+
+    record Delayed(CausesOfDelay causesOfDelay, Expression original) implements Range {
 
         @Override
         public Expression conditions(EvaluationContext evaluationContext) {
@@ -147,6 +153,16 @@ public interface Range {
         @Override
         public String toString() {
             return "DELAYED RANGE";
+        }
+
+        @Override
+        public List<Variable> variables() {
+            return original.variables(true);
+        }
+
+        @Override
+        public Expression expression(Identifier identifier) {
+            return original;
         }
     }
 }

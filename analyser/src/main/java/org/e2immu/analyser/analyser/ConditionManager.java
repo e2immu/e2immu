@@ -18,7 +18,9 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
@@ -387,7 +389,7 @@ public record ConditionManager(Expression condition,
         if (withoutNegation instanceof Equals equals && !Collections.disjoint(equals.variables(true), variablesAssigned)) {
             Expression newState = state.isDelayed()
                     ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(),
-                    state.variables(true), state.causesOfDelay())
+                    state, state.causesOfDelay())
                     : new BooleanConstant(primitives, true);
             return new ConditionManager(condition, newState, precondition, parent);
         }
@@ -411,6 +413,10 @@ public record ConditionManager(Expression condition,
                 Stream.concat(condition.variables(true).stream(),
                         Stream.concat(precondition.expression().variables(true).stream(),
                                 state.variables(true).stream()))).toList();
+    }
+
+    public Expression multiExpression() {
+        return MultiExpressions.from(getIdentifier(), variables());
     }
 
     public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

@@ -165,9 +165,7 @@ public class InstanceOf extends BaseExpression implements Expression {
         }
         if (value.isDelayed()) {
             return builder.setExpression(DelayedExpression.forInstanceOf(identifier, context.getPrimitives(),
-                            parameterizedType,
-                            expression.variables(true),
-                            value.causesOfDelay()))
+                            parameterizedType, expression, value.causesOfDelay()))
                     .build();
         }
         if (value instanceof NullConstant) {
@@ -202,8 +200,7 @@ public class InstanceOf extends BaseExpression implements Expression {
             notNull = Negation.negate(context,
                     Equals.equals(identifier, context, value, NullConstant.NULL_CONSTANT, forwardEvaluationInfo));
         } else {
-            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, variables(true),
-                    evalNotNull.causesOfDelay());
+            notNull = DelayedExpression.forNullCheck(getIdentifier(), primitives, this, evalNotNull.causesOfDelay());
         }
         return builder
                 .setExpression(And.and(context, newInstanceOf, notNull))

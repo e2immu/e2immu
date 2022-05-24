@@ -106,8 +106,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 throw rte;
             }
         }
-        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(),
-                expression.variables(true), ev.getCauses());
+        return DelayedExpression.forInlinedMethod(identifier, expression.returnType(), expression, ev.getCauses());
     }
 
     private static Predicate<FieldReference> containsVariableFields(AnalyserContext analyserContext) {
@@ -188,7 +187,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         if (translated == expression) return this;
         if (translated.isDelayed()) {
             return DelayedExpression.forInlinedMethod(identifier, expression.returnType(),
-                    expression.variables(true), translated.causesOfDelay());
+                    expression, translated.causesOfDelay());
         }
         return of(identifier, methodInfo, translated, fr -> containsVariableFields, inspectionProvider);
     }
@@ -403,7 +402,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 .merge(effectivelyFinal == null ? CausesOfDelay.EMPTY : effectivelyFinal.causesOfDelay());
         if (merged.isDelayed()) {
             return DelayedExpression.forMethod(identifierOfMethodCall, methodInfo, variable.parameterizedType(),
-                    List.of(), // given that we'll return an expanded variable
+                    EmptyExpression.EMPTY_EXPRESSION, // given that we'll return an expanded variable
                     merged, Map.of());
         }
         Identifier inline;
