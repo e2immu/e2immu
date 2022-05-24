@@ -272,7 +272,7 @@ public interface EvaluationContext {
     default Properties defaultValuePropertiesAllowMyself(ParameterizedType formalType, DV nne) {
         AnalyserContext analyserContext = getAnalyserContext();
         DV immutable = isMyself(formalType) ? MultiLevel.MUTABLE_DV
-                : analyserContext.defaultImmutable(formalType, true);
+                : analyserContext.defaultImmutable(formalType, false);
         return Properties.ofWritable(Map.of(
                 IMMUTABLE, immutable,
                 INDEPENDENT, analyserContext.defaultIndependent(formalType),

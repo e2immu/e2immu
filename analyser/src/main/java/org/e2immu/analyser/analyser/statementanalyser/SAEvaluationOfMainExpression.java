@@ -152,20 +152,19 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         List.of(), eciDelay));
                 return eciDelay;
             }
+            EvaluationResult toApply;
             // IMPORTANT: quasi identical code in emptyExpression
             if (!assignments.isBooleanConstant()) {
                 LOGGER.debug("Assignment expressions: {}", assignments);
-                EvaluationResult reResult = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
-                ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, reResult, false);
-                statusPost = assignmentResult.status().merge(causes);
-                ennStatus = applyResult.ennStatus().combine(assignmentResult.ennStatus());
-                result = reResult;
+                toApply = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
             } else {
-                // we have to write the precondition from method (there is no precondition in "assignments")
-                boolean progress = statementAnalysis.applyPrecondition(null,
-                        sharedState.evaluationContext(), sharedState.localConditionManager());
-                statusPost = statusPost.addProgress(progress);
+                // was not able to make proper assignments, see e.g. VariableInLoop_2. We still must call apply again
+                toApply = result;
             }
+            ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, toApply, false);
+            statusPost = assignmentResult.status().merge(causes);
+            ennStatus = applyResult.ennStatus().combine(assignmentResult.ennStatus());
+            result = toApply;
         }
         if (ennStatus.isDelayed()) {
             LOGGER.debug("Delaying statement {} in {} because of external not null/external immutable: {}",

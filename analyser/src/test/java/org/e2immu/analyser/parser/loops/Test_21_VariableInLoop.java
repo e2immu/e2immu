@@ -14,12 +14,10 @@
 
 package org.e2immu.analyser.parser.loops;
 
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.Stage;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -186,7 +184,15 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                 }
             }
+            if ("ResourceAccessException".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "msg".equals(pi.name)) {
+                    // statement is an explicit constructor invocation (ECI)
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("0", d.statementId());
+                }
+            }
         };
+
         testClass("VariableInLoop_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

@@ -173,10 +173,16 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     }
                 }
                 if ("x".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        String expected = d.iteration() <= 4 ? "<vl:x>" : "instance type X";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    }
                     if ("4.0.0".equals(d.statementId())) {
-                        assertEquals("this.xes:-1", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() <= 4 ? "this.xes:-1" : "this.xes:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -193,9 +199,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "{}" : "{xes=assigned:1}";
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(expected, p0.getAssignedToField().toString());
-                assertEquals(d.iteration() >= BIG, p0.assignedToFieldDelays().isDone());
-                assertDv(d.p(0), BIG, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), BIG, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertEquals(d.iteration() >= 5, p0.assignedToFieldDelays().isDone());
+                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
         testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
