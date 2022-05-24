@@ -35,7 +35,7 @@ public class ParseNameExpr {
         }
         Variable variable = expressionContext.variableContext().get(name, false);
         if (variable != null) {
-            return new VariableExpression(variable);
+            return new VariableExpression(Identifier.from(nameExpr), variable);
         }
         PackagePrefix packagePrefix = new PackagePrefix(new String[]{name});
         if (expressionContext.typeContext().isPackagePrefix(packagePrefix)) {

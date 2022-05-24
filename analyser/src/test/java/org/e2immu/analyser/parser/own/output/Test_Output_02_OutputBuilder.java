@@ -31,7 +31,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
@@ -52,9 +53,9 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 String typeOfParameter = d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName;
-                if("OutputBuilder".equals(typeOfParameter)) {
+                if ("OutputBuilder".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                } else if("OutputElement".equals(typeOfParameter)) {
+                } else if ("OutputElement".equals(typeOfParameter)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 } else fail();
             }
@@ -69,30 +70,26 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
     @Test
     public void testTypeName() throws IOException {
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("write".equals(d.methodInfo().name)) {
-                assertEquals("0", d.statementId());
-                if (d.iteration() >= 4) {
-                    // return variable, this
-                    assertEquals(2, d.evaluationResult().changeData().size());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("fullyQualifiedName".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
                 }
             }
-        };
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("write".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 3 ? "<m:minimal>"
+                    String expected = d.iteration() <= 7 ? "<m:minimal>"
                             : "switch(`required`){Required.SIMPLE->`simpleName`;Required.FQN->`fullyQualifiedName`;Required.QUALIFIED_FROM_PRIMARY_TYPE->`fromPrimaryTypeDownwards`;}";
-                       assertEquals(expected, d.currentValue().toString());
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("minimal".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:minimal>"
+                String expected = d.iteration() <= 7 ? "<m:minimal>"
                         : "/*inline minimal*/switch(required){Required.SIMPLE->simpleName;Required.FQN->fullyQualifiedName;Required.QUALIFIED_FROM_PRIMARY_TYPE->fromPrimaryTypeDownwards;}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 4) {
+                if (d.iteration() >= 8) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("fromPrimaryTypeDownwards, fullyQualifiedName, required, simpleName, this", inlinedMethod.variablesOfExpressionSorted());
                     } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
@@ -101,7 +98,6 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(FormattingOptions.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());

@@ -142,8 +142,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 }
             }
         };
-        // TODO 8 errors is too many
-        testClass("ParameterizedType_1", 8, 2, new DebugConfiguration.Builder()
+        // TODO 6 errors is too many
+        testClass("ParameterizedType_1", 6, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

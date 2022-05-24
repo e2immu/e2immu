@@ -60,7 +60,7 @@ public record Scope(Expression expression,
                         .typeInfo.asParameterizedType(inspectionProvider), Diamond.NO);
             }
             Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType());
-            return new VariableExpression(thisVariable);
+            return new VariableExpression(identifier, thisVariable);
         }
         return expression;
     }

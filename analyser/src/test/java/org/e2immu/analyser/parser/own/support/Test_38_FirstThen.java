@@ -47,7 +47,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo first && "first".equals(first.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertEquals("nullable instance type S/*@Identity*/", d.currentValue().toString());
-                    assertEquals("first:0,this.first:1", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.first:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

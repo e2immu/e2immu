@@ -62,7 +62,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
                             map.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                     Map<FieldReference, Expression> map2 = d.typeAnalysis().getApprovedPreconditionsE2();
-                    assertEquals("isFinal=!isFinal",
+                    assertEquals(d.iteration() == 1 ? "" : "isFinal=!isFinal",
                             map2.entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString()))
                                     .map(Object::toString).collect(Collectors.joining(",")));
                 }

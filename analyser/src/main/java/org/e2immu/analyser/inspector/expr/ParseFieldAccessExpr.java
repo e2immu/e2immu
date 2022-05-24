@@ -85,7 +85,7 @@ public class ParseFieldAccessExpr {
                         typeInfo.primaryType())
                 .filter(f -> name.equals(f.name)).findFirst();
         if (oFieldInfo.isPresent()) {
-            return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object, enclosingType));
+            return new VariableExpression(identifier, new FieldReference(inspectionProvider, oFieldInfo.get(), object, enclosingType));
         }
         TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();

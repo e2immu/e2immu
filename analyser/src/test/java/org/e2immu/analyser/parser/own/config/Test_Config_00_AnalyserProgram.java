@@ -33,19 +33,19 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-          if("from".equals(d.methodInfo().name)) {
-              assertDv(d,DV.FALSE_DV, Property.FLUENT);
-          }
+            if ("from".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.FLUENT);
+            }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalyserProgram".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(AnalyserProgram.class), 0, 1,
                 new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)

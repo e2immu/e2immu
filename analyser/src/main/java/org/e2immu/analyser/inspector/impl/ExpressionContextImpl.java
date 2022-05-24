@@ -571,14 +571,14 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 ThisExpr thisExpr = expression.asThisExpr();
                 Variable thisVar = This.create(typeContext, false, enclosingType,
                         thisExpr.getTypeName().map(Name::asString).orElse(null));
-                return new VariableExpression(thisVar);
+                return new VariableExpression(identifier, thisVar);
             }
 
             if (expression.isSuperExpr()) {
                 SuperExpr superExpr = expression.asSuperExpr();
                 Variable superVar = This.create(typeContext, true, enclosingType,
                         superExpr.getTypeName().map(Name::asString).orElse(null));
-                return new VariableExpression(superVar);
+                return new VariableExpression(identifier, superVar);
             }
 
             if (expression.isTypeExpr()) {
@@ -592,7 +592,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                         Variable variable = variableContext.get(cit.getScope().get().getNameAsString(), false);
                         Expression scope;
                         if (variable != null) {
-                            scope = new VariableExpression(variable);
+                            scope = new VariableExpression(Identifier.from(typeExpr), variable);
                         } else {
                             ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
                             scope = new TypeExpression(identifier, parameterizedType, Diamond.NO);
@@ -601,10 +601,10 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                                 identifier, enclosingType);
                     }
                     // there is a real possibility that the type expression is NOT a type but a local field...
-                    // therefore we check the variable context first
+                    // therefore, we check the variable context first
                     Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
                     if (variable != null) {
-                        return new VariableExpression(variable);
+                        return new VariableExpression(identifier, variable);
                     }
                 }
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, typeExpr.getType());

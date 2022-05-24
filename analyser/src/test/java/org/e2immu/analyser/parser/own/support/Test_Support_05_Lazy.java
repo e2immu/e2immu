@@ -185,11 +185,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     public void test() throws IOException {
         // null pointer caused by supplier.get()
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 1, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -197,11 +197,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     public void test_0() throws IOException {
         // supplier.get() null context on to supplier, on to parameter
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+               //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

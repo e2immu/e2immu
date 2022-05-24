@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser.own.annotationstore;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -65,7 +68,7 @@ public class Test_48_Store extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // EVAL level
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("entry:0", eval.getLinkedVariables().toString());
+                        assertEquals("", eval.getLinkedVariables().toString());
                         assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                     }
@@ -114,15 +117,15 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = "new Project_0(\"x\")";
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "new Project_0(\"x\")";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
-                    String expectLinked = "project:0";
+                    String expectLinked = d.iteration() == 0 ? "this:-1" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -130,22 +133,22 @@ public class Test_48_Store extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getOrCreate".equals(d.methodInfo().name)) {
                 // not modifying, there is no annotated API
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 // independent because non-modifying (no Annotated API)
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
-                String expected = "/*inline getOrCreate*/new Project_0(\"x\")";
+                String expected = d.iteration() == 0 ? "<m:getOrCreate>" : "/*inline getOrCreate*/new Project_0(\"x\")";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

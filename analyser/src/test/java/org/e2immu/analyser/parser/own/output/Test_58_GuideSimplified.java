@@ -86,8 +86,8 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -98,7 +98,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -113,26 +113,32 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "position".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 2 ? "<f:position>" : "instance type Position";
+                    String expectValue = d.iteration() <= 5 ? "<f:position>" : "instance type Position";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("return position:0,this.position:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() <= 5 ? "return position:0,this:-1" : "return position:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                     // this one must wait for Position to become @E2Immutable
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("trace".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
+                }
+            }
             if ("position".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 6, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -145,19 +151,19 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() <= 5 ? "<m:values>" : "/*inline values*/{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("trace".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:trace>" : "/*inline trace*/\"/*\"+position.msg+\"*/\"";
+                String expected = d.iteration() <= 5 ? "<m:trace>" : "/*inline trace*/\"/*\"+position.msg+\"*/\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -166,17 +172,17 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                         d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertEquals("msg:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

@@ -94,7 +94,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
@@ -234,7 +234,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("read".equals(d.fieldInfo().name)) {
                 assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 String linked = switch (d.iteration()) {
-                    case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "NOT_YET_SET";
+                    case 0, 1, 2, 3, 4, 5, 6, 7 -> "NOT_YET_SET";
                     default -> "previousRead:0,scope-container:2.0.1.updated:2,this.kvStore:3";
                 };
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
@@ -265,14 +265,14 @@ public class Test_45_Project extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= BIG ? "<m:set>"
+                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 8 ? "<m:set>"
                         : "/*inline set*/null==kvStore.get(key)?null:(kvStore.get(key)).value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= BIG ? "<m:get>"
+                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 8 ? "<m:get>"
                         : "/*inline get*/null==kvStore.get(key)?null:container.value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
