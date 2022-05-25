@@ -81,7 +81,7 @@ public class WeightedGraph extends Freezable {
 
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
-                if (followDelayed || d.isDone()) {
+                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null ||  d.le(maxValueIncl))) {
                     DV distanceToN = max(currentDistanceToV, d);
                     DV currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
@@ -137,7 +137,7 @@ public class WeightedGraph extends Freezable {
     @Only(before = "frozen")
     @Modified
     public void addNode(@NotNull Variable v, @NotNull Map<Variable, DV> dependsOn) {
-        addNode(v, dependsOn, false, (o, n)->o);
+        addNode(v, dependsOn, false, (o, n) -> o);
     }
 
     @Only(before = "frozen")

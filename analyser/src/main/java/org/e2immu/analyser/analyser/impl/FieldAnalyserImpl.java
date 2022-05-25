@@ -855,15 +855,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private DV immutableOfProxy(ValueAndPropertyProxy proxy) {
-        if (isMyOwnType(proxy.getValue().returnType())) {
-            return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
-        }
-        DV inProxy = proxy.getProperty(Property.IMMUTABLE);
-        if (inProxy.isDelayed()) {
-            DV breakValue = proxy.getProperty(IMMUTABLE_BREAK);
-            if (breakValue.isDone()) return breakValue;
-        }
-        return inProxy;
+        //   if (isMyOwnType(proxy.getValue().returnType())) {
+        //       return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
+        //   }
+        DV breakValue = proxy.getPropertyOrDefaultNull(IMMUTABLE_BREAK);
+        if (breakValue != null && breakValue.isDone()) return breakValue;
+        return proxy.getProperty(Property.IMMUTABLE);
     }
 
     private boolean isMyOwnType(ParameterizedType returnType) {
@@ -1062,6 +1059,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 }
 
                 @Override
+                public DV getPropertyOrDefaultNull(Property property) {
+                    if (property == IMMUTABLE_BREAK) return null;
+                    return getProperty(property);
+                }
+
+                @Override
                 public Origin getOrigin() {
                     return Origin.INITIALISER;
                 }
@@ -1121,6 +1124,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 @Override
                 public DV getProperty(Property property) {
                     return getValue().getProperty(null, property, false);
+                }
+
+                @Override
+                public DV getPropertyOrDefaultNull(Property property) {
+                    return getProperty(property);
                 }
 
                 @Override

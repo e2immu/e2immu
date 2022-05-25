@@ -49,6 +49,8 @@ public interface ValueAndPropertyProxy {
 
     DV getProperty(Property property);
 
+    DV getPropertyOrDefaultNull(Property property);
+
     @NotNull
     LinkedVariables getLinkedVariables();
 
@@ -79,6 +81,11 @@ public interface ValueAndPropertyProxy {
         @Override
         public DV getProperty(Property property) {
             return properties.get(property);
+        }
+
+        @Override
+        public DV getPropertyOrDefaultNull(Property property) {
+            return properties.getOrDefaultNull(property);
         }
 
         @Override

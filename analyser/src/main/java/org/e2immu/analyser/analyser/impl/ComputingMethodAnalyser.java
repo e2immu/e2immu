@@ -555,7 +555,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 return DONE;
             }
             LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.minimalOutput());
-            if (methodInfo.hasImplementations()) {
+        /*    if (methodInfo.hasImplementations()) {// && !methodInfo.methodInspection.get().hasStatements()) {
                 // see Independent_4; can we improve here?
                 LOGGER.debug("Method has implementations, returning vanilla result: {}", methodInfo.fullyQualifiedName);
                 ParameterizedType formalType = methodInfo.returnType();
@@ -578,7 +578,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(INDEPENDENT, independent);
                 methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
                 methodAnalysis.setProperty(CONTAINER, container);
-            } else if (value.isDelayed()) {
+            } else */if (value.isDelayed()) {
                 IsVariableExpression ive;
                 boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs
                         && (((ive = rs.expression.asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This

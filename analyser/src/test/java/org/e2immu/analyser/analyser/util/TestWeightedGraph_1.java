@@ -64,19 +64,19 @@ public class TestWeightedGraph_1 {
     @Test
     public void test1() {
         Map<Variable, DV> startAtToDo = wg.links(toDo, STATICALLY_ASSIGNED_DV, false);
-        assertEquals(3, startAtToDo.size());
+        assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
-        assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
+     //   assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
+      //  assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
     }
 
     @Test
     public void test1b() {
         Map<Variable, DV> startAtToDo = wg.links(toDo, DEPENDENT_DV, true);
-        assertEquals(3, startAtToDo.size());
+        assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
-        assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
+      //  assertEquals(DV.MAX_INT_DV, startAtToDo.get(cycle));
+    //    assertEquals(DV.MAX_INT_DV, startAtToDo.get(nodeMap));
     }
 
     @Test
@@ -118,9 +118,9 @@ public class TestWeightedGraph_1 {
     @Test
     public void test4b() {
         Map<Variable, DV> startAtRemoved = wg.links(removed, DEPENDENT_DV, true);
-        assertEquals(4, startAtRemoved.size());
-        assertEquals(DV.MAX_INT_DV, startAtRemoved.get(cycle));
-        assertEquals(DV.MAX_INT_DV, startAtRemoved.get(smallerCycle));
+        assertEquals(2, startAtRemoved.size());
+      //  assertEquals(DV.MAX_INT_DV, startAtRemoved.get(cycle));
+      //  assertEquals(DV.MAX_INT_DV, startAtRemoved.get(smallerCycle));
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(STATICALLY_ASSIGNED_DV, startAtRemoved.get(removed));
     }

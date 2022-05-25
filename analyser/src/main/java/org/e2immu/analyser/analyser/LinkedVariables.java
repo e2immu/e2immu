@@ -79,7 +79,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV ASSIGNED_DV = new NoDelay(1, "assigned");
     public static final DV DEPENDENT_DV = new NoDelay(2, "dependent");
     public static final DV INDEPENDENT1_DV = new NoDelay(3, "independent1");
-    public static final DV INDEPENDENT2_DV = new NoDelay(3, "independent2");
+    public static final DV INDEPENDENT2_DV = new NoDelay(4, "independent2");
     public static final DV NO_LINKING_DV = new NoDelay(MultiLevel.MAX_LEVEL, "no");
 
     public static DV value(int i) {
