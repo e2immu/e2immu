@@ -30,6 +30,7 @@ import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -173,6 +174,14 @@ public class VariableInfoImpl implements VariableInfo {
                 Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
     }
 
+    private static final List<Property> CONTEXT_PROPERTIES = List.of(CONTEXT_IMMUTABLE, CONTEXT_CONTAINER, CONTEXT_MODIFIED,
+            CONTEXT_NOT_NULL);
+
+    @Override
+    public Properties contextProperties() {
+        return Properties.of(CONTEXT_PROPERTIES.stream().collect(
+                Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
+    }
 
     @Override
     public Properties properties() {

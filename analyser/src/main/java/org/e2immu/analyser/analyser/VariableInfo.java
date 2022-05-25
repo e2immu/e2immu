@@ -119,6 +119,9 @@ public interface VariableInfo {
 
     Properties properties();
 
+    @NotNull
+    Properties contextProperties();
+
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

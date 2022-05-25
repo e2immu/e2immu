@@ -39,7 +39,7 @@ import static org.e2immu.analyser.model.expression.ArrayAccess.ARRAY_VARIABLE;
 import static org.e2immu.analyser.model.expression.ArrayAccess.INDEX_VARIABLE;
 
 @E2Container
-public final class VariableExpression extends BaseExpression implements IsVariableExpression {
+public class VariableExpression extends BaseExpression implements IsVariableExpression {
 
     public interface Suffix extends Comparable<Suffix> {
 
@@ -266,8 +266,13 @@ public final class VariableExpression extends BaseExpression implements IsVariab
         return typeInfo != null && typeInfo.isNumeric();
     }
 
+    public ForwardEvaluationInfo overrideForward(ForwardEvaluationInfo asParameter) {
+        return asParameter;
+    }
+
     @Override
-    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfoIn) {
+        ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
             return builder.setExpression(this).build();

@@ -189,22 +189,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         EvaluationResult context = EvaluationResult.from(evaluationContext);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         TranslationMapImpl.Builder translationMapBuilder = new TranslationMapImpl.Builder();
-
-        int i = 0;
-        for (Expression updater : updaters) {
-            ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
-            translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
-            translationMapBuilder.addVariableExpression(parameterInfo, updater);
-            i++;
-        }
-        List<Expression> assignments = new ArrayList<>(i*2);
-        /*
-        next to the assignments, we also do normal evaluations of the arguments of the ECI
-        Especially in the first iteration, when the translated expression is not yet done, we must have a way to
-        indicate that variables in the arguments (typically, parameters of the constructor with the ECI) are read
-        See e.g. ECI_7.
-         */
-        assignments.addAll(updaters);
+        CauseOfDelay causeOfDelay = new SimpleCause(evaluationContext.getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
 
         boolean weMustWait;
         if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
@@ -221,6 +206,48 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         } else {
             weMustWait = false;
         }
+
+        List<Expression> assignments = new ArrayList<>();
+        int i = 0;
+        for (Expression updater : updaters) {
+            ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
+            translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
+            translationMapBuilder.addVariableExpression(parameterInfo, updater);
+
+            /*
+            next to the assignments, we also do normal evaluations of the arguments of the ECI
+            Especially in the first iteration, when the translated expression is not yet done, we must have a way to
+            indicate that variables in the arguments (typically, parameters of the constructor with the ECI) are read
+            See e.g. ECI_7 (ECI 6 also goes through this, but never in the weMustWait state.)
+            */
+            if (updater instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi) {
+                Map<Property, DV> contextProperties;
+                if (weMustWait) {
+                    DV dv = DelayFactory.createDelay(causeOfDelay);
+                    contextProperties = Map.of(CONTEXT_CONTAINER, dv, CONTEXT_NOT_NULL, dv,
+                            CONTEXT_IMMUTABLE, dv, CONTEXT_MODIFIED, dv);
+                } else {
+                    StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+                    if(lastStatement == null) {
+                        contextProperties = Map.of();
+                    } else {
+                        VariableInfoContainer vic = lastStatement.getVariable(parameterInfo.fullyQualifiedName);
+                        VariableInfo vi = vic.current();
+                        contextProperties = vi.contextProperties().toImmutableMap();
+                    }
+                }
+                ForwardEvaluationInfo forwardEvaluationInfo = new ForwardEvaluationInfo.Builder()
+                        .addProperties(contextProperties)
+                        .build();
+                VariableExpression newVe = new VariableExpressionFixedForward(pi, forwardEvaluationInfo);
+                assignments.add(newVe);
+            } else {
+                assignments.add(updater);
+            }
+            i++;
+        }
+
+
         TypeInfo typeInfo = methodAnalysis.getMethodInfo().typeInfo;
         TypeInfo eciType = eci.isSuper ? typeInfo.typeInspection.get().parentClass().typeInfo : typeInfo;
         TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
@@ -251,7 +278,6 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 }
                 if (!assigned && weMustWait) {
                     FieldReference fr = new FieldReference(analyserContext, fieldInfo);
-                    CauseOfDelay causeOfDelay = new SimpleCause(evaluationContext.getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
                     Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(), DelayFactory.createDelay(causeOfDelay));
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),

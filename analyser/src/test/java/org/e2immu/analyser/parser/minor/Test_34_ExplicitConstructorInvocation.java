@@ -268,7 +268,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("LoopStatement".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertFalse(d.context().evaluationContext().delayStatementBecauseOfECI());
+                    assertEquals(d.iteration() == 0, d.context().evaluationContext().delayStatementBecauseOfECI());
                 }
             }
         };
