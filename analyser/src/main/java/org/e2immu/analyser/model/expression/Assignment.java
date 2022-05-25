@@ -52,6 +52,7 @@ public class Assignment extends BaseExpression implements Expression {
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
     public final boolean hackForUpdatersInForLoop;
+    public final boolean allowStaticallyAssigned;
 
     private Assignment(Identifier identifier,
                        Primitives primitives,
@@ -62,7 +63,8 @@ public class Assignment extends BaseExpression implements Expression {
                        boolean complainAboutAssignmentOutsideType,
                        Variable variableTarget,
                        MethodInfo binaryOperator,
-                       boolean hackForUpdatersInForLoop) {
+                       boolean hackForUpdatersInForLoop,
+                       boolean allowStaticallyAssigned) {
         super(identifier);
         this.primitives = primitives;
         this.target = target;
@@ -73,29 +75,32 @@ public class Assignment extends BaseExpression implements Expression {
         this.variableTarget = variableTarget;
         this.binaryOperator = binaryOperator;
         this.hackForUpdatersInForLoop = hackForUpdatersInForLoop;
+        this.allowStaticallyAssigned = allowStaticallyAssigned;
     }
 
     // see explanation below (makeHackInstance); called in SAInitializersAndUpdaters
     public Expression cloneWithHackForLoop() {
         return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
-                complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true);
+                complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true, true);
     }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
         this(Identifier.joined("new assignment", List.of(target.getIdentifier(), value.getIdentifier())), primitives,
-                target, value, null, null, true);
+                target, value, null, null, true, true);
     }
 
     public Assignment(Identifier identifier, Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(identifier, primitives, target, value, null, null, true);
+        this(identifier, primitives, target, value, null, null, true, true);
     }
 
     public Assignment(Identifier identifier,
                       Primitives primitives,
-                      @NotNull Expression target, @NotNull Expression value,
+                      @NotNull Expression target,
+                      @NotNull Expression value,
                       MethodInfo assignmentOperator,
                       Boolean prefixPrimitiveOperator,
-                      boolean complainAboutAssignmentOutsideType) {
+                      boolean complainAboutAssignmentOutsideType,
+                      boolean allowStaticallyAssigned) {
         super(identifier);
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
@@ -113,6 +118,7 @@ public class Assignment extends BaseExpression implements Expression {
             throw new UnsupportedOperationException();
         }
         hackForUpdatersInForLoop = false;
+        this.allowStaticallyAssigned = allowStaticallyAssigned;
     }
 
     @Override
@@ -138,7 +144,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (translatedValue == this.value && translatedTarget == this.target) return this;
         return new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,
-                complainAboutAssignmentOutsideType);
+                complainAboutAssignmentOutsideType, allowStaticallyAssigned);
     }
 
     @Override
@@ -214,7 +220,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (value.isDelayed()) {
             return new Assignment(identifier, primitives, target, value.mergeDelays(causesOfDelay),
                     assignmentOperator, prefixPrimitiveOperator, complainAboutAssignmentOutsideType, variableTarget,
-                    binaryOperator, hackForUpdatersInForLoop);
+                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned);
         }
         return this;
     }
@@ -427,7 +433,7 @@ public class Assignment extends BaseExpression implements Expression {
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         Set<Variable> directAssignment = value.directAssignmentVariables();
         LinkedVariables linkedVariables;
-        if (!directAssignment.isEmpty()) {
+        if (!directAssignment.isEmpty() && allowStaticallyAssigned) {
             Map<Variable, DV> map = directAssignment.stream()
                     .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
             linkedVariables = lvExpression.merge(LinkedVariables.of(map));

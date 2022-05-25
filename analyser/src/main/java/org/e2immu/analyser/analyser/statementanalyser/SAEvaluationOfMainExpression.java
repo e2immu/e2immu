@@ -419,7 +419,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(fr),
-                                end, null, null, false);
+                                end, null, null, false, false);
                         assignments.add(assignment);
                         assigned = true;
                     }
@@ -433,7 +433,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
-                            end, null, null, false);
+                            end, null, null, false, false);
                     assignments.add(assignment);
                     // FIXME ensure that the set of fields assigned now agrees with the one after the waiting
                 }

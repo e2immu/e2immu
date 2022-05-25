@@ -172,12 +172,15 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertTrue(cd.markAssignment());
 
                     Expression value = cd.value();
-                    assertEquals("<s:Primitives>", value.toString());
-                    if (value instanceof DelayedExpression de) {
-                        List<String> parameters = de.variables(true).stream()
-                                .filter(v -> v instanceof ParameterInfo).map(Variable::simpleName).toList();
-                        assertEquals("[primitives1]", parameters.toString());
-                    } else fail();
+                    String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives1/*@NotNull*/";
+                    assertEquals(expected, value.toString());
+                    if (d.iteration() == 0) {
+                        if (value instanceof DelayedExpression de) {
+                            List<String> parameters = de.variables(true).stream()
+                                    .filter(v -> v instanceof ParameterInfo).map(Variable::simpleName).toList();
+                            assertEquals("[primitives1]", parameters.toString());
+                        } else fail();
+                    }
                 }
             }
         };
@@ -193,13 +196,13 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
                             case 1 -> "<s:Primitives>";
-                            default -> "primitives/*@NotNull*/";
+                            default -> "primitives3/*@NotNull*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0 -> "identifier:-1,primitives3:-1,this.complexity:-1,this.expressions:-1";
                             case 1 -> "primitives3:-1";
-                            default -> "";
+                            default -> "primitives3:1";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -207,7 +210,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<eci>";
                             case 1 -> "List.of().stream().mapToInt(Expression::getComplexity).sum()+`ExplicitConstructorInvocation_7.COMPLEXITY`+(null==identifier?0:<m:getComplexity>)";
-                            default -> "primitives/*@NotNull*/";
+                            default -> "3+List.of().stream().mapToInt(Expression::getComplexity).sum()+(null==identifier?0:identifier.getComplexity())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -220,23 +223,20 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 } else if ("List".equals(typeOfParam1.typeInfo.simpleName) && numParams == 2) {
                     assertEquals("0", d.statementId());
                     if (d.variable() instanceof FieldReference fr && "primitives".equals(fr.fieldInfo.name)) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<s:Primitives>";
-                            default -> "primitives/*@NotNull*/";
-                        };
+                        String expected = d.iteration() == 0 ? "<s:Primitives>" : "primitives1/*@NotNull*/";
+
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("primitives1:-1", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "primitives1:-1" : "primitives1:1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if (d.variable() instanceof FieldReference fr && "complexity".equals(fr.fieldInfo.name)) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "expressions.stream().mapToInt(Expression::getComplexity).sum()+<f:COMPLEXITY>+<simplification>";
-                            default -> "";
-                        };
+                        String expected = d.iteration() == 0
+                                ? "expressions.stream().mapToInt(Expression::getComplexity).sum()+<f:COMPLEXITY>+<simplification>"
+                                : "3+expressions.stream().mapToInt(Expression::getComplexity).sum()";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = switch (d.iteration()) {
-                            case 0 -> "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,this.expressions:-1";
-                            default -> "";
-                        };
+                        String linked = d.iteration() == 0
+                                ? "ExplicitConstructorInvocation_7.COMPLEXITY:-1,expressions:-1,this.expressions:-1"
+                                : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 } else {

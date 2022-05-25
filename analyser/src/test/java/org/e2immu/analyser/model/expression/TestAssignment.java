@@ -62,15 +62,15 @@ public class TestAssignment {
                 lvi, new IntConstant(primitives, 0))), false);
         VariableExpression ve = new VariableExpression(i.declarations.get(0).localVariableReference());
         Expression iPlusEquals1 = new Assignment(newId(), primitives, ve,
-                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), null, true);
+                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), null, true, true);
         assertEquals("i+=1", iPlusEquals1.minimalOutput());
 
         Expression iPlusEquals1AsPlusPlusI = new Assignment(newId(), primitives, ve,
-                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), true, true);
+                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), true, true, true);
         assertEquals("++i", iPlusEquals1AsPlusPlusI.minimalOutput());
 
         Expression iPlusEquals1AsIPlusPlus = new Assignment(newId(), primitives, ve,
-                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), false, true);
+                new IntConstant(primitives, 1), primitives.assignPlusOperatorInt(), false, true, true);
         assertEquals("i++", iPlusEquals1AsIPlusPlus.minimalOutput());
     }
 
