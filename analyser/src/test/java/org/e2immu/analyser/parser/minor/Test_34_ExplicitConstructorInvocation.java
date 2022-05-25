@@ -135,9 +135,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     if (fr.scopeIsThis()) {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<f:enclosingType.fullyQualifiedName>+\".\"+simpleName";
+                                case 0 -> "<f:enclosingType3.fullyQualifiedName>+\".\"+simpleName3";
                                 case 1 -> "<wrapped:fullyQualifiedName>";
-                                default -> "enclosingType.fullyQualifiedName+\".\"+simpleName";
+                                default -> "enclosingType3.fullyQualifiedName+\".\"+simpleName3";
                             };
                             assertEquals(expected, d.currentValue().toString());
                         } else fail("?" + d.statementId());
@@ -148,7 +148,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("fullyQualifiedName".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:fullyQualifiedName>" :
-                        "[instance type String,instance type String,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName,\"\".equals(packageName)?simpleName:packageName+\".\"+simpleName]";
+                        "[instance type String,instance type String,\"\".equals(packageName2)?simpleName2:packageName2+\".\"+simpleName2,\"\".equals(packageName1)?simpleName1:packageName1+\".\"+simpleName1]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
@@ -268,7 +268,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("LoopStatement".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.context().evaluationContext().delayStatementBecauseOfECI());
+                    assertFalse(d.context().evaluationContext().delayStatementBecauseOfECI());
                 }
             }
         };
@@ -319,6 +319,14 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     // problem when forcing alphabetic analysis; works perfectly fine if we can do things in good order
     @Test
     public void test_11() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("BinaryOperator".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if ("0".equals(d.statementId())) {
+                    assertEquals("<eci>", d.evaluationResult().value().toString());
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("BaseExpression".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -351,9 +359,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                 //       .addEvaluationResultVisitor(evaluationResultVisitor)
+                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

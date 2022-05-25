@@ -15,12 +15,9 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.ProgressWrapper;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.FlowData;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
@@ -29,7 +26,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
@@ -92,7 +88,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         Structure structure = statementAnalysis.statement().getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
-            return emptyExpression(sharedState, causes, structure);
+            return emptyExpression(sharedState, causes);
         }
 
         if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
@@ -134,38 +130,13 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
             statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
         }
-        // we'll write a little later, in the second evaluation...
-        boolean doNotWritePreconditionFromMethod = statement() instanceof ExplicitConstructorInvocation;
-        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, doNotWritePreconditionFromMethod);
+        ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
 
         // post-process
 
         ProgressAndDelay statusPost = applyResult.status().merge(causes);
         ProgressAndDelay ennStatus = applyResult.ennStatus();
 
-        if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
-            Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
-            if (assignments == null) {
-                // force delay on subsequent statements; this is (eventually) handled by SAI.analyseAllStatementsInBlock
-                CausesOfDelay eciDelay = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI));
-                statementAnalysis.stateData().setValueOfExpression(DelayedExpression.forECI(eci.identifier,
-                        eciVariables(), eciDelay));
-                return eciDelay;
-            }
-            EvaluationResult toApply;
-            // IMPORTANT: quasi identical code in emptyExpression
-            if (!assignments.isBooleanConstant()) {
-                LOGGER.debug("Assignment expressions: {}", assignments);
-                toApply = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()), structure.forwardEvaluationInfo());
-            } else {
-                // was not able to make proper assignments, see e.g. VariableInLoop_2. We still must call apply again
-                toApply = result;
-            }
-            ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, toApply, false);
-            statusPost = assignmentResult.status().merge(causes);
-            ennStatus = applyResult.ennStatus().combine(assignmentResult.ennStatus());
-            result = toApply;
-        }
         if (ennStatus.isDelayed()) {
             LOGGER.debug("Delaying statement {} in {} because of external not null/external immutable: {}",
                     index(), methodInfo().fullyQualifiedName, ennStatus);
@@ -218,7 +189,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         return endResult.toAnalysisStatus();
     }
 
-    private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes, Structure structure) {
+    private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes) {
         // try-statement has no main expression, and it may not have initializers; break; continue; ...
         boolean progress = false;
         if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
@@ -245,34 +216,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-            return apply.apply(sharedState, builder.build(), false).combinedStatus();
-        } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
-            // empty parameters: this(); or super(); this code is replicated a bit higher for the situation of parameters
-            Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
-            if (assignments == null) {
-                CausesOfDelay eciDelay = DelayFactory.createDelay(statementAnalysis.location(EVALUATION), CauseOfDelay.Cause.ECI);
-                Expression value = DelayedExpression.forECI(eci.identifier, eciVariables(), eciDelay);
-                progress |= statementAnalysis.stateData().setValueOfExpression(value);
-                return ProgressWrapper.of(progress, eciDelay);
-            }
-            if (!assignments.isBooleanConstant()) {
-                EvaluationResult result = assignments.evaluate(EvaluationResult.from(sharedState.evaluationContext()),
-                        structure.forwardEvaluationInfo());
-                // FIXME clean up, AnalysisStatus -> Causes
-                AnalysisStatus applyResult = apply.apply(sharedState, result, false).combinedStatus();
-                return ProgressWrapper.of(progress, applyResult.causesOfDelay().merge(causes));
-            }
-            // we have to write the precondition from method (there is no precondition in "assignments")
-            statementAnalysis.applyPrecondition(null, sharedState.evaluationContext(),
-                    sharedState.localConditionManager());
+            return apply.apply(sharedState, builder.build()).combinedStatus();
         }
         return ProgressWrapper.of(progress, causes);
-    }
-
-    private Expression eciVariables() {
-        List<Variable> variables = methodInfo().methodInspection.get().getParameters().stream()
-                .map(v -> (Variable) v).toList();
-        return MultiExpressions.from(statement().getIdentifier(), variables);
     }
 
     private Expression toEvaluate(List<Expression> expressionsFromInitAndUpdate) {
@@ -352,110 +298,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
         }
         return evaluationResult;
-    }
-
-    private Expression replaceExplicitConstructorInvocation(StatementAnalyserSharedState sharedState,
-                                                            ExplicitConstructorInvocation eci,
-                                                            EvaluationResult result) {
-         /* structure.updaters contains all the parameter values
-               expressionsToEvaluate should contain assignments for each instance field, as found in the last statement of the
-               explicit method
-             */
-        AnalyserContext analyserContext = sharedState.evaluationContext().getAnalyserContext();
-
-        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
-        assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
-
-        int n = eci.methodInfo.methodInspection.get().getParameters().size();
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-        TranslationMapImpl.Builder translationMapBuilder = new TranslationMapImpl.Builder();
-        if (result != null && n > 0) {
-            int i = 0;
-            List<Expression> storedValues = n == 1 ? List.of(result.value()) : result.storedValues();
-            for (Expression parameterExpression : storedValues) {
-                ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
-                translationMapBuilder.put(new VariableExpression(parameterInfo), parameterExpression);
-                translationMapBuilder.addVariableExpression(parameterInfo, parameterExpression);
-                i++;
-            }
-        }
-
-        boolean weMustWait;
-        if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
-            assert sharedState.evaluationContext().getIteration() == 0 : "In iteration " + sharedState.evaluationContext().getIteration();
-            /* if the method has not gone through 1st iteration of analysis, we need to wait.
-             this should never be a circular wait because we're talking a strict constructor hierarchy
-             the delay has to have an effect on CM in the next iterations, because introducing the assignments here
-             will cause delays (see LoopStatement constructor, where "expression" appears in statement 1, iteration 1)
-             because of the 'super' call to StatementWithExpression which comes after LoopStatement.
-             Without method analysis we have no idea which variables will be affected
-             */
-
-            weMustWait = true;
-        } else {
-            weMustWait = false;
-        }
-
-        TypeInfo eciType = eci.isSuper ? methodInfo().typeInfo.typeInspection.get().parentClass().typeInfo : methodInfo().typeInfo;
-        List<Expression> assignments = new ArrayList<>();
-        TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
-        List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
-        for (FieldInfo fieldInfo : visibleFields) {
-            if (!fieldInfo.isStatic(analyserContext)) {
-                boolean assigned = false;
-                for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
-                    if (variableInfo.isAssigned()) {
-                        Expression start = variableInfo.getValue();
-                        FieldReference fr = new FieldReference(analyserContext, fieldInfo);
-                        Expression translated1 = start.translate(analyserContext, translationMap);
-                        Expression translated = sharedState.evaluationContext().getIteration() > 0
-                                ? replaceUnknownFields(sharedState.evaluationContext(), translated1) : translated1;
-                        EvaluationResult context = EvaluationResult.from(sharedState.evaluationContext());
-                        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
-                        EvaluationResult er = translated.evaluate(context, fwd);
-                        Expression end = er.value();
-                        builder.compose(er);
-
-                        Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
-                                statementAnalysis.primitives(),
-                                new VariableExpression(fr),
-                                end, null, null, false, false);
-                        assignments.add(assignment);
-                        assigned = true;
-                    }
-                }
-                if (!assigned && weMustWait) {
-                    // do a delayed assignment
-                    // TODO this assignment should result in a delayed link...
-                    FieldReference fr = new FieldReference(analyserContext, fieldInfo);
-                    CauseOfDelay causeOfDelay = new SimpleCause(sharedState.evaluationContext().getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
-                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(), DelayFactory.createDelay(causeOfDelay));
-                    Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
-                            statementAnalysis.primitives(),
-                            new VariableExpression(fr),
-                            end, null, null, false, false);
-                    assignments.add(assignment);
-                    // FIXME ensure that the set of fields assigned now agrees with the one after the waiting
-                }
-            }
-        }
-        return CommaExpression.comma(sharedState.context(), assignments);
-    }
-
-    private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
-        List<Variable> variables = expression.variables(true);
-        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        Identifier identifier = statement().getIdentifier();
-        for (Variable variable : variables) {
-            if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
-                Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(variable.parameterizedType());
-                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
-                builder.addVariableExpression(variable, ev);
-                builder.put(new VariableExpression(variable), ev);
-            }
-        }
-        TranslationMap translationMap = builder.build();
-        return expression.translate(evaluationContext.getAnalyserContext(), translationMap);
     }
 
     /*

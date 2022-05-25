@@ -65,8 +65,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     Finally, general modifications are carried out
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                  EvaluationResult evaluationResultIn,
-                                  boolean firstOfTwoCallsForECI) {
+                                  EvaluationResult evaluationResultIn) {
         EvaluationResult evaluationResult = potentiallyModifyEvaluationResult(sharedState, evaluationResultIn);
 
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
@@ -164,23 +163,19 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
-        ApplyStatusAndEnnStatus applyStatusAndEnnStatus;
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, delay);
-        if (firstOfTwoCallsForECI) {
-            applyStatusAndEnnStatus = new ApplyStatusAndEnnStatus(delayStatus, ProgressAndDelay.EMPTY);
-        } else {
-            applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
-                    delayStatus, analyserContext, groupPropertyValues);
+        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
+                delayStatus, analyserContext, groupPropertyValues);
 
-            // debugging...
+        // debugging...
 
-            for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
-                    .debugConfiguration().evaluationResultVisitors()) {
-                evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                        methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
-                        applyStatusAndEnnStatus.ennStatus()));
-            }
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
+                .debugConfiguration().evaluationResultVisitors()) {
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
+                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
+                    applyStatusAndEnnStatus.ennStatus()));
         }
+
         return applyStatusAndEnnStatus;
     }
 

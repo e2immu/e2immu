@@ -16,18 +16,20 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.TryStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -35,6 +37,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import java.util.*;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
 record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
@@ -162,12 +165,126 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     }
                 });
             }
-        } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation) {
+        } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
             Structure structure = statement().getStructure();
-            expressionsToEvaluate.addAll(structure.updaters());
+            expressionsToEvaluate.addAll(replaceExplicitConstructorInvocation(evaluationContext, eci, structure.updaters()));
         }
 
         return expressionsToEvaluate;
+    }
+
+
+    private List<Expression> replaceExplicitConstructorInvocation(EvaluationContext evaluationContext,
+                                                                  ExplicitConstructorInvocation eci,
+                                                                  List<Expression> updaters) {
+         /* structure.updaters contains all the parameter values
+               expressionsToEvaluate should contain assignments for each instance field, as found in the last statement of the
+               explicit method
+             */
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+
+        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
+        assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
+
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        TranslationMapImpl.Builder translationMapBuilder = new TranslationMapImpl.Builder();
+
+        int i = 0;
+        for (Expression updater : updaters) {
+            ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
+            translationMapBuilder.put(new VariableExpression(parameterInfo), updater);
+            translationMapBuilder.addVariableExpression(parameterInfo, updater);
+            i++;
+        }
+        List<Expression> assignments = new ArrayList<>(i*2);
+        /*
+        next to the assignments, we also do normal evaluations of the arguments of the ECI
+        Especially in the first iteration, when the translated expression is not yet done, we must have a way to
+        indicate that variables in the arguments (typically, parameters of the constructor with the ECI) are read
+        See e.g. ECI_7.
+         */
+        assignments.addAll(updaters);
+
+        boolean weMustWait;
+        if (!methodAnalysis.hasBeenAnalysedUpToIteration0() && methodAnalysis.isComputed()) {
+            assert evaluationContext.getIteration() == 0 : "In iteration " + evaluationContext.getIteration();
+            /* if the method has not gone through 1st iteration of analysis, we need to wait.
+             this should never be a circular wait because we're talking a strict constructor hierarchy
+             the delay has to have an effect on CM in the next iterations, because introducing the assignments here
+             will cause delays (see LoopStatement constructor, where "expression" appears in statement 1, iteration 1)
+             because of the 'super' call to StatementWithExpression which comes after LoopStatement.
+             Without method analysis we have no idea which variables will be affected
+             */
+
+            weMustWait = true;
+        } else {
+            weMustWait = false;
+        }
+        TypeInfo typeInfo = methodAnalysis.getMethodInfo().typeInfo;
+        TypeInfo eciType = eci.isSuper ? typeInfo.typeInspection.get().parentClass().typeInfo : typeInfo;
+        TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
+        List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
+        for (FieldInfo fieldInfo : visibleFields) {
+            if (!fieldInfo.isStatic(analyserContext)) {
+                boolean assigned = false;
+                for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
+                    if (variableInfo.isAssigned()) {
+                        Expression start = variableInfo.getValue();
+                        FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+                        Expression translated1 = start.translate(analyserContext, translationMap);
+                        Expression translated = evaluationContext.getIteration() > 0
+                                ? replaceUnknownFields(evaluationContext, translated1) : translated1;
+
+                        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain().build();
+                        EvaluationResult er = translated.evaluate(context, fwd);
+                        Expression end = er.value();
+                        builder.compose(er);
+
+                        Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
+                                statementAnalysis.primitives(),
+                                new VariableExpression(fr),
+                                end, null, null, false, false);
+                        assignments.add(assignment);
+                        assigned = true;
+                    }
+                }
+                if (!assigned && weMustWait) {
+                    FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+                    CauseOfDelay causeOfDelay = new SimpleCause(evaluationContext.getLocation(EVALUATION), CauseOfDelay.Cause.ECI);
+                    Expression end = DelayedExpression.forECI(fieldInfo.getIdentifier(), eciVariables(), DelayFactory.createDelay(causeOfDelay));
+                    Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
+                            statementAnalysis.primitives(),
+                            new VariableExpression(fr),
+                            end, null, null, false, false);
+                    assignments.add(assignment);
+                }
+            }
+        }
+
+        return assignments;
+    }
+
+    private Expression eciVariables() {
+        MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();
+        List<Variable> variables = methodInfo.methodInspection.get().getParameters().stream().map(v -> (Variable) v).toList();
+        return MultiExpressions.from(statement().getIdentifier(), variables);
+    }
+
+    private Expression replaceUnknownFields(EvaluationContext evaluationContext, Expression expression) {
+        List<Variable> variables = expression.variables(true);
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        Identifier identifier = statement().getIdentifier();
+        for (Variable variable : variables) {
+            if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
+                Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(variable.parameterizedType());
+                ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
+                builder.addVariableExpression(variable, ev);
+                builder.put(new VariableExpression(variable), ev);
+            }
+        }
+        TranslationMap translationMap = builder.build();
+        return expression.translate(evaluationContext.getAnalyserContext(), translationMap);
     }
 
 }

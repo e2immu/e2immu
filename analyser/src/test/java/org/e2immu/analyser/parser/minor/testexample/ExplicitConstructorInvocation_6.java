@@ -29,37 +29,37 @@ public class ExplicitConstructorInvocation_6 {
     private final String simpleName;
     private final String fullyQualifiedName;
 
-    public ExplicitConstructorInvocation_6(String packageName, String simpleName) {
-        this(generate(), packageName, simpleName);
+    public ExplicitConstructorInvocation_6(String packageName1, String simpleName1) {
+        this(generate(), packageName1, simpleName1);
     }
     // internally, this(...) is replaced by (assignments taken from real constructor)
     // this.identifier = generate();
     // this.packageName = packageName;
     // this.simpleName = simpleName;
     // this.fullyQualifiedName = "".equals(packageName) ? simpleName: packageName+"."+simpleName
-    // in each of these 4 expressions, the parameter of the real constructor needs replaced by that of the one with the this(...)
+    // in each of these 4 expressions, the parameter of the real constructor needs replacing by that of the one with the this(...)
 
-    public ExplicitConstructorInvocation_6(int identifier, String packageName, String simpleName) {
-        assert packageName != null && !packageName.isBlank();
-        assert simpleName != null && !simpleName.isBlank();
-        this.identifier = identifier;
-        this.simpleName = Objects.requireNonNull(simpleName);
-        this.packageName = packageName;
-        if ("".equals(packageName)) {
-            this.fullyQualifiedName = simpleName;
+    public ExplicitConstructorInvocation_6(int identifier2, String packageName2, String simpleName2) {
+        assert packageName2 != null && !packageName2.isBlank();
+        assert simpleName2 != null && !simpleName2.isBlank();
+        this.identifier = identifier2;
+        this.simpleName = Objects.requireNonNull(simpleName2);
+        this.packageName = packageName2;
+        if ("".equals(packageName2)) {
+            this.fullyQualifiedName = simpleName2;
         } else {
-            this.fullyQualifiedName = packageName + "." + simpleName;
+            this.fullyQualifiedName = packageName2 + "." + simpleName2;
         }
     }
 
-    public ExplicitConstructorInvocation_6(ExplicitConstructorInvocation_6 enclosingType, String simpleName) {
-        this(generate(), enclosingType, simpleName);
+    public ExplicitConstructorInvocation_6(ExplicitConstructorInvocation_6 enclosingType3, String simpleName3) {
+        this(generate(), enclosingType3, simpleName3);
     }
 
-    public ExplicitConstructorInvocation_6(int identifier, ExplicitConstructorInvocation_6 enclosingType, String simpleName) {
-        this.simpleName = Objects.requireNonNull(simpleName);
+    public ExplicitConstructorInvocation_6(int identifier4, ExplicitConstructorInvocation_6 enclosingType4, String simpleName4) {
+        this.simpleName = Objects.requireNonNull(simpleName4);
         this.packageName = null;
-        this.fullyQualifiedName = enclosingType.fullyQualifiedName + "." + simpleName;
-        this.identifier = identifier;
+        this.fullyQualifiedName = enclosingType4.fullyQualifiedName + "." + simpleName4;
+        this.identifier = identifier4;
     }
 }

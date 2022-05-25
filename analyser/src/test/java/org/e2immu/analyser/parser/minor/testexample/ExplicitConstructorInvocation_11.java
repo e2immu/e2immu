@@ -77,21 +77,21 @@ public class ExplicitConstructorInvocation_11 {
         public final Precedence precedence;
         public final MethodInfo operator;
 
-        public BinaryOperator(Identifier identifier,
-                              Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
-            super(identifier, operator.getComplexity() + lhs.getComplexity() + rhs.getComplexity());
-            this.lhs = Objects.requireNonNull(lhs);
-            this.rhs = Objects.requireNonNull(rhs);
-            this.precedence = precedence;
-            this.operator = Objects.requireNonNull(operator);
-            this.primitives = primitives;
+        public BinaryOperator(Identifier identifier1,
+                              Primitives primitives1, Expression lhs1, MethodInfo operator1, Expression rhs1, Precedence precedence1) {
+            super(identifier1, operator1.getComplexity() + lhs1.getComplexity() + rhs1.getComplexity());
+            this.lhs = Objects.requireNonNull(lhs1);
+            this.rhs = Objects.requireNonNull(rhs1);
+            this.precedence = precedence1;
+            this.operator = Objects.requireNonNull(operator1);
+            this.primitives = primitives1;
         }
     }
 
     static class BitwiseAnd extends BinaryOperator {
 
-        private BitwiseAnd(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-            super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.AND);
+        private BitwiseAnd(Identifier identifier2, Primitives primitives2, Expression lhs2, Expression rhs2) {
+            super(identifier2, primitives2, lhs2, primitives2.bitwiseAndOperatorInt(), rhs2, Precedence.AND);
         }
     }
 }
