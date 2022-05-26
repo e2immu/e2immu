@@ -35,12 +35,6 @@ public record ConditionAndVariableInfo(Expression condition,
                                        DV executionOfLastStatement,
                                        Variable myself,
                                        EvaluationContext evaluationContext) {
-    // for testing
-    public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, EvaluationContext evaluationContext) {
-        this(condition, condition, variableInfo, false, false, VariableNature.METHOD_WIDE,
-                null, "0", "-",
-                null, FlowData.ALWAYS, variableInfo.variable(), evaluationContext);
-    }
 
     public Expression value() {
         return variableInfo.getValue();

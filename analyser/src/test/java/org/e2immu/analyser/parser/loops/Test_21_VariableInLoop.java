@@ -91,7 +91,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
-                                : "([((null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next,(sa$1.navigationData()).next,((null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next,sa$1,instance type boolean])?null:null==nullable instance type StatementAnalyser?nullable instance type StatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                                : "([((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next,(sa$1.navigationData()).next,((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next,firstStatementAnalyser,sa$1,instance type boolean])?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -129,7 +129,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<null-check>?<m:get>:<vl:sa>" : "null";
+                        String expected = d.iteration() == 0 ? "<null-check>?<m:get>:firstStatementAnalyser" : "null";
                         assertEquals(expected, d.currentValue().toString());
                         // nullable or content not null? delayed or not in iteration 0?
                         // either @NotNull1 or @Nullable; it is the expression of the return value
@@ -196,6 +196,60 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         testClass("VariableInLoop_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
+
+    /*
+    tests 2 things:
+    - context not null in 2.0.2: first iteration, CNN has to be delayed!!!
+    - value of the to-do variable: it is modified in the loop, so it should start the loop with an "instance"
+     */
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("changed".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("1-E,2.0.2-E,2:M", d.variableInfo().getAssignmentIds().toString());
+                        // note: the 2:M is part of an exception for loops implemented in MergeHelper.mergeReadId
+                        // would otherwise have been 2-E
+                        assertEquals("2:M", d.variableInfo().getReadId());
+                    }
+                }
+                if ("toDo".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
+                                d.currentValue().toString());
+                    }
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<vl:toDo>" : "instance type HashSet<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("s".equals(d.variableName())) {
+                    if ("2.0.2".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2.0.2".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "!<c:boolean>" : "null!=s";
+                    assertEquals(expected, d.state().toString());
+                    assertEquals("[s]", d.state().variables(true).toString());
+                    String flow = d.iteration() == 0 ? "initial_flow_value@Method_method_2.0.2-C" : "CONDITIONALLY:1";
+                    assertEquals(flow, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+            }
+        };
+        testClass("VariableInLoop_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

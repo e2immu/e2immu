@@ -98,7 +98,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     } else {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "<p:other>";
+                            case 0, 1 -> "<m:isSet>?<p:other>:nullable instance type Basics_21<T>/*@Identity*/";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());

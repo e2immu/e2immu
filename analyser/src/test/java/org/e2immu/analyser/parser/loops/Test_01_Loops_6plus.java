@@ -187,7 +187,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<vl:set>"
+                                ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:set>"
                                 : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -217,10 +217,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
-                                ? "strings.length>0?null:<vl:node>"
-                                // note: we lose the "abc" because of SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                                : "strings.length>0?null:nullable instance type String";
+                        String expect = d.iteration() == 0 ? "strings.length>0?null:<f:in>"
+                                : "strings.length>0?null:\"abc\"";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -241,10 +239,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
-                                ? "strings.isEmpty()?<vl:node>:null"
-                                // note: we lose the "abc" because of SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                                : "strings.isEmpty()?nullable instance type String:null";
+                        String expect = d.iteration() == 0 ? "strings.isEmpty()?<f:in>:null"
+                                : "strings.isEmpty()?\"abc\":null";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -274,15 +270,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() == 0 ? "<vl:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() <= 1 ? "<vl:result>" : "instance type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -291,14 +287,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("5".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0
-                                ? "<vl:result>"
-                                : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo(now$3.toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        String expectValue = switch(d.iteration()) {
+                            case 0 -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
+                            case 1 -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?instance type Map<String,String>:<vl:result>";
+                            default -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        };
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = "result:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -451,8 +448,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
-                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:<vl:res>"
-                                : "instance type int<=9&&instance type int>=0&&p<=9&&p>=0&&instance type int==p?4:instance type int";
+                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<c:boolean>?4:<vl:res>:3"
+                                : "instance type int<=9&&instance type int>=0?p<=9&&p>=0&&instance type int==p?4:instance type int:3";
                         // TODO ugly, but solvable; all instances are equal to each other
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -519,8 +516,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expectEval, eval.getValue().toString());
 
                         String expected = d.iteration() == 0
-                                ? "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?<vl:res>:4"
-                                : "map.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?instance type int:4";
+                                ? "map.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:<vl:res>"
+                                : "map.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -550,8 +547,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&9==<m:getValue>?4:<vl:res>"
-                                : "map$0.entrySet().isEmpty()||9!=(instance type Entry<String,Integer>).getValue()?instance type int:4";
+                        String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?9==<m:getValue>?4:<vl:res>:3"
+                                : "map$0.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -621,13 +618,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vl:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==<dv:scope-container:1.0.1.read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
-                            default -> "kvStore$0.entrySet().isEmpty()||queried.contains((instance type Entry<String,Container>).getKey())||0==scope-container:1.0.1.read?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                            case 0 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance type Entry<String,Container>).getKey())||0==<dv:scope-container:1.0.1.read>?instance type Map<String,String>:<vl:result>";
+                            default -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 1) {
-                            String expectVars = "[kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, scope-container:1.0.1, scope-container:1.0.1.read, this]";
+                            String expectVars = "[kvStore, this]";
                             assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
                         }
                     }

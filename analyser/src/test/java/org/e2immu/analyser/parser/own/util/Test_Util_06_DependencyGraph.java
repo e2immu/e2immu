@@ -116,7 +116,11 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                             assertNotEquals("4", d.statementId());
                         } else if ("scope-scope-230:40:3.0.1".equals(fr.scope.toString())) {
                             if ("4".equals(d.statementId())) {
-                                String expected = d.iteration() == 0 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                                String expected = switch (d.iteration()) {
+                                    case 0 -> "<f:dependsOn>";
+                                    default -> "toDo$3.isEmpty()||!<loopIsNotEmptyCondition>?nullable instance type List<T>:<f:dependsOn>";
+                             //       default -> "nullable instance type List<T>";
+                                };
                                 assertEquals(expected, d.currentValue().toString());
                                 assertEquals("", d.variableInfo().getAssignmentIds().toString());
                             }
@@ -125,16 +129,16 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 }
                 if ("result".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() <= 6 ? "<vl:result>"
+                        String expected = d.iteration() <= BIG ? "<m:isEmpty>?<new:ArrayList<T>>:<vl:result>"
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
                         String lvs = switch (d.iteration()) {
-                            case 0 -> "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,return sorted:0,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
-                            case 1, 2, 3, 4, 5, 6 -> "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1";
-                            default -> "done:3,reportIndependent:3,return sorted:0,scope-230:40:3,this.nodeMap:3,toDo:3";
+                            default -> "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,return sorted:0,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1";
+                            //  case 2, 3, 4, 5, 6 -> "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,return sorted:0,scope-230:40:-1,this.nodeMap:-1,this:-1,toDo:-1";
+                      //      default -> "done:3,reportIndependent:3,return sorted:0,scope-230:40:3,this.nodeMap:3,toDo:3";
                         };
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 7, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("cycle".equals(d.variableName())) {
@@ -149,10 +153,10 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.03".equals(d.statementId())) {
-                        assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.0.04".equals(d.statementId())) {
-                        assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.2.1.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -162,9 +166,9 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name) && 0 == n) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("0", d.statementId());
-                    String lvs = d.iteration() <= 6 ? "this:-1" : "";
+                    String lvs = d.iteration() <= BIG ? "this:-1" : "";
                     assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
-                    String expected = d.iteration() <= 6 ? "<m:sorted>"
+                    String expected = d.iteration() <= BIG ? "<m:sorted>"
                             : "`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -177,17 +181,17 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                         assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<vl:dg>" : "instance type DependencyGraph<T>";
+                        String expected = d.iteration() <= 2 ? "<vl:dg>" : "instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
-                        assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // myself
+                        assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT); // myself
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<vl:dg>"
-                                : "set.isEmpty()?new DependencyGraph<>():instance type DependencyGraph<T>";
+                        String expected = d.iteration() <= 5 ? "set.isEmpty()?new DependencyGraph<>():<vl:dg>"
+                                : "set.isEmpty()?new DependencyGraph<>():scope-node:1.dependsOn.isEmpty()||null==scope-node:1.dependsOn?instance type DependencyGraph<T>:instance type DependencyGraph<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                        assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 6, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                     }
                 }
             }
@@ -224,6 +228,23 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                     }
                 }
             }
+            if ("accept".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)
+                        && "$7".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("toDo".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() <= BIG ? "<vl:toDo>" : "new HashMap<>(nodeMap)/*this.size()==nodeMap.size()*/";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
@@ -237,14 +258,13 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
+                    String expected = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
                             : "Precondition[expression=!dg$1.frozen, causes=[methodCall:addNode]]";
                     assertEquals(expected, d.statementAnalysis().stateData().getPrecondition().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                        case 1 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
+                        case 0, 1, 2 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
                         default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().combinedPreconditionGet().toString());
@@ -264,38 +284,39 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DependencyGraph".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 7, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 8, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("$4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 8, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 9, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.PARTIAL_CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             String methodName = d.methodInfo().name;
             if ("sorted".equals(methodName) && 3 == n) {
-                assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, 7, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String srv = d.iteration() <= 6 ? "<m:sorted>"
+                String srv = d.iteration() <= BIG ? "<m:sorted>"
                         : "/*inline sorted*/toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("sorted".equals(methodName) && 0 == n) {
-                assertDv(d, 7, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 7, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
-                String srv = d.iteration() <= 6 ? "<m:sorted>"
+                String srv = d.iteration() <= BIG ? "<m:sorted>"
                         : "/*inline sorted*/`toDo`.isEmpty()?new ArrayList<>(`nodeMap`.size())/*0==this.size()*/:instance type List<T>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong!
             }
             if ("reverse".equals(methodName)) {
                 assertDv(d, 6, DV.FALSE_DV, Property.FLUENT);
                 assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String pre = switch (d.iteration()) {
-                    case 0 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
-                    case 1 -> "Precondition[expression=!dg$1.frozen&&<precondition>, causes=[methodCall:addNode]]";
+                    case 0, 1, 2 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
                     default -> "Precondition[expression=!dg$1.frozen&&!dg$1.0.2.0.0.frozen, causes=[methodCall:addNode, methodCall:addNode]]";
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
@@ -332,7 +353,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("removeAsManyAsPossible".equals(methodName)) {
                 String pre = switch (d.iteration()) {
-                    case 0, 1 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 0, 1, 2 -> "Precondition[expression=<precondition>, causes=[]]";
                     default -> "Precondition[expression=!`dg`.frozen, causes=[methodCall:reverse]]";
                 };
                 assertEquals(pre, d.methodAnalysis().getPrecondition().toString());
@@ -346,7 +367,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
                 // CM on result should travel from $xx.accept(...)
                 // FIXME wrong!
-//                assertDv(d.p(1), 10, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("dependenciesWithoutStartingPoint".equals(methodName)) {
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();

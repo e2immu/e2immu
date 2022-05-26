@@ -79,7 +79,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "initial:this.string@Method_setString_0-C;initial@Field_string";
+                        case 0 -> "initial@Field_string";
                         case 1 -> "bid_merge@Method_setString_0:M";
                         default -> "";
                     };
@@ -241,7 +241,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<p:i>>=<f:j>";
+                            case 0 -> "i>=<f:j>";
                             case 1 -> "<wrapped:j>";
                             default -> "i>=j$0";
                         };
@@ -251,8 +251,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "i".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:i>" : "instance type int/*@Identity*/";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "j".equals(fr.fieldInfo.name)) {

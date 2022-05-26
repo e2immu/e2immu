@@ -63,23 +63,34 @@ public record Merge(EvaluationContext evaluationContext,
         // note: in case of a rename operation, the vici/vic .prevInitial.variable is the renamed variable
         assert vici.canMerge() : "For variable " + vic.getPreviousOrInitial().variable().fullyQualifiedName();
 
-        VariableInfoImpl existing = breakInitDelay(vici);
+        VariableInfoImpl previousForValue = previousForValue(vici);
+        VariableInfoImpl existingForValue = breakInitDelay(previousForValue);
+        VariableInfoImpl existing = vici.currentExcludingMerge();
         if (!vic.hasMerge()) {
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing, executionDelay);
             MergeHelper.MergeHelperResult mhr = mergeHelper.mergeIntoNewObject(stateOfDestination,
                     overwriteValue, atLeastOneBlockExecuted,
-                    mergeSources, groupPropertyValues, translationMap);
+                    mergeSources, groupPropertyValues, translationMap, existingForValue);
             vici.setMerge(mhr.vii());
             return new ProgressAndDelay(true, mhr.progressAndDelay().causes());
         }
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge(), executionDelay);
         return mergeHelper.mergeIntoMe(stateOfDestination,
-                overwriteValue, atLeastOneBlockExecuted, existing,
+                overwriteValue, atLeastOneBlockExecuted, existing, existingForValue,
                 mergeSources, groupPropertyValues, translationMap);
     }
 
-    private VariableInfoImpl breakInitDelay(VariableInfoContainerImpl vici) {
-        VariableInfoImpl vii = vici.currentExcludingMerge();
+    private VariableInfoImpl previousForValue(VariableInfoContainerImpl vici) {
+        if (vici.hasEvaluation()) {
+            VariableInfoImpl eval = vici.currentExcludingMerge();
+            if (eval.isAssignedAt(evaluationContext().statementIndex())) {
+                return eval;
+            }
+        }
+        return (VariableInfoImpl) vici.getPreviousOrInitial();
+    }
+
+    private VariableInfoImpl breakInitDelay(VariableInfoImpl vii) {
         if (vii.variable() instanceof FieldReference fieldReference && vii.getValue().isDelayed()) {
             boolean selfReference = vii.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.VALUES,
                     c -> c instanceof VariableCause vc && vc.variable().equals(fieldReference));

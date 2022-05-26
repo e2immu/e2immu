@@ -78,6 +78,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("0.0.0" + Stage.EVALUATION, d.variableInfo().getReadId());
                         assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // READ IMPLICITLY via the variable 'i'
@@ -85,6 +86,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
@@ -93,11 +95,8 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, IDENTITY);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
-
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL),
-                            "in statement " + d.statementId());
-
                 }
                 if (d.variable() instanceof This) {
                     assertDv(d, 3, MUTABLE_DV, EXTERNAL_IMMUTABLE);

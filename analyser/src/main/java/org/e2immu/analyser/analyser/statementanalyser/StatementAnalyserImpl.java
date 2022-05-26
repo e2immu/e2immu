@@ -673,7 +673,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             analyserResultBuilder.setVariableAccessReport(variableAccessReport);
 
             if (causes.get().isDelayed()) {
-                LOGGER.debug("Delay transfer from closure to result, no information on ContextModified yet");
+                LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
                 return causes.get();
             }
         }

@@ -97,7 +97,8 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         VALUE("value", "The value has not yet been determined"),
         VALUES("values", "field values[] not yet determined", HIGH),
         VARIABLE_DOES_NOT_EXIST("var_missing", "Variable does not (yet) exist"),
-        WAIT_FOR_ASSIGNMENT("wait_for_assignment", "Wait to see if variable is assigned or not");
+        WAIT_FOR_ASSIGNMENT("wait_for_assignment", "Wait to see if variable is assigned or not"),
+        WAIT_FOR_MODIFICATION("wait_for_modification", "Wait to see if variable is modified or not");
 
         public final String msg;
 

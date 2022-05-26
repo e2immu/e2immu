@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -77,14 +78,16 @@ public record MergeHelper(EvaluationContext evaluationContext,
                                                 boolean atLeastOneBlockExecuted,
                                                 List<ConditionAndVariableInfo> mergeSources,
                                                 GroupPropertyValues groupPropertyValues,
-                                                TranslationMap translationMap) {
+                                                TranslationMap translationMap,
+                                                VariableInfoImpl previousForValue) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
-        String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
+        boolean mergeIsLoop = evaluationContext.getCurrentStatement().statement() instanceof LoopStatement;
+        String mergedReadId = mergedReadId(mergeIsLoop, vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(MERGE),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
         ProgressAndDelay pad = new MergeHelper(evaluationContext, newObject, executionDelay)
-                .mergeIntoMe(stateOfDestination, overwriteValue, atLeastOneBlockExecuted, vi, mergeSources,
+                .mergeIntoMe(stateOfDestination, overwriteValue, atLeastOneBlockExecuted, vi, previousForValue, mergeSources,
                         groupPropertyValues, translationMap);
         return new MergeHelperResult(newObject, pad);
     }
@@ -99,6 +102,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                                         Merge.ExpressionAndProperties overwriteValue,
                                         boolean atLeastOneBlockExecuted,
                                         VariableInfoImpl previous,
+                                        VariableInfoImpl previousForValue,
                                         List<ConditionAndVariableInfo> mergeSources,
                                         GroupPropertyValues groupPropertyValues,
                                         TranslationMap translationMap) {
@@ -108,7 +112,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
         if (overwriteValue != null) {
             mergeValue = overwriteValue;
         } else {
-            mergeValue = new MergeHelper(evaluationContext, previous, executionDelay)
+            mergeValue = new MergeHelper(evaluationContext, previousForValue, executionDelay)
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
@@ -153,8 +157,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
         return EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> vi.getProperty(p).isDone());
     }
 
-    private String mergedReadId(String previousId,
-                                List<ConditionAndVariableInfo> merge) {
+    private String mergedReadId(boolean mergeIsLoop, String previousId, List<ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
                 evaluationContext.getCurrentStatement().index()) + Stage.EVALUATION;
@@ -164,7 +167,12 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 merge.stream()
                         .map(ConditionAndVariableInfo::variableInfo)
                         .anyMatch(vi -> vi.getReadId().compareTo(currentStatementIdE) > 0);
-        return inSubBlocks ? currentStatementIdM : previousId;
+        /*
+        extra rule: when a variable is read in 2-E, but not in the subBlocks, we return 2:M when in a loop.
+        see VariableInLoop_3: even if the variable is assigned inside the loop, the evaluation should occur again
+        (unless the loop is only executed exactly once, but that will throw another error)
+         */
+        return inSubBlocks || mergeIsLoop && previousId.equals(currentStatementIdE) ? currentStatementIdM : previousId;
     }
 
     private AssignmentIds mergedAssignmentIds(boolean atLeastOneBlockExecuted,

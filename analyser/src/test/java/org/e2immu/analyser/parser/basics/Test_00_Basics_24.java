@@ -72,7 +72,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?\"b\":<m:getOrDefault>";
-                            case 1 -> "null==<f:x.s>?\"b\":<m:getOrDefault>";
+                            case 1 -> "null==<f:x.s>?\"b\":map.getOrDefault(pos,a)";
                             default -> "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
                         };
                         assertEquals(expected, d.currentValue().toString());

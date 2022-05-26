@@ -413,7 +413,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             CausesOfDelay cmDelays = cm.causesOfDelay();
             boolean brokeDelay;
             if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
-                    forwardEvaluationInfo.getAssignmentTarget(), variable)) {
+                    forwardEvaluationInfo.getAssignmentTarget())) {
                 if (evaluationContext.allowBreakDelay() && !brokeDelayHigherUp &&
                         causeOfConditionManagerDelayIsExternalNotNullInjected(cm.variables(), cmDelays)) {
                     LOGGER.debug("Breaking condition manager delay based on {}", cmDelays);
@@ -459,16 +459,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return variables.stream().anyMatch(v -> v instanceof FieldReference fr && delayedFields.contains(fr.fieldInfo));
         }
 
-        private static final Set<CauseOfDelay.Cause> CM_CAUSES = Set.of(CauseOfDelay.Cause.BREAK_INIT_DELAY, CauseOfDelay.Cause.INITIAL_VALUE);
-
         // e.g. Lazy, Loops_23_1
         // FIXME Basics_1 cannot have 3rd param, DependencyGraph goes into infinite loop without it
         // FIXME REMOVED BREAK
-        private boolean causeOfConditionManagerDelayIsAssignmentTarget(CausesOfDelay cmDelays,
-                                                                       Variable assignmentTarget,
-                                                                       Variable variable) {
-            return cmDelays.containsCausesOfDelay(CM_CAUSES, c -> c instanceof VariableCause vc &&
-                    (vc.variable().equals(assignmentTarget)));// || vc.variable().equals(variable)));
+        private boolean causeOfConditionManagerDelayIsAssignmentTarget(CausesOfDelay cmDelays, Variable assignmentTarget) {
+            return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY, c -> c instanceof VariableCause vc &&
+                    (vc.variable().equals(assignmentTarget)));
         }
 
         /*

@@ -82,22 +82,22 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "instance type int+j$1.0.2";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:<vl:j>" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:instance type int";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         assertEquals(expect, d.currentValue().toString());
                     } else fail(d.statementId()); // no other statements
                 }
                 if ("k".equals(d.variableName())) {
                     if ("1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:<vl:j>" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:instance type int";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
                         String expect = d.iteration() == 0
-                                ? "<loopIsNotEmptyCondition>?<oos:j>+<m:nextInt>:<oos:j>"
-                                : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:instance type int):instance type int";
+                                ? "<loopIsNotEmptyCondition>?<oos:j>+<m:nextInt>:0"
+                                : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:0):0";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -898,7 +898,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<f:i>";
+                                case 1 -> "s.length()==instance type int?<f:i>:instance type int";
+                                default -> "instance type int";
+                            };
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0".equals(d.statementId())) {
@@ -910,7 +914,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:i>";
-                                case 1 -> "xs.isEmpty()?instance type int:<f:i>";
+                                case 1 -> "xs.isEmpty()||s.length()!=instance type int?instance type int:<f:i>";
                                 default -> "instance type int";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -1013,8 +1017,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_12", 0, 0, new DebugConfiguration.Builder()
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

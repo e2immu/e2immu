@@ -387,41 +387,98 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // write a delayed value
                 CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
                         CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
-                Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
-                Properties delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
-                vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
-                boolean progress = vic.setValue(delayedValue, null, delayedVPs, EVALUATION);
-                Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
-                SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
-                        previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
-                return new LoopResult(true, causes, progress);
+                return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, null
+                        , groupPropertyValues, causes);
             }
             // is the variable assigned inside the loop, but not in -E ?
             if (vic.hasMerge()) {
                 VariableInfo merge = vic.current();
                 String latestAssignment = merge.getAssignmentIds().getLatestAssignment();
                 if (latestAssignment != null && latestAssignment.startsWith(index())) {
-                    Properties properties = sharedState.evaluationContext().getAnalyserContext().defaultValueProperties(variable.parameterizedType());
-                    CausesOfDelay causes = properties.delays();
-                    Expression value;
-                    if (causes.isDelayed()) {
-                        value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
-                    } else {
-                        Identifier identifier = statement().getIdentifier();
-                        value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), properties);
+                    return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, null,
+                            groupPropertyValues);
+                }
+                /* variable is modified somewhere in the loop, we cannot keep "new ..." and must switch to "instance type ..."
+                 see e.g. VariableInLoop_3
+
+                 IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
+                 in SASubBlocks.conditionManagerForFirstBlock.
+                 FIXME Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
+
+                 (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
+                 See Loops_8
+                */
+                DV modified = merge.getProperty(CONTEXT_MODIFIED);
+                if (!modified.valueIsFalse()) {
+                    // we know there is no assignment, so the value properties can remain the same, if we have them
+                    Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
+                    if (modified.isDelayed()) {
+                        CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
+                                CauseOfDelay.Cause.WAIT_FOR_MODIFICATION));
+                        return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, valueProperties,
+                                groupPropertyValues, causes);
                     }
-                    boolean progress = vic.setValue(value, null, properties, EVALUATION);
-                    Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
-                    SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
-                            previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
-                    return new LoopResult(true, causes, progress);
+                    // modified!
+                    return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, valueProperties,
+                            groupPropertyValues);
                 }
             }
-            if (vic.hasEvaluation() && vi.isDelayed()) {
+            if (vic.hasEvaluation() && vi.isDelayed() && !vic.isInitial()) {
                 vic.copy();
             }
         }
         return new LoopResult(false, CausesOfDelay.EMPTY, false);
+    }
+
+    private LoopResult delayValueForInstanceInLoop(StatementAnalyserSharedState sharedState,
+                                                   Variable variable,
+                                                   VariableInfoContainer vic,
+                                                   VariableInfo vi,
+                                                   EvaluationResult.ChangeData changeData,
+                                                   Properties valuePropertiesIn,
+                                                   GroupPropertyValues groupPropertyValues,
+                                                   CausesOfDelay causes) {
+        Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+        Properties delayedVPs;
+        if (valuePropertiesIn != null) {
+            delayedVPs = valuePropertiesIn;
+        } else {
+            delayedVPs = sharedState.evaluationContext().getValueProperties(delayedValue);
+        }
+        vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
+        boolean progress = vic.setValue(delayedValue, null, delayedVPs, EVALUATION);
+        Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
+        SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
+                previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
+        return new LoopResult(true, causes, progress);
+    }
+
+    private LoopResult changeValueToInstanceInLoop(StatementAnalyserSharedState sharedState,
+                                                   Variable variable,
+                                                   VariableInfoContainer vic,
+                                                   EvaluationResult.ChangeData changeData,
+                                                   Properties valuePropertiesIn,
+                                                   GroupPropertyValues groupPropertyValues) {
+        Properties valueProperties;
+        if (valuePropertiesIn != null) {
+            valueProperties = valuePropertiesIn;
+        } else {
+            valueProperties = sharedState.evaluationContext().getAnalyserContext()
+                    .defaultValueProperties(variable.parameterizedType());
+        }
+        CausesOfDelay causes = valueProperties.delays();
+        Expression value;
+        if (causes.isDelayed()) {
+            value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+        } else {
+            Identifier identifier = statement().getIdentifier();
+            value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), valueProperties);
+        }
+        boolean progress = vic.setValue(value, null, valueProperties, EVALUATION);
+        Map<Property, DV> previous = vic.getPreviousOrInitial().getProperties();
+        SAHelper.mergePreviousAndChangeOnlyGroupPropertyValues(sharedState.evaluationContext(), variable,
+                previous, changeData == null ? null : changeData.properties(), groupPropertyValues);
+        return new LoopResult(true, causes, progress);
     }
 
     private Expression delayAssignmentValue(StatementAnalyserSharedState sharedState,

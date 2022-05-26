@@ -536,7 +536,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // with state, but the state based on pre == null (>=1, rather than == 1)
-                        assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", d.currentValue().toString());
+                        assertEquals("instance type boolean?instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/:instance type HashSet<String>", d.currentValue().toString());
                     }
                 }
             }

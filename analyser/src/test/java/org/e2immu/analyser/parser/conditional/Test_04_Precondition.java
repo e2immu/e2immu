@@ -220,7 +220,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "j3".equals(p.name)) {
                     String expected = d.iteration() == 0 ? "<p:j3>" : "instance type int/*@Identity*/";
                     if ("0".equals(d.statementId())) {
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
@@ -229,7 +229,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fieldReference && "i".equals(fieldReference.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<p:j3>";
+                            case 0 -> "<s:int>";
                             case 1 -> "<wrapped:i>";
                             default -> "j3";
                         };

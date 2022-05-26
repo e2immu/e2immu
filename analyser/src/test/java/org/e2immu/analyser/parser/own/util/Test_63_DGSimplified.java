@@ -242,7 +242,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("node".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
-                                case 0, 1 -> "<f:dependsOn>";
+                                case 0 -> "<f:dependsOn>";
+                                case 1 -> "<null-check>&&null!=nullable instance type List<T>?<f:dependsOn>:nullable instance type List<T>";
                                 default -> "nullable instance type List<T>";
                             };
                             assertEquals(expected, d.currentValue().toString());
