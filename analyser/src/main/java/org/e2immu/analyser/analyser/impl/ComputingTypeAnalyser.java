@@ -673,7 +673,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private HandlePrecondition handlePrecondition(MethodAnalyser methodAnalyser,
                                                   Precondition precondition,
                                                   int iteration) {
-        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration,
+        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration, false,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null));
         Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
@@ -1658,8 +1658,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
-        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
+        protected EvaluationContextImpl(int iteration,
+                                        boolean allowBreakDelay,
+                                        ConditionManager conditionManager,
+                                        EvaluationContext closure) {
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
         }
 
         @Override

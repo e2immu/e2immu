@@ -33,13 +33,24 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public final int iteration;
     public final EvaluationContext closure;
     public final ConditionManager conditionManager;
+    public final boolean allowBreakDelay;
 
-    protected AbstractEvaluationContextImpl(int depth, int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+    protected AbstractEvaluationContextImpl(int depth,
+                                            int iteration,
+                                            boolean allowBreakDelay,
+                                            ConditionManager conditionManager,
+                                            EvaluationContext closure) {
         this.iteration = iteration;
         this.conditionManager = conditionManager;
+        this.allowBreakDelay = allowBreakDelay;
         this.closure = closure;
         this.depth = depth;
         assert depth < 20 : "Depth of " + depth + " reached";
+    }
+
+    @Override
+    public boolean allowBreakDelay() {
+        return allowBreakDelay;
     }
 
     @Override

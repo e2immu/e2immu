@@ -14,16 +14,13 @@
 
 package org.e2immu.analyser.resolver;
 
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -204,5 +201,19 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_19() throws IOException {
         inspectAndResolve(MethodCall_19.class);
+    }
+
+    @Test
+    public void test_20() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_20.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_20.class);
+        MethodInfo method = typeInfo.findUniqueMethod("method", 0);
+        Block block = method.methodInspection.get().getMethodBody();
+        ForEachStatement forEach = (ForEachStatement) block.structure.getStatements().get(1);
+        ParameterizedType pt = forEach.expression.returnType();
+        assertEquals("Type java.util.List<java.lang.String>", pt.toString());
+        if (forEach.expression instanceof MethodCall mc) {
+            assertEquals(pt, mc.returnType());
+        } else fail();
     }
 }

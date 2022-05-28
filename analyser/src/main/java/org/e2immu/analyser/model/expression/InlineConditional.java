@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -335,8 +336,13 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public Set<Variable> loopSourceVariables() {
-        return SetUtil.immutableUnion(ifTrue.loopSourceVariables(), ifFalse.loopSourceVariables());
+    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext, ParameterizedType parameterizedType) {
+        var t = ifTrue.loopSourceVariables(analyserContext, parameterizedType);
+        var f = ifFalse.loopSourceVariables(analyserContext, parameterizedType);
+        if (t.isLeft() && f.isLeft()) return Either.left(t.getLeft().merge(f.getLeft()));
+        if (t.isLeft()) return t;
+        if (f.isLeft()) return f;
+        return Either.right(SetUtil.immutableUnion(t.getRight(), f.getRight()));
     }
 
     @Override

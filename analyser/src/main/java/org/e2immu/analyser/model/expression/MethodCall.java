@@ -31,6 +31,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1097,11 +1098,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Set<Variable> loopSourceVariables() {
-        if (methodInfo.methodInspection.get().getParameters().size() == 0
-                && object instanceof VariableExpression ve) {
-            return Set.of(ve.variable());
+    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext,
+                                                                    ParameterizedType parameterizedType) {
+        if (object instanceof VariableExpression ve) {
+            // method returns Set<T>, resultType Set, implements Iterable<T>
+            ParameterizedType concreteReturnType = returnType();
+            ParameterizedType typeParameterOfIterable = concreteReturnType.typeInfo == null ? null
+                    : concreteReturnType.typeInfo.typeParameterOfIterable(analyserContext, concreteReturnType);
+            if (parameterizedType.equals(typeParameterOfIterable)) {
+                MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
+                DV nne = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
+                if (nne.isDelayed()) return Either.left(nne.causesOfDelay());
+                return Either.right(Set.of(ve.variable()));
+            }
         }
-        return Set.of();
+        return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
     }
 }

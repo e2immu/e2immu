@@ -25,10 +25,10 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.parser.impl.ImportantClassesImpl;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
-import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.support.Either;
@@ -227,8 +227,11 @@ public class Parser {
     }
 
     private void analyseSortedTypeCycle(TypeCycle typeCycle, AnalyserContext analyserContext) {
+        ImportantClassesImpl importantClasses = new ImportantClassesImpl(input.globalTypeContext());
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, typeCycle, configuration,
-                getTypeContext().getPrimitives(), Either.right(getTypeContext()),
+                getTypeContext().getPrimitives(),
+                importantClasses,
+                Either.right(getTypeContext()),
                 getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
@@ -285,7 +288,8 @@ public class Parser {
         assert checkOnDuplicates(types);
 
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
-                getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions(), typeMap);
+                getTypeContext().getPrimitives(), new ImportantClassesImpl(getTypeContext()),
+                typeMap.getE2ImmuAnnotationExpressions(), typeMap);
         messages.addAll(annotatedAPIAnalyser.analyse());
 
         assert types.stream()

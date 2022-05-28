@@ -269,7 +269,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
@@ -322,6 +322,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 }
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
+                        sharedState.allowBreakDelay(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = toEvaluate.evaluate(EvaluationResult.from(evaluationContext),
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
@@ -378,6 +379,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             listOfSortedTypes,
                             analyserContext.getConfiguration(),
                             analyserContext.getPrimitives(),
+                            analyserContext.importantClasses(),
                             Either.left(analyserContext.getPatternMatcher()),
                             analyserContext.getE2ImmuAnnotationExpressions());
                     primaryTypeAnalyser.initialize();
@@ -596,6 +598,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                                 if (c.location().getInfo() instanceof FieldInfo fi) return fieldInfo.equals(fi);
                                 return false;
                             });
+                    if (breakDelay) {
+                        LOGGER.debug("Breaking not-null delay on variable {}", vi.variable());
+                    }
                     return !breakDelay;
                 })
                 .map(vi -> vi.getProperty(CONTEXT_NOT_NULL));
@@ -1030,7 +1035,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (haveInitialiser) {
             delays = fieldAnalysis.getInitializerValue().causesOfDelay();
-            EvaluationContext ec = new EvaluationContextImpl(0,
+            EvaluationContext ec = new EvaluationContextImpl(0, false,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
             values.add(new ValueAndPropertyProxy() {
                 @Override
@@ -1329,7 +1334,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (constructorCall.constructor() == null) return DV.FALSE_DV;
             for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, false, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
@@ -1611,10 +1616,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
-        private EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
+        private EvaluationContextImpl(int iteration,
+                                      boolean allowBreakDelay,
+                                      ConditionManager conditionManager,
+                                      EvaluationContext closure) {
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
         }
-
 
         @Override
         public TypeInfo getCurrentType() {
@@ -1644,7 +1651,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         public EvaluationContext child(Expression condition) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
                     Precondition.empty(getPrimitives()));
-            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, cm, closure);
+            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
         }
 
         @Override

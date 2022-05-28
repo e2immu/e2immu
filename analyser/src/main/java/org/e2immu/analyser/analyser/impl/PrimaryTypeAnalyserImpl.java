@@ -22,6 +22,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -62,6 +63,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder();
     private final Primitives primitives;
+    private final ImportantClasses importantClasses;
     private final AnalyserContext parent;
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
@@ -72,6 +74,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                                    TypeCycle typeCycle,
                                    Configuration configuration,
                                    Primitives primitives,
+                                   ImportantClasses importantClasses,
                                    Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
@@ -81,6 +84,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.patternMatcher = patternMatcherOrTypeContext.isLeft() ? patternMatcherOrTypeContext.getLeft() :
                 configuration.analyserConfiguration().newPatternMatcher(patternMatcherOrTypeContext.getRight(), this);
         this.primitives = primitives;
+        this.importantClasses = importantClasses;
 
         AnalyserGenerator analyserGenerator = typeCycle
                 .createAnalyserGeneratorAndGenerateAnalysers(configuration, this);
@@ -117,6 +121,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 .setUpdateUponProgress(SharedState::removeAllowBreakDelay)
                 .build();
         LOGGER.debug("List of analysers: {}", analysers);
+    }
+
+    @Override
+    public ImportantClasses importantClasses() {
+        return importantClasses;
     }
 
     @Override
@@ -253,9 +262,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public AnalyserResult analyse(SharedState sharedState) {
         patternMatcher.startNewIteration();
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
-        LOGGER.info("At end of PTA analysis, done {} of {} components",
+        LOGGER.info("At end of PTA analysis, done {} of {} components, progress? {}",
                 analyserComponents.getStatuses().stream().filter(p -> p.getV().isDone()).count(),
-                analyserComponents.getStatuses().size());
+                analyserComponents.getStatuses().size(),
+                analysisStatus.isProgress());
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
         return analyserResultBuilder.build();
     }

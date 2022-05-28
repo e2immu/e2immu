@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;

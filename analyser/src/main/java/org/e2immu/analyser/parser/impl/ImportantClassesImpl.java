@@ -12,23 +12,21 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.impl;
 
-import org.e2immu.annotation.Nullable;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.ImportantClasses;
 
-public class NotNull_1 {
+public class ImportantClassesImpl implements ImportantClasses {
 
-    @Nullable
-    private final String s;
+    private final ParameterizedType iterable;
 
-    public NotNull_1(@Nullable String input) {
-        s = input;
+    public ImportantClassesImpl(TypeContext typeContext) {
+        iterable = typeContext.getFullyQualified(Iterable.class).asParameterizedType(typeContext);
     }
 
-    public String lowerCase() {
-        if (s != null) {
-            return s.toLowerCase();
-        }
-        return "?";
+    public ParameterizedType iterable() {
+        return iterable;
     }
 }

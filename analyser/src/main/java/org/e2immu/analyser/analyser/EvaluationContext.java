@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -433,8 +434,11 @@ public interface EvaluationContext {
         return v.variableNature() instanceof VariableNature.Pattern pvn && index.equals(pvn.definedInBlock());
     }
 
-    default Set<Variable> loopSourceVariables(Variable variable) {
-        return Set.of();
+
+    Either<CausesOfDelay, Set<Variable>> NO_LOOP_SOURCE_VARIABLES = Either.right(Set.of());
+
+    default Either<CausesOfDelay, Set<Variable>> loopSourceVariables(Variable variable) {
+        return NO_LOOP_SOURCE_VARIABLES;
     }
 
     default Stream<Map.Entry<String, VariableInfoContainer>> variablesFromClosure() {

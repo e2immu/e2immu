@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
@@ -721,5 +722,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         if (inspection.isStatic()) return this;
         assert !isPrimaryType();
         return packageNameOrEnclosingType.getRight().firstStaticEnclosingType(inspectionProvider);
+    }
+
+    public ParameterizedType typeParameterOfIterable(AnalyserContext analyserContext, ParameterizedType concreteType) {
+        ParameterizedType iterablePt = analyserContext.importantClasses().iterable();
+        ParameterizedType concreteIterable = concreteType.concreteSuperType(analyserContext, iterablePt);
+        return concreteIterable == null ? null : concreteIterable.parameters.get(0);
     }
 }

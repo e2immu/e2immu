@@ -15,9 +15,7 @@
 
 package org.e2immu.analyser.parser.loops;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -34,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops_21plus extends CommonTestRunner {
@@ -215,4 +214,54 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
+
+    // Same topic as _17: not null moving from variable to source of loop
+    @Test
+    public void test_24() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(CONTEXT_NOT_NULL));
+
+                        // merge:
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        // as the sourceOfLoop of entry
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(d.iteration() <= 3, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
+
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+        testClass("Loops_24", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
+    @Test
+    public void test_24_1() throws IOException {
+        testClass("Loops_24_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
+    @Test
+    public void test_24_2() throws IOException {
+        testClass("Loops_24_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
 }

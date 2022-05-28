@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,13 @@ public class ComputeLinkedVariables {
     private final boolean allowBreakDelay;
 
     private record Cluster(Set<Variable> variables, CausesOfDelay delays) {
+        @Override
+        public String toString() {
+            return "[" +
+                    "variables=" + variables.stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")) +
+                    "; delays=" + delays +
+                    ']';
+        }
     }
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
@@ -228,7 +236,7 @@ public class ComputeLinkedVariables {
                 }
                 Cluster cluster = new Cluster(reachable, clusterDelay);
                 result.add(cluster);
-                assert Collections.disjoint(reachable, done): "This is not good";
+                assert Collections.disjoint(reachable, done) : "This is not good";
                 done.addAll(reachable);
             }
         }
@@ -278,7 +286,7 @@ public class ComputeLinkedVariables {
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
                 if (allowBreakDelay && summary.valueIsFalse()) {
-                    LOGGER.debug("Breaking linking delay on CM==FALSE");
+                    LOGGER.debug("Breaking linking delay on CM==FALSE, cluster {}", cluster);
                 } else {
                     summary = summary.causesOfDelay().merge(cluster.delays);
                 }
@@ -434,13 +442,16 @@ public class ComputeLinkedVariables {
     we have to try multiple times, because the nature of variableLinkedToLoopVariable(),
     which may connect one cluster to another, potentially not yet processed.
      */
-    public boolean writeCnnTravelsToFields(boolean cnnTravelsToFields) {
+    public boolean writeCnnTravelsToFields(AnalyserContext analyserContext, boolean cnnTravelsToFields) {
         boolean change = true;
         while (change) {
             change = false;
             for (Cluster cluster : clusters) {
-                boolean activate = cluster.variables.stream().anyMatch(v ->
-                        !statementAnalysis.recursivelyLinkedToParameterOrField(v, cnnTravelsToFields).isEmpty());
+                boolean activate = cluster.variables.stream().anyMatch(v -> {
+                    Either<CausesOfDelay, Set<Variable>> either = statementAnalysis.recursivelyLinkedToParameterOrField(
+                            analyserContext, v, cnnTravelsToFields);
+                    return either.isRight() && !either.getRight().isEmpty();
+                });
                 if (activate) {
                     for (Variable variable : cluster.variables) {
                         VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());

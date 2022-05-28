@@ -550,6 +550,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                 listOfSortedTypes,
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
+                                analyserContext.importantClasses(),
                                 Either.left(analyserContext.getPatternMatcher()),
                                 analyserContext.getE2ImmuAnnotationExpressions());
                         primaryTypeAnalyser.initialize();

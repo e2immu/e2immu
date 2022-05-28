@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+import org.e2immu.support.Either;
 
 import java.util.List;
 import java.util.Set;
@@ -251,8 +252,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return this;
     }
 
-    default Set<Variable> loopSourceVariables() {
-        return Set.of();
+    default Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext,
+                                                                     ParameterizedType parameterizedType) {
+        return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
     }
 
     default Set<Variable> directAssignmentVariables() {

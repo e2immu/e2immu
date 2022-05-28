@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+import org.e2immu.support.Either;
 
 import java.util.List;
 import java.util.Map;
@@ -185,7 +186,9 @@ public interface StatementAnalysis extends Analysis,
 
     void makeUnreachable();
 
-    Set<Variable> recursivelyLinkedToParameterOrField(Variable v, boolean cnnTravelsToFields);
+    Either<CausesOfDelay, Set<Variable>> recursivelyLinkedToParameterOrField(AnalyserContext analyserContext,
+                                                                             Variable v,
+                                                                             boolean cnnTravelsToFields);
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
@@ -197,18 +200,19 @@ public interface StatementAnalysis extends Analysis,
     Variable obtainLoopVar();
 
     EvaluationResult evaluationOfForEachVariable(Variable loopVar,
-                                              Expression evaluatedIterable,
-                                              CausesOfDelay someValueWasDelayed,
-                                              EvaluationResult evaluationResult);
+                                                 Expression evaluatedIterable,
+                                                 CausesOfDelay someValueWasDelayed,
+                                                 EvaluationResult evaluationResult);
 
-    void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap);
+    void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
+                                                  Map<Variable, EvaluationResult.ChangeData> changeDataMap);
 
     void potentiallyRaiseNullPointerWarningENN();
 
     // return progress
     boolean applyPrecondition(Precondition precondition,
-                                   EvaluationContext evaluationContext,
-                                   ConditionManager localConditionManager);
+                              EvaluationContext evaluationContext,
+                              ConditionManager localConditionManager);
 
     void ensureVariable(EvaluationContext evaluationContext,
                         Variable variable,

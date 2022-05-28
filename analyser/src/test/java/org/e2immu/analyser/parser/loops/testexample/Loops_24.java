@@ -12,23 +12,35 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.parser.loops.testexample;
 
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.NotNull1;
 
-public class NotNull_1 {
+import java.util.Map;
 
-    @Nullable
-    private final String s;
+// same as _17, but final
+// IMPORTANT: @NotNull1 means that the elements of iterable are never null
+// this is not semantically the same as no keys or values are ever null!!
 
-    public NotNull_1(@Nullable String input) {
-        s = input;
+// there is no mechanism yet (2022 05 28) for Map.Entry to become @NotNull1
+public class Loops_24 {
+
+    @NotNull1
+    private final Map<String, Integer> map;
+
+    public Loops_24(@NotNull1 Map<String, Integer> map) {
+        this.map = map;
     }
 
-    public String lowerCase() {
-        if (s != null) {
-            return s.toLowerCase();
+    public int method() {
+        int res = 3;
+        for (Map.Entry<String, Integer> e : map.entrySet()) {
+            if (e.getValue() == 9) {
+                res = 4;
+                break;
+            }
         }
-        return "?";
+        return res;
     }
+
 }

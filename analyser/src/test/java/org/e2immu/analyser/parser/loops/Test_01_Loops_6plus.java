@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -287,7 +286,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("5".equals(d.statementId())) {
-                        String expectValue = switch(d.iteration()) {
+                        String expectValue = switch (d.iteration()) {
                             case 0 -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
                             case 1 -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?instance type Map<String,String>:<vl:result>";
                             default -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
@@ -570,24 +569,39 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
     @Test
     public void test_17_2() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 3, d.context().evaluationContext().allowBreakDelay());
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(CONTEXT_NOT_NULL));
+
+                        // merge:
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        // as the sourceOfLoop of entry
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
+
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             assertFalse(d.evaluationContext().allowBreakDelay());
             if ("map".equals(d.fieldInfo().name)) {
-                long errors = d.iteration() <= 2 ? 0 : 1;
-                assertEquals(errors, d.messageStream().get()
-                        .filter(m -> m.message().equals(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT))
-                        .count());
+                // whatever happens, this remains nullable! map can have been null, setMap does not have to be called, and
+                // neither does method
+                assertDv(d, 3, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
         };
         testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());

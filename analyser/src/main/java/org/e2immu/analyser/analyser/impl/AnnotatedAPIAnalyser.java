@@ -74,6 +74,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private final Configuration configuration;
     private final Messages messages = new Messages();
     private final Primitives primitives;
+    private final ImportantClasses importantClasses;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final ShallowFieldAnalyser shallowFieldAnalyser;
 
@@ -85,6 +86,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public AnnotatedAPIAnalyser(List<TypeInfo> types,
                                 Configuration configuration,
                                 Primitives primitives,
+                                ImportantClasses importantClasses,
                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                 TypeMap typeMap) {
         this.typeMap = typeMap;
@@ -92,6 +94,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 e2ImmuAnnotationExpressions);
 
         this.primitives = primitives;
+        this.importantClasses = importantClasses;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.analyserProgram = AnalyserProgram.PROGRAM_ALL;
@@ -612,5 +615,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     @Override
     public AnalyserProgram getAnalyserProgram() {
         return analyserProgram;
+    }
+
+    @Override
+    public ImportantClasses importantClasses() {
+        return importantClasses;
     }
 }

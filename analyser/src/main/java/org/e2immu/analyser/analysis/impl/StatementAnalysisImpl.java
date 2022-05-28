@@ -36,6 +36,7 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.Either;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2182,7 +2183,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     if not, the restriction moves to the parameter or field.
      */
     @Override
-    public void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
+    public void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
+                                                         Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
         Set<Variable> alreadyRaised = new HashSet<>();
         changeDataMap.entrySet().stream()
                 .filter(e -> e.getValue().getProperty(IN_NOT_NULL_CONTEXT).ge(EFFECTIVELY_NOT_NULL_DV))
@@ -2214,8 +2216,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                 alreadyRaised.add(variable);
                             }
                         } else if (max.equals(MultiLevel.NULLABLE_DV)) {
-                            Set<Variable> linked = recursivelyLinkedToParameterOrField(variable, true);
-                            if (Collections.disjoint(linked, alreadyRaised)) {
+                            Either<CausesOfDelay, Set<Variable>> linked = recursivelyLinkedToParameterOrField(analyserContext,
+                                    variable, true);
+                            if (linked.isRight() && Collections.disjoint(linked.getRight(), alreadyRaised)) {
                                 ensure(Message.newMessage(location(EVALUATION), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                         "Variable: " + variable.simpleName()));
                                 alreadyRaised.add(variable);
@@ -2530,14 +2533,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public Set<Variable> recursivelyLinkedToParameterOrField(Variable v, boolean cnnTravelsToFields) {
+    public Either<CausesOfDelay, Set<Variable>> recursivelyLinkedToParameterOrField(AnalyserContext analyserContext,
+                                                                                    Variable v,
+                                                                                    boolean cnnTravelsToFields) {
         if (v instanceof ParameterInfo
-                || cnnTravelsToFields && v instanceof FieldReference) return Set.of(v);
+                || cnnTravelsToFields && v instanceof FieldReference) return Either.right(Set.of(v));
         VariableInfoContainer vic = findOrNull(v);
         if (vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION).valueIsTrue())
-            return Set.of(v);
+            return Either.right(Set.of(v));
         if (v instanceof DependentVariable dv) {
-            return recursivelyLinkedToParameterOrField(dv.arrayVariable(), cnnTravelsToFields);
+            return recursivelyLinkedToParameterOrField(analyserContext, dv.arrayVariable(), cnnTravelsToFields);
         }
         VariableNature vn = vic.variableNature();
         while (vn instanceof VariableNature.VariableDefinedOutsideLoop outside) {
@@ -2545,10 +2550,22 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         if (vn instanceof VariableNature.LoopVariable lv) {
             Expression e = lv.statementAnalysis().statement().getStructure().expression();
-            return e.loopSourceVariables().stream()
-                    .flatMap(source -> recursivelyLinkedToParameterOrField(source, cnnTravelsToFields).stream())
-                    .collect(Collectors.toUnmodifiableSet());
+            Either<CausesOfDelay, Set<Variable>> either = e.loopSourceVariables(analyserContext, v.parameterizedType());
+            if (either.isLeft()) return either;
+            CausesOfDelay causes = CausesOfDelay.EMPTY;
+            Set<Variable> vars = new HashSet<>();
+            for (Variable vv : either.getRight()) {
+                Either<CausesOfDelay, Set<Variable>> recursive =
+                        recursivelyLinkedToParameterOrField(analyserContext, vv, cnnTravelsToFields);
+                if (recursive.isLeft()) {
+                    causes = causes.merge(recursive.getLeft());
+                } else {
+                    vars.addAll(recursive.getRight());
+                }
+            }
+            if (causes.isDelayed()) return Either.left(causes);
+            return Either.right(vars);
         }
-        return Set.of();
+        return Either.right(Set.of());
     }
 }

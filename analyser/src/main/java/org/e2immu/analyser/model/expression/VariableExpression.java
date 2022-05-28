@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.support.Either;
 
 import java.util.List;
 import java.util.Map;
@@ -551,8 +552,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     @Override
-    public Set<Variable> loopSourceVariables() {
-        return Set.of(variable);
+    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext, ParameterizedType parameterizedType) {
+        ParameterizedType myType = returnType(); // I am a loop variable? Set<String>, typeInfo Set
+        ParameterizedType typeParameterOfIterable = myType == null || myType.typeInfo == null ? null
+                : myType.typeInfo.typeParameterOfIterable(analyserContext, myType); // String, because Set<String> <- Iterable<String>
+        if (parameterizedType.equals(typeParameterOfIterable)) {
+            return Either.right(Set.of(variable));
+        }
+        return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
     }
 
     @Override

@@ -201,7 +201,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         int iteration = sharedState.iteration();
 
         LOGGER.info("Analysing method {} it {}", methodInfo.fullyQualifiedName(), iteration);
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, sharedState.allowBreakDelay(),
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
         SharedState state = new SharedState(sharedState.allowBreakDelay(), evaluationContext);
 
@@ -1121,15 +1121,18 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
-        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
+        protected EvaluationContextImpl(int iteration,
+                                        boolean allowBreakDelay,
+                                        ConditionManager conditionManager,
+                                        EvaluationContext closure) {
+            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
         }
 
         @Override
         public EvaluationContext child(Expression condition) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
                     Precondition.empty(getPrimitives()));
-            return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
+            return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
         }
 
         @Override

@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers;
     private final boolean preventAbsoluteStateComputation;
     private final boolean delayStatementBecauseOfECI;
-    private final boolean allowBreakDelay;
 
     SAEvaluationContext(StatementAnalysis statementAnalysis,
                         MethodAnalyser myMethodAnalyser,
@@ -90,7 +90,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean preventAbsoluteStateComputation,
                         boolean delayStatementBecauseOfECI,
                         boolean allowBreakDelay) {
-        super(closure == null ? 1 : closure.getDepth() + 1, iteration, conditionManager, closure);
+        super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
         this.myMethodAnalyser = myMethodAnalyser;
@@ -99,7 +99,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         this.preventAbsoluteStateComputation = preventAbsoluteStateComputation;
         this.delayStatementBecauseOfECI = delayStatementBecauseOfECI;
-        this.allowBreakDelay = allowBreakDelay;
 
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
@@ -125,11 +124,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 }
             }
         }
-    }
-
-    @Override
-    public boolean allowBreakDelay() {
-        return allowBreakDelay;
     }
 
     @Override
@@ -247,6 +241,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             DV nneTF = nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
             DV cm = notNullAccordingToConditionManager(ve.variable());
+            if(nneTF.isDelayed() && allowBreakDelay) {
+                LOGGER.debug("Breaking NNE delay in isNotNull0");
+                return cnnTF.max(cm);
+            }
             return cnnTF.max(nneTF).max(cm);
         }
         DV nne = getProperty(value, NOT_NULL_EXPRESSION, true, false);
@@ -927,7 +925,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public Set<Variable> loopSourceVariables(Variable variable) {
+    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(Variable variable) {
         VariableInfoContainer vic = statementAnalysis.findOrNull(variable);
         if (vic != null) {
             VariableNature vn = vic.variableNature();
@@ -936,9 +934,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
             if (vn instanceof VariableNature.LoopVariable lv) {
                 Expression e = lv.statementAnalysis().statement().getStructure().expression();
-                return e.loopSourceVariables();
+                return e.loopSourceVariables(getAnalyserContext(), variable.parameterizedType());
             }
         }
-        return Set.of();
+        return NO_LOOP_SOURCE_VARIABLES;
     }
 }

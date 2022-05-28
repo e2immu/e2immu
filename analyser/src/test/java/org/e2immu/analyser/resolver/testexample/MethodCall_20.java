@@ -12,23 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.conditional.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.NotNull1;
 
-public class NotNull_1 {
+import java.util.List;
 
-    @Nullable
-    private final String s;
+public class MethodCall_20 {
 
-    public NotNull_1(@Nullable String input) {
-        s = input;
+    @NotNull1
+    private final List<String> list;
+
+    public MethodCall_20(@NotNull1 List<String> list) {
+        this.list = list;
     }
 
-    public String lowerCase() {
-        if (s != null) {
-            return s.toLowerCase();
+    public int method() {
+        int res = 3;
+        for (String s : list.subList(0, 10)) {
+            if (s.length() == 9) {
+                res = 4;
+                break;
+            }
         }
-        return "?";
+        return res;
     }
 }

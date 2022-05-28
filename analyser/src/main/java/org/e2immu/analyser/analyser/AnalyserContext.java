@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -40,6 +41,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     // gives access to primitives
     Primitives getPrimitives();
 
+    default ImportantClasses importantClasses() { throw new UnsupportedOperationException(); }
     /**
      * Used by ConditionalValue, isFact().
      *

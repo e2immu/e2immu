@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.support.SetOnceMap;
@@ -43,6 +44,11 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     public ExpandableAnalyserContextImpl(AnalyserContext parent) {
         this.parent = Objects.requireNonNull(parent);
         analyserProgram = parent.getAnalyserProgram();
+    }
+
+    @Override
+    public ImportantClasses importantClasses() {
+        return parent.importantClasses();
     }
 
     @Override

@@ -14,11 +14,14 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
+import org.e2immu.annotation.Nullable;
+
 public class NotNull_2 {
 
+    @Nullable
     private final String s;
 
-    public NotNull_2(String input) {
+    public NotNull_2(@Nullable String input) {
         s = input;
     }
 

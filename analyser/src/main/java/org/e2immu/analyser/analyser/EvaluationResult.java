@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -31,6 +32,7 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -389,53 +391,68 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * @param value           the variable's value. This can be a variable expression again (redirect).
          * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
          */
-        public boolean variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public void variableOccursInNotNullContext(Variable variable,
+                                                   Expression value,
+                                                   DV notNullRequired,
+                                                   ForwardEvaluationInfo forwardEvaluationInfo) {
+            variableOccursInNotNullContext(variable, value, notNullRequired, forwardEvaluationInfo, false);
+        }
+
+        private void variableOccursInNotNullContext(Variable variable,
+                                                    Expression value,
+                                                    DV notNullRequired,
+                                                    ForwardEvaluationInfo forwardEvaluationInfo,
+                                                    boolean inSourceOfLoop) {
             assert evaluationContext != null;
             assert value != null;
-            if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return false;
-            if (variable instanceof This) return false; // nothing to be done here
+            if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
+            if (variable instanceof This) return; // nothing to be done here
 
-            boolean brokeDelayHigherUp = false;
-            for (Variable sourceOfLoop : evaluationContext.loopSourceVariables(variable)) {
+            Either<CausesOfDelay, Set<Variable>> sourcesOfLoop = evaluationContext.loopSourceVariables(variable);
+            if (sourcesOfLoop.isLeft()) {
+                setProperty(variable, Property.CONTEXT_NOT_NULL, sourcesOfLoop.getLeft());
+                return;
+            }
+            for (Variable sourceOfLoop : sourcesOfLoop.getRight()) {
                 markRead(sourceOfLoop);  // TODO not correct, but done to trigger merge (no mechanism for that a t m)
                 Expression sourceValue = evaluationContext.currentValue(sourceOfLoop);
                 DV higher = MultiLevel.composeOneLevelMoreNotNull(notNullRequired);
-                brokeDelayHigherUp |= variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, forwardEvaluationInfo);
+                variableOccursInNotNullContext(sourceOfLoop, sourceValue, higher, forwardEvaluationInfo, true);
             }
 
             if (notNullRequired.isDelayed()) {
                 // simply set the delay
                 setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
-                return false;
+                return;
             }
 
             ConditionManager cm = evaluationContext.getConditionManager();
             CausesOfDelay cmDelays = cm.causesOfDelay();
-            boolean brokeDelay;
-            if (cmDelays.isDelayed() && !causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
-                    forwardEvaluationInfo.getAssignmentTarget())) {
-                if (evaluationContext.allowBreakDelay() && !brokeDelayHigherUp &&
-                        causeOfConditionManagerDelayIsExternalNotNullInjected(cm.variables(), cmDelays)) {
-                    LOGGER.debug("Breaking condition manager delay based on {}", cmDelays);
-                    brokeDelay = true;
-                } else {
-                    setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
-                    return false;
+            if (cmDelays.isDelayed()) {
+                if (evaluationContext.allowBreakDelay()
+                        && inSourceOfLoop
+                        && causeOfConditionManagerDelayIsLoopNotEmpty(cmDelays, variable)) {
+                    LOGGER.debug("Breaking delay on source of loop {}", variable);
+                    setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
+                    return;
                 }
-            } else {
-                brokeDelay = false;
+                if (!causeOfConditionManagerDelayIsAssignmentTarget(cmDelays,
+                        forwardEvaluationInfo.getAssignmentTarget())) {
+                    setProperty(variable, Property.CONTEXT_NOT_NULL, cmDelays);
+                    return;
+                }
             }
             DV effectivelyNotNull = evaluationContext.notNullAccordingToConditionManager(variable)
                     .maxIgnoreDelay(evaluationContext.notNullAccordingToConditionManager(value));
             if (effectivelyNotNull.isDelayed()) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, effectivelyNotNull);
-                return false;
+                return;
             }
 
             // using le() instead of equals() here is controversial. if a variable is not null according to the
             // condition manager, and we're requesting content not null, e.g., then what to do? see header of this method.
             if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull.valueIsTrue()) {
-                return false; // great, no problem, no reason to complain nor increase the property
+                return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             boolean complain = forwardEvaluationInfo.isComplainInlineConditional();
@@ -444,19 +461,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, nnc); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
-            return brokeDelay;
         }
 
-        private boolean causeOfConditionManagerDelayIsExternalNotNullInjected(List<Variable> variables,
-                                                                              CausesOfDelay cmDelays) {
-            Set<FieldInfo> delayedFields = cmDelays.causesStream().filter(c -> c.cause() == CauseOfDelay.Cause.EXTERNAL_NOT_NULL)
-                    .map(c -> {
-                        if (c instanceof VariableCause vc && vc.variable() instanceof FieldReference fr)
-                            return fr.fieldInfo;
-                        if (c.location().getInfo() instanceof FieldInfo fi) return fi;
-                        return null;
-                    }).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
-            return variables.stream().anyMatch(v -> v instanceof FieldReference fr && delayedFields.contains(fr.fieldInfo));
+        private boolean causeOfConditionManagerDelayIsLoopNotEmpty(CausesOfDelay cmDelays, Variable sourceOfLoop) {
+            return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> c instanceof VariableCause vc &&
+                    vc.variable().equals(sourceOfLoop) ||
+                    sourceOfLoop instanceof FieldReference fr &&
+                            c instanceof SimpleCause sc && sc.variableIsField(fr.fieldInfo) ||
+                    sourceOfLoop instanceof ParameterInfo pi &&
+                            c instanceof SimpleCause scPi && scPi.location().getInfo().equals(pi));
         }
 
         // e.g. Lazy, Loops_23_1

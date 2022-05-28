@@ -448,12 +448,13 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         protected EvaluationContextImpl(EvaluationContext evaluationContext) {
             super(evaluationContext.getDepth() + 1, evaluationContext.getIteration(),
+                    evaluationContext.allowBreakDelay(),
                     evaluationContext.getConditionManager(), null);
             this.evaluationContext = evaluationContext;
         }
 
         protected EvaluationContextImpl(EvaluationContextImpl parent, ConditionManager conditionManager) {
-            super(parent.getDepth() + 1, parent.iteration, conditionManager, null);
+            super(parent.getDepth() + 1, parent.iteration, parent.allowBreakDelay(), conditionManager, null);
             this.evaluationContext = parent.evaluationContext;
         }
 

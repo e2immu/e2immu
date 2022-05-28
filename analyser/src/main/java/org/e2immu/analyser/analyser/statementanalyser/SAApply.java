@@ -134,12 +134,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
             }
             if (vi.isDelayed()) {
-                LOGGER.debug("Apply it {} of {}, {} is delayed because of unknown value for {}",
-                        sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(vi.getValue().causesOfDelay());
             } else if (changeData.delays().isDelayed()) {
-                LOGGER.debug("Apply it {} of {}, {} is delayed because of delay in method call on {}",
-                        sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(changeData.delays());
             }
         }
@@ -326,11 +322,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Expression bestValue = SAHelper.bestValue(changeData, vi1);
         Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Write value {} to variable {}",
-                    valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
-                    variable.fullyQualifiedName());
-        }
         // first do the properties that come with the value; later, we'll write the ones in changeData
         // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
         // it should not be taken into account anymore. (See e.g. Loops_1)
@@ -359,6 +350,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
             // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
             // evaluation context
+            if (LOGGER.isDebugEnabled() && valueToWrite.isDone()) {
+                LOGGER.debug("Write value {} to variable {}",
+                        valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
+                        variable.fullyQualifiedName());
+            }
             progressSet = vic.setValue(valueToWritePossiblyDelayed, null, combined, EVALUATION);
         } else {
             progressSet = false;
@@ -666,11 +662,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (sharedState.evaluationContext().getIteration() == 0) {
             boolean cnnTravelsToFields = analyserContext.getConfiguration().analyserConfiguration()
                     .computeContextPropertiesOverAllMethods();
-            travelProgress = computeLinkedVariables.writeCnnTravelsToFields(cnnTravelsToFields);
+            travelProgress = computeLinkedVariables.writeCnnTravelsToFields(
+                    sharedState.evaluationContext().getAnalyserContext(),
+                    cnnTravelsToFields);
         } else {
             travelProgress = false;
         }
-        statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
+        statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(sharedState.evaluationContext().getAnalyserContext(),
+                evaluationResult.changeData());
 
         // the following statement is necessary to keep this statement from disappearing if it still has to process
         // EXT_NN (and a similar statement below for EXT_IMM); we go through ALL variables because this may be a statement
