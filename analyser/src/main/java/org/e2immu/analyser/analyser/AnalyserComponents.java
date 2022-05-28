@@ -143,7 +143,7 @@ public class AnalyserComponents<T, S> {
                 // execute
                 AnalysisStatus afterExec = supplier.apply(s);
                 assert afterExec != NOT_YET_EXECUTED;
-                if (afterExec == DONE || afterExec == DONE_ALL) {
+                if (afterExec == DONE || afterExec == DONE_ALL || afterExec.isProgress()) {
                     progress = true;
                     if (updateUponProgress != null) {
                         s = updateUponProgress.apply(s);

@@ -171,7 +171,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         boolean allowBreakDelay = false;
         AnalysisStatus analysisStatus;
 
-        int MAX_ITERATION = 20;
+        int MAX_ITERATION = 100;
         do {
             LOGGER.debug("\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}\n******",
                     iteration, allowBreakDelay, name);

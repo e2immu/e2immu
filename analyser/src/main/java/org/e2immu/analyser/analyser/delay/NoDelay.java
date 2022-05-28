@@ -20,17 +20,26 @@ import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.Objects;
 
-public record NoDelay(int value, String label) implements DV {
+public class NoDelay implements DV {
 
+    private final int value;
+    private final String label;
     public static final String COMPUTED = "computed";
 
     public NoDelay(int value) {
         this(value, COMPUTED);
     }
 
-    public NoDelay {
+    public NoDelay(int value, String label) {
+        this.value = value;
+        this.label = label;
         assert value >= 0;
         assert label != null;
+    }
+
+    @Override
+    public int value() {
+        return value;
     }
 
     @Override
@@ -56,7 +65,7 @@ public record NoDelay(int value, String label) implements DV {
         if (other.value() == 0 && value > 0) {
             return this;
         }
-        if(value == 0 && other.value()>0) {
+        if (value == 0 && other.value() > 0) {
             return other;
         }
 
@@ -64,6 +73,11 @@ public record NoDelay(int value, String label) implements DV {
         if (other.value() > value) return this;
         // if other is a delay, its value is less than ours!
         return other;
+    }
+
+    @Override
+    public String label() {
+        return label;
     }
 
     @Override

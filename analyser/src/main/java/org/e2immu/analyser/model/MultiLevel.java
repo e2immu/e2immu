@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
@@ -112,6 +113,7 @@ public class MultiLevel {
 
     // CONTAINER (only at first level, for now not eventual; but it needs NOT_INVOLVED next to TRUE and FALSE)
     public static final DV NOT_CONTAINER_DV = compose(FALSE, CONTAINER, "notcontainer");
+    public static final DV NOT_CONTAINER_INCONCLUSIVE = new Inconclusive(NOT_CONTAINER_DV);
     public static final DV CONTAINER_DV = compose(EFFECTIVE, CONTAINER, "container");
 
     // IGNORE_MODS/modifications (only at first level, for now not eventual; but it needs NOT_INVOLVED next to TRUE and FALSE)
@@ -122,6 +124,7 @@ public class MultiLevel {
     // DEPENDENT (only at the first level, for now not eventual)
 
     public static final DV DEPENDENT_DV = compose(Effective.FALSE, Level.INDEPENDENT_1, "dependent");
+    public static final DV DEPENDENT_INCONCLUSIVE = new Inconclusive(DEPENDENT_DV);
     public static final DV INDEPENDENT_1_DV = compose(EFFECTIVE, Level.INDEPENDENT_1, "independent1");
     public static final DV INDEPENDENT_2_DV = compose(EFFECTIVE, Level.INDEPENDENT_2, "independent2");
     public static final DV INDEPENDENT_DV = compose(EFFECTIVE, Level.INDEPENDENT_R, "independent");
@@ -154,7 +157,9 @@ public class MultiLevel {
     public static final DV EFFECTIVELY_E3IMMUTABLE_DV = compose(EFFECTIVE, IMMUTABLE_3, "e3immutable");
 
     public static final DV MUTABLE_DV = compose(FALSE, IMMUTABLE_1, "mutable");
+    public static final DV MUTABLE_INCONCLUSIVE = new Inconclusive(MUTABLE_DV);
     public static final DV NULLABLE_DV = compose(FALSE, NOT_NULL, "nullable");
+    public static final DV NULLABLE_INCONCLUSIVE = new Inconclusive(NULLABLE_DV);
     public static final DV NOT_INVOLVED_DV = compose(Effective.DELAY, BASE, "not_involved");
 
     /**

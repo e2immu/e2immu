@@ -124,4 +124,6 @@ public interface DV extends WeightedGraph.Weight {
 
     @NotNull
     String label();
+
+    default boolean isInconclusive() { return false; }
 }
