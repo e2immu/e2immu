@@ -31,8 +31,8 @@ public interface InlinedMethod_15 {
     static <T> List<T> immutableConcat(@NotNull1 @NotModified Iterable<? extends T>... lists) {
         List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
-            for (T t : list) {
-                builder.add(t);
+            for (T t : list) { // list in not null context, so lists becomes @NotNull1
+                builder.add(t); // t in not null context-> list becomes @NotNull1 ... not additive
             }
         }
         return List.copyOf(builder);

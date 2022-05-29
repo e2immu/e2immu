@@ -606,12 +606,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //        .addEvaluationResultVisitor(evaluationResultVisitor)
+                //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                 //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
@@ -930,11 +930,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -1192,12 +1192,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_16", 0, 6, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+          //      .addEvaluationResultVisitor(evaluationResultVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

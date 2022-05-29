@@ -309,8 +309,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_2", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -381,9 +381,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -430,8 +430,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

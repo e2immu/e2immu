@@ -279,9 +279,9 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -335,10 +335,10 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addTypeMapVisitor(typeMapVisitor)
+         //      .addEvaluationResultVisitor(evaluationResultVisitor)
+         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

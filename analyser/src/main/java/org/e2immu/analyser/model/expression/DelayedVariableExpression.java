@@ -322,14 +322,10 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     }
 
     @Override
-    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext, ParameterizedType parameterizedType) {
-        ParameterizedType myType = returnType(); // I am a loop variable? Set<String>, typeInfo Set
-        ParameterizedType typeParameterOfIterable = myType == null || myType.typeInfo == null ? null
-                : myType.typeInfo.typeParameterOfIterable(analyserContext, myType); // String, because Set<String> <- Iterable<String>
-        if (parameterizedType.equals(typeParameterOfIterable)) {
-            return Either.right(Set.of(variable));
-        }
-        return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
+    public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext,
+                                                                    ParameterizedType parameterizedType) {
+        return VariableExpression.loopSourceVariables(analyserContext, variable, variable.parameterizedType(),
+                parameterizedType);
     }
 
     @Override

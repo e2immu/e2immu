@@ -285,7 +285,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
         testClass(List.of("Project_0", "Store_8"), 3, DONT_CARE, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

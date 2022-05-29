@@ -174,9 +174,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>?<oos:i>+<v:sum>:<vl:sum>";
-                            case 1 -> "<loopIsNotEmptyCondition>?<oos:i>+sum$1:instance type int";
-                            default -> "instance type boolean?instance type int+sum$1:instance type int";
+                            case 0 -> "<loopIsNotEmptyCondition>?<oos:i>+<v:sum>:0";
+                            case 1 -> "<loopIsNotEmptyCondition>?<oos:i>+sum$1:0";
+                            default -> "instance type boolean?instance type int+sum$1:0";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

@@ -1097,19 +1097,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return this;
     }
 
+    /*
+    assumption: if the object is a variable, and the method is non-modifying and its result implements Iterable,
+    then we're looping over the object! (see .sublist(), .entrySet(), ...)
+     */
     @Override
     public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext,
                                                                     ParameterizedType parameterizedType) {
         if (object instanceof VariableExpression ve) {
-            // method returns Set<T>, resultType Set, implements Iterable<T>
-            ParameterizedType concreteReturnType = returnType();
-            ParameterizedType typeParameterOfIterable = concreteReturnType.typeInfo == null ? null
-                    : concreteReturnType.typeInfo.typeParameterOfIterable(analyserContext, concreteReturnType);
-            if (parameterizedType.equals(typeParameterOfIterable)) {
-                MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
-                DV nne = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
-                if (nne.isDelayed()) return Either.left(nne.causesOfDelay());
-                return Either.right(Set.of(ve.variable()));
+            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
+            if (modified.isDelayed()) return Either.left(modified.causesOfDelay());
+            if (modified.valueIsFalse()) {
+                return VariableExpression.loopSourceVariables(analyserContext, ve.variable(), returnType(), parameterizedType);
             }
         }
         return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;

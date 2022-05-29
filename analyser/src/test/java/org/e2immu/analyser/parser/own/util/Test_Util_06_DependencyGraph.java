@@ -400,12 +400,12 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 2, 9,
                 new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(mavForFreezable)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(mavForFreezable)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                  //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }

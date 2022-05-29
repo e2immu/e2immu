@@ -98,8 +98,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(FormattingOptions.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 

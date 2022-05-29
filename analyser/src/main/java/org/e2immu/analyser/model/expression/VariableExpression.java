@@ -553,10 +553,20 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext, ParameterizedType parameterizedType) {
-        ParameterizedType myType = returnType(); // I am a loop variable? Set<String>, typeInfo Set
-        ParameterizedType typeParameterOfIterable = myType == null || myType.typeInfo == null ? null
+        return loopSourceVariables(analyserContext, variable, variable.parameterizedType(), parameterizedType);
+    }
+
+    // also in DelayedVariableExpression
+    public static Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext,
+                                                                           Variable variable,
+                                                                           ParameterizedType myType,
+                                                                           ParameterizedType parameterizedType) {
+        if (myType.arrays > 0 && myType.copyWithOneFewerArrays().equals(parameterizedType)) {
+            return Either.right(Set.of(variable));
+        }
+        ParameterizedType typeParameterOfIterable = myType.typeInfo == null ? null
                 : myType.typeInfo.typeParameterOfIterable(analyserContext, myType); // String, because Set<String> <- Iterable<String>
-        if (parameterizedType.equals(typeParameterOfIterable)) {
+        if (typeParameterOfIterable != null && typeParameterOfIterable.isAssignableFrom(analyserContext, parameterizedType)) {
             return Either.right(Set.of(variable));
         }
         return EvaluationContext.NO_LOOP_SOURCE_VARIABLES;
