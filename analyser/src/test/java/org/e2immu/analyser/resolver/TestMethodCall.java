@@ -216,4 +216,35 @@ public class TestMethodCall extends CommonTest {
             assertEquals(pt, mc.returnType());
         } else fail();
     }
+
+    @Test
+    public void test_21() throws IOException {
+        inspectAndResolve(MethodCall_21.class);
+    }
+
+    @Test
+    public void test_22() throws IOException {
+        inspectAndResolve(MethodCall_22.class);
+    }
+
+    @Test
+    public void test_23() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_23.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_23.class);
+        TypeInfo maTypeInfo = typeInfo.typeInspection.get().subTypes().get(1);
+        assertEquals("MethodAnalyser", maTypeInfo.simpleName);
+        MethodInfo method = maTypeInfo.findUniqueMethod("method", 1);
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_23.MethodAnalyser.SharedState",
+                method.methodInspection.get().getParameters().get(0).parameterizedType.fullyQualifiedName());
+    }
+
+    @Test
+    public void test_24() throws IOException {
+        inspectAndResolve(MethodCall_24.class);
+    }
+
+    @Test
+    public void test_25() throws IOException {
+        inspectAndResolve(MethodCall_25.class);
+    }
 }

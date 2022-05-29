@@ -283,7 +283,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     /**
-     * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that is is assigned to.
+     * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that it is assigned to.
      * Does not apply to variable fields.
      */
     @Override

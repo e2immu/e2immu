@@ -135,4 +135,10 @@ public class TestConstructor extends CommonTest {
             } else fail();
         } else fail();
     }
+
+
+    @Test
+    public void test_9() throws IOException {
+        inspectAndResolve(Constructor_9.class);
+    }
 }

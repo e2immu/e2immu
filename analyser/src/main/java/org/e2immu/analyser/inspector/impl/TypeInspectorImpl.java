@@ -363,26 +363,27 @@ public class TypeInspectorImpl implements TypeInspector {
      */
     private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
         assert parameterizedType.typeInfo != null;
-        boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType().fullyQualifiedName);
-        if (!insideCompilationUnit) {
-            InspectionProvider inspectionProvider = expressionContext.typeContext().typeMap;
-            // getting the type inspection should trigger either byte-code or java inspection
-            TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
-            if (typeInspection == null) {
-                throw new UnsupportedOperationException("The type " + parameterizedType.typeInfo.fullyQualifiedName + " should already have a type inspection");
-            }
-            // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
-            for (TypeInfo subType : typeInspection.subTypes()) {
-                expressionContext.typeContext().addToContext(subType);
-            }
-            // parentClass can be null in rare occasions where there is a cyclic dependency between types inside two primary types
-            // see Immutables-generated code
-            ParameterizedType parentClass = typeInspection.parentClass();
-            if (parentClass != null && !parentClass.isJavaLangObject()) {
-                ensureLoaded(expressionContext, parentClass);
-            }
-            typeInspection.interfacesImplemented().forEach(i -> ensureLoaded(expressionContext, i));
+
+        InspectionProvider inspectionProvider = expressionContext.typeContext().typeMap;
+        // getting the type inspection should trigger either byte-code or java inspection
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
+        if (typeInspection == null) {
+            throw new UnsupportedOperationException("The type " + parameterizedType.typeInfo.fullyQualifiedName +
+                    " should already have a type inspection");
         }
+
+        // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
+        // See MethodCall_23 as an example why we don't want to overwrite (priority to the closest subtype)
+        for (TypeInfo subType : typeInspection.subTypes()) {
+            expressionContext.typeContext().addToContext(subType, false);
+        }
+        // parentClass can be null in rare occasions where there is a cyclic dependency between types inside two primary types
+        // see Immutables-generated code
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            ensureLoaded(expressionContext, parentClass);
+        }
+        typeInspection.interfacesImplemented().forEach(i -> ensureLoaded(expressionContext, i));
     }
 
     @Override

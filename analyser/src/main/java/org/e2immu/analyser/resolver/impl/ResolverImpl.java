@@ -308,14 +308,16 @@ public class ResolverImpl implements Resolver {
 
             LOGGER.debug("Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
-            ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
+            ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo,
+                    primaryType, expressionContextOfType);
 
             TypeContext typeContext = expressionContextForBody.typeContext();
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);
 
-            // add visible types to the type context
-            accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType).forEach(typeContext::addToContext);
+            // add visible types to the type context; do not overwrite, see Constructor_9
+            accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType)
+                    .forEach(ti -> typeContext.addToContext(ti, false));
 
             // add visible fields to variable context
             accessibleFieldsStream(typeContext, typeInfo, primaryType).forEach(fieldInfo ->
@@ -335,8 +337,8 @@ public class ResolverImpl implements Resolver {
             typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
             return typeAndAllSubTypes;
-        } catch (RuntimeException re) {
-            LOGGER.warn("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
+        } catch (Throwable re) {
+            LOGGER.error("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
             throw re;
         }
     }
