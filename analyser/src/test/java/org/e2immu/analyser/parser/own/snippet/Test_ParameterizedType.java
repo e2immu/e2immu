@@ -121,9 +121,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
         testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -187,7 +187,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("from".equals(d.methodInfo().name)) {
+            if ("fromXXX".equals(d.methodInfo().name)) { // FIXME from
                 // in iteration 4, the method call in 0.0.07.0.0 should not cause problems in itself (@NM, parameters @NM)
                 // it uses the variables typeContext (P), findType (P), signature (P), arrays (LVR), wildCard (LVR), firstCharPos (LVR)
                 if (d.variable() instanceof ParameterInfo pi && "findType".equals(pi.name)) {
@@ -262,6 +262,44 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("0.0.11".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:ARRAY_BRACKET>" : "'['";
                         assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+            if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
+                if ("next".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    String expectedIn5 = switch (d.iteration()) {
+                        case 0, 1 -> "<s:IterativeParsing>";
+                        default -> "instance type IterativeParsing";
+                    };
+
+                    if ("5".equals(d.statementId())) {
+                        String merge = switch (d.iteration()) {
+                            case 0, 1 -> "<s:IterativeParsing>";
+                            case 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
+                            default -> "'>'==signature.charAt(((([signature,instance type boolean])?1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?1+('['==instance type char?1+instance type int:0):0):0)>=1?new Result(new ParameterizedType(``scope-primitivePt:0`.typeInfo`,'['==instance type char?1+instance type int:0),('['==instance type char?1+instance type int:0)+1,false):instance type boolean?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.substring(0).indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(0).substring(1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0),signature.substring(0).indexOf(';')),false),'['==instance type char?1+instance type int:0,'+'==signature.substring(0).charAt(0)?`WildCard.EXTENDS`:'-'==signature.substring(0).charAt(0)?`WildCard.SUPER`:`WildCard.NONE`),signature.substring(0).indexOf(';')+1,false):instance type boolean?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.substring(0).charAt(0)?new Result(`ParameterizedType.WILDCARD_PARAMETERIZED_TYPE`,1,false):new Result(switch('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0)):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
+                        };
+                        assertEquals(merge, d.currentValue().toString());
+                        assertEquals(d.iteration() < 11, d.currentValue().isDelayed());
+                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("5.0.1".equals(d.statementId())) {
+                        assertEquals(expectedIn5, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("5.1.1".equals(d.statementId())) {
+                        assertEquals(expectedIn5, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("6".equals(d.statementId())) {
+                        String expected = d.iteration() < 11 ? "<s:IterativeParsing>" : "instance type IterativeParsing";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -345,10 +383,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
 
         // TODO one of the null pointer problems is that "from" is nullable, which it is clearly not
         // the other 3 null pointer issues are valid
-        testClass("ParameterizedType_2", 6, DONT_CARE,
+        testClass("ParameterizedType_2", 4, DONT_CARE,
                 new DebugConfiguration.Builder()
                         //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());

@@ -280,10 +280,11 @@ public class Assignment extends BaseExpression implements Expression {
             but that needs comparing against the current value
              */
             IsVariableExpression ive;
-            if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget) && value.isDone()) {
+            if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null
+                    && ive.variable().equals(newVariableTarget) && value.isDone()) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
-            e2 = handleNormalAssignment(context, fwd, valueResult.value(), newVariableTarget, builder);
+            e2 = handleNormalAssignment(context, valueResult.value(), newVariableTarget, targetResult.value(), builder);
         }
         builder.composeIgnoreExpression(targetResult);
 
@@ -335,20 +336,17 @@ public class Assignment extends BaseExpression implements Expression {
     }
 
     private E2 handleNormalAssignment(EvaluationResult context,
-                                      ForwardEvaluationInfo fwd,
                                       Expression valueResultValue,
                                       Variable newVariableTarget,
+                                      Expression currentValueOfTarget,
                                       EvaluationResult.Builder builder) {
-
-        EvaluationResult currentTargetValue = target.evaluate(context, fwd);
-        Expression currentValue = currentTargetValue.value();
         IsVariableExpression ive2;
-        if (currentValue != null && (currentValue.equals(valueResultValue) ||
+        if (currentValueOfTarget != null && (currentValueOfTarget.equals(valueResultValue) ||
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
                         && newVariableTarget.equals(ive2.variable())) &&
                 !(newVariableTarget instanceof ReturnVariable) &&
                 !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
-            LOGGER.debug("Assigning identical value {} to {}", currentValue, newVariableTarget);
+            LOGGER.debug("Assigning identical value {} to {}", currentValueOfTarget, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
             // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment
             // we'll assign to the value

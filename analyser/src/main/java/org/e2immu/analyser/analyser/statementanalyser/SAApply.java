@@ -124,7 +124,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 progress |= markAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi, vi1);
             } else {
                 if (changeData.value() != null && (changeData.value().isDone()
-                        || !(vi1.getValue() instanceof DelayedWrappedExpression))) {
+                        || !(vi1.getValue() instanceof DelayedWrappedExpression)) && !vi1.isDelayed()) {
                     progress |= changeValueWithoutAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi1);
                 } else {
                     AnalysisStatus status = noValueChange(sharedState, delay, evaluationResult, groupPropertyValues,

@@ -257,7 +257,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<mmc:result>" : "instance type OutputBuilderSimplified_7";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 1 -> "<vp:NONE:container@Class_Space>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            default -> "instance type OutputBuilderSimplified_7";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                     }

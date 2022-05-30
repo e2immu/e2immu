@@ -114,10 +114,6 @@ public interface Identifier extends Comparable<Identifier> {
         }
     }
 
-    static Identifier forTest(int i) {
-        return new TestIdentifier(i);
-    }
-
     record TestIdentifier(int i) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
@@ -144,6 +140,11 @@ public interface Identifier extends Comparable<Identifier> {
 
         public IncrementalIdentifier(String origin) {
             identifier = generator.incrementAndGet() + "_" + origin;
+        }
+
+        @Override
+        public boolean unstableIdentifier() {
+            return true;
         }
 
         @Override
@@ -299,5 +300,9 @@ public interface Identifier extends Comparable<Identifier> {
         public String compact() {
             return "T:" + statementTime;
         }
+    }
+
+    default boolean unstableIdentifier() {
+        return false;
     }
 }

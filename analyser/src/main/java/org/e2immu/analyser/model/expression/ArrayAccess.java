@@ -69,7 +69,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
         if (expression instanceof VariableExpression ve) {
             return ve.variable();
         }
-        assert identifier instanceof Identifier.PositionalIdentifier || identifier instanceof Identifier.ConstantIdentifier;
+        assert !identifier.unstableIdentifier() : "cannot have unstable identifiers here!";
         String name = variablePrefix + identifier.compact();
         VariableNature vn = new VariableNature.ScopeVariable();
         LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, expression.returnType(),

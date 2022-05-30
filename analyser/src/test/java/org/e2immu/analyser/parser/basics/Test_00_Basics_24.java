@@ -57,8 +57,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<vp:X:container@Class_X>";
-                            case 1 -> "<vp:X:initial@Field_s>";
+                            case 0, 1 -> "<new:X>";
                             default -> "instance type X";
                         }; // and not new X(a)!!!
                         assertEquals(expected, d.currentValue().toString());

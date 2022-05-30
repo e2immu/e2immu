@@ -89,8 +89,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
                 new DebugConfiguration.Builder()
-                        .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+               //         .addTypeMapVisitor(typeMapVisitor)
+               //         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
