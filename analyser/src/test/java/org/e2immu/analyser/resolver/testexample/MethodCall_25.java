@@ -42,4 +42,49 @@ public class MethodCall_25 {
             return true;
         });
     }
+
+    /* Compilation error:
+    public void method2(Element e) {
+        e.visit(element -> System.out.println("?"));
+    }
+    */
+
+    public void method2(Element e) {
+        e.visit(element -> {
+            System.out.println("?");
+        });
+    }
+
+    public void method3(Element e) {
+        e.visit(element -> {
+            System.out.println("?");
+            if (element == null) {
+                return false;
+            } else {
+                return true;
+            }
+        });
+    }
+
+    public void method4(Element e) {
+        e.visit(element -> {
+            try {
+                System.out.println("Hello");
+                return true;
+            } finally {
+                System.out.println("?");
+            }
+        });
+    }
+
+    /*
+    Compilation error:
+    public void method5(Element e, List<String> list) {
+        e.visit(element -> {
+            for (String s : list) {
+               return true;
+            }
+        });
+    }
+     */
 }

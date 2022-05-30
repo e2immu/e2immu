@@ -16,6 +16,10 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -38,14 +42,48 @@ public class ParseLambdaExpr {
                                      LambdaExpr asLambdaExpr) {
         // we need to find the generic functional interface which fits
         int parameters = asLambdaExpr.getParameters().size();
-        // it is pretty hard to find out if there is a return statement, but simply computationally heavy.
-        // we're not doing this at the moment, and decide to issue a serious inspection warning instead, if we cannot
-        // determine a method overload because of the void/non-void difference!
-        Set<LambdaExpressionErasures.Count> erasures = Set.of(
-                new LambdaExpressionErasures.Count(parameters, true),
-                new LambdaExpressionErasures.Count(parameters, false));
+        Set<LambdaExpressionErasures.Count> erasures;
+        Boolean isVoid = computeIsVoid(asLambdaExpr);
+        if (isVoid == null) {
+            erasures = Set.of(
+                    new LambdaExpressionErasures.Count(parameters, true),
+                    new LambdaExpressionErasures.Count(parameters, false));
+        } else {
+            erasures = Set.of(new LambdaExpressionErasures.Count(parameters, isVoid));
+        }
         LOGGER.debug("Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
+    }
+
+    /*
+     See example MethodCall_25, where we need to determine a method overload because of the void/non-void difference!
+     */
+    private static Boolean computeIsVoid(LambdaExpr asLambdaExpr) {
+        if (asLambdaExpr.getBody() instanceof ExpressionStmt) {
+            // void expressions: void method call, but we don't have the machinery yet... luckily,
+            // the Java compiler cannot handle this neither
+            return null;
+        }
+        if (asLambdaExpr.getBody() instanceof BlockStmt) {
+            ReturnStmt returnStmt = returnStmtOrNull(asLambdaExpr.getBody());
+            return returnStmt == null || returnStmt.getExpression().isEmpty();
+        }
+        throw new UnsupportedOperationException("? either block or expression");
+    }
+
+    private static ReturnStmt returnStmtOrNull(Statement statement) {
+        if (statement.isBlockStmt()) {
+            BlockStmt blockStmt = statement.asBlockStmt();
+            int numStatements = blockStmt.getStatements().size();
+            if (numStatements == 0) return null;
+            return returnStmtOrNull(blockStmt.getStatement(numStatements - 1));
+        }
+        if (statement.isReturnStmt()) return statement.asReturnStmt();
+        if (statement.isIfStmt()) return returnStmtOrNull(statement.asIfStmt().getThenStmt());
+        if (statement.isTryStmt()) return returnStmtOrNull(statement.asTryStmt().getTryBlock());
+        if (statement.isSynchronizedStmt()) return returnStmtOrNull(statement.asSynchronizedStmt().getBody());
+        // loop statements not allowed (compilation error)...
+        return null;
     }
 
     public static Expression parse(ExpressionContext expressionContext,

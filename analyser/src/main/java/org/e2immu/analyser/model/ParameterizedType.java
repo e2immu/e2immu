@@ -601,7 +601,7 @@ public class ParameterizedType {
      *                           If true, then starting point of the recursion. We need a functional interface, and will complain at the end.
      * @return the combination of method and initial type parameter map
      */
-    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
+    public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
         if (complain && !isFunctionalInterface(inspectionProvider)) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<MethodInspection> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)

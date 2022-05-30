@@ -430,20 +430,21 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
 
                 for (ParameterizedType actualType : acceptedErased) {
+                    int penaltyForReturnType = computePenaltyForReturnType(actualType, formalType);
                     int compatible;
                     if (isFreeTypeParameter(actualType)) {
-                            /*
-                            See test Lambda_6, and Lambda_7
+                        /*
+                        See test Lambda_6, and Lambda_7
 
-                            situation: the formal type is a normal TypeInfo, the actual type is a method type parameter
-                            representing the method result; we should add the actual<-formal to the extra when evaluating.
+                        situation: the formal type is a normal TypeInfo, the actual type is a method type parameter
+                        representing the method result; we should add the actual<-formal to the extra when evaluating.
 
-                            Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
-                            this condition doesn't occur too often
-                             */
-                        compatible = 5;   // FIXME should we actually forward the actual <- formal mapping?
+                        Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
+                        this condition doesn't occur too often
+                         */
+                        compatible = 5 + penaltyForReturnType;   // FIXME should we actually forward the actual <- formal mapping?
                     } else {
-                        compatible = callIsAssignableFrom(actualType, formalType);
+                        compatible = callIsAssignableFrom(actualType, formalType) + penaltyForReturnType;
                     }
                     if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                         bestCompatible = compatible;
@@ -481,6 +482,19 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         });
 
         return new FilterResult(evaluatedExpressions, compatibilityScore);
+    }
+
+    private int computePenaltyForReturnType(ParameterizedType actualType,
+                                            ParameterizedType formalType) {
+        if (actualType.typeInfo == null || formalType.typeInfo == null) return 0;
+        MethodTypeParameterMap actual = actualType.findSingleAbstractMethodOfInterface(typeContext, false);
+        if (actual == null) return 0; // not worth the effort
+        MethodTypeParameterMap formal = formalType.findSingleAbstractMethodOfInterface(typeContext, false);
+        if (formal == null) return 0;
+        if (actual.methodInspection.isVoid() && !formal.methodInspection.isVoid()) return NOT_ASSIGNABLE;
+        // we have to have a small penalty in the other direction, to give preference to a Consumer when a Function is competing
+        if (!actual.methodInspection.isVoid() && formal.methodInspection.isVoid()) return 5;
+        return 0;
     }
 
     private boolean isFreeTypeParameter(ParameterizedType actualType) {

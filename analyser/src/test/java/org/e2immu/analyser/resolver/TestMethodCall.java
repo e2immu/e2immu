@@ -245,6 +245,13 @@ public class TestMethodCall extends CommonTest {
 
     @Test
     public void test_25() throws IOException {
-        inspectAndResolve(MethodCall_25.class);
+        TypeMap typeMap = inspectAndResolve(MethodCall_25.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_25.class);
+        MethodInfo method3 = typeInfo.findUniqueMethod("method3", 1);
+        Block block = method3.methodInspection.get().getMethodBody();
+        MethodCall visit = (MethodCall) ((ExpressionAsStatement) block.structure.getStatements().get(0)).expression;
+        ParameterInfo p0 = visit.methodInfo.methodInspection.get().getParameters().get(0);
+        assertEquals("Type java.util.function.Predicate<org.e2immu.analyser.resolver.testexample.MethodCall_25.Element>",
+                p0.parameterizedType.toString());
     }
 }
