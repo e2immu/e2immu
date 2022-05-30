@@ -1369,13 +1369,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         // we include -E in touched, see Basics_8 (j, k in statement 4)
-        Set<Variable> touched = Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
-                                linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
-                        variables.stream().map(Map.Entry::getValue)
-                                .filter(VariableInfoContainer::hasEvaluation)
-                                .map(e -> e.current().variable())))
-                .filter(v -> !prepareMerge.toRemove.contains(v) && variables.isSet(v.fullyQualifiedName()))
-                .collect(Collectors.toUnmodifiableSet());
+        Set<Variable> touched = touchedStream(linkedVariablesMap, newlyCreatedScopeVariables, prepareMerge);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
                 true,
                 (vic, v) -> !touched.contains(v),
@@ -1449,6 +1443,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
                 .addProgress(progress);
+    }
+
+    private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<LocalVariableReference> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {
+        return Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
+                                linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
+                        variables.stream().map(Map.Entry::getValue).filter(VariableInfoContainer::hasEvaluation)
+                                .map(e -> e.current().variable())))
+                .filter(v -> !prepareMerge.toRemove.contains(v)
+                        && !prepareMerge.renames.containsKey(v)
+                        && variables.isSet(v.fullyQualifiedName()))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private void ensureDestination(Variable renamed,
