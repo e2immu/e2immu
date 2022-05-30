@@ -17,9 +17,14 @@ package org.e2immu.analyser.resolver.testexample;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-// see also MethodCall_27
-public class MethodCall_7<A, B, BB extends B> {
+// see also MethodCall_7
+public class MethodCall_27<A, B> {
+
+    public void method(List<B> list, Predicate<B> b) {
+        b.test(list.get(0));
+    }
 
     public void method(List<B> list, Consumer<B> b) {
         b.accept(list.get(0));
@@ -29,8 +34,9 @@ public class MethodCall_7<A, B, BB extends B> {
         a.accept(list.get(0), null);
     }
 
-    public void test(A a, BB bb) {
-        method(List.of(bb), System.out::println);
+    public void test(A a, B b) {
+        // COMPILATION ERROR: method(List.of(bb), System.out::println);
         method(List.of(a), (x, y) -> System.out.println(x + " " + y));
+        method(List.of(b), x -> x.toString().length() > 3);
     }
 }

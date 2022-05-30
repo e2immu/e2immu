@@ -49,7 +49,7 @@ public class TestMethodCall extends CommonTest {
         } else fail();
     }
 
-    private void inspectAndResolve(Class<?> clazz, String[] methodFqns, int paramsOfTest) throws IOException {
+    private void inspectAndResolve(Class<?> clazz, String[] expectedMethodFqns, int paramsOfTest) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", paramsOfTest);
@@ -59,8 +59,8 @@ public class TestMethodCall extends CommonTest {
             if (statement instanceof ExpressionAsStatement eas) {
                 if (eas.expression instanceof MethodCall methodCall) {
                     LOGGER.info("Accept: {}", methodCall);
-                    String fqn = methodFqns[i++];
-                    assertEquals(methodCall.methodInfo.fullyQualifiedName, fqn);
+                    String expectedFqn = expectedMethodFqns[i++];
+                    assertEquals(expectedFqn, methodCall.methodInfo.fullyQualifiedName);
                 } // else skip
             } // else skip
         }
@@ -253,5 +253,19 @@ public class TestMethodCall extends CommonTest {
         ParameterInfo p0 = visit.methodInfo.methodInspection.get().getParameters().get(0);
         assertEquals("Type java.util.function.Predicate<org.e2immu.analyser.resolver.testexample.MethodCall_25.Element>",
                 p0.parameterizedType.toString());
+    }
+
+    @Test
+    public void test_26() throws IOException {
+        inspectAndResolve(MethodCall_26.class);
+    }
+
+    @Test
+    public void test_27() throws IOException {
+        String[] methods = {
+                "org.e2immu.analyser.resolver.testexample.MethodCall_27.method(java.util.List<A>,java.util.function.BiConsumer<A,B>)",
+                "org.e2immu.analyser.resolver.testexample.MethodCall_27.method(java.util.List<B>,java.util.function.Predicate<B>)"
+        };
+        inspectAndResolve(MethodCall_27.class, methods, 2);
     }
 }

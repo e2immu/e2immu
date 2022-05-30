@@ -87,4 +87,12 @@ public class MethodCall_25 {
         });
     }
      */
+
+    /*
+    Compilation error: (cannot distinguish!)
+    public void method5(Element e) {
+        e.visit(element -> {
+            throw new UnsupportedOperationException("?" + element);
+        });
+    }*/
 }

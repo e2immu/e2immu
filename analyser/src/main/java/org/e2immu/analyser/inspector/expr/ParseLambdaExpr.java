@@ -43,46 +43,57 @@ public class ParseLambdaExpr {
         // we need to find the generic functional interface which fits
         int parameters = asLambdaExpr.getParameters().size();
         Set<LambdaExpressionErasures.Count> erasures;
-        Boolean isVoid = computeIsVoid(asLambdaExpr);
-        if (isVoid == null) {
+        IsVoid isVoid = computeIsVoid(asLambdaExpr);
+        if (isVoid == IsVoid.NO_IDEA || isVoid == IsVoid.ESCAPE) {
             erasures = Set.of(
                     new LambdaExpressionErasures.Count(parameters, true),
                     new LambdaExpressionErasures.Count(parameters, false));
         } else {
-            erasures = Set.of(new LambdaExpressionErasures.Count(parameters, isVoid));
+            erasures = Set.of(new LambdaExpressionErasures.Count(parameters, isVoid == IsVoid.YES));
         }
         LOGGER.debug("Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 
+    private enum IsVoid {NO_IDEA, YES, NO, ESCAPE}
+
     /*
      See example MethodCall_25, where we need to determine a method overload because of the void/non-void difference!
      */
-    private static Boolean computeIsVoid(LambdaExpr asLambdaExpr) {
-        if (asLambdaExpr.getBody() instanceof ExpressionStmt) {
+    private static IsVoid computeIsVoid(LambdaExpr asLambdaExpr) {
+        if (asLambdaExpr.getBody() instanceof ExpressionStmt expressionStmt) {
             // void expressions: void method call, but we don't have the machinery yet... luckily,
-            // the Java compiler cannot handle this neither
-            return null;
+            // the Java compiler cannot handle this neither IF in direct competition (see MethodCall_25, but also _7)
+            com.github.javaparser.ast.expr.Expression e = expressionStmt.getExpression();
+            if (e.isMethodCallExpr()) return IsVoid.NO_IDEA;
+            return IsVoid.NO;
         }
         if (asLambdaExpr.getBody() instanceof BlockStmt) {
-            ReturnStmt returnStmt = returnStmtOrNull(asLambdaExpr.getBody());
-            return returnStmt == null || returnStmt.getExpression().isEmpty();
+            return recursiveComputeIsVoid(asLambdaExpr.getBody());
         }
         throw new UnsupportedOperationException("? either block or expression");
     }
 
-    private static ReturnStmt returnStmtOrNull(Statement statement) {
+    private static IsVoid recursiveComputeIsVoid(Statement statement) {
+        if (statement.isReturnStmt()) {
+            ReturnStmt returnStmt = statement.asReturnStmt();
+            return returnStmt.getExpression().isEmpty() ? IsVoid.YES : IsVoid.NO;
+        }
         if (statement.isBlockStmt()) {
             BlockStmt blockStmt = statement.asBlockStmt();
             int numStatements = blockStmt.getStatements().size();
-            if (numStatements == 0) return null;
-            return returnStmtOrNull(blockStmt.getStatement(numStatements - 1));
+            if (numStatements == 0) return IsVoid.YES;
+            IsVoid resultOfBlock = recursiveComputeIsVoid(blockStmt.getStatement(numStatements - 1));
+            if (resultOfBlock == IsVoid.NO_IDEA) return IsVoid.NO;
+            return resultOfBlock;
         }
-        if (statement.isReturnStmt()) return statement.asReturnStmt();
-        if (statement.isIfStmt()) return returnStmtOrNull(statement.asIfStmt().getThenStmt());
-        if (statement.isTryStmt()) return returnStmtOrNull(statement.asTryStmt().getTryBlock());
-        if (statement.isSynchronizedStmt()) return returnStmtOrNull(statement.asSynchronizedStmt().getBody());
+        if (statement.isThrowStmt()) return IsVoid.ESCAPE;
+        if (statement.isIfStmt()) return recursiveComputeIsVoid(statement.asIfStmt().getThenStmt());
+        if (statement.isTryStmt()) return recursiveComputeIsVoid(statement.asTryStmt().getTryBlock());
+        if (statement.isSynchronizedStmt()) return recursiveComputeIsVoid(statement.asSynchronizedStmt().getBody());
         // loop statements not allowed (compilation error)...
+        // expression as statement: null
+        // throws statement: null
         return null;
     }
 
