@@ -65,7 +65,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         INITIAL_RANGE("initial_range", "Range not yet set"),
         INITIAL_TIME("initial_time", "Initial time not yet set"),
         INITIAL_VALUE("initial", "Not yet initialized", HIGH),
-        LINKING("link", "Delay in linking"),
+        LINKING("link", "Delay in linking", HIGH),
         LOCAL_PT_ANALYSERS("local_pt_analysers", "Local primary type analysers not yet present"),
         LOCAL_VARS_ASSIGNED("local_vars", "Local variables assigned in this loop not yet determined"),
         MIN_INT("min_int", "Minimum integer; should only appear locally need .reduce()"),

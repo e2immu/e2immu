@@ -251,15 +251,14 @@ public class ComputeLinkedVariables {
      */
     private DV propertyValuePotentiallyBreakDelay(Property property, Variable v, DV propertyValue) {
         if (allowBreakDelay && property == Property.CONTEXT_MODIFIED && propertyValue.isDelayed() &&
-                propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
+                (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
                         c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
                 // this second situation arises in InstanceOf_16: direct self reference
                 propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
-                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == v)) {
+                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
             LOGGER.debug("Breaking a MOM / CM delay for parameter  in {}", propertyValue);
             return DV.FALSE_DV;
         }
-
         // normal action
         return propertyValue;
     }

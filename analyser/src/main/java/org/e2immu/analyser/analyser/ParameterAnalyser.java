@@ -25,7 +25,5 @@ public interface ParameterAnalyser extends Analyser {
 
     void initialize(Stream<FieldAnalyser> fieldAnalyserStream);
 
-    AnalyserResult analyse(int iteration);
-
     ParameterInfo getParameterInfo();
 }

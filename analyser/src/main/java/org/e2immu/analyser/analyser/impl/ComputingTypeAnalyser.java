@@ -854,9 +854,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay, boolean allowBreakDelay) {
-        DV value = allowBreakDelay ? MultiLevel.DEPENDENT_INCONCLUSIVE : causesOfDelay;
-        typeAnalysis.setProperty(INDEPENDENT, value);
-        return allowBreakDelay ? DONE : causesOfDelay;
+       // DV value = allowBreakDelay ? MultiLevel.DEPENDENT_INCONCLUSIVE : causesOfDelay;
+      //  typeAnalysis.setProperty(INDEPENDENT, value);
+      //  return allowBreakDelay ? DONE : causesOfDelay;
+        typeAnalysis.setProperty(INDEPENDENT, causesOfDelay);
+        return causesOfDelay;
     }
 
     private DV independenceOfField(FieldAnalysis fieldAnalysis) {

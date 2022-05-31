@@ -71,11 +71,6 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
         throw new UnsupportedOperationException("Use different initializer");
     }
 
-    @Override
-    public AnalyserResult analyse(SharedState sharedState) {
-        return analyse(sharedState.iteration());
-    }
-
     public void check() {
         if(isUnreachable()) return;
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();

@@ -39,7 +39,7 @@ public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     @Override
-    public AnalyserResult analyse(int iteration) {
+    public AnalyserResult analyse(SharedState sharedState) {
         return AnalyserResult.EMPTY;
     }
 

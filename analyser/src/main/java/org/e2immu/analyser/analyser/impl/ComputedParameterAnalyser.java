@@ -70,8 +70,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return "CPA " + parameterInfo.fullyQualifiedName;
     }
 
-    record SharedState(int iteration) {
-    }
 
     private final AnalyserComponents<String, SharedState> analyserComponents =
             new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
@@ -85,7 +83,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
-        assert sharedState.iteration == 0;
+        assert sharedState.iteration() == 0;
 
         // parameters have EXTERNAL_IGNORE_MODIFICATIONS set to not-involved
         // (there is no intention to implement a feed-back from field to parameter)
@@ -173,7 +171,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     // See e.g. Enum_1: at some point, if we have a parameter of our own type, we may obtain a safe value
     private AnalysisStatus analyseContainerNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(CONTAINER)) return DONE;
-        if (sharedState.iteration == 0) {
+        if (sharedState.iteration() == 0) {
             // not setting assigned to field here
             return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
@@ -209,7 +207,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
 
         // in the first iteration, no statements have been analysed yet
-        if (sharedState.iteration == 0) {
+        if (sharedState.iteration() == 0) {
             CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
             parameterAnalysis.setProperty(INDEPENDENT, delay);
             return delay;
@@ -226,8 +224,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
          We can still encounter the following situations:
          - hidden content leaks out if this parameter is of the correct type (e.g., @FunctionalInterface) and
            a modifying method of the parameter has been called. We take the parameter as variable in the last statement
-           of the method, and look at the linked1variables. If not empty, we can assign something lower than INDEPENDENT.
-         - the method is modifying (constructor, explicitly computed): again, look at linked1
+           of the method, and look at the linked variables. If not empty, we can assign something lower than INDEPENDENT.
+         - the method is modifying (constructor, explicitly computed): again, look at linked variables
          */
 
         StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
@@ -235,11 +233,20 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo vi = lastStatement.findOrNull(parameterInfo, Stage.MERGE);
             if (vi != null) {
                 if (!vi.linkedVariablesIsSet()) {
+                    if (sharedState.allowBreakDelay() && vi.getLinkedVariables().causesOfDelay()
+                            .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
+                        LOGGER.debug("Breaking delay in independent, parameter {}", parameterInfo.fullyQualifiedName);
+                        parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
+                        return DONE;
+                    }
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    return DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
+                    CausesOfDelay delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
+                    parameterAnalysis.setProperty(INDEPENDENT, delay);
+                    return delay;
                 }
+
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
                         .map(e -> (FieldReference) e.getKey()).toList();
@@ -256,6 +263,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     if (hiddenContentDelayed.isDelayed()) {
                         LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
                                 parameterInfo.fullyQualifiedName());
+                        parameterAnalysis.setProperty(INDEPENDENT, hiddenContentDelayed);
                         return hiddenContentDelayed;
                     }
                     DV minHiddenContentImmutable = fields.stream()
@@ -266,6 +274,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     if (minHiddenContentImmutable.isDelayed()) {
                         LOGGER.debug("Delay independent in parameter {}, waiting for immutable of hidden content/transparent types",
                                 parameterInfo.fullyQualifiedName());
+                        parameterAnalysis.setProperty(INDEPENDENT, minHiddenContentImmutable);
                         return minHiddenContentImmutable.causesOfDelay();
                     }
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
@@ -287,11 +296,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
      * Does not apply to variable fields.
      */
     @Override
-    public AnalyserResult analyse(int iteration) {
+    public AnalyserResult analyse(SharedState sharedState) {
         assert !isUnreachable();
         try {
-            AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration));
-            if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) parameterAnalysis.internalAllDoneCheck();
+            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
+                parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
@@ -314,7 +324,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
             // no point, we need to have seen the statement+field analysers first.
-            if (sharedState.iteration == 0) {
+            if (sharedState.iteration() == 0) {
                 CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
                 parameterAnalysis.setCausesOfAssignedToFieldDelays(delay);
                 return delay;
@@ -464,7 +474,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (extImm.isDone()) {
             return DONE;
         }
-        if(parameterAnalysis.isAssignedToFieldDelaysResolved()) {
+        if (parameterAnalysis.isAssignedToFieldDelaysResolved()) {
             DV dv = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
             parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, dv);
             return AnalysisStatus.of(dv);
@@ -594,7 +604,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
-        if (sharedState.iteration == 0) {
+        if (sharedState.iteration() == 0) {
             return parameterInfo.delay(CauseOfDelay.Cause.FIRST_ITERATION);
         }
 
@@ -628,7 +638,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus checkUnusedParameter(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
-        if (sharedState.iteration == 0) {
+        if (sharedState.iteration() == 0) {
             return parameterInfo.delay(CauseOfDelay.Cause.FIRST_ITERATION);
         }
 

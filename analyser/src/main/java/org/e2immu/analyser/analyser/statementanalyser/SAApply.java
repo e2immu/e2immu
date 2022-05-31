@@ -105,7 +105,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay()
                 .findVariableCause(CauseOfDelay.Cause.BREAK_INIT_DELAY, vc -> vc.location().equals(initialLocation));
 
-        CausesOfDelay delay = evaluationResultIn.causesOfDelay();
+        CausesOfDelay cumulativeDelay = evaluationResult.causesOfDelay();
         boolean progress = false;
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
@@ -122,21 +122,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
             if (changeData.markAssignment()) {
                 progress |= markAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi, vi1);
+                cumulativeDelay = cumulativeDelay.merge(vi.getValue().causesOfDelay());
             } else {
                 if (changeData.value() != null && (changeData.value().isDone()
                         || !(vi1.getValue() instanceof DelayedWrappedExpression)) && !vi1.isDelayed()) {
                     progress |= changeValueWithoutAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi1);
+                    cumulativeDelay = cumulativeDelay.merge(vi.getValue().causesOfDelay());
                 } else {
-                    AnalysisStatus status = noValueChange(sharedState, delay, evaluationResult, groupPropertyValues,
+                    AnalysisStatus status = noValueChange(sharedState, evaluationResult.causesOfDelay(), groupPropertyValues,
                             optBreakInitDelay.orElse(null), variable, changeData, vic, vi, vi1);
-                    delay = status.causesOfDelay();
+                    cumulativeDelay = cumulativeDelay.merge(status.causesOfDelay());
                     progress |= status.isProgress();
                 }
-            }
-            if (vi.isDelayed()) {
-                delay = delay.merge(vi.getValue().causesOfDelay());
-            } else if (changeData.delays().isDelayed()) {
-                delay = delay.merge(changeData.delays());
             }
         }
 
@@ -144,7 +141,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
                     e.getValue(), e.getValue().best(EVALUATION), null, groupPropertyValues);
             if (loopResult.wroteValue) existingVariablesNotVisited.remove(e.getKey());
-            delay = delay.merge(loopResult.delays);
+            cumulativeDelay = cumulativeDelay.merge(loopResult.delays);
             progress |= loopResult.progress();
         }
 
@@ -154,12 +151,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (!(statement() instanceof ExplicitConstructorInvocation
                     && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
                 AnalysisStatus status = e.getValue().copyFromPreviousOrInitialIntoEvaluation();
-                delay = delay.merge(status.causesOfDelay());
+                cumulativeDelay = cumulativeDelay.merge(status.causesOfDelay());
                 progress |= status.isProgress();
             }
         }
 
-        ProgressAndDelay delayStatus = new ProgressAndDelay(progress, delay);
+        ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
                 delayStatus, analyserContext, groupPropertyValues);
 
@@ -167,9 +164,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
                 .debugConfiguration().evaluationResultVisitors()) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult, applyStatusAndEnnStatus.status(),
-                    applyStatusAndEnnStatus.ennStatus()));
+            int iteration = evaluationResult.evaluationContext().getIteration();
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(iteration,
+                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult,
+                    applyStatusAndEnnStatus.status(), applyStatusAndEnnStatus.ennStatus()));
         }
 
         return applyStatusAndEnnStatus;
@@ -220,8 +218,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     private AnalysisStatus noValueChange(StatementAnalyserSharedState sharedState,
-                                         CausesOfDelay delay,
-                                         EvaluationResult evaluationResult,
+                                         CausesOfDelay delayIn,
                                          GroupPropertyValues groupPropertyValues,
                                          VariableCause optBreakInitDelay,
                                          Variable variable,
@@ -231,11 +228,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                          VariableInfo vi1) {
         LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState,
                 variable, vic, vi, changeData, groupPropertyValues);
-        delay = delay.merge(loopResult.delays);
+        CausesOfDelay delay = delayIn.merge(loopResult.delays);
         boolean progress;
         if (!loopResult.wroteValue) {
             if (variable instanceof This
-                    || !evaluationResult.causesOfDelay().isDelayed()
+                    || !delayIn.isDelayed()
                     || optBreakInitDelay != null
                     || vi1.getValue() instanceof DelayedWrappedExpression) {
                 // we're not assigning (and there is no change in instance because of a modifying method)
@@ -267,7 +264,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 progress = merged.entrySet().stream().map(e -> vic.setProperty(e.getKey(), e.getValue(), EVALUATION))
                         .reduce(false, Boolean::logicalOr);
                 // copy the causes of the delay in the value, so that the SAEvaluationContext.breakDelay can notice
-                vic.setDelayedValue(evaluationResult.causesOfDelay(), EVALUATION);
+                vic.setDelayedValue(delayIn, EVALUATION);
             }
         } else {
             progress = false;
@@ -350,9 +347,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
             // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
             // evaluation context
-            if (LOGGER.isDebugEnabled() && valueToWrite.isDone()) {
+            if (LOGGER.isDebugEnabled() && valueToWritePossiblyDelayed.isDone()) {
                 LOGGER.debug("Write value {} to variable {}",
-                        valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
+                        valueToWritePossiblyDelayed.output(new QualificationImpl()), // can't write lambda's properly, otherwise
                         variable.fullyQualifiedName());
             }
             progressSet = vic.setValue(valueToWritePossiblyDelayed, null, combined, EVALUATION);
@@ -766,7 +763,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
     // filter out inline conditional on throws statements, when the state becomes "false"
-    // see e.g. SwitchExpression_4, at the throws statement at the end of the method
+    // see e.g. SwitchExpression_4, at the "throws" statement at the end of the method
     private boolean acceptMessage(Message m) {
         return m.message() != Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT
                 || !(statement() instanceof ThrowStatement);

@@ -121,7 +121,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> parameterAnalyserAction = (sharedState) -> {
-                AnalyserResult result = parameterAnalyser.analyse(sharedState.evaluationContext.getIteration());
+                Analyser.SharedState state = new Analyser.SharedState(sharedState.evaluationContext.getIteration(),
+                        sharedState.allowBreakDelay(), null);
+                AnalyserResult result = parameterAnalyser.analyse(state);
                 analyserResultBuilder.add(result);
                 return result.analysisStatus();
             };
@@ -578,7 +580,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(INDEPENDENT, independent);
                 methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
                 methodAnalysis.setProperty(CONTAINER, container);
-            } else */if (value.isDelayed()) {
+            } else */
+            if (value.isDelayed()) {
                 IsVariableExpression ive;
                 boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs
                         && (((ive = rs.expression.asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This
