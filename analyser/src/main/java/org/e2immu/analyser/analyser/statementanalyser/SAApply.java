@@ -255,6 +255,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     value = vi1.getValue();
                 }
                 progress = vic.setValue(value, null, Properties.of(merged), EVALUATION);
+                delay = delay.merge(value.causesOfDelay());
             } else {
                 // delayed situation; do not copy the value properties UNLESS there is a break delay
                 Map<Property, DV> merged = SAHelper.mergePreviousAndChange(

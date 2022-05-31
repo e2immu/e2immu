@@ -17,6 +17,7 @@ package org.e2immu.annotatedapi.java;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 public class JavaUtilConcurrentAtomic {
     final static String PACKAGE_NAME = "java.util.concurrent.atomic";
@@ -30,5 +31,16 @@ public class JavaUtilConcurrentAtomic {
 
         @Modified
         int incrementAndGet();
+    }
+
+    @Container
+    @Independent
+    interface AtomicBoolean$ {
+
+        @NotModified
+        boolean get();
+
+        @Modified
+        void set(boolean newValue);
     }
 }

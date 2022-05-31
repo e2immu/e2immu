@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -88,6 +89,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         default -> "";
                     };
                     assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
+                }
+            }
+            if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String state = d.iteration() <= 2 ? "!<m:get>" : "!changed.get()";
+                    assertEquals(state, d.state().toString());
                 }
             }
         };
@@ -167,6 +174,25 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                             default -> "";
                         };
                         assertEquals(links, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                    }
+                }
+            }
+            if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
+                if ("changed".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:get>?<vl:changed>:new AtomicBoolean(true)";
+                            case 1, 2 -> "changed$1.get()?<vl:changed>:new AtomicBoolean(true)";
+                            default -> "changed$1.get()?instance type AtomicBoolean:new AtomicBoolean(true)";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<vl:changed>" : "instance type AtomicBoolean";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }

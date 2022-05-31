@@ -241,7 +241,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             DV nneTF = nne.isDelayed() ? nne : DV.fromBoolDv(!nne.equals(NULLABLE_DV));
             DV cm = notNullAccordingToConditionManager(ve.variable());
-            if(nneTF.isDelayed() && allowBreakDelay) {
+            if (nneTF.isDelayed() && allowBreakDelay) {
                 LOGGER.debug("Breaking NNE delay in isNotNull0");
                 return cnnTF.max(cm);
             }
@@ -640,13 +640,15 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         Expression bestValue = eval.getValue();
 
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
+            VariableExpression.Suffix suffix = vic.variableNature().suffix();
+            VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME
+            Expression e;
             if (bestValue.isDone()) {
-                VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME
-
-                VariableExpression ve = new VariableExpression(variable);
-                translationMap.put(veSuffix, ve);
+                e = new VariableExpression(variable);
+            } else {
+                e = bestValue;
             }
+            translationMap.put(veSuffix, e);
         } else {
             Properties valueProperties;
             if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {

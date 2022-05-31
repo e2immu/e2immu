@@ -136,6 +136,34 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
+                if ("scope-59:18".equals(d.variableName())) {
+                    // scope variable
+                    assertNotEquals("0", d.statementId());
+                    if (d.statementId().startsWith("1.0")) {
+                        // this value is assigned during the evaluation of 1.0.0, in VariableExpression.evaluateScope
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:navigationData>";
+                            // value is already sa.navigationData(), but VPs of NavigationData are not there yet
+                            case 1 -> "<vp:NavigationData:cm@Parameter_next;initial@Field_next;mom@Parameter_next>";
+                            case 2 -> "<vp:NavigationData:mom@Parameter_next>";
+                            default -> "sa$1.navigationData()";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.ScopeVariable sv) {
+                            assertNull(sv.getBeyondIndex());
+                            assertNull(sv.getIndexCreatedInMerge());
+                        } else fail();
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<null-check>?<m:navigationData>:<not yet assigned>";
+                            case 1 -> "null==sa$1?<not yet assigned>:<vp:NavigationData:cm@Parameter_next;initial@Field_next;mom@Parameter_next>";
+                            case 2 -> "null==sa$1?<not yet assigned>:<vp:NavigationData:mom@Parameter_next>";
+                            default -> "null==sa$1?<not yet assigned>:sa$1.navigationData()";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
