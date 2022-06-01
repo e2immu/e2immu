@@ -389,10 +389,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //           .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //          .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //           .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //           .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

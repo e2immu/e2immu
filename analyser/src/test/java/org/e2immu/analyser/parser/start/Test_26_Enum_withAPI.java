@@ -169,7 +169,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 10 ? "1==<m:getCnt>" : "true";
+                    String expectValue = d.iteration() <= 7 ? "1==<m:getCnt>" : "true";
                     // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
 
                     assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -188,7 +188,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_4(1)", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 10, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 

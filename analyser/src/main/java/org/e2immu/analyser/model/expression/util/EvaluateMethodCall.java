@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
 public class EvaluateMethodCall {
@@ -221,6 +222,7 @@ public class EvaluateMethodCall {
                         context.getCurrentType(), identifier);
                 Expression translated = iv.translate(analyserContext, translationMap);
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
+                        .setNotSwitchingToConcreteMethod()
                         .addMethod(methodInfo).doNotComplainInlineConditional().build();
                 EvaluationResult reSrv = translated.evaluate(context, forward);
                 return builder.compose(reSrv).setExpression(reSrv.value()).build();
@@ -265,6 +267,19 @@ public class EvaluateMethodCall {
                                    CausesOfDelay causesOfDelay) {
         Map<Variable, DV> cnnMap = builder.cnnMap();
         CausesOfDelay finalDelays = earlierDelays.merge(causesOfDelay);
+        /*
+        adding variables that may appear: the parameters may turn out to be involved in the expanded inline method,
+        where they could be @NotNull... so we must keep them delayed for now.
+        This causes all kinds of issues if we're not carefully managing the variables available to us (e.g. InlinedMethod_AAPI_10,
+        DGSimplified_0, ...)
+        ---> too complicated, we're not doing this right now (20220601)
+
+        parameters.stream().flatMap(p -> p.variables(true).stream())
+                .forEach(v -> builder.setProperty(v, CONTEXT_NOT_NULL, finalDelays));
+
+        instead, we make sure that expansion of inlined method cannot switch to the concrete implementation
+        (see fwd      .setNotSwitchingToConcreteMethod())
+         */
         DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                 methodCall, finalDelays, cnnMap);
         return builder.setExpression(delay).build();

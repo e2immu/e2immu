@@ -101,13 +101,13 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         String expectLinked = switch (d.iteration()) {
                             case 0, 1 -> "c.set:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1,this:-1";
                             case 2 -> "c.set:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1";
                             default -> "c.set:2,this.s2:2";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {

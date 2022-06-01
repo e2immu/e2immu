@@ -419,7 +419,7 @@ public interface EvaluationContext {
                 && fr.fieldInfo.owner.primaryType().equals(nestedType.primaryType())
                 //  && !(fr.scope instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi && pi.owner.typeInfo == nestedType)
                 //  && !(fr.isStatic);
-                && fr.scope instanceof VariableExpression ve && acceptForVariableAccessReport(ve.variable(), nestedType);
+                && fr.scopeVariable != null && acceptForVariableAccessReport(fr.scopeVariable, nestedType);
     }
 
     default DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,

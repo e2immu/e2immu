@@ -168,25 +168,23 @@ public class ComputeLinkedVariables {
         LinkedVariables combined = external.merge(inVi);
         LinkedVariables refToScope = variable instanceof FieldReference fr ? combined.merge(linkToScope(fr)) : combined;
         LinkedVariables curatedBeforeIgnore;
-        if (staticallyAssigned) {
-            curatedBeforeIgnore = refToScope;
-        } else {
-            Predicate<Variable> computeMyself = evaluationContext::isMyself;
-            Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
-                    analysisProvider.defaultImmutable(v.parameterizedType(), false);
-            Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
-                    analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
-            Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
-                TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-                if (bestType == null) return DV.TRUE_DV;
-                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-                return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            };
 
-            DV sourceImmutable = computeImmutable.apply(variable);
-            curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                    immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
-        }
+        Predicate<Variable> computeMyself = evaluationContext::isMyself;
+        Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
+                analysisProvider.defaultImmutable(v.parameterizedType(), false);
+        Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
+                analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
+        Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
+            TypeInfo bestType = v.parameterizedType().bestTypeInfo();
+            if (bestType == null) return DV.TRUE_DV;
+            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
+            return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+        };
+
+        DV sourceImmutable = computeImmutable.apply(variable);
+        curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
+                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
+
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         weightedGraph.addNode(variable, curated.variables(), true, DV::min);
@@ -253,9 +251,9 @@ public class ComputeLinkedVariables {
         if (allowBreakDelay && property == Property.CONTEXT_MODIFIED && propertyValue.isDelayed() &&
                 (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
                         c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
-                // this second situation arises in InstanceOf_16: direct self reference
-                propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
-                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
+                        // this second situation arises in InstanceOf_16: direct self reference
+                        propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
+                                c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
             LOGGER.debug("Breaking a MOM / CM delay for parameter  in {}", propertyValue);
             return DV.FALSE_DV;
         }

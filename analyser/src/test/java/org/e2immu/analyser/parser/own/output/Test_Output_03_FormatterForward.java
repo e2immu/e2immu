@@ -111,6 +111,12 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                     }
                 }
             }
+            if ("scope-scope-58:37:8.0.3".equals(d.variableName())) {
+                if ("8.0.4.1.0.0.1".equals(d.statementId())) {
+                    assertFalse(d.variableInfoContainer().hasEvaluation());
+                    assertFalse(d.variableInfoContainer().hasMerge());
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
@@ -123,9 +129,9 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 0, 0, new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

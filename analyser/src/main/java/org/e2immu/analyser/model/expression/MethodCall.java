@@ -262,8 +262,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         MethodInfo concreteMethod;
 
-        // abstract method... is there a concrete implementation? we should give preference to that one
-        if (methodInfo.isAbstract()) {
+        /* abstract method... is there a concrete implementation? we should give preference to that one
+           we don't allow switching when we're expanding an inline method ... this may lead to new variables
+           being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
+
+         */
+        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
             TypeInfo typeInfo = expression.typeInfoOfReturnType();

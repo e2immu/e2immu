@@ -19,13 +19,14 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.expression.util.ExtractVariablesToBeTranslated;
+import org.e2immu.analyser.model.expression.util.ExtractComponentsOfTooComplex;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class ExpressionCanBeTooComplex extends BaseExpression implements Expression {
@@ -42,24 +43,27 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
                                            Expression[] values) {
         ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();
 
-        // IMPROVE also add assignments
-        // catch all variable expressions
-        TreeSet<Expression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
-                .flatMap(e -> collect(evaluationContext.getAnalyserContext(), e).stream())
-                .collect(Collectors.toCollection(TreeSet::new));
-        List<Expression> newExpressions = new LinkedList<>(variableExpressions);
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         Expression instance = causesOfDelay.isDelayed()
                 ? DelayedExpression.forTooComplex(identifier, booleanType, EmptyExpression.EMPTY_EXPRESSION, causesOfDelay)
                 : Instance.forTooComplex(identifier, booleanType);
-        newExpressions.add(instance);
-        MultiExpression multiExpression = new MultiExpression(newExpressions.toArray(Expression[]::new));
+
+        // IMPORTANT: instance has to be the last one, it determines type, delay, etc.
+        Stream<Expression> components = Stream.concat(Arrays.stream(values), expressions.stream())
+                .flatMap(e -> collect(evaluationContext.getAnalyserContext(), e).stream());
+        Expression[] newExpressions = Stream.concat(components.distinct().sorted(), Stream.of(instance))
+                .toArray(Expression[]::new);
+        MultiExpression multiExpression = new MultiExpression(newExpressions);
         return new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), multiExpression);
     }
 
+    /*
+    goal is to replicate the ContextNotNull environment as much as possible (anything that increases Context
+    properties should be evaluated, for consistency's sake)
+     */
     private static Set<Expression> collect(InspectionProvider inspectionProvider, Expression expression) {
-        ExtractVariablesToBeTranslated ev = new ExtractVariablesToBeTranslated(f -> false, inspectionProvider, true, true);
+        ExtractComponentsOfTooComplex ev = new ExtractComponentsOfTooComplex(inspectionProvider);
         expression.visit(ev);
         return ev.getExpressions();
     }

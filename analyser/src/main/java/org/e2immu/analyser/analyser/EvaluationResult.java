@@ -452,6 +452,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // using le() instead of equals() here is controversial. if a variable is not null according to the
             // condition manager, and we're requesting content not null, e.g., then what to do? see header of this method.
             if (MultiLevel.EFFECTIVELY_NOT_NULL_DV.le(notNullRequired) && effectivelyNotNull.valueIsTrue()) {
+                setProperty(variable, Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
                 return; // great, no problem, no reason to complain nor increase the property
             }
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);

@@ -244,34 +244,40 @@ public class Test_26_Enum extends CommonTestRunner {
         final String THIS = TYPE + ".this";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (!"posInList".equals(d.methodInfo().name)) return;
-            if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                String expectValue = d.iteration() <= 7 ? "<m:values>" : "{`Enum_3.ONE`,`Enum_3.TWO`,`Enum_3.THREE`}";
-                assertEquals(expectValue, d.currentValue().toString());
+            if ("posInList".equals(d.methodInfo().name)) {
+                if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
+                    String expectValue = d.iteration() <= 3 ? "<m:values>" : "{`Enum_3.ONE`,`Enum_3.TWO`,`Enum_3.THREE`}";
+                    assertEquals(expectValue, d.currentValue().toString());
 
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
-            }
-            if ("array[i]".equals(d.variableName())) {
-                if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 7 ? "<v:array[i]>" : "nullable instance type Enum_3";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
-                if ("2".equals(d.statementId())) {
-                    String expectValue = switch (d.iteration()) {
-                        case 0, 1, 2, 3, 4, 5, 6, 7 -> "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
-                        default -> "nullable instance type Enum_3";
-                    };
-                    assertEquals(expectValue, d.currentValue().toString());
+                if ("array[i]".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 3 ? "<v:array[i]>" : "nullable instance type Enum_3";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expectValue = switch (d.iteration()) {
+                            case 0, 1, 2, 3 -> "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
+                            default -> "nullable instance type Enum_3";
+                        };
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+                if (THIS.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("instance type Enum_3", d.currentValue().toString());
+                    }
+                }
+                if (THREE.equals(d.variableName())) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        assertEquals("instance type Enum_3/*new Enum_3(3)*/", d.currentValue().toString());
+                    }
                 }
             }
-            if (THIS.equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    assertEquals("instance type Enum_3", d.currentValue().toString());
-                }
-            }
-            if (THREE.equals(d.variableName())) {
-                if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    assertEquals("instance type Enum_3/*new Enum_3(3)*/", d.currentValue().toString());
+            if ("highest".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("Enum_3.THREE:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -285,30 +291,30 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertFalse(d.statementAnalysis().variableIsSet(THREE));
 
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 8,
+                    assertEquals(d.iteration() >= 4,
                             null != d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() < 8 ? "<dv:array[i]>==this" : "array[i]==this";
+                    String expectCondition = d.iteration() < 4 ? "<dv:array[i]>==this" : "array[i]==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 7 ? "<loopIsNotEmptyCondition>" : "array.length>i";
+                    String expectCondition = d.iteration() <= 3 ? "<loopIsNotEmptyCondition>" : "array.length>i";
                     assertEquals(expectCondition, d.condition().toString());
-                    assertEquals(d.iteration() <= 7, d.condition().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.condition().isDelayed());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                assertDv(d, 8, DV.TRUE_DV, Property.CONSTANT);
+                assertDv(d, 4, DV.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 7 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
+                String expected = d.iteration() <= 3 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 7) {
+                if (d.iteration() > 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertFalse(inlinedMethod.containsVariableFields());
                     } else fail();
@@ -330,7 +336,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d ->
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
 
         // expect an "always true" warning on the assert statement
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
@@ -349,7 +355,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 5 ? "1==<m:getCnt>" : "true";
+                    String expected = d.iteration() <= 2 ? "1==<m:getCnt>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }

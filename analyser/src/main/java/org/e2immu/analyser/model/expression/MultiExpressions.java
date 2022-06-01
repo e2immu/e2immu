@@ -98,7 +98,7 @@ public class MultiExpressions extends BaseExpression implements Expression {
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         for (Expression expression : multiExpression.expressions()) {
-            EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
+            EvaluationResult result = expression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             builder.compose(result);
         }
         return builder.build();

@@ -35,6 +35,7 @@ public class ForwardEvaluationInfo {
     private final Set<MethodInfo> inlining;
     private final Set<Variable> evaluating;
     private final boolean evaluatingFieldExpression;
+    private final boolean noSwitchingToConcreteMethod;
 
     private ForwardEvaluationInfo(Map<Property, DV> properties,
                                   boolean doNotReevaluateVariableExpressions,
@@ -44,6 +45,7 @@ public class ForwardEvaluationInfo {
                                   boolean inCompanionExpression,
                                   boolean ignoreValueFromState,
                                   boolean evaluatingFieldExpression,
+                                  boolean noSwitchingToConcreteMethod,
                                   Set<MethodInfo> inlining,
                                   Set<Variable> evaluating) {
         this.properties = Map.copyOf(properties);
@@ -56,6 +58,7 @@ public class ForwardEvaluationInfo {
         this.inlining = inlining;
         this.evaluating = evaluating;
         this.evaluatingFieldExpression = evaluatingFieldExpression;
+        this.noSwitchingToConcreteMethod = noSwitchingToConcreteMethod;
     }
 
     public boolean assignToField() {
@@ -119,6 +122,10 @@ public class ForwardEvaluationInfo {
         return assignmentTarget;
     }
 
+    public boolean allowSwitchingToConcreteMethod() {
+        return !noSwitchingToConcreteMethod;
+    }
+
     public static class Builder {
         private final Map<Property, DV> properties = new HashMap<>();
         private boolean doNotReevaluateVariableExpressions;
@@ -130,6 +137,7 @@ public class ForwardEvaluationInfo {
         private boolean evaluatingFieldExpression;
         private final Set<MethodInfo> inlining = new HashSet<>();
         private final Set<Variable> evaluating = new HashSet<>();
+        private boolean noSwitchingToConcreteMethod;
 
         public Builder() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
@@ -144,6 +152,7 @@ public class ForwardEvaluationInfo {
             this.inCompanionExpression = fwd.inCompanionExpression;
             this.ignoreValueFromState = fwd.ignoreValueFromState;
             this.evaluatingFieldExpression = fwd.evaluatingFieldExpression;
+            this.noSwitchingToConcreteMethod = fwd.noSwitchingToConcreteMethod;
             this.inlining.addAll(fwd.inlining);
             this.evaluating.addAll(fwd.evaluating);
         }
@@ -151,7 +160,8 @@ public class ForwardEvaluationInfo {
         public ForwardEvaluationInfo build() {
             return new ForwardEvaluationInfo(Map.copyOf(properties), doNotReevaluateVariableExpressions,
                     isAssignmentTarget, assignmentTarget, doNotComplainInlineConditional, inCompanionExpression,
-                    ignoreValueFromState, evaluatingFieldExpression, Set.copyOf(inlining), Set.copyOf(evaluating));
+                    ignoreValueFromState, evaluatingFieldExpression, noSwitchingToConcreteMethod,
+                    Set.copyOf(inlining), Set.copyOf(evaluating));
         }
 
         public Builder addProperty(Property property, DV value) {
@@ -281,6 +291,11 @@ public class ForwardEvaluationInfo {
 
         public Builder removeContextContainer() {
             properties.remove(Property.CONTEXT_CONTAINER);
+            return this;
+        }
+
+        public Builder setNotSwitchingToConcreteMethod() {
+            noSwitchingToConcreteMethod = true;
             return this;
         }
     }

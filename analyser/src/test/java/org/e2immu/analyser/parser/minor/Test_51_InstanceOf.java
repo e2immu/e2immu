@@ -151,6 +151,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "collection:-1,return add:-1" : "collection:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
@@ -301,7 +302,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("create".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = "object instanceof Boolean&&null!=object";
+                    String expected = d.iteration() < 1 ? "<null-check>&&object instanceof Boolean" : "object instanceof Boolean&&null!=object";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -348,12 +349,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = "object/*(Boolean)*/";
+                        String expected = d.iteration() <= 0 ? "<vp:object:assign_to_field@Parameter_s>/*(Boolean)*/"
+                                : "object/*(Boolean)*/";
                         assertEquals(expected, prev.getValue().toString());
 
-                        String expect = "object/*(Boolean)*/";
+                        String expect = d.iteration() <= 0 ? "<vp:object:assign_to_field@Parameter_s>/*(Boolean)*/"
+                                : "object/*(Boolean)*/";
                         assertEquals(expect, d.currentValue().toString());
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals("Type java.lang.Boolean", d.currentValue().returnType().toString());
                     }
                 }
@@ -362,7 +365,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(Stage.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = "object/*(Integer)*/";
+                        String expected = d.iteration() <= 0 ? "<p:object>/*(Integer)*/" : "object/*(Integer)*/";
                         assertEquals(expected, prev.getValue().toString());
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
@@ -370,14 +373,17 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
-                                ? "object instanceof String&&null!=object?<new:StringConstant>:<return value>"
-                                : "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2 -> "object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            default -> "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 0 -> "<null-check>&&object instanceof Boolean?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 2 -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?<new:StringConstant>:<return value>";
                             default -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -399,21 +405,27 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("!(object instanceof String)||null==object", d.state().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = "object instanceof Boolean&&null!=object";
+                    String expected = d.iteration() <= 0 ? "<null-check>&&object instanceof Boolean"
+                            : "object instanceof Boolean&&null!=object";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
+                    String expected = d.iteration() <= 0
+                            ? "(!<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
+
                     assertEquals(expected, d.state().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expected = "object instanceof Integer&&null!=object";
+                    String expected = d.iteration() <= 0 ? "<instanceOf:Integer>" : "object instanceof Integer&&null!=object";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expected = "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
+                    String expected = d.iteration() <= 0
+                            ? "!<instanceOf:Integer>&&(!<null-check>||!(object instanceof Boolean))&&(!(object instanceof String)||null==object)"
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected, d.state().toString());
                 }
             }
@@ -606,12 +618,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                //        .addEvaluationResultVisitor(evaluationResultVisitor)
-                //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                 //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
@@ -930,11 +942,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -1036,7 +1048,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                             String lvs = switch (d.iteration()) {
                                 case 0, 1, 2 -> "expression:-1,return find:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1";
-                             //   case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                                //   case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
                                 default -> "expression:2,scope-negation:0.en:2,scope-negation:0:2,unaryOperator.operator:0,unaryOperator:2";
                             };
                             assertEquals(lvs, eval.getLinkedVariables().toString());
@@ -1069,7 +1081,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if ("scope-negation:0".equals(d.variableName())) {
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String expected = switch (d.iteration()) {
-                        case 0,1,2 -> "expression:-1,return find:-1,scope-negation:0.en:-1,unaryOperator.operator:-1,unaryOperator:-1";
+                        case 0, 1, 2 -> "expression:-1,return find:-1,scope-negation:0.en:-1,unaryOperator.operator:-1,unaryOperator:-1";
                         default -> "expression:2,scope-negation:0.en:2,scope-negation:0:0,unaryOperator.operator:2,unaryOperator:2";
                     };
                     assertEquals(expected, lvs);
@@ -1175,12 +1187,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_16", 0, 6, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

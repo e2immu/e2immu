@@ -130,8 +130,10 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         if (variable instanceof FieldReference) {
             Set<Variable> notNullVariablesInPrecondition = conditionManager
                     .findIndividualNullInPrecondition(context, false);
-            return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables) ? DV.TRUE_DV : DV.FALSE_DV;
+            if (!Collections.disjoint(notNullVariablesInPrecondition, assignedVariables)) return DV.TRUE_DV;
         }
+        // a -1 can turn into a 1, ASSIGNED
+        if (linkedVariables != null && linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
         return DV.FALSE_DV;
     }
 }

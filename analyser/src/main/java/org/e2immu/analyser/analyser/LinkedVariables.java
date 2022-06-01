@@ -311,7 +311,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         for (Map.Entry<Variable, DV> entry : adjustedSource.entrySet()) {
             DV linkLevel = entry.getValue();
             Variable target = entry.getKey();
-            if (myself.test(target)) {
+            if (myself.test(target) || linkLevel.equals(STATICALLY_ASSIGNED_DV)) {
                 result.put(target, linkLevel);
             } else {
                 DV targetImmutable = computeImmutable.apply(target);

@@ -403,7 +403,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
-                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
+                    assertTrue(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                     assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     assertTrue(d.haveMarkRead(O5));
                     Variable o5 = d.evaluationResult().changeData().keySet().stream().filter(v -> v.simpleName().equals("o")).findFirst().orElseThrow();
