@@ -273,6 +273,7 @@ public class ComputeLinkedVariables {
     private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
+        boolean broken = false;
         for (Cluster cluster : clusters) {
             assert cluster.variables.stream().allMatch(propertyValues::containsKey);
             DV summary = cluster.variables.stream()
@@ -284,6 +285,7 @@ public class ComputeLinkedVariables {
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
                 if (allowBreakDelay && summary.valueIsFalse()) {
                     LOGGER.debug("Breaking linking delay on CM==FALSE, cluster {}", cluster);
+                    broken = true;
                 } else {
                     summary = summary.causesOfDelay().merge(cluster.delays);
                 }
@@ -306,6 +308,10 @@ public class ComputeLinkedVariables {
                             } else {
                                 vic.setProperty(property, summary, stage);
                                 progress |= summary.isDone();
+                                if (broken) {
+                                    LOGGER.debug("**** Setting CM of {} to false in stmt {}", variable,
+                                            statementAnalysis.index());
+                                }
                             }
                         } catch (IllegalStateException ise) {
                             LOGGER.error("Current cluster: {}", cluster);

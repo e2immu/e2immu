@@ -87,7 +87,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>?<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>:<f:MAX_VALUE>)";
-                            case 1, 2, 3, 4, 5, 6 -> "8+(List.of().isEmpty()?2147483647:<loopIsNotEmptyCondition>&&instance type int><m:size>?<m:size>:instance type int)";
+                            case 1, 2, 3, 4 -> "8+(List.of().isEmpty()?2147483647:<loopIsNotEmptyCondition>&&instance type int><m:size>?<m:size>:instance type int)";
                             default -> "8+(List.of().isEmpty()?2147483647:fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=instance type int?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -101,7 +101,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<E>>";
-                                case 1, 2, 3, 4, 5, 6 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 1, 2, 3, 4 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());

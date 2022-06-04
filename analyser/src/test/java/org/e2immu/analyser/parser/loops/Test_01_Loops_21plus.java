@@ -30,7 +30,6 @@ import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -85,11 +84,11 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(Set.of(4, 6, 8).contains(d.iteration()), d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(4 == d.iteration(), d.context().evaluationContext().allowBreakDelay());
                 }
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 8
+                        String expected = d.iteration() <= 4
                                 ? "<v:array[i]>/*{DL array:initial@Class_Loops_21}*/"
                                 : "instance type String[]";
                         assertEquals(expected, d.currentValue().toString());
@@ -100,9 +99,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("2.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 8 ? "<vl:array>" : "new String[][](n,m)";
+                        String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 8 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
+                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -118,14 +117,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             if ("2.0.1".equals(d.statementId())) {
                 String expected = switch (d.iteration()) {
                     case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
-                    case 1, 2, 3, 4, 5, 6, 7, 8 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
+                    case 1, 2, 3, 4 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
                     default -> "";
                 };
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
-                assertEquals(d.iteration() >= 10, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
+                assertEquals(d.iteration() >= 6, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
             if (d.statementId().startsWith("2.0.1.")) {
-                assertEquals(d.iteration() >= 10, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
+                assertEquals(d.iteration() >= 6, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()

@@ -259,7 +259,10 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
                 if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
                     LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
-                    forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
+                    // uncomment the following statement if you want to break only delays at one statement,
+                    // instead of in the whole method
+                    // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)
+                    //forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
                 }
             } while (statementAnalyser != null);
             return builder.build();
