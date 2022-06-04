@@ -91,9 +91,19 @@ public class Test_Expressions extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "lhs".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     if ("scope-product:2".equals(fr.scopeVariable.toString())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        if ("6".equals(d.statementId())) {
+                            assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        }
+                        if ("7".equals(d.statementId())) {
+                            assertDv(d, 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        }
                     } else if ("sum".equals(fr.scopeVariable.toString())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        if ("0.0.0".equals(d.statementId())) {
+                            assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        }
+                        if ("0.0.1".equals(d.statementId())) {
+                            assertDv(d, IT53, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        }
                     } else if ("scope-sum:0".equals(fr.scopeVariable.toString())) {
                         assertDv(d, IT53, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     } else if ("product".equals(fr.scopeVariable.toString())) {

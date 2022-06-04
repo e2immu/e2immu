@@ -101,7 +101,7 @@ public class Test_04_NotNull extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3, 5, 6 -> "<null-check>";
-                        case 4, 7 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C>";
+                        case 4, 7 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C;initial@Field_s>";
                         default -> "null!=s";
                     };
                     assertEquals(expected, d.condition().toString());
