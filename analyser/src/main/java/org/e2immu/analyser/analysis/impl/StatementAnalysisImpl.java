@@ -1583,8 +1583,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             initializeFieldReference(vic, evaluationContext, fieldReference);
 
         } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
-            // nothing spectacular; everything handled at the place of creation
-            if (variableNature instanceof VariableNature.LoopVariable) {
+            // forEach() goes through a different system than for(), see code in SAApply.potentiallyModifyEvaluationResult and
+            // ParameterizedType_0 test
+            if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
                 initializeLocalOrDependentVariable(vic, variable, EvaluationResult.from(evaluationContext));
@@ -1622,7 +1623,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic,
                                                     Variable variable,
-                                                    EvaluationResult evaluationContext) {
+                                                    EvaluationResult context) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
         for (Property ext : EXTERNALS) {
@@ -1632,16 +1633,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
             Expression arrayBase = new VariableExpression(dv.arrayVariable());
-            LinkedVariables lvArrayBase = arrayBase.linkedVariables(evaluationContext);
-            DV independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
+            LinkedVariables lvArrayBase = arrayBase.linkedVariables(context);
+            DV independent = determineIndependentOfArrayBase(context, arrayBase);
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;
             if (causesOfDelay.isDelayed()) {
                 arrayValue = DelayedVariableExpression.forVariable(dv, flowData.getTimeAfterEvaluation(), causesOfDelay);
             } else {
-                arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), evaluationContext, arrayBase, dv);
+                arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }
-            Properties valueProperties = evaluationContext.evaluationContext().getValueProperties(arrayValue);
+            Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
             DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
             if (lvIndependent.equals(LinkedVariables.NO_LINKING_DV)) {
                 linkedVariables = LinkedVariables.EMPTY;

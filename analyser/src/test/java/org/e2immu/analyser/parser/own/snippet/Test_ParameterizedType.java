@@ -86,9 +86,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     }
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>)";
-                            case 1 -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?instance type int:min$4.0.3><m:size>?<m:size>:<vl:min>)";
-                            default -> "8+(List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=instance type int?instance type int:`otherBound.typeInfo`.length())";
+                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>?<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>:<f:MAX_VALUE>)";
+                            case 1, 2, 3, 4, 5, 6 -> "8+(List.of().isEmpty()?2147483647:<loopIsNotEmptyCondition>&&instance type int><m:size>?<m:size>:instance type int)";
+                            default -> "8+(List.of().isEmpty()?2147483647:fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=instance type int?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -100,8 +100,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         if ("4.0.4".equals(d.statementId())) {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = switch (d.iteration()) {
-                                case 0 -> "<vl:fromTypeBounds>";
-                                case 1 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 0 -> "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<E>>";
+                                case 1, 2, 3, 4, 5, 6 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -118,12 +118,27 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         }
                     } else fail();
                 }
+                if ("myBound".equals(d.variableName())) {
+                    if ("4.0.3".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<vl:myBound>" : "instance type ParameterizedType";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+
         testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
-                //     .addEvaluationResultVisitor(evaluationResultVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -386,7 +401,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         testClass("ParameterizedType_2", 4, DONT_CARE,
                 new DebugConfiguration.Builder()
                         //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());

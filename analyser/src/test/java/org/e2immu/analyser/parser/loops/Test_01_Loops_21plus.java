@@ -179,7 +179,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expected = d.iteration() <= 4 ? "<vl:x>" : "instance type X";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("4.0.0".equals(d.statementId())) {
                         String linked = d.iteration() <= 4 ? "this.xes:-1" : "this.xes:4";
