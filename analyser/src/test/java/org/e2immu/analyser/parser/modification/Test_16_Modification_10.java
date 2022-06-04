@@ -63,7 +63,7 @@ public class Test_16_Modification_10 extends CommonTestRunner {
 
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                assertEquals(d.iteration() >= 2, list.isAssignedToFieldDelaysResolved());
+                assertEquals(d.iteration() >= 1, list.isAssignedToFieldDelaysResolved());
 
                 ParameterAnalysis set3 = d.parameterAnalyses().get(1);
                 String assigned3 = d.iteration() == 0 ? ""

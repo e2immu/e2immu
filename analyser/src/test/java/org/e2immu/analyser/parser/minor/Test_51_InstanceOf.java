@@ -374,7 +374,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 0, 1 -> "object instanceof String&&null!=object?<new:StringConstant>:<return value>";
                             default -> "object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -383,7 +383,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>&&object instanceof Boolean?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
                             case 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
-                            case 2 -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?<new:StringConstant>:<return value>";
                             default -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());

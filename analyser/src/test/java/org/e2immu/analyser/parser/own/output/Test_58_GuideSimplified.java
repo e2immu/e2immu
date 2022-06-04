@@ -86,8 +86,8 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -98,7 +98,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

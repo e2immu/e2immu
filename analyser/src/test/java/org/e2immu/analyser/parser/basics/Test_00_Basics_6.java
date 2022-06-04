@@ -81,30 +81,27 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 if ("v1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v2:0" : "this.field:0,v2:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.field:0,v2:0", d.variableInfo().getLinkedVariables().toString());
                         // evaluation to write linked properties
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v2:0" : "this.field:0,v2:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertEquals("this.field:0,v2:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if ("v2".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "this.field:0,this:-1,v1:0" : "this.field:0,v1:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.field:0,v1:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (FIELD.equals(d.variableName())) {
@@ -112,8 +109,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "this:-1,v1:0,v2:0" : "v1:0,v2:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("v1:0,v2:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -122,8 +118,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:field>" : "field$0";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectedLv = d.iteration() == 0 ? "this.field:0,this:-1" : "this.field:0";
-                        assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.field:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {

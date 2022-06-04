@@ -327,7 +327,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("C".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 8, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
@@ -378,7 +378,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("ElementImpl".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("getIdentifier".equals(d.methodInfo().name)) {
                 if ("ElementImpl".equals(d.methodInfo().typeInfo.simpleName)) {

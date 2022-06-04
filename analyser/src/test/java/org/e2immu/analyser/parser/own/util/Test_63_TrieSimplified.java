@@ -149,8 +149,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("0.1.1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "newTrieNode:-1,root.map:-1,s:-1,this:-1";
-                            case 2 -> "root.map:-1,s:-1,this:-1";
+                            case 0, 1 -> "newTrieNode:-1,root.map:-1,s:-1";
+                            case 2 -> "root.map:-1,s:-1";
                             default -> "we're not reaching this iteration anymore";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());

@@ -23,14 +23,17 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_12_IfStatement extends CommonTestRunner {
     public Test_12_IfStatement() {
@@ -121,12 +124,12 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "label3:-1,this.map:-1,this:-1" : "";
+                    String linked = d.iteration() == 0 ? "label3:-1,this.map:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0 ? "<null-check>?defaultValue1:<m:get>"
@@ -174,7 +177,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertLinked(d, 1, "?", "");
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

@@ -90,7 +90,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("getI".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name) && "MyNonContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);

@@ -49,8 +49,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "1+i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    String linked = d.iteration() <= 1 ? "this:-1" : "";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getI".equals(d.methodInfo().name)) {
@@ -64,7 +63,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    String linked = d.iteration() <= 1 ? "this.i:0,this:-1" : "this.i:0";
+                    String linked = "this.i:0";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }

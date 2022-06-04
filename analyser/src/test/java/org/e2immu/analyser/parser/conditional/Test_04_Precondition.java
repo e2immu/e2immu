@@ -175,7 +175,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setPositive5".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     // TODO I'd expect only "j2<=-1" here in iteration 1; somehow i$0>=0 is not filtered out
-                    String expect = d.iteration() == 0 ? "j2<=-1&&<f:i>>=0" : "j2<=-1&&i$0>=0";
+                    String expect = d.iteration() == 0 ? "j2<=-1&&<f:i>>=0" : "i$0>=0&&j2<=-1";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -379,7 +379,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                         assertFalse(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
                     } else {
                         assertTrue(d.statementAnalysis().methodLevelData().combinedPreconditionIsFinal());
-                        assertEquals("ii>=0&&null==integer",
+                        assertEquals("null==integer&&ii>=0",
                                 d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                     }
                 }
@@ -428,7 +428,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
             case 0, 1 -> "<null-check>&&ii>=0";
-            default -> "ii>=0&&null==integer";
+            default -> "null==integer&&ii>=0";
         };
     }
 

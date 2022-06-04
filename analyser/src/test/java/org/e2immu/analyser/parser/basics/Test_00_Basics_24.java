@@ -83,7 +83,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,return method:-1,this:-1,x.s:-1,x:-1" : "";
+                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,return method:-1,x.s:-1,x:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

@@ -142,7 +142,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
                 String expect = d.iteration() <= 1 ? "<m:get>" : "/*inline get*/t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }

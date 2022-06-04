@@ -112,12 +112,10 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     String expectValue = d.iteration() <= 4 ? "<f:eventually>" : "instance type Eventually<String>";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() <= 4 ? "return getEventually:0,this:-1" : "return getEventually:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getEventually:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String linked = d.iteration() <= 4 ? "this.eventually:0,this:-1" : "this.eventually:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.eventually:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     assertDv(d, 5, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
@@ -127,7 +125,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEventually".equals(d.methodInfo().name)) {
                 assertDv(d, 5, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 5, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("set".equals(d.methodInfo().name)) {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

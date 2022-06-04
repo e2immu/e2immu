@@ -153,34 +153,6 @@ public abstract class VisitorTestSupport {
         }
     }
 
-    public void assertLinked(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
-        LinkedVariables linkedVariables = d.variableInfo().getLinkedVariables();
-        if (d.iteration() < delayedBeforeIteration) {
-            assertTrue(linkedVariables.isDelayed(), "Expected linked variables to be delayed in iteration "
-                    + d.iteration() + "<" + delayedBeforeIteration + " for variable " + d.variableName());
-            assertEquals(causesOfDelay, linkedVariables.causesOfDelay().toString());
-        } else {
-            assertTrue(linkedVariables.isDone(), "Expected linked variables to be done in iteration "
-                    + d.iteration() + "<" + delayedBeforeIteration + " for variable " + d.variableName() + ", got delays "
-                    + linkedVariables.causesOfDelay());
-            assertEquals(value, linkedVariables.toString());
-        }
-    }
-
-    public void assertLinked(FieldAnalyserVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
-        LinkedVariables linkedVariables = d.fieldAnalysis().getLinkedVariables();
-        if (d.iteration() < delayedBeforeIteration) {
-            assertTrue(linkedVariables.isDelayed(), "Expected linked variables to be delayed in iteration "
-                    + d.iteration() + "<" + delayedBeforeIteration + " for field " + d.fieldInfo().name);
-            assertEquals(causesOfDelay, linkedVariables.causesOfDelay().toString());
-        } else {
-            assertTrue(linkedVariables.isDone(), "Expected linked variables to be done in iteration "
-                    + d.iteration() + "<" + delayedBeforeIteration + " for field " + d.fieldInfo().name + ", got delays "
-                    + linkedVariables.causesOfDelay());
-            assertEquals(value, linkedVariables.toString());
-        }
-    }
-
     protected final Map<String, Integer> mustSee = new HashMap<>();
 
     public void mustSeeIteration(CommonVisitorData cvd, int targetIteration) {

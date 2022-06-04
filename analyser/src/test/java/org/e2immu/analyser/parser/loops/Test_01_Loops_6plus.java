@@ -735,7 +735,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3 -> "<null-check>&&<m:isAfter>&&<m:isBefore>";
-                        case 4, 5 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:container.read>";
                         default -> "`(entry.getValue()).updated.time`>`(entry.getValue()).read.time`&&`new Date(`(entry.getValue()).read.time`+readWithinMillis).time`>`now.time`&&null!=(entry.getValue()).read";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -757,18 +756,18 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>?instance type long:<p:readWithinMillis>";
-                            case 1, 2, 3, 4, 5 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
+                            case 1, 2, 3 -> "queried.contains(entry.getKey())?instance type long:<p:readWithinMillis>";
                             default -> "instance type long";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("1.0.1.0.1".equals(d.statementId())) {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("container", fr.scopeVariable.simpleName());
-                        String expected = d.iteration() <= 5 ? "<f:read>" : "nullable instance type Date";
+                        String expected = d.iteration() <= 3 ? "<f:read>" : "nullable instance type Date";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertEquals("container", fr.scope.toString());

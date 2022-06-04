@@ -76,8 +76,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         String link = switch (d.iteration()) {
-                            case 0 -> "c:-1,this:-1";
-                            case 1 -> "c:-1";
+                            case 0, 1 -> "c:-1";
                             default -> "c:2";
                         };
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
@@ -96,8 +95,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertCurrentValue(d, 3, expectedDelay, expectValue);
 
                         String link = switch (d.iteration()) {
-                            case 0 -> "this.s2:-1,this:-1";
-                            case 1 -> "this.s2:-1";
+                            case 0, 1 -> "this.s2:-1";
                             default -> "this.s2:2";
                         };
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
@@ -112,8 +110,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String links = switch (d.iteration()) {
-                            case 0 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1,this:-1";
-                            case 1, 2 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1";
+                            case 0, 1, 2 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1";
                             default -> "c:2,this.s2:2";
                         };
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());

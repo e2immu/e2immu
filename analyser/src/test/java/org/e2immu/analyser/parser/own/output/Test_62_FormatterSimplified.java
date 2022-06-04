@@ -98,41 +98,40 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("forward".equals(d.methodInfo().name)) {
                 if ("outputElement".equals(d.variableName())) {
                     if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8.0.5".equals(d.statementId())) {
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                        assertDv(d, 7, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if ("string".equals(d.variableName())) {
                     if ("8.0.3.0.2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2, 3, 4, 5, 6 -> "<m:symbol>";
+                            case 0, 1, 2-> "<m:symbol>";
                             default -> "`list.get(pos$8)/*(Symbol)*/.symbol`";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8.0.3.1.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2, 3, 4 -> "<s:boolean>?\"\":\"abc\"";
+                            case 1, 2 -> "<s:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8.0.3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2, 3, 4 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
-                            case 5, 6 -> "outputElement instanceof Symbol symbol?<m:symbol>:outputElement instanceof Guide?\"\":\"abc\"";
+                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
                         fail("The variable 'string' should not exist here");
@@ -148,7 +147,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 7, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
             }
         };
@@ -195,7 +194,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("4.0.0.0.0".equals(d.statementId())) {
-                String expect = d.iteration() <= 4 ? "<m:combine>" : "lastOneWasSpace$4";
+                String expect = d.iteration() <= 2 ? "<m:combine>" : "lastOneWasSpace$4";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
@@ -298,7 +297,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                         case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                         case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;initial:this.string@Method_isGuide_0-C;mom@Parameter_guide;mom@Parameter_string>";
-                        case 3 -> "<vp:forwardInfo:mom@Parameter_guide;mom@Parameter_string>";
+                        case 3 -> "<vp:forwardInfo:mom@Parameter_string>";
                         default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                     };
                     assertEquals(expect, d.evaluationResult().value().toString());
@@ -329,7 +328,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             case 0 -> "<f:(new Stack<GuideOnStack>()).peek().forwardInfo>";
                             case 1 -> "<vp:forwardInfo:container@Record_ForwardInfo>";
                             case 2 -> "<vp:forwardInfo:cm@Parameter_guide;cm@Parameter_string;initial:this.string@Method_isGuide_0-C;mom@Parameter_guide;mom@Parameter_string>";
-                            case 3 -> "<vp:forwardInfo:mom@Parameter_guide;mom@Parameter_string>";
+                            case 3 -> "<vp:forwardInfo:mom@Parameter_string>";
                             default -> "((new Stack<GuideOnStack>()/*0==this.size()*/).peek()).forwardInfo";
                         };
                         assertEquals(expect, d.currentValue().toString());

@@ -137,7 +137,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
             }
             if ("setP".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("method".equals(d.methodInfo().name)) {

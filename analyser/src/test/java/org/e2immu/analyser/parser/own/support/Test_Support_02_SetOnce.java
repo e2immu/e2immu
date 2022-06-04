@@ -261,7 +261,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                             case 1 -> "final@Field_t";
                             case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C";
                             case 3 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_alternative;cm@Parameter_o;cm@Parameter_other;cm@Parameter_t;mom@Parameter_t";
-                            case 4, 5 -> "[16 delays]";
+                            case 4, 5 -> "[15 delays]";
                             default -> "eventual_immutable2:10";
                         };
                         assertEquals(extImm, eval.getProperty(EXTERNAL_IMMUTABLE).toString());
@@ -358,8 +358,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertTrue(inlinedMethod.containsVariableFields());
                     } else fail();
                 }
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
@@ -460,8 +460,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         case 0 -> "initial:this.t@Method_equals_3-C";
                         case 1 -> "[13 delays]";
                         case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_alternative;cm@Parameter_o;cm@Parameter_other;cm@Parameter_t;mom@Parameter_t";
-                        case 3, 4, 5 -> "[16 delays]";
-                        case 6 -> "[17 delays]";
+                        case 3, 4, 5 -> "[15 delays]";
+                        case 6 -> "[16 delays]";
                         // this delay is caused by the parameter analyser, looking at my current value...
                         case 7, 8, 9 -> "link:o@Method_equals_3:M";
                         default -> "";

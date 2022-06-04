@@ -116,7 +116,7 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
                     }
-                    String linked = d.iteration() == 0 ? "s1:-1,this.s3:-1,this:-1" : "";
+                    String linked = d.iteration() == 0 ? "s1:-1,this.s3:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (S5.equals(d.variableName())) {

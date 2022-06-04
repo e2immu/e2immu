@@ -62,7 +62,7 @@ public class Test_04_NotNull extends CommonTestRunner {
             if ("lowerCase".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 9 ? "return lowerCase:-1,this:-1" : "";
+                        String linked = d.iteration() <= 9 ? "return lowerCase:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -75,7 +75,7 @@ public class Test_04_NotNull extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 9 ? "this.s:-1,this:-1" : "";
+                        String linked = d.iteration() <= 9 ? "this.s:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

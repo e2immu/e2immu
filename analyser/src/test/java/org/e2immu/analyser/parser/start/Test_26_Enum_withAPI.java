@@ -179,7 +179,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getCnt".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expect = d.iteration() == 0 ? "<m:getCnt>" : "/*inline getCnt*/cnt";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }

@@ -442,7 +442,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic) {
+        /*
+        we're including "!fr.scopeIsThis" here to avoid unnecessary linking issues. Modification_4 is severely affected
+        if "this" remains a delayed linked variable.
+         */
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && !fr.isStatic && !fr.scopeIsThis()) {
             return ListUtil.concatImmutable(scopeValue.variables(true), List.of(variable));
         }
         return List.of(variable);

@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -128,7 +127,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expected, d.currentValue().toString());
-                String linked = d.iteration() == 0 ? "return contains:-1,s:-1,this:-1" : "";
+                String linked = d.iteration() == 0 ? "return contains:-1,s:-1" : "";
                 assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
             }
@@ -139,25 +138,24 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertTrue(d.variableInfo().isRead());
 
                 assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0-C;initial@Field_f1", "nullable instance type Set<String>");
-                assertLinked(d, 1, "initial:this.f1@Method_getF1_0-C", "return getF1:0");
+                assertEquals("return getF1:0", d.variableInfo().getLinkedVariables().toString());
 
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, 1, MUTABLE_DV, EXTERNAL_IMMUTABLE);
 
-                assertDv(d, 1, FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d, FALSE_DV, CONTEXT_MODIFIED);
             }
             if (d.variable() instanceof ReturnVariable) {
                 assertEquals(GET_F1_RETURN, d.variableName());
                 assertTrue(d.variableInfo().isAssigned());
 
-                String linked = d.iteration() == 0 ? "this.f1:0,this:-1" : "this.f1:0";
-                assertEquals(linked, d.variableInfo().getLinkedVariables().toString()); // without p0
+                assertEquals("this.f1:0", d.variableInfo().getLinkedVariables().toString()); // without p0
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, 1, FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d, FALSE_DV, CONTEXT_MODIFIED);
             }
         }
     };
@@ -168,7 +166,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+            assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
     };
 
@@ -196,7 +194,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertDv(d.p(0), 1, NULLABLE_DV, NOT_NULL_PARAMETER);
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            assertDv(d, 1, FALSE_DV, MODIFIED_METHOD);
+            assertDv(d, FALSE_DV, MODIFIED_METHOD);
             assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
         }
     };

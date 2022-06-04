@@ -212,11 +212,10 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     assertCurrentValue(d, 2, "nullable instance type String");
 
-                    String expectLv = d.iteration() <= 1 ? "return getS:0,this:-1" : "return getS:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getS:0", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());
@@ -304,7 +303,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 // because the value is not known, the ENN cannot be either
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-                assertDv(d, 2, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.FALSE_DV, MODIFIED_OUTSIDE_METHOD);
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
