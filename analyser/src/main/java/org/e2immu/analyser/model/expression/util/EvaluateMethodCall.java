@@ -485,8 +485,11 @@ public class EvaluateMethodCall {
                 (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
             return new IntConstant(primitives, stringValue.constant().length());
         }
-        if ("equals".equals(methodInfo.name) && params.size() == 1 && params.get(0).isConstant()) {
-            return new BooleanConstant(primitives, objectValue.equals(params.get(0)));
+        ConstantExpression<?> ce;
+        if ("equals".equals(methodInfo.name) && params.size() == 1 &&
+                (ce = params.get(0).asInstanceOf(ConstantExpression.class)) != null) {
+            // the constant can be wrapped in a property wrapper
+            return new BooleanConstant(primitives, objectValue.equals(ce.unwrapIfConstant()));
         }
         return null;
     }

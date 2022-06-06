@@ -117,7 +117,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("in instanceof Number&&null!=in?in/*(Number)*/ instanceof Integer&&null!=in/*(Number)*/?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
+                        assertEquals("in instanceof Number&&null!=in?in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
                                 d.currentValue().toString());
                     }
                 }

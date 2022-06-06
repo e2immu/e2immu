@@ -70,7 +70,8 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "10";
+                        // NOTE: not 10, we're not doing the assignment, the value 10 is in the state
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -97,8 +98,8 @@ public class Test_21_Range_4 extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         // however, after the assert statement, we must conclude that i==1,
-                        // again  SAHelper.copyFromStateIntoValue in action
-                        String expect = d.iteration() == 0 ? "<v:i>" : "1";
+                        // again value remains in the state, is not copied (SAEvalOfMainExpression.makeContext)
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -112,13 +113,13 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expect2, accordingToState.toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "10";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "10";
+                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "10/*{L i:statically_assigned:0}*/";
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }

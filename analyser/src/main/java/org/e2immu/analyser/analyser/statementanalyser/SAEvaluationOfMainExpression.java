@@ -189,6 +189,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         return endResult.toAnalysisStatus();
     }
 
+    /*
+    context consists of "assignments" that mimic the condition manager, see VariableInLoop_1,
+    VariableScope_11
+     */
     private EvaluationResult makeContext(EvaluationContext evaluationContext) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 

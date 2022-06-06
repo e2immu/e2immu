@@ -54,7 +54,7 @@ public class Test_Expressions extends CommonTestRunner {
                     String expected = d.iteration() == 0
                             ? "<null-check>&&<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product"
                             : d.iteration() < IT53 ? "<null-check>&&<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs"
-                            : "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs&&null!=expression/*(Product)*/.rhs/*(MethodCall)*/";
+                            : "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("4".equals(d.statementId())) {

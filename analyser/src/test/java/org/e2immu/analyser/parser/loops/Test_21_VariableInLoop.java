@@ -90,11 +90,9 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null";
-                            case 1 -> "((null/*{L sa:statically_assigned:0}*/.navigationData()).next.isPresent()||null==null/*{L sa:statically_assigned:0}*/)&&(null==null/*{L sa:statically_assigned:0}*/||null!=(null/*{L sa:statically_assigned:0}*/.navigationData()).next.get().orElse(null))?null:null/*{L sa:statically_assigned:0}*/";
-                            default -> "([(sa$1.navigationData()).next.get().get(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent(),(sa$1.navigationData()).next.isPresent(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null),(sa$1.navigationData()).next.get().orElse(null),firstStatementAnalyser,sa$1,instance type boolean])?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
-                        };
+                        String expected = d.iteration() == 0
+                                ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
+                                : "((null/*{L sa:statically_assigned:0}*/.navigationData()).next.isPresent()||null==null/*{L sa:statically_assigned:0}*/)&&(null==null/*{L sa:statically_assigned:0}*/||null!=(null/*{L sa:statically_assigned:0}*/.navigationData()).next.get().orElse(null))?null:null/*{L sa:statically_assigned:0}*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -132,11 +130,11 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<null-check>?<m:get>:firstStatementAnalyser" : "null";
+                        String expected = d.iteration() == 0 ? "<null-check>?<m:get>:firstStatementAnalyser" : "null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
                         assertEquals(expected, d.currentValue().toString());
                         // nullable or content not null? delayed or not in iteration 0?
                         // either @NotNull1 or @Nullable; it is the expression of the return value
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("scope-59:18".equals(d.variableName())) {

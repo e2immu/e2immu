@@ -15,10 +15,7 @@
 
 package org.e2immu.analyser.parser.start;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -523,6 +520,16 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     // 2. no application of add companion on instance without isKnown(true)
     @Test
     public void test11() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(2, d.evaluationResult().changeData().size());
+                    assertEquals("instance type boolean", d.evaluationResult().value().toString());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("set".equals(d.variableName())) {
@@ -536,13 +543,18 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // with state, but the state based on pre == null (>=1, rather than == 1)
-                        assertEquals("instance type boolean?instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/:instance type HashSet<String>", d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", eval.getValue().toString());
+                        // no change after block
+                        assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", d.currentValue().toString());
                     }
                 }
             }
         };
         testClass("BasicCompanionMethods_11", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

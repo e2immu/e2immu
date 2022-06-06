@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -98,10 +99,37 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
+                    if ("2.0.1.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String linkDelays = switch (d.iteration()) {
+                            case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
+                            case 1, 2, 3, 4 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
+                            default -> "";
+                        };
+                        assertEquals(linkDelays, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                    }
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,outer:-1" : "";
+
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        assertEquals(expected, eval.getValue().toString());
+                        assertEquals("", eval.getLinkedVariables().toString());
+
+                        // FIXME with compose, av-32:17[j] is not in the LVs
+                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("av-32:17[j]".equals(d.variableName())) {
+                    assertTrue(d.variable() instanceof DependentVariable);
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
+                    if ("2.0.1.0.2".equals(d.statementId())) {
+                        String linked = d.iteration() <= 4 ? "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -114,7 +142,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("2".equals(d.statementId())) {
+                String range = d.iteration() == 0 ? "DELAYED RANGE" : "NO RANGE";
+                assertEquals(range, d.statementAnalysis().rangeData().getRange().toString());
+            }
             if ("2.0.1".equals(d.statementId())) {
+                String range = d.iteration() == 0 ? "DELAYED RANGE" : "NO RANGE";
+                assertEquals(range, d.statementAnalysis().rangeData().getRange().toString());
+
                 String expected = switch (d.iteration()) {
                     case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
                     case 1, 2, 3, 4 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
@@ -128,8 +163,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

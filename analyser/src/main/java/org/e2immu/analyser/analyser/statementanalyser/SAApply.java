@@ -73,20 +73,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // the first part is per variable
         // order is important because we need to re-map statically assigned variables
-        // but first, we need to ensure that all variables exist, independent of the later ordering
 
-        // make a copy because we might add a variable when linking the local loop copy
-
-        // here we set read+assigned
-        evaluationResult.changeData().forEach((v, cd) -> statementAnalysis
-                .ensureVariable(sharedState.evaluationContext(), v, cd, evaluationResult.statementTime()));
-        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
-                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
-                        (v1, v2) -> v2, HashMap::new));
-        Map<Variable, VariableInfoContainer> variablesDefinedOutsideLoop = statementAnalysis.rawVariableStream()
-                .filter(e -> e.getValue().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
-                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
-                        (v1, v2) -> v2, HashMap::new));
+        // the order is important for the creation of variables in "ensureVariable" as well,
+        // given that we may create an array and its access (see e.g. Loops_21)
+        // IMPORTANT: we're using the fact that x[i] comes after x in the alphabetic ordering!!!
 
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries =
                 new ArrayList<>(evaluationResult.changeData().entrySet());
@@ -100,6 +90,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             // then the "mentions" (markRead, change linked variables, etc.)
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
+
+        sortedEntries.forEach(e -> statementAnalysis.ensureVariable(sharedState.evaluationContext(),
+                e.getKey(), e.getValue(), evaluationResult.statementTime()));
+
+        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
+                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
+                        (v1, v2) -> v2, HashMap::new));
+
+        Map<Variable, VariableInfoContainer> variablesDefinedOutsideLoop = statementAnalysis.rawVariableStream()
+                .filter(e -> e.getValue().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
+                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
+                        (v1, v2) -> v2, HashMap::new));
 
         Location initialLocation = statementAnalysis.location(INITIAL);
         Optional<VariableCause> optBreakInitDelay = evaluationResult.causesOfDelay()
@@ -178,23 +180,21 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
                 sharedState.context());
 
-        EvaluationResult evaluationResult;
-        if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
-            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult1, index());
-        } else if (statementAnalysis.statement() instanceof ForEachStatement) {
+        if (statementAnalysis.statement() instanceof ExpressionAsStatement
+                || statementAnalysis.statement() instanceof AssertStatement) {
+            return SAHelper.scopeVariablesForPatternVariables(evaluationResult1, index());
+        }
+        if (statementAnalysis.statement() instanceof ForEachStatement) {
            /*
             The loop variable has been created in the initialisation phase. Evaluation has to wait until
             the expression of the forEach statement has been evaluated. For this reason, we need to handle
             this separately.
             */
             Variable loopVar = statementAnalysis.obtainLoopVar();
-            evaluationResult = statementAnalysis.evaluationOfForEachVariable(loopVar,
+            return statementAnalysis.evaluationOfForEachVariable(loopVar,
                     evaluationResultIn.getExpression(), evaluationResultIn.causesOfDelay(), evaluationResult1);
-
-        } else {
-            evaluationResult = evaluationResult1;
         }
-        return evaluationResult;
+        return evaluationResult1;
     }
 
     private AnalysisStatus noValueChange(StatementAnalyserSharedState sharedState,
