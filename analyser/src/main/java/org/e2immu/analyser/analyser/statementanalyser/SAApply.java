@@ -178,29 +178,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         EvaluationResult evaluationResult1 = variablesReadOrModifiedInSubAnalysers(evaluationResultIn,
                 sharedState.context());
 
-        // *** this is part 2 of a cooperation to move the value of an equality in the state to the actual value
-        // part 1 is in the constructor of SAEvaluationContext
-        // the data is stored in the state data of statement analysis
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.context());
-        statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
-            VariableExpression ve = e.getKey();
-            // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
-            // TODO is there an equivalent for loop variables?
-            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf)
-                    || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
-                EvaluationResult.ChangeData cd = evaluationResult1.changeData().get(ve.variable());
-                if (cd != null && cd.isMarkedRead()) {
-                    LinkedVariables lv = e.getValue().linkedVariables(EvaluationResult.from(sharedState.evaluationContext()));
-                    builder.modifyingMethodAccess(ve.variable(), e.getValue(), lv);
-                }
-            }
-        });
-        EvaluationResult evaluationResult2 = builder.compose(evaluationResult1).build();
-        // ***
-
         EvaluationResult evaluationResult;
         if (statementAnalysis.statement() instanceof ExpressionAsStatement || statementAnalysis.statement() instanceof AssertStatement) {
-            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult2, index());
+            evaluationResult = SAHelper.scopeVariablesForPatternVariables(evaluationResult1, index());
         } else if (statementAnalysis.statement() instanceof ForEachStatement) {
            /*
             The loop variable has been created in the initialisation phase. Evaluation has to wait until
@@ -209,10 +189,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             */
             Variable loopVar = statementAnalysis.obtainLoopVar();
             evaluationResult = statementAnalysis.evaluationOfForEachVariable(loopVar,
-                    evaluationResultIn.getExpression(), evaluationResultIn.causesOfDelay(), evaluationResult2);
+                    evaluationResultIn.getExpression(), evaluationResultIn.causesOfDelay(), evaluationResult1);
 
         } else {
-            evaluationResult = evaluationResult2;
+            evaluationResult = evaluationResult1;
         }
         return evaluationResult;
     }
@@ -501,7 +481,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                  InspectionProvider inspectionProvider) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
-                if (valueToWrite instanceof NullConstant) {
+                if (valueToWrite.isInstanceOf(NullConstant.class)) {
                     /*
                     The null constant may have delayed value properties, but it is not useful to delay the whole evaluation
                     for that reason. We cannot simply keep "null" and delayed properties at the same time, so we wrap.

@@ -192,6 +192,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return new EvaluationResult(evaluationContext, statementTime, translatedValue, translatedStoredValues, translatedCauses, messages, newMap, translatedPrecondition);
     }
 
+    public EvaluationResult withNewEvaluationContext(EvaluationContext newEc) {
+        return new EvaluationResult(newEc, statementTime, value, storedValues, causesOfDelay, messages, changeData,
+                precondition);
+    }
+
     /**
      * Any of [value, markAssignment, linkedVariables]
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
@@ -280,6 +285,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
             this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
+            this.statementTime = evaluationContext.getInitialStatementTime();
+        }
+        public Builder(EvaluationContext evaluationContext) {
+            this.previousResult = null;
+            this.evaluationContext =evaluationContext;
             this.statementTime = evaluationContext.getInitialStatementTime();
         }
 

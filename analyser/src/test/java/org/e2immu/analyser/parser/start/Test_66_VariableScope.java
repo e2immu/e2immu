@@ -208,7 +208,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_3", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -413,10 +413,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
-                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                    //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }
@@ -642,10 +642,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8", 0, 6, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
 
     }
@@ -714,9 +714,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_8_1", 0, DONT_CARE, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-               // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -857,9 +857,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_10", 0, 2, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -875,26 +875,33 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==x.i?s.length():<return value>";
+                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() <= 1 ? "x.i:0,x:-1,xs:-1" : "x.i:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0}*/";
                         assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() <= 1 ? "scope-x:0.i:0,xs:-1" : "scope-x:0.i:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0}*/";
                         assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() <= 1 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0";
+                        assertEquals(linked,
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
                         if ("0.0.0.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() <= 1 ? "<f:i>" : "s.length()";
+                            String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0.0.0".equals(d.statementId())) {
@@ -1075,8 +1082,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_13", 0, 0, new DebugConfiguration.Builder()
-              //          .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               //         .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //          .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -1154,9 +1161,9 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
 
         testClass("VariableScope_14", 0, 0, new DebugConfiguration.Builder()
-             //           .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //          .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //          .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //           .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //          .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        //          .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

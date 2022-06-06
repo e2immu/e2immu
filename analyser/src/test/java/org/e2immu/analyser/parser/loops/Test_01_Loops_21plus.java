@@ -101,7 +101,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
+                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,outer:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -128,8 +128,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

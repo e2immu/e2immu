@@ -33,7 +33,10 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.MARK_CLEAR_INCREMENTAL;
@@ -96,18 +99,18 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
+        EvaluationResult context = makeContext(sharedState.evaluationContext());
 
         EvaluationResult result;
         if (statementAnalysis.statement() instanceof ReturnStatement) {
             assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
             // here is a good breakpoint location (return statements) -->
-            result = createAndEvaluateReturnStatement(sharedState, toEvaluate);
+            result = createAndEvaluateReturnStatement(context, toEvaluate);
         } else {
             LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
-            EvaluationResult from = EvaluationResult.from(sharedState.evaluationContext());
             ForwardEvaluationInfo forwardEvaluationInfo = structure.forwardEvaluationInfo();
             // here is a good breakpoint location (all other statements) -->
-            result = toEvaluate.evaluate(from, forwardEvaluationInfo);
+            result = toEvaluate.evaluate(context, forwardEvaluationInfo);
         }
         if (statementAnalysis.statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
@@ -184,6 +187,29 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
         return endResult.toAnalysisStatus();
+    }
+
+    private EvaluationResult makeContext(EvaluationContext evaluationContext) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+
+        statementAnalysis.stateData().equalityAccordingToStateStream().forEach(e -> {
+            VariableExpression ve = e.getKey();
+            // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
+            // TODO is there an equivalent for loop variables?
+            if (!(ve.getSuffix() instanceof VariableExpression.VariableField vf)
+                    || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
+
+                EvaluationResult context = EvaluationResult.from(evaluationContext);
+                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+                LinkedVariables originalLv = e.getKey().linkedVariables(context);
+                LinkedVariables lv = originalLv.merge(newLv);
+                Expression wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv);
+                builder.modifyingMethodAccess(ve.variable(), wrapped, lv);
+            }
+
+        });
+
+        return builder.build();
     }
 
     private AnalysisStatus emptyExpression(StatementAnalyserSharedState sharedState, CausesOfDelay causes) {
@@ -310,35 +336,36 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
       See Eg. Warnings_5, ConditionalChecks_4
    */
 
-    private EvaluationResult createAndEvaluateReturnStatement(StatementAnalyserSharedState sharedState, Expression expression) {
+    private EvaluationResult createAndEvaluateReturnStatement(EvaluationResult context, Expression expression) {
         assert methodInfo().hasReturnValue();
         Structure structure = statementAnalysis.statement().getStructure();
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
 
-        EvaluationContext evaluationContext;
+        EvaluationResult updatedContext;
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
         if (currentReturnValue instanceof UnknownExpression) {
             // simplest situation
             toEvaluate = expression;
-            evaluationContext = sharedState.evaluationContext();
+            updatedContext = context;
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
         } else {
             // substitute <return value> for the current expression, rather than rely on condition manager in eval context
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
-            Expression translated = currentReturnValue.translate(sharedState.evaluationContext().getAnalyserContext(), tm);
+            Expression translated = currentReturnValue.translate(context.evaluationContext().getAnalyserContext(), tm);
             // if translated == currentReturnValue, then there was no returnExpression, so we stick to expression
             toEvaluate = translated == currentReturnValue ? expression : translated;
-            evaluationContext = sharedState.evaluationContext().dropConditionManager();
+            EvaluationContext newEc = context.evaluationContext().dropConditionManager();
+            updatedContext = context.withNewEvaluationContext(newEc);
             forwardEvaluationInfo = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
                     .doNotComplainInlineConditional().setIgnoreValueFromState().build();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
-        return assignment.evaluate(EvaluationResult.from(evaluationContext), forwardEvaluationInfo);
+        return assignment.evaluate(updatedContext, forwardEvaluationInfo);
     }
 
     /*

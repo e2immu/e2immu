@@ -53,20 +53,23 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                String condition = d.evaluationResult().evaluationContext().getConditionManager().condition().toString();
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("'a'==c", d.evaluationResult()
-                            .evaluationContext().getConditionManager().condition().toString());
+                    assertEquals("'a'==c", condition);
                     assertEquals("\"a\"", d.evaluationResult().value().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) {
-                    assertEquals("'b'==c", d.evaluationResult()
-                            .evaluationContext().getConditionManager().condition().toString());
+                    /*
+                    Explanation of "true" rather than "'b'==c": because we already have a return value ("a") the
+                    code follows the second path in SAEvaluationOfMainExpression.createAndEvaluateReturnStatement:
+                    the condition is moved into the expression.
+                    */
+                    assertEquals("true", condition);
                     assertEquals("\"b\"", d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
                     // this point comes before we check the value against the condition manager
-                    assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
-                            .evaluationContext().getConditionManager().condition().toString());
+                    assertEquals("'a'!=c&&'b'!=c", condition);
                     assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
                 }
             }

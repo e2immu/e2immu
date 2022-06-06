@@ -115,7 +115,7 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 7 ? "<m:lowerCase>" : "/*inline lowerCase*/null==s?\"?\":s.toLowerCase()";
+                String expected = d.iteration() <= 7 ? "<m:lowerCase>" : "/*inline lowerCase*/null==null/*{L s:statically_assigned:0}*/?\"?\":null/*{L s:statically_assigned:0}*/.toLowerCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("NotNull_1".equals(d.methodInfo().name)) {

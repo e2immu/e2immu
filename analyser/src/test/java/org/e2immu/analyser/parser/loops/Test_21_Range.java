@@ -165,7 +165,15 @@ public class Test_21_Range extends CommonTestRunner {
                     assertEquals(DV.FALSE_DV, cm);
                 }
             }
+            if ("method3".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    EvaluationResult.ChangeData cd = d.findValueChangeBySubString("method3");
+                    String expected = d.iteration() == 0 ? "<v:i>" : "12/*{L i:statically_assigned:0}*/";
+                    assertEquals(expected, cd.value().toString());
+                }
+            }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
@@ -204,7 +212,7 @@ public class Test_21_Range extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<s:boolean>" : "12==i";
-//                    assertEquals(expect, d.state().toString());
+                    assertEquals(expect, d.state().toString());
                 }
             }
             if ("method4".equals(d.methodInfo().name)) {
