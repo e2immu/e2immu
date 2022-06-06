@@ -130,7 +130,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         // important: the constant expression situation is the most common case
         // there'll be trouble with other situations when the typeInfo has not been inspected yet,
         // as we don't have an inspection provider here
-        if (expression instanceof ConstantExpression<?> ce) {
+        ConstantExpression<?> ce;
+        if ((ce = expression.asInstanceOf(ConstantExpression.class)) != null) {
             return ce.getValue();
         }
 
@@ -163,7 +164,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     private static Object returnValueOfNonArrayExpression(ParameterizedType returnType, Expression expression) {
 
         // normal "constant" or 123
-        if (expression instanceof ConstantExpression<?> ce) {
+        ConstantExpression<?> ce;
+        if ((ce = expression.asInstanceOf(ConstantExpression.class)) != null) {
             return ce.getValue();
         }
 

@@ -65,8 +65,9 @@ public class ArrayAccess extends BaseExpression implements Expression {
     }
 
     public static Variable makeVariable(Expression expression, Identifier identifier, String variablePrefix, TypeInfo owningType) {
-        if (expression instanceof ConstantExpression<?>) return null;
-        if (expression instanceof VariableExpression ve) {
+        if (expression.isConstant()) return null;
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             return ve.variable();
         }
         assert !identifier.unstableIdentifier() : "cannot have unstable identifiers here!";

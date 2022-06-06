@@ -536,8 +536,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         VariableInfo variableInfo = getReturnAsVariable();
-        Expression value = variableInfo.getValue();
-        ParameterizedType concreteReturnType = value instanceof NullConstant ? methodInfo.returnType() : value.returnType();
+        Expression value = variableInfo.getValue().unwrapIfConstant();
+        ParameterizedType concreteReturnType = value.isInstanceOf(NullConstant.class) ? methodInfo.returnType() : value.returnType();
 
         DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         if (value.isDelayed() || value.isInitialReturnExpression()) {

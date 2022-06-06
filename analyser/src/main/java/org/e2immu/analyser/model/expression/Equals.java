@@ -81,14 +81,14 @@ public class Equals extends BinaryOperator {
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
         if (checkForNull) {
-            if (l instanceof NullConstant) {
+            if (l.isInstanceOf(NullConstant.class)) {
                 DV dv = context.evaluationContext().isNotNull0(r, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
                     return DelayedExpression.forNullCheck(identifier, primitives,
                             r, dv.causesOfDelay().merge(r.causesOfDelay()));
             }
-            if (r instanceof NullConstant) {
+            if (r.isInstanceOf(NullConstant.class)) {
                 DV dv = context.evaluationContext().isNotNull0(l, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())
@@ -96,11 +96,11 @@ public class Equals extends BinaryOperator {
                             l, dv.causesOfDelay().merge(l.causesOfDelay()));
             }
         }
-
-        if (l instanceof ConstantExpression<?> lc
-                && r instanceof ConstantExpression<?> rc
-                && !(lc instanceof NullConstant)
-                && (!(rc instanceof NullConstant))) {
+        ConstantExpression<?> lc, rc;
+        if ((lc = l.asInstanceOf(ConstantExpression.class)) != null
+                && ((rc = r.asInstanceOf(ConstantExpression.class)) != null
+                && !lc.isInstanceOf(NullConstant.class)
+                && !rc.isInstanceOf(NullConstant.class))) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
 
@@ -226,7 +226,7 @@ public class Equals extends BinaryOperator {
             ifTrueGuaranteedNotEqual = recursively1 != null && recursively1.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively1 = null;
-            if (c instanceof NullConstant) {
+            if (c.isInstanceOf(NullConstant.class)) {
                 ifTrueGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifTrue, false,
                         forwardEvaluationInfo);
             } else {
@@ -246,7 +246,7 @@ public class Equals extends BinaryOperator {
             ifFalseGuaranteedNotEqual = recursively2 != null && recursively2.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         } else {
             recursively2 = null;
-            if (c instanceof NullConstant) {
+            if (c.isInstanceOf(NullConstant.class)) {
                 ifFalseGuaranteedNotEqual = context.evaluationContext().isNotNull0(inlineConditional.ifFalse, false,
                         forwardEvaluationInfo);
             } else {
@@ -303,9 +303,9 @@ public class Equals extends BinaryOperator {
         boolean ifTrueGuaranteedEqual;
         boolean ifFalseGuaranteedEqual;
 
-        if (c instanceof NullConstant) {
-            ifTrueGuaranteedEqual = inlineConditional.ifTrue instanceof NullConstant;
-            ifFalseGuaranteedEqual = inlineConditional.ifFalse instanceof NullConstant;
+        if (c.isInstanceOf(NullConstant.class)) {
+            ifTrueGuaranteedEqual = inlineConditional.ifTrue.isInstanceOf(NullConstant.class);
+            ifFalseGuaranteedEqual = inlineConditional.ifFalse.isInstanceOf(NullConstant.class);
         } else {
             ifTrueGuaranteedEqual = Equals.equals(context, inlineConditional.ifTrue, c).isBoolValueTrue();
             ifFalseGuaranteedEqual = Equals.equals(context, inlineConditional.ifFalse, c).isBoolValueTrue();

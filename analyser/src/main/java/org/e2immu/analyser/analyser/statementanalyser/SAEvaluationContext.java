@@ -651,7 +651,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             translationMap.put(veSuffix, e);
         } else {
             Properties valueProperties;
-            if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
+            if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
+                    || bestValue.isDelayed()) {
                 valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
             } else {
                 valueProperties = getValueProperties(bestValue);

@@ -410,10 +410,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     public static EvaluationResult evaluateForArray(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo,
                                                     Expression expression, Variable variable,
                                                     boolean increaseCnn) {
-        if (expression instanceof ConstantExpression<?>) {
+        if (expression.isConstant()) {
             return new EvaluationResult.Builder(context).setExpression(expression).build();
         }
-        if (expression instanceof VariableExpression ve) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
             DV higher = increaseCnn ? MultiLevel.composeOneLevelMoreNotNull(cnn) : cnn;
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());

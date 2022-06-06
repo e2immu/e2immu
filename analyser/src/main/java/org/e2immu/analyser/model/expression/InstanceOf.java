@@ -168,7 +168,7 @@ public class InstanceOf extends BaseExpression implements Expression {
                             parameterizedType, expression, value.causesOfDelay()))
                     .build();
         }
-        if (value instanceof NullConstant) {
+        if (value.isInstanceOf(NullConstant.class)) {
             return builder.setExpression(new BooleanConstant(context.getPrimitives(), false)).build();
         }
         VariableExpression ve;

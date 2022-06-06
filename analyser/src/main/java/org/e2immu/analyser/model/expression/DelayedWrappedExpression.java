@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /*
@@ -62,7 +61,7 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
         assert expression.isDone();
         assert causesOfDelay.isDelayed();
         // we need all value properties to be done, and possibly IMMUTABLE_BREAK, NOT_NULL_BREAK
-        assert expression instanceof NullConstant ||
+        assert expression.isInstanceOf(NullConstant.class) ||
                 properties.stream()
                         .filter(e -> e.getKey().propertyType == Property.PropertyType.VALUE)
                         .allMatch(e -> e.getValue().isDone());

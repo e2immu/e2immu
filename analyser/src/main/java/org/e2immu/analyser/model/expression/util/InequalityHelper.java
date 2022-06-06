@@ -49,8 +49,9 @@ public class InequalityHelper {
     private static boolean recursivelyCollectTerms(Expression expression,
                                                    List<Term> terms) {
         OneVariable oneVariableRhs;
-        if (expression instanceof Product product &&
-                product.lhs instanceof ConstantExpression<?> ce
+        ConstantExpression<?> ce;
+        if (expression instanceof Product product
+                && (ce = product.lhs.asInstanceOf(ConstantExpression.class)) != null
                 && ((oneVariableRhs = extractOneVariable(product.rhs)) != null)) {
             terms.add(new Term(extractDouble((Number) ce.getValue()), oneVariableRhs));
             return true;
@@ -64,8 +65,9 @@ public class InequalityHelper {
             terms.add(new Term(1.0, oneVariable));
             return true;
         }
-        if (expression instanceof ConstantExpression<?> ce) {
-            terms.add(new Term(extractDouble((Number) ce.getValue()), null));
+        ConstantExpression<?> ce2;
+        if ((ce2 = expression.asInstanceOf(ConstantExpression.class)) != null) {
+            terms.add(new Term(extractDouble((Number) ce2.getValue()), null));
             return true;
         }
         if (expression instanceof Negation negation) {
@@ -94,13 +96,13 @@ public class InequalityHelper {
     public static boolean onlyNotEquals(List<Expression> expressions) {
         return expressions.stream().allMatch(e -> e instanceof Negation n
                 && n.expression instanceof Equals eq
-                && eq.lhs instanceof ConstantExpression<?> && eq.rhs.isInstanceOf(VariableExpression.class));
+                && eq.lhs.isConstant() && eq.rhs.isInstanceOf(VariableExpression.class));
     }
 
     public static Double extractEquals(List<Expression> expressions) {
         return expressions.stream().filter(e -> e instanceof Equals eq
-                        && eq.lhs instanceof ConstantExpression<?>
-                        && !(eq.lhs instanceof NullConstant))
+                        && eq.lhs.isConstant()
+                        && !(eq.lhs.isInstanceOf(NullConstant.class)))
                 .map(e -> extractDouble((Number) ((ConstantExpression<?>) ((Equals) e).lhs).getValue()))
                 .findFirst().orElse(null);
     }

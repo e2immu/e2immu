@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -24,10 +25,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -300,8 +298,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return expression.isInstanceOf(clazz);
     }
 
-    @Override
-    public boolean equals(Object o) {
+    // @Override
+    public boolean equalsXX(Object o) {
         if (this == o) return true;
         if (!(o instanceof PropertyWrapper pw)) return false;
         return expression.equals(pw.expression)
@@ -311,8 +309,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                 && Objects.equals(linkedVariables, pw.linkedVariables);
     }
 
-    // @Override
-    public boolean equalstt(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Expression oUnboxed)) return false;
         Expression unboxed = this;
@@ -351,6 +349,11 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return new PropertyWrapper(e, s, properties, linkedVariables, castType);
     }
 
+    @Override
+    public boolean isConstant() {
+        return expression.isConstant();
+    }
+
     public Expression expression() {
         return expression;
     }
@@ -372,5 +375,21 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         DV inMap = properties == null ? null : properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
         return expression.hardCodedPropertyOrNull(property);
+    }
+
+    @Override
+    public Set<Variable> directAssignmentVariables() {
+        if (linkedVariables != null) {
+            return linkedVariables.directAssignmentVariables();
+        }
+        return Set.of();
+    }
+
+    @Override
+    public Expression unwrapIfConstant() {
+        if (expression.isConstant()) {
+            return expression;
+        }
+        return this;
     }
 }

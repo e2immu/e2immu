@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.FieldInspection;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -106,9 +105,9 @@ public class ShallowFieldAnalyser {
         Expression value;
         if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-            Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
-            if (initialiser instanceof ConstantExpression<?> constantExpression) {
-                value = constantExpression;
+            Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().unwrapIfConstant();
+            if (initialiser .isConstant()) {
+                value = initialiser;
             } else {
                 value = Instance.forField(fieldInfo, initialiser.returnType(), properties);
             }

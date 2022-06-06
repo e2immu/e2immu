@@ -99,6 +99,10 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
+    default Expression unwrapIfConstant() {
+        return this;
+    }
+
     // empty expressions are unknown! They should NOT appear in operations (binary, unary)
     default boolean isEmpty() {
         return false;

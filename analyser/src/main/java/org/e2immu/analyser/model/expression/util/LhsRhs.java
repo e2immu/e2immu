@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.MethodCall;
 
@@ -39,7 +38,7 @@ public record LhsRhs(Expression lhs, Expression rhs) {
     public static LhsRhs equalsMethodCall(Expression e) {
         if (e instanceof MethodCall mc && mc.methodInfo.name.equals("equals") && mc.parameterExpressions.size() == 1) {
             Expression rhs = mc.parameterExpressions.get(0);
-            if (rhs instanceof ConstantExpression) return new LhsRhs(rhs, mc.object);
+            if (rhs.isConstant()) return new LhsRhs(rhs, mc.object);
             return new LhsRhs(mc.object, rhs);
         }
         return null;

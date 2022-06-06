@@ -425,8 +425,7 @@ public class Assignment extends BaseExpression implements Expression {
         The former stays the same, and does not include the "tryShortCut", "single return value" substitutions,
         computation simplifications, etc. etc., which are present in the latter.
 
-        We choose the latter approach, but introduce a delay on all possible variables of the former as long as
-        "resultOfExpression" is delayed.
+        We choose the former approach! this has repercussions...
          */
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
         Set<Variable> directAssignment = value.directAssignmentVariables();

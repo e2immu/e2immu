@@ -340,7 +340,7 @@ public class And extends ExpressionCanBeTooComplex {
                                        Expression value,
                                        ArrayList<Expression> newConcat) {
         LhsRhs ev1 = LhsRhs.equalsMethodCall(prev);
-        if (ev1 != null && ev1.lhs() instanceof ConstantExpression) {
+        if (ev1 != null && ev1.lhs().isConstant()) {
             Action a = equalsRhs(ev1, value);
             if (a != null) return a;
 
@@ -351,7 +351,7 @@ public class And extends ExpressionCanBeTooComplex {
 
     private Action equalsRhs(LhsRhs ev1, Expression value) {
         LhsRhs ev2 = LhsRhs.equalsMethodCall(value);
-        if (ev2 != null && ev2.lhs() instanceof ConstantExpression) {
+        if (ev2 != null && ev2.lhs().isConstant()) {
             // "a".equals(s) && "b".equals(s)
             if (ev1.rhs().equals(ev2.rhs()) && !ev1.lhs().equals(ev2.lhs())) {
                 return Action.FALSE;
@@ -474,7 +474,7 @@ public class And extends ExpressionCanBeTooComplex {
             return extract(gt0.expression());
         }
         if (e instanceof Negation negation) return extract(negation.expression);
-        if (e instanceof Sum sum && sum.lhs instanceof ConstantExpression) return extract(sum.rhs);
+        if (e instanceof Sum sum && sum.lhs.isConstant()) return extract(sum.rhs);
         LhsRhs lhsRhs = LhsRhs.equalsMethodCall(e);
         if (lhsRhs != null) return lhsRhs.rhs();
         return e;

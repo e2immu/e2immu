@@ -506,7 +506,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private DV safeContainer(ValueAndPropertyProxy proxy) {
         // for non-final classes, safe is always null
         Expression value = proxy.getValue();
-        if (value instanceof NullConstant) return null;
+        if (value.isInstanceOf(NullConstant.class)) return null;
         DV safe = analyserContext.safeContainer(value.returnType());
         if (safe != null) return safe;
         // but if value is a normal constructor call or an instance with a constructor state
@@ -571,7 +571,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         // if one of the values is the constant null value (and we're not trying to boost @NotNull) then return NULLABLE immediately
         if (!computeContextPropertiesOverAllMethods &&
-                fieldAnalysis.getValues().stream().anyMatch(proxy -> proxy.getValue() instanceof NullConstant)) {
+                fieldAnalysis.getValues().stream().anyMatch(proxy -> proxy.getValue().isInstanceOf(NullConstant.class))) {
             LOGGER.debug("Field {} cannot be @NotNull: one of its values is the null constant", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
             return DONE;
@@ -623,7 +623,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private DV constantNotNullOverValues() {
         return fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
-                .filter(proxy -> proxy.getValue() instanceof ConstantExpression)
+                .filter(proxy -> proxy.getValue().isConstant())
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
     }
@@ -807,7 +807,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
-                .filter(proxy -> !(proxy.getValue() instanceof NullConstant))
+                .filter(proxy -> !(proxy.getValue().isInstanceOf(NullConstant.class)))
                 .map(this::immutableOfProxy)
                 .reduce(DV.MAX_INT_DV, DV::min);
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;

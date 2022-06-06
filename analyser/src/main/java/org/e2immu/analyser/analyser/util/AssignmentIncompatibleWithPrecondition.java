@@ -72,7 +72,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         VariableExpression ve;
                         if (fieldInfo.type.isNumeric()) {
                             Expression value = variableInfo.getValue();
-                            if (value instanceof ConstantExpression) {
+                            if (value.isConstant()) {
                                 Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                         variableInfo.getValue(), pcExpression);
                                 if (incompatible != null) return DV.fromBoolDv(incompatible);

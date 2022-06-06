@@ -16,6 +16,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.Expression;
 
-public interface Negatable {
+public interface Negatable extends Expression {
     Expression negate();
 }

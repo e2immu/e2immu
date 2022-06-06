@@ -2051,7 +2051,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
-                        if (vi.getValue() instanceof NullConstant) {
+                        if (vi.getValue().isInstanceOf(NullConstant.class)) {
                             return new Pair<>(vi, DV.MIN_INT_DV);
                         }
                         DV notNull = evaluationContext.getProperty(new VariableExpression(fieldReference),

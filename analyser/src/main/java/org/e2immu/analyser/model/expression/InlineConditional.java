@@ -139,10 +139,10 @@ public class InlineConditional extends BaseExpression implements Expression {
             return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
         }
         if (property == IMMUTABLE || property == INDEPENDENT || property == CONTAINER) {
-            if (ifTrue instanceof NullConstant) {
+            if (ifTrue.isInstanceOf(NullConstant.class)) {
                 return context.evaluationContext().getProperty(ifFalse, property, duringEvaluation, false);
             }
-            if (ifFalse instanceof NullConstant) {
+            if (ifFalse.isInstanceOf(NullConstant.class)) {
                 return context.evaluationContext().getProperty(ifTrue, property, duringEvaluation, false);
             }
             return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
@@ -195,7 +195,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
-        if (condition instanceof NullConstant && forwardEvaluationInfo.isComplainInlineConditional()) {
+        if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
         }

@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
 public class EvaluateMethodCall {
@@ -486,8 +485,8 @@ public class EvaluateMethodCall {
                 (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
             return new IntConstant(primitives, stringValue.constant().length());
         }
-        if ("equals".equals(methodInfo.name) && params.size() == 1 && params.get(0) instanceof ConstantExpression ce) {
-            return new BooleanConstant(primitives, objectValue.equals(ce));
+        if ("equals".equals(methodInfo.name) && params.size() == 1 && params.get(0).isConstant()) {
+            return new BooleanConstant(primitives, objectValue.equals(params.get(0)));
         }
         return null;
     }

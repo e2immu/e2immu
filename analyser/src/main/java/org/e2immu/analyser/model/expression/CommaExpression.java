@@ -38,7 +38,7 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     public static Expression comma(EvaluationResult context, List<Expression> input) {
-        List<Expression> expressions = input.stream().filter(e -> !(e instanceof ConstantExpression)).toList();
+        List<Expression> expressions = input.stream().filter(e -> !e.isConstant()).toList();
         if (expressions.size() == 0) return new BooleanConstant(context.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
         if (expressions.stream().anyMatch(Expression::isEmpty)) throw new UnsupportedOperationException();

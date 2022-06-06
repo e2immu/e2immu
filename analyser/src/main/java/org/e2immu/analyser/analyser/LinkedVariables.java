@@ -392,4 +392,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                 .filter(e -> e.getValue().isDone())
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
+
+    public Set<Variable> directAssignmentVariables() {
+        if (isEmpty() || this == NOT_YET_SET) return Set.of();
+        return variables.entrySet().stream().filter(e -> e.getValue().equals(STATICALLY_ASSIGNED_DV))
+                .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+    }
 }

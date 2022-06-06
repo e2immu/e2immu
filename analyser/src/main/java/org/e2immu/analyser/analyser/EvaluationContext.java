@@ -226,7 +226,7 @@ public interface EvaluationContext {
     // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
     // should be able to do better/faster.
     default Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
-        if (value instanceof NullConstant) {
+        if (value.isInstanceOf(NullConstant.class)) {
             assert formalType != null : "Use other call!";
             return valuePropertiesOfNullConstant(formalType);
         }

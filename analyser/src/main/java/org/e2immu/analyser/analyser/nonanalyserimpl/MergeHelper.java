@@ -549,11 +549,11 @@ public record MergeHelper(EvaluationContext evaluationContext,
         Expression conditionNoNegate = condition instanceof Negation neg ? neg.expression : condition;
         Properties properties = Properties.writable();
         if (conditionNoNegate instanceof Equals eq) {
-            if (eq.lhs instanceof NullConstant && !negate && eq.rhs.equals(ifFalse.getValue())) {
+            if (eq.lhs.isInstanceOf(NullConstant.class) && !negate && eq.rhs.equals(ifFalse.getValue())) {
                 // null == x ? y : x
                 properties.overwrite(NOT_NULL_EXPRESSION, ifTrue.getProperty(NOT_NULL_EXPRESSION));
             }
-            if (eq.lhs instanceof NullConstant && negate && eq.rhs.equals(ifTrue.getValue())) {
+            if (eq.lhs.isInstanceOf(NullConstant.class) && negate && eq.rhs.equals(ifTrue.getValue())) {
                 // null != x ? x : y
                 DV max = ifFalse.getProperty(NOT_NULL_EXPRESSION).max(ifTrue.getProperty(NOT_NULL_EXPRESSION));
                 properties.overwrite(NOT_NULL_EXPRESSION, max);
