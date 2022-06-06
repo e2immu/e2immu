@@ -272,8 +272,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
             }
             if ("equals".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() == 5 || d.iteration() == 9,
-                        d.context().evaluationContext().allowBreakDelay());
                 // iteration 9: breaking a linking delay on the parameter "o", where INDEPENDENT is dependent on the linking
                 // of the last statement, yet the last statement needs an INDEPENDENT value to compute the linking
                 if (d.variable() instanceof ParameterInfo pi && "o".equals(pi.name)) {
@@ -284,6 +282,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertEquals("setOnce:1", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) {
+                        assertEquals(d.iteration() >= 5,
+                                d.context().evaluationContext().allowBreakDelay());
+
                         String linked = d.iteration() <= 9 ? "return equals:-1,setOnce.t:-1,setOnce:-1,this.t:-1,this:-1"
                                 : "setOnce:1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

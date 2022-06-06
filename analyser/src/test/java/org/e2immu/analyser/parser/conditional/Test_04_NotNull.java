@@ -96,12 +96,12 @@ public class Test_04_NotNull extends CommonTestRunner {
                     // in 6, same, statement 1
                     // in 7, the parameter input gets a not-modified
                     // in 9, the field s gets a value
-                    assertEquals(d.iteration() == 4 || d.iteration() == 7, d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1, 2, 3, 5, 6 -> "<null-check>";
-                        case 4, 7 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C;initial@Field_s>";
+                        case 0, 1, 2, 3 -> "<null-check>";
+                        case 4, 5, 6, 7 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C;initial@Field_s>";
                         default -> "null!=s";
                     };
                     assertEquals(expected, d.condition().toString());

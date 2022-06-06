@@ -365,7 +365,6 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
 
             if ("method5".equals(d.methodInfo().name)) {
                 // the escape mechanism does NOT kick in!
@@ -379,7 +378,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("2".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
+                }
+                if("3".equals(d.statementId())) {
+                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
                 }
             }
         };

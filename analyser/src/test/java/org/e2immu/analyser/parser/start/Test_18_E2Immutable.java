@@ -441,7 +441,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
+                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
                 }
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 5 ? "<f:sub>" : "instance type Sub/*new Sub()*/";

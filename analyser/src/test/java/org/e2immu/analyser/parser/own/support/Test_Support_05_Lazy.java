@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.Lazy;
@@ -72,18 +73,19 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 3, "t$0");
+                    assertCurrentValue(d, BIG, "t$0");
                 }
                 if ("2".equals(d.statementId())) {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
                         case 1 -> "<null-check>?<f:t>:<m:requireNonNull>";
                         case 2 -> "<wrapped:t>";
-                        default -> "t$1-E$0";
+                        default -> "<null-check>?<f:t>:<s:T>";
+                        //       default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
-                    assertEquals(d.iteration() >= 3, d.currentValue().isDone());
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertEquals(d.iteration() >= BIG, d.currentValue().isDone());
+                    assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
@@ -96,30 +98,38 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 assertEquals("this", t.scope.toString());
 
                 if ("0.0.0".equals(d.statementId())) {
-                    assertCurrentValue(d, 3, "nullable instance type T");
+                    assertCurrentValue(d, BIG, "nullable instance type T");
                 }
                 if ("0".equals(d.statementId())) {
-                    assertCurrentValue(d, 3, "nullable instance type T");
+                    assertCurrentValue(d, BIG, "nullable instance type T");
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1 -> "<m:requireNonNull>";
                         case 2 -> "<wrapped:t>";
-                        default -> "nullable instance type T/*@NotNull*/";
+                        default -> "<s:T>";
+                        //       default -> "nullable instance type T/*@NotNull*/";
                     };
                     // should this not be supplier.get()? no, get() is modifying
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 3, DV.FALSE_DV, Property.IDENTITY);
+                    assertDv(d, BIG, DV.FALSE_DV, Property.IDENTITY);
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
                         case 0, 1 -> "<m:requireNonNull>";
-                        case 2 -> "<wrapped:t>";
-                        default -> "nullable instance type T/*@NotNull*/";
+                        default -> "<wrapped:t>";
+                        // default -> "nullable instance type T/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
+            }
+        }
+        if ("hasBeenEvaluated".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof This) {
+//                assertEquals(d.iteration() == 5, d.context().evaluationContext().allowBreakDelay());
+                String linked = d.iteration() <= 4 ? "return hasBeenEvaluated:-1,this.t:-1" : "";
+                assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
             }
         }
     };
@@ -128,12 +138,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
-                String state = d.iteration() <= 2 ? "!<null-check>" : "true";
+                String state = d.iteration() <= BIG ? "!<null-check>" : "true";
                 assertEquals(state, d.state().toString());
             }
             if ("2".equals(d.statementId())) {
                 // important: if the state says something about t, then after assignment to t this should be removed!
-                String state = d.iteration() <= 2 ? "!<null-check>" : "true";
+                String state = d.iteration() <= BIG ? "!<null-check>" : "true";
                 assertEquals(state, d.state().toString());
                 assertEquals("", d.statementAnalysis().stateData().equalityAccordingToStateStream()
                         .map(Object::toString).collect(Collectors.joining(",")));
@@ -154,7 +164,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             assertEquals(d.iteration() > 1, d.fieldAnalysis().valuesDelayed().isDone());
 
             assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, BIG, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
@@ -168,10 +178,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
         if ("get".equals(d.methodInfo().name)) {
-            String expect = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
+            String expect = d.iteration() <= BIG ? "Precondition[expression=<precondition>, causes=[]]"
                     : "Precondition[expression=null==t, causes=[state]]";
             assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
-            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, BIG, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 
@@ -187,9 +197,9 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 1, new DebugConfiguration.Builder()
              //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
               //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             ////   .addStatementAnalyserVisitor(statementAnalyserVisitor)
              //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -197,12 +207,12 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     public void test_0() throws IOException {
         // supplier.get() null context on to supplier, on to parameter
         testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
-               //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build(),
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

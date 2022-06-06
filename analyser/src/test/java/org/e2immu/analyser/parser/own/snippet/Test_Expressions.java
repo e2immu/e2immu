@@ -44,7 +44,8 @@ public class Test_Expressions extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        int IT53 = 53;
+        int IT22 = 21;
+        int IT53 = 46;
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -124,22 +125,22 @@ public class Test_Expressions extends CommonTestRunner {
             if ("accept1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "perComponent".equals(fr.fieldInfo.name)) {
                     if ("0.0.1.0.0".equals(d.statementId())) {
-                        assertDv(d, 16, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 15, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 22, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, IT22, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2".equals(d.statementId())) {
                         assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 22, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, IT22, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.1".equals(d.statementId())) {
-                        assertDv(d, 22, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, IT22, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 22, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, IT22, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -236,7 +237,7 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept3".equals(d.methodInfo().name)) {
-                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < IT53 ? "<m:accept3>" :
                         "/*inline accept3*/null!=nullable instance type Interval&&1==expressionsInV.size()?instance type boolean:null==expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?null||expressionsInV.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`):`allowEquals`?expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0:-1+expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
@@ -261,7 +262,7 @@ public class Test_Expressions extends CommonTestRunner {
             if ("accept6".equals(d.methodInfo().name)) {
                 assertDv(d, IT53 + 1, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
-                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, IT22-3, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() < IT53 ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= IT53) {
@@ -297,11 +298,11 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 14, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
-                assertDv(d, 15, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, 13, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 14, MultiLevel.CONTAINER_DV, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 51, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, IT53-2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
             }
         };
 

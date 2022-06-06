@@ -255,6 +255,7 @@ public class ComputeLinkedVariables {
                         propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
                                 c -> c instanceof SimpleCause sc && sc.location().getInfo() == v))) {
             LOGGER.debug("Breaking a MOM / CM delay for parameter  in {}", propertyValue);
+            statementAnalysis.setBrokeDelay();
             return DV.FALSE_DV;
         }
         // normal action
@@ -285,6 +286,7 @@ public class ComputeLinkedVariables {
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
                 if (allowBreakDelay && summary.valueIsFalse()) {
                     LOGGER.debug("Breaking linking delay on CM==FALSE, cluster {}", cluster);
+                    statementAnalysis.setBrokeDelay();
                     broken = true;
                 } else {
                     summary = summary.causesOfDelay().merge(cluster.delays);

@@ -54,7 +54,6 @@ public class Test_26_Enum extends CommonTestRunner {
     public void test0() throws IOException {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            assertEquals(d.iteration() == 5, d.context().evaluationContext().allowBreakDelay());
 
             if ("values".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
@@ -68,6 +67,14 @@ public class Test_26_Enum extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+          if("isThree".equals(d.methodInfo().name)) {
+              if ("0".equals(d.statementId())) {
+                  assertEquals(d.iteration() >= 5, d.context().evaluationContext().allowBreakDelay());
+              }
+          }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -111,6 +118,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

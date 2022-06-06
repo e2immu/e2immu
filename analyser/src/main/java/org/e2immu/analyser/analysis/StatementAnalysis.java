@@ -190,6 +190,9 @@ public interface StatementAnalysis extends Analysis,
                                                                              Variable v,
                                                                              boolean cnnTravelsToFields);
 
+    boolean isBrokeDelay();
+    void setBrokeDelay();
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

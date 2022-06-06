@@ -178,8 +178,10 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("0".equals(d.statementId())) {
-                assertEquals(4 == d.iteration(), d.context().evaluationContext().allowBreakDelay());
+            if("example1".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
+                }
             }
         };
 

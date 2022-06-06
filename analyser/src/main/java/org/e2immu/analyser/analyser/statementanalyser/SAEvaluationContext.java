@@ -90,7 +90,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         boolean preventAbsoluteStateComputation,
                         boolean delayStatementBecauseOfECI,
                         boolean allowBreakDelay) {
-        super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+        super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay ||
+                statementAnalysis.isBrokeDelay(), conditionManager, closure);
         this.statementAnalyser = statementAnalyser;
         this.localAnalysers = localAnalysers;
         this.myMethodAnalyser = myMethodAnalyser;
@@ -243,6 +244,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             DV cm = notNullAccordingToConditionManager(ve.variable());
             if (nneTF.isDelayed() && allowBreakDelay) {
                 LOGGER.debug("Breaking NNE delay in isNotNull0");
+                statementAnalysis.setBrokeDelay();
                 return cnnTF.max(cm);
             }
             return cnnTF.max(nneTF).max(cm);

@@ -37,6 +37,7 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.Either;
+import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +81,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     // a variable that changes from iteration to iteration... should be moved out at some point
     private final Map<CausesOfDelay, Integer> applyCausesOfDelay = new HashMap<>();
+
+    private final FlipSwitch brokeDelay = new FlipSwitch();
 
     @Override
     public void internalAllDoneCheck() {
@@ -2573,5 +2576,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             return Either.right(vars);
         }
         return Either.right(Set.of());
+    }
+
+    @Override
+    public boolean isBrokeDelay() {
+        return brokeDelay.isSet();
+    }
+
+    @Override
+    public void setBrokeDelay() {
+        if(!brokeDelay.isSet()) brokeDelay.set();
     }
 }
