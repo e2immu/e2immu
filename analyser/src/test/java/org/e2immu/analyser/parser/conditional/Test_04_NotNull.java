@@ -62,28 +62,27 @@ public class Test_04_NotNull extends CommonTestRunner {
             if ("lowerCase".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 7 ? "return lowerCase:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 7 ? "this.s:-1" : "";
+                        String linked = d.iteration() <= 6 ? "this.s:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -101,7 +100,7 @@ public class Test_04_NotNull extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3 -> "<null-check>";
-                        case 4, 5, 6, 7 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C;initial@Field_s>";
+                        case 4, 5, 6 -> "null!=<vp:s:ext_not_null@Field_s;initial:this.s@Method_lowerCase_0-C;initial@Field_s>";
                         default -> "null!=s";
                     };
                     assertEquals(expected, d.condition().toString());
@@ -110,16 +109,16 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 7, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 6, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("lowerCase".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 7 ? "<m:lowerCase>" : "/*inline lowerCase*/null==null/*{L s:statically_assigned:0}*/?\"?\":null/*{L s:statically_assigned:0}*/.toLowerCase()";
+                String expected = d.iteration() <= 6 ? "<m:lowerCase>" : "/*inline lowerCase*/null==null/*{L s:statically_assigned:0}*/?\"?\":null/*{L s:statically_assigned:0}*/.toLowerCase()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("NotNull_1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
@@ -145,7 +144,7 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 7, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         testClass("NotNull_2", 0, 0, new DebugConfiguration.Builder()

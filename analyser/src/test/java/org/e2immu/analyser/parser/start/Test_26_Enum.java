@@ -60,8 +60,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
                         case 1 -> "{<vp:ONE:container@Enum_Enum_0>,<vp:TWO:container@Enum_Enum_0>,<vp:THREE:container@Enum_Enum_0>}";
-                        case 2, 4, 5, 6 -> "{<vp:ONE:cm@Parameter_e;initial:Enum_0.THREE@Method_isThree_0-C>,<vp:TWO:cm@Parameter_e;initial:Enum_0.THREE@Method_isThree_0-C>,<vp:THREE:cm@Parameter_e;initial:Enum_0.THREE@Method_isThree_0-C>}";
-                        case 3 -> "{<vp:ONE:initial:Enum_0.THREE@Method_isThree_0-C>,<vp:TWO:initial:Enum_0.THREE@Method_isThree_0-C>,<vp:THREE:initial:Enum_0.THREE@Method_isThree_0-C>}";
+                        case 2 -> "{<vp:ONE:cm@Parameter_e>,<vp:TWO:cm@Parameter_e>,<vp:THREE:cm@Parameter_e>}";
                         default -> "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -70,11 +69,11 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-          if("isThree".equals(d.methodInfo().name)) {
-              if ("0".equals(d.statementId())) {
-                  assertEquals(d.iteration() >= 5, d.context().evaluationContext().allowBreakDelay());
-              }
-          }
+            if ("isThree".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertFalse(d.context().evaluationContext().allowBreakDelay());
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -88,10 +87,10 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() <= 6 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 7, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
@@ -100,15 +99,15 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -127,13 +126,13 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 3 ? "<dv:av-33:17[i]>==this" : "(Enum_1.values())[i]==this";
+                    String expectValue = d.iteration() <= 2 ? "<dv:av-33:17[i]>==this" : "(Enum_1.values())[i]==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 3 ? "<delayed array length>>i" : "i<=2";
+                    String expectValue = d.iteration() <= 2 ? "<delayed array length>>i" : "i<=2";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -169,13 +168,13 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3
+                        String expected = d.iteration() <= 2
                                 ? "<dv:av-33:17[i]>==this?<v:i>:<return value>"
                                 : "(Enum_1.values())[i]==this?i:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3
+                        String expected = d.iteration() <= 2
                                 ? "<loopIsNotEmptyCondition>&&<oos:av-33:17[i]>==this?<oos:i>:<return value>"
                                 : "instance type int<=2&&instance type int>=0&&nullable instance type Enum_1==this?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
@@ -200,20 +199,20 @@ public class Test_26_Enum extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
                 // other is not linked to a field
                 // context container will not become CONTAINER:5
@@ -221,7 +220,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
 
                 // yet, the type itself becomes container at the end of iteration 1
-                assertDv(d.p(0), 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -254,19 +253,19 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                    String expectValue = d.iteration() <= 3 ? "<m:values>" : "{`Enum_3.ONE`,`Enum_3.TWO`,`Enum_3.THREE`}";
+                    String expectValue = d.iteration() <= 2 ? "<m:values>" : "{`Enum_3.ONE`,`Enum_3.TWO`,`Enum_3.THREE`}";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 3 ? "<v:array[i]>" : "nullable instance type Enum_3";
+                        String expectValue = d.iteration() <= 2 ? "<v:array[i]>" : "nullable instance type Enum_3";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1, 2, 3 -> "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
+                            case 0, 1, 2 -> "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
                             default -> "nullable instance type Enum_3";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -299,30 +298,30 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertFalse(d.statementAnalysis().variableIsSet(THREE));
 
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 4,
+                    assertEquals(d.iteration() >= 3,
                             null != d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() < 4 ? "<dv:array[i]>==this" : "array[i]==this";
+                    String expectCondition = d.iteration() < 3 ? "<dv:array[i]>==this" : "array[i]==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 3 ? "<loopIsNotEmptyCondition>" : "array.length>i";
+                    String expectCondition = d.iteration() <= 2 ? "<loopIsNotEmptyCondition>" : "array.length>i";
                     assertEquals(expectCondition, d.condition().toString());
-                    assertEquals(d.iteration() <= 3, d.condition().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.condition().isDelayed());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                assertDv(d, 4, DV.TRUE_DV, Property.CONSTANT);
+                assertDv(d, 3, DV.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
+                String expected = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() > 3) {
+                if (d.iteration() > 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertFalse(inlinedMethod.containsVariableFields());
                     } else fail();

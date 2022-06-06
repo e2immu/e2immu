@@ -79,7 +79,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
 
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2, 3, 4 -> "c.set:-1,c:-1,localD.set:-1,localD:-1,return example1:-1";
+                            case 0, 1, 2, 3, 4 -> "c.set:-1,c:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

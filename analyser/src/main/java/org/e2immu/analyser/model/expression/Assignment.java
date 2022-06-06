@@ -81,7 +81,8 @@ public class Assignment extends BaseExpression implements Expression {
     // see explanation below (makeHackInstance); called in SAInitializersAndUpdaters
     public Expression cloneWithHackForLoop() {
         return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
-                complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true, true);
+                complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true,
+                allowStaticallyAssigned);
     }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {

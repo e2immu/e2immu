@@ -169,7 +169,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 7 ? "1==<m:getCnt>" : "true";
+                    String expectValue = d.iteration() <= 2 ? "1==<m:getCnt>" : "true";
                     // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
 
                     assertEquals(expectValue, d.evaluationResult().value().toString());

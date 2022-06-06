@@ -212,7 +212,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     assertCurrentValue(d, 2, "nullable instance type String");
 
-                    assertEquals("return getS:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -225,6 +225,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
 
                     // copied from S
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);

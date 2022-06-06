@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.basics;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -83,7 +84,17 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,return method:-1,x.s:-1,x:-1" : "";
+                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,x.s:-1,x:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
+                            case 1 -> "x.s:0,x:-1";
+                            default -> "x.s:0";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

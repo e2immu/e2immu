@@ -88,8 +88,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
-                            case 1 -> "cm@Parameter_setC;initial:this.set@Method_size_0-C;mom@Parameter_setC";
-                            case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial:this.set@Method_size_0-C;mom@Parameter_setC";
+                            case 1 -> "cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
+                            case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                             default -> "xxx";
                         };
                         assertCurrentValue(d, 3, expectedDelay, expectValue);
@@ -110,7 +110,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String links = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c:-1,localD.set:-1,localD:-1,return example1:-1,this.s2:-1";
+                            case 0, 1 -> "c:-1,this.s2:-1";
                             default -> "c:2,this.s2:2";
                         };
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
@@ -118,13 +118,13 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = "cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                        String cmDelay = "cm@Parameter_c;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("localD".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -133,7 +133,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:set>" : "nullable instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -152,7 +152,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("size".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 

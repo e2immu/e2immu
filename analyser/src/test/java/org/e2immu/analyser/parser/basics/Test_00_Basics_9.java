@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -87,10 +88,14 @@ public class Test_00_Basics_9 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
+                // shows the asymmetry in linking to the return variable
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
                     assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
-                    assertEquals("return test1:1", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if(d.variable() instanceof ReturnVariable) {
+                    assertEquals("contains:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

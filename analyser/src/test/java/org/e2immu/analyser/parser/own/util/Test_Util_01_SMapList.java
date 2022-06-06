@@ -109,7 +109,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
             String expected;
             if ("3".equals(d.statementId())) {
-                expected = d.iteration() == 0 ? "a:-1,bs:-1,map:-1,return add:-1" : "bs:3";
+                expected = d.iteration() == 0 ? "a:-1,bs:-1,map:-1" : "bs:3";
             } else {
                 expected = d.iteration() == 0 ? "a:-1,map:-1" : "";
             }

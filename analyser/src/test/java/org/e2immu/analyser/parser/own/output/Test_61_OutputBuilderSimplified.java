@@ -70,7 +70,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -90,9 +90,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedValue = d.iteration() == 0 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
 
-                        assertEquals("o1:0,return go:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
 
                         // links have not been established
@@ -125,7 +125,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
             }
             if ("isEmpty".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 

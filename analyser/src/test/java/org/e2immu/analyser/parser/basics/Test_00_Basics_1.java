@@ -127,8 +127,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expected, d.currentValue().toString());
-                String linked = d.iteration() == 0 ? "return contains:-1,s:-1" : "";
-                assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
             }
         }
@@ -138,7 +137,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertTrue(d.variableInfo().isRead());
 
                 assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0-C;initial@Field_f1", "nullable instance type Set<String>");
-                assertEquals("return getF1:0", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
@@ -177,7 +176,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals("p0", d.fieldAnalysis().getValue().toString());
             assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-            assertDv(d, 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
             assertEquals(NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             assertEquals(MUTABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_IMMUTABLE));
         }
@@ -186,8 +185,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             assertDv(d.p(0), 1, FALSE_DV, CONTEXT_MODIFIED);
-            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
-            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_VARIABLE);
+            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_VARIABLE);
 
             assertDv(d.p(0), 1, NULLABLE_DV, CONTEXT_NOT_NULL);
             assertDv(d.p(0), 1, NULLABLE_DV, EXTERNAL_NOT_NULL);

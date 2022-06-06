@@ -62,6 +62,8 @@ public class ComputeLinkedVariables {
     private final Stage stage;
     private final StatementAnalysis statementAnalysis;
     private final List<Cluster> clusters;
+    private final Cluster returnValueCluster;
+    private final Variable returnVariable;
     private final WeightedGraph weightedGraph;
     private final boolean allowBreakDelay;
 
@@ -80,8 +82,12 @@ public class ComputeLinkedVariables {
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph weightedGraph,
                                    List<Cluster> clusters,
+                                   Cluster returnValueCluster,
+                                   Variable returnVariable,
                                    boolean allowBreakDelay) {
         this.clusters = clusters;
+        this.returnValueCluster = returnValueCluster;
+        this.returnVariable = returnVariable;
         this.stage = stage;
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;
@@ -133,7 +139,7 @@ public class ComputeLinkedVariables {
                 }
             }
         }
-        List<Cluster> clusters = computeClusters(weightedGraph, variables,
+        ClusterResult cr = computeClusters(weightedGraph, variables,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
                 staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV,
                 !staticallyAssigned,
@@ -143,8 +149,8 @@ public class ComputeLinkedVariables {
         if (evaluationContext.delayStatementBecauseOfECI()) {
             delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, clusters,
-                evaluationContext.allowBreakDelay());
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.clusters,
+                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay());
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -187,7 +193,8 @@ public class ComputeLinkedVariables {
 
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        weightedGraph.addNode(variable, curated.variables(), true, DV::min);
+        boolean bidirectional = !(variable instanceof ReturnVariable);
+        weightedGraph.addNode(variable, curated.variables(), bidirectional, DV::min);
         boolean accountForDelay = staticallyAssigned || !(variable instanceof ReturnVariable);
         // context modified for the return variable is never linked, but the variables themselves must be present
         if (accountForDelay && curated.isDelayed()) {
@@ -210,7 +217,10 @@ public class ComputeLinkedVariables {
         return LinkedVariables.of(map);
     }
 
-    private static List<Cluster> computeClusters(WeightedGraph weightedGraph,
+    private record ClusterResult(Cluster returnValueCluster, Variable rv, List<Cluster> clusters) {
+    }
+
+    private static ClusterResult computeClusters(WeightedGraph weightedGraph,
                                                  Set<Variable> variables,
                                                  DV minInclusive,
                                                  DV maxInclusive,
@@ -218,6 +228,8 @@ public class ComputeLinkedVariables {
                                                  CausesOfDelay encounteredNotYetSet) {
         Set<Variable> done = new HashSet<>();
         List<Cluster> result = new ArrayList<>(variables.size());
+        Cluster rvCluster = null;
+        Variable rv = null;
 
         for (Variable variable : variables) {
             if (!done.contains(variable)) {
@@ -233,12 +245,19 @@ public class ComputeLinkedVariables {
                     clusterDelay = delays == DV.MIN_INT_DV ? CausesOfDelay.EMPTY : delays.causesOfDelay();
                 }
                 Cluster cluster = new Cluster(reachable, clusterDelay);
-                result.add(cluster);
-                assert Collections.disjoint(reachable, done) : "This is not good";
-                done.addAll(reachable);
+                if (variable instanceof ReturnVariable) {
+                    rvCluster = cluster;
+                    assert rv == null;
+                    rv = variable;
+                    done.add(rv);
+                } else {
+                    result.add(cluster);
+                    assert Collections.disjoint(reachable, done) : "This is not good";
+                    done.addAll(reachable);
+                }
             }
         }
-        return result;
+        return new ClusterResult(rvCluster, rv, result);
     }
 
     /**
@@ -275,6 +294,46 @@ public class ComputeLinkedVariables {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
         boolean broken = false;
+
+        // TODO blatant code copying
+        if (returnVariable != null) {
+            assert returnValueCluster.variables.stream().allMatch(propertyValues::containsKey);
+            DV rvSummary = property.propertyType == Property.PropertyType.CONTEXT
+                    ? property.falseDv
+                    : returnValueCluster.variables.stream()
+                    .map(v -> propertyValuePotentiallyBreakDelay(property, v, propertyValues.get(v)))
+                    // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
+                    .reduce(DV.FALSE_DV, DV::max);
+            if (rvSummary.isDelayed()) {
+                causes = causes.merge(rvSummary.causesOfDelay());
+            }
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(returnVariable.fullyQualifiedName());
+            if (vic != null) {
+                VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+                DV current = vi.getProperty(property);
+                if (current.isDelayed()) {
+                    try {
+                        DV inMap = propertyValues.get(returnVariable);
+                        if (property.bestDv.equals(inMap)) {
+                            // whatever happens, this value cannot get better (e.g., TRUE in CM)
+                            vic.setProperty(property, inMap, stage);
+                            progress = true;
+                        } else {
+                            vic.setProperty(property, rvSummary, stage);
+                            progress = rvSummary.isDone();
+                        }
+                    } catch (IllegalStateException ise) {
+                        LOGGER.error("Return value cluster: {}", returnValueCluster);
+                        throw ise;
+                    }
+                } else if (rvSummary.isDone() && !rvSummary.equals(current)) {
+                    LOGGER.error("Variable {} in cluster {}", returnVariable, returnValueCluster.variables);
+                    LOGGER.error("Property {}, current {}, new {}", property, current, rvSummary);
+                    throw new UnsupportedOperationException("Overwriting value");
+                }
+            }
+        }
+
         for (Cluster cluster : clusters) {
             assert cluster.variables.stream().allMatch(propertyValues::containsKey);
             DV summary = cluster.variables.stream()
@@ -340,6 +399,11 @@ public class ComputeLinkedVariables {
                 staticallyAssigned.put(variable, set);
             }
         }
+        if (returnVariable != null) {
+            Set<Variable> set = new HashSet<>(returnValueCluster.variables);
+            set.remove(returnVariable); // remove self-reference
+            staticallyAssigned.put(returnVariable, set);
+        }
         return staticallyAssigned;
     }
 
@@ -356,8 +420,7 @@ public class ComputeLinkedVariables {
         boolean progress = false;
         for (Cluster cluster : clusters) {
             for (Variable variable : cluster.variables) {
-                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                assert vic != null : "No variable named " + variable.fullyQualifiedName();
+                VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
                 Map<Variable, DV> map = weightedGraph.links(variable, null, true);
                 LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
@@ -369,6 +432,21 @@ public class ComputeLinkedVariables {
                 staticallyAssigned.remove(variable);
             }
         }
+
+        if (returnVariable != null) {
+            // TODO completely copied the code
+            VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
+
+            Map<Variable, DV> map = weightedGraph.links(returnVariable, null, true);
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
+                    returnVariable, map, returnValueCluster.delays);
+
+            causes = causes.merge(linkedVariables.causesOfDelay());
+            vicRv.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
+            progress |= writeLinkedVariables(returnValueCluster, returnVariable, vicRv, linkedVariables);
+            staticallyAssigned.remove(returnVariable);
+        }
+
         // there may be variables remaining, which were present in linking that is not removed in the first phase
         // Occurs in statement 3, Basics_24, to the "map" variable
         for (Variable variable : staticallyAssigned.keySet()) {
@@ -468,6 +546,7 @@ public class ComputeLinkedVariables {
                     }
                 }
             }
+            // note: ignores the returnValueCluster
         }
         return change;
     }

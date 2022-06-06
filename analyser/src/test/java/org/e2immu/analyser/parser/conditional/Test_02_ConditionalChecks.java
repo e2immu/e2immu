@@ -154,7 +154,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     // nothing is possible anymore
                     // we do NOT expect a regression to the ReturnVariable
                     assertEquals(RETURN_1_VALUE, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
                 if ("4".equals(d.statementId())) {
@@ -334,8 +334,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:o:container@Class_ConditionalChecks_4>/*(ConditionalChecks_4)*/";
-                            case 1, 2, 3, 4 -> "<vp:o:cm@Parameter_o;initial:this.i@Method_method5_3-C>/*(ConditionalChecks_4)*/";
-                            case 5 -> "<vp:o:cm@Parameter_o>/*(ConditionalChecks_4)*/";
+                            case 1 -> "<vp:o:cm@Parameter_o;initial@Field_i>/*(ConditionalChecks_4)*/";
                             default -> "o/*(ConditionalChecks_4)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -354,11 +353,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                            case 1, 2, 3, 4, 5 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                             default -> RETURN_VALUE;
                         };
                         assertEquals(expectValue, d.currentValue().toString());
-                        mustSeeIteration(d, 6);
+                        mustSeeIteration(d, 2);
                     }
                 }
             }
@@ -378,11 +377,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 4, d.context().evaluationContext().allowBreakDelay());
+                    assertFalse( d.context().evaluationContext().allowBreakDelay());
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
-                }
-                if("3".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
                 }
             }
         };
@@ -390,7 +386,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 mustSeeIteration(d, 2);
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
         };
@@ -422,11 +418,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
                         case 0 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                        case 1, 2, 3, 4, 5 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
+                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&(o==this||<f:conditionalChecks.i>==i)";
                         default -> RETURN_VALUE;
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 5, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
 
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration

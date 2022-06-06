@@ -437,7 +437,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("perPackage", fr.scope.toString());
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:allowStar>&&<m:addTypeReturnImport>";
-                            case 1, 2 -> "instance type boolean&&<m:addTypeReturnImport>";
+                            case 1 -> "instance type boolean&&<m:addTypeReturnImport>";
                             default -> "instance type boolean&&`typeInfo.packageName`.startsWith(\"org\")";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -449,7 +449,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         } else if ("scope-perPackage:1".equals(fr.scope.toString())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>&&!<m:equals>?<f:allowStar>&&<m:addTypeReturnImport>:<f:allowStar>";
-                                case 1, 2 -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
+                                case 1 -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&<m:addTypeReturnImport>:instance type boolean";
                                 default -> "!myPackage.equals(`typeInfo.packageName`)&&null!=`typeInfo.packageName`?instance type boolean&&`typeInfo.packageName`.startsWith(\"org\"):instance type boolean";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -459,7 +459,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                 }
                 if ("doImport".equals(d.variableName())) {
-                    String expected = d.iteration() <= 2 ? "<m:addTypeReturnImport>"
+                    String expected = d.iteration() <= 1 ? "<m:addTypeReturnImport>"
                             : "`typeInfo.packageName`.startsWith(\"org\")";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -735,7 +735,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_8_2", 1, DONT_CARE, new DebugConfiguration.Builder()

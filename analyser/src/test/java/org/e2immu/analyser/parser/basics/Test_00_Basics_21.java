@@ -147,7 +147,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
                 String expect = d.iteration() <= 1 ? "<m:isSet>" : "/*inline isSet*/null!=t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }

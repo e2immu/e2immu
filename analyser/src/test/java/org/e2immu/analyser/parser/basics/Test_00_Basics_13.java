@@ -63,7 +63,7 @@ public class Test_00_Basics_13 extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                         assertEquals(DV.FALSE_DV, cm);
-                        assertEquals("b:0,return test:0", linkedVariables);
+                        assertEquals("b:0", linkedVariables);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo in2 && "in2".equals(in2.name)) {
@@ -150,7 +150,7 @@ public class Test_00_Basics_13 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                         assertEquals(DV.FALSE_DV, cm);
                         assertEquals("in1", value);
-                        assertEquals("in1:0,return test:0", linkedVariables);
+                        assertEquals("in1:0", linkedVariables);
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, enn);
                     }
                 }

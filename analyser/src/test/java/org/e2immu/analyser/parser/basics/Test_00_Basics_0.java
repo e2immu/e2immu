@@ -88,7 +88,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     }
                     assertDvInitial(d, "ext_not_null@Field_explicitlyFinal",
                             1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                    assertDv(d, "ext_not_null:this.explicitlyFinal@Method_getExplicitlyFinal_0-C;ext_not_null@Field_explicitlyFinal",
+                    assertDv(d, "ext_not_null@Field_explicitlyFinal",
                             1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }

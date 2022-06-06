@@ -85,19 +85,15 @@ public class Test_04_Assert extends CommonTestRunner {
                         assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        assertEquals("merge:0,this:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4.1.0".equals(d.statementId())) {
                         assertEquals("<return value>", d.currentValue().toString());
-                        // in 3, which is previous for 4 eval, this is linked statically to the return value
-                        // this linking is not given up, and it appears again here.
-                        String expected = d.iteration() <= 1 ? "merge:-1,other:-1,this:0" : "merge:1,this:0";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         // because of 4.0.0, merge, this and the return value are linked at static level
-                        String expected = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
                         String value = d.iteration() <= 1
@@ -113,7 +109,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "other:-1,return combine:0,this:0" : "return combine:0,this:0";
+                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
@@ -122,7 +118,7 @@ public class Test_04_Assert extends CommonTestRunner {
                             default -> "this";
                         };
                         assertEquals(value, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "other:-1,return combine:0,this:0" : "return combine:0,this:0";
+                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

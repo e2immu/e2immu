@@ -111,8 +111,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                         } else fail();
 
                         assertEquals("instance type String", d.currentValue().toString());
-                        String expectLv = "return method:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);

@@ -114,7 +114,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:i>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().minimalOutput());
-                    assertEquals("return getI:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
@@ -146,7 +146,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof ParameterInfo) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
@@ -157,8 +157,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "index:-1,return getX:-1,this.xs:-1";
-                        default -> "return getX:1,this.xs:3";
+                        case 0, 1 -> "this.xs:-1";
+                        default -> "this.xs:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 

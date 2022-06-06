@@ -79,9 +79,9 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/`properties`.get(s)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -95,7 +95,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
@@ -130,7 +130,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getProperty".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "setP".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("copy".equals(d.methodInfo().name)) {

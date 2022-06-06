@@ -184,8 +184,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertTrue(d.variableInfo().linkedVariablesIsSet());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "return increment3:-1,this.i:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
 
@@ -231,14 +230,12 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "j:-1,return increment3:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals(expect102, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "return increment3:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                 }

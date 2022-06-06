@@ -101,8 +101,9 @@ public class Test_46_Singleton extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 String delays = switch (d.iteration()) {
-                    case 0 -> "initial:SingletonClass.SINGLETON@Method_test_0-C;initial:this.k@Method_multiply_0-C";
-                    case 1, 2, 3, 4, 5 -> "initial:this.k@Method_multiply_0-C";
+                    case 0 -> "initial:SingletonClass.SINGLETON@Method_test_0-C";
+                    case 1 -> "container@Class_SingletonClass";
+                    case 2, 3 -> "initial@Field_created;initial@Field_k";
                     default -> "";
                 };
                 assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
