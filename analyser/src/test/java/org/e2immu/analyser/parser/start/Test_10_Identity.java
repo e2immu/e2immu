@@ -86,12 +86,12 @@ public class Test_10_Identity extends CommonTestRunner {
 
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("return idem:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 } else fail();
             }
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ReturnVariable) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
@@ -117,11 +117,11 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_0", 0, 0, new DebugConfiguration.Builder()
-                        //               .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //               .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //               .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
-                        //               .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
@@ -180,9 +180,9 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_1", 0, 0, new DebugConfiguration.Builder()
-                        //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
@@ -271,15 +271,15 @@ public class Test_10_Identity extends CommonTestRunner {
             }
             if ("idem4".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
             }
         };
 
         testClass("Identity_3", 0, 0, new DebugConfiguration.Builder()
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

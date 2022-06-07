@@ -161,18 +161,13 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("x".equals(fr.scope.toString())) {
                         String expected = d.iteration() == 0 ? "<f:k>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0
-                                ? "new X(x.k).k:-1,return get:-1,scope-36:37:-1,x:-1"
-                                : "new X(x.k).k:1,return get:1";
+                        String linked = d.iteration() == 0 ? "scope-36:37:-1,x:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals("0", d.statementId());
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     } else if (fr.scope instanceof ConstructorCall) {
-                        String linked = d.iteration() == 0
-                                ? "return get:0,scope-36:37:-1,x.k:-1,x:-1"
-                                : "return get:0,x.k:1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     } else fail("? " + fr.scope);
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -202,9 +197,9 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
 
         testClass("Lambda_3", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -213,11 +208,19 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    if ("2".equals(d.statementId())) {
+                    if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<s:int>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "f:-1" : "x.k:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
+                    if ("x".equals(fr.scope.toString())) {
+                        if ("3".equals(d.statementId())) {
+                            String linked = "f:-1??"; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
                     }
                 }
             }
@@ -243,8 +246,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                         }
                         if ("1".equals(d.statementId())) {
                             String linked = d.iteration() == 0
-                                    ? "l:-1,new X(x.k).k:-1,return get:-1,scope-37:21:-1,x:-1"
-                                    : "l:1,new X(x.k).k:1,return get:1";
+                                    ? "l:-1,new X(x.k).k:-1,scope-37:21:-1,x:-1"
+                                    : "l:1,new X(x.k).k:1";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else fail("Scope " + fr.scope);
@@ -262,8 +265,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectedLv = d.iteration() == 0
-                                ? "new X(x.k).k:0,return get:0,scope-37:21:-1,x.k:-1,x:-1"
-                                : "new X(x.k).k:0,return get:0,x.k:1";
+                                ? "new X(x.k).k:0,scope-37:21:-1,x.k:-1,x:-1"
+                                : "new X(x.k).k:0,x.k:1";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -271,7 +274,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<cc-exp:X>" : "x.k";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = d.iteration() == 0
                                 ? "l:0,new X(x.k).k:0,scope-37:21:-1,x.k:-1,x:-1"
                                 : "l:0,new X(x.k).k:0,x.k:1";
@@ -297,9 +300,9 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
-         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

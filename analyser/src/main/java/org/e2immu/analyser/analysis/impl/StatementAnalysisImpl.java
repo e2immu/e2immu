@@ -1240,7 +1240,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     delay = delay.merge(pad.causes());
                     progress |= pad.progress();
 
-                    LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
+                    Stream<LinkedVariables> toMergeLvStream = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables());
+                    Stream<LinkedVariables> lvStream;
+                    if (localAtLeastOneBlock) {
+                        lvStream = toMergeLvStream;
+                    } else {
+                        LinkedVariables previousLv = vic.best(EVALUATION).getLinkedVariables();
+                        lvStream = Stream.concat(Stream.of(previousLv), toMergeLvStream);
+                    }
+                    LinkedVariables linkedVariables = lvStream
                             .map(lv -> lv.translate(translationMap))
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                     if (executionDelay.isDelayed()) {
@@ -1933,24 +1941,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /**
-     * helper method
-     *
-     * @param variable the variable
-     * @return the most current variable info object
-     * @throws IllegalArgumentException when the variable does not yet exist
-     */
-    @Override
-    public Expression initialValueOfReturnVariable(@NotNull Variable variable) {
-        assert methodAnalysis.getMethodInfo().hasReturnValue();
-        String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
-        if (vic == null) {
-            throw new IllegalArgumentException("Cannot find " + variable + " in " + index);
-        }
-        return vic.getPreviousOrInitial().getValue();
-    }
-
-    /**
      * for reading, helper method; not for general use
      *
      * @param variable the variable
@@ -2585,6 +2575,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public void setBrokeDelay() {
-        if(!brokeDelay.isSet()) brokeDelay.set();
+        if (!brokeDelay.isSet()) brokeDelay.set();
     }
 }

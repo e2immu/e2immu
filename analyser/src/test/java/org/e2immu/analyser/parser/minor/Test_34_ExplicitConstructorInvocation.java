@@ -319,7 +319,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("absolute".equals(d.methodInfo().name)) {
-                assertEquals("<m:absolute>", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() <= 4 ? "<m:absolute>"
+                        : "null==parent?condition:condition.merge(parent.condition)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -327,7 +329,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("C".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
@@ -414,17 +416,17 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+                assertDv(d.p(0), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
-                        //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -440,7 +442,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals(10, n);
 
                 if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "variableTarget".equals(fr.fieldInfo.name)) {
                     assertTrue(d.statementId().compareTo("7") >= 0);
@@ -456,8 +458,8 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_13", 0, 1, new DebugConfiguration.Builder()
-                        //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

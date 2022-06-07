@@ -293,7 +293,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
@@ -323,8 +323,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // potential null pointer exception: both "now" and the result of the "now()" call
         testClass("Loops_11", 0, 2, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -638,15 +638,16 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 1) {
-                            String expectVars = "[kvStore, this]";
-                            assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
+                            assertEquals("[kvStore]", d.currentValue()
+                                    .variables(true).stream().map(Variable::toString)
+                                    .sorted().toList().toString());
                         }
                     }
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "key:-1,this.kvStore:-1,this:-1";
+                            case 0 -> "key:-1,this.kvStore:-1";
                             case 1 -> "this.kvStore:-1";
                             default -> "";
                         };
@@ -655,7 +656,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         String expectL1 = switch (d.iteration()) {
-                            case 0 -> "container:-1,key:-1,this.kvStore:-1,this:-1";
+                            case 0 -> "container:-1,key:-1,this.kvStore:-1";
                             case 1 -> "container:-1,this.kvStore:-1";
                             default -> "";
                         };
@@ -668,7 +669,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasMerge());
 
                         String linkedE = switch (d.iteration()) {
-                            case 0 -> "entry:-1,key:-1,this:-1";
+                            case 0 -> "entry:-1,key:-1";
                             case 1 -> "entry:-1";
                             default -> "";
                         };
@@ -679,15 +680,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
 
                         String linkedE = switch (d.iteration()) {
-                            case 0 -> "entry:-1,this:-1";
-                            case 1 -> "entry:-1";
+                            case 0,1 -> "entry:-1";
                             default -> "";
                         };
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        String linkedM = d.iteration() == 0 ? "this:-1" : "";
-                        assertEquals(linkedM, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -716,10 +715,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // TODO see Loops_17, one warning too many
         testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

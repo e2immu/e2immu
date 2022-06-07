@@ -56,22 +56,15 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "instanceCopy".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instanceCopy:0,return copyOf:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        String why = switch (d.iteration()) {
-                            case 0 -> "cm:instanceCopy@Method_copyOf_1-E;cm:return copyOf@Method_copyOf_1-E";
-                            case 1 -> "cm:another@Method_equals_1-E;cm:instanceCopy@Method_copyOf_1-E;cm:return copyOf@Method_copyOf_1-E;cm:this@Method_equals_1-E;cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceIdentity";
-                            case 2 -> "cm:instanceCopy@Method_copyOf_1-E;cm:return copyOf@Method_copyOf_1-E;cm@Parameter_another;cm@Parameter_instance2;initial@Field_value";
-                            case 3 -> "cm:instanceCopy@Method_copyOf_1-E;cm:return copyOf@Method_copyOf_1-E;cm@Parameter_instance2";
-                            default -> "";
-                        };
-                        assertDv(d, why, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
@@ -79,11 +72,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<vp:instanceCopy:container@Class_Fluent_0>/*(Fluent_0)*/";
-                            case 1 -> "<vp:instanceCopy:cm:another@Method_equals_1-E;cm:this@Method_equals_1-E;cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity>/*(Fluent_0)*/";
+                            case 1 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C>/*(Fluent_0)*/";
                             // to know @Container of Fluent_0, we must know the CM of instanceCopy, which will rely on this value (it is linked to it!)
                             case 2 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;initial@Field_value>/*(Fluent_0)*/";
                             case 3 -> "<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy>/*(Fluent_0)*/";
-                            case 4, 5 -> "<vp:instanceCopy:cm@Parameter_instanceCopy>/*(Fluent_0)*/";
                             default -> "instanceCopy/*(Fluent_0)*/";
                         };
                         //
@@ -94,19 +86,18 @@ public class Test_56_Fluent extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:container@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
-                            case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm:another@Method_equals_1-E;cm:this@Method_equals_1-E;cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity>/*(Fluent_0)*/:<m:build>";
+                            case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C>/*(Fluent_0)*/:<m:build>";
                             case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;initial@Field_value>/*(Fluent_0)*/:<m:build>";
                             case 3 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy>/*(Fluent_0)*/:<m:build>";
-                            case 4, 5 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instanceCopy>/*(Fluent_0)*/:<m:build>";
                             default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
                         };
                         assertEquals(expect, d.currentValue().toString());
 
-                        String expectLinks = d.iteration() <= 5 ? "instanceCopy:-1,return copyOf:0" : "instanceCopy:1,return copyOf:0";
+                        String expectLinks = d.iteration() <= 3 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -124,20 +115,15 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "return from:-1,this:0" : "return from:1,this:0";
-                        assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
-                        String why = switch (d.iteration()) {
-                            case 0, 1 -> "cm:return from@Method_from_2-E;cm:this@Method_from_2-E"; // caused by final@value
-                            default -> "";
-                        };
-                        assertDv(d, why, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "return from:0,this:-1" : "return from:0,this:1";
+                        String expected = d.iteration() <= 1 ? "this:-1" : "this:1";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED); // default value
                     }
                 }
             }
@@ -169,37 +155,34 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() <= 5 ? "<m:copyOf>"
+                String expect = d.iteration() <= 3 ? "<m:copyOf>"
                         : "/*inline copyOf*/instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("from".equals(d.methodInfo().name)) {
 
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() <= 3 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() <= 2 ? "<m:from>" : "this/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 4, DV.TRUE_DV, Property.FLUENT);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                String why = switch (d.iteration()) {
-                    case 0, 1 -> "cm:return from@Method_from_2-E;cm:this@Method_from_2-E"; // caused by final@value
-                    default -> "";
-                };
-                assertDv(d, why, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("value".equals(d.methodInfo().name)) {
@@ -227,12 +210,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
             if ("Builder".equals(d.typeInfo().simpleName)) {
                 if ("Fluent_0".equals(d.typeInfo().packageNameOrEnclosingType.getRight().simpleName)) {
-                    String why = switch (d.iteration()) {
-                        case 0 -> "final@Field_value";
-                        case 1 -> "cm:return from@Method_from_2-E;cm:this@Method_from_2-E";
-                        default -> "";
-                    };
-                    assertDv(d, why, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
@@ -248,10 +226,10 @@ public class Test_56_Fluent extends CommonTestRunner {
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -341,10 +319,10 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),
                 0, 1, new DebugConfiguration.Builder()
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                       // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                       // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                       // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMap.get(IFluent_1.class);

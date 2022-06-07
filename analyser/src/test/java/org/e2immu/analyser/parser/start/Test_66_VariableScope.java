@@ -148,7 +148,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
-                        assertEquals("ioe:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("ioe:1", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

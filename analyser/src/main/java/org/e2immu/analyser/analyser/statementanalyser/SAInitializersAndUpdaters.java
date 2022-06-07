@@ -228,7 +228,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                             CONTEXT_IMMUTABLE, dv, CONTEXT_MODIFIED, dv);
                 } else {
                     StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-                    if(lastStatement == null) {
+                    if (lastStatement == null) {
                         contextProperties = Map.of();
                     } else {
                         VariableInfoContainer vic = lastStatement.getVariable(parameterInfo.fullyQualifiedName);
@@ -272,7 +272,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(fr),
-                                end, null, null, false, false);
+                                end, null, null, false, false, null);
                         assignments.add(assignment);
                         assigned = true;
                     }
@@ -283,7 +283,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
-                            end, null, null, false, false);
+                            end, null, null, false, false, null);
                     assignments.add(assignment);
                 }
             }

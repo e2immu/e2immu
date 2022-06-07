@@ -103,8 +103,8 @@ public class Test_00_Basics_11 extends CommonTestRunner {
 
         // warning: out potential null pointer (x1) and assert always true (x1)
         testClass("Basics_11", 0, 2, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

@@ -49,8 +49,9 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<null-check>";
-                        default -> "null==StaticSideEffects_1.counter";
+                        case 0, 1, 2, 3 -> "<null-check>";
+                        default -> "null==<vp:counter:link@NOT_YET_SET>";
+                        // default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -67,8 +68,9 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<null-check>";
-                        default -> "null==StaticSideEffects_1.counter";
+                        case 0, 1, 2, 3 -> "<null-check>";
+                        default -> "null==<vp:counter:link@NOT_YET_SET>";
+                        //default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.condition().toString());
                     assertTrue(d.statementAnalysis().flowData().interruptsFlowIsSet());
@@ -96,23 +98,26 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
                             case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
+                            case 2, 3 -> "<null-check>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
+                            default -> "null==<vp:counter:link@NOT_YET_SET>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
+                            //    default -> "<null-check>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
+                            //     default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
-                            case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            default -> "instance type AtomicInteger";
+                            default -> "<wrapped:counter>"; // result of breaking delay in Merge
+                            //    default -> "instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
 
                         // important! (see SAApply) the value properties do not change
                         // they are the cause of the potential null pointer exception that we still need to get rid of.
-                        assertDv(d,2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
@@ -131,11 +136,11 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-               // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

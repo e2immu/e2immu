@@ -351,7 +351,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
         TypeInfo b6 = typeContext.getFullyQualified(Basics_6.class);

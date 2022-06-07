@@ -52,7 +52,13 @@ public class Assignment extends BaseExpression implements Expression {
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
     public final boolean hackForUpdatersInForLoop;
+
+    // used for assignments with Explicit Constructor Invocation, which cannot happen in the first iteration
+    // see SAInitializersAndUpdaters
     public final boolean allowStaticallyAssigned;
+    // used for computation of return statement linked variables, after merge
+    // use null to indicate that this set is to be computed (the default!)
+    private final Set<Variable> directAssignmentVariables;
 
     private Assignment(Identifier identifier,
                        Primitives primitives,
@@ -64,7 +70,8 @@ public class Assignment extends BaseExpression implements Expression {
                        Variable variableTarget,
                        MethodInfo binaryOperator,
                        boolean hackForUpdatersInForLoop,
-                       boolean allowStaticallyAssigned) {
+                       boolean allowStaticallyAssigned,
+                       Set<Variable> directAssignmentVariables) {
         super(identifier);
         this.primitives = primitives;
         this.target = target;
@@ -76,22 +83,29 @@ public class Assignment extends BaseExpression implements Expression {
         this.binaryOperator = binaryOperator;
         this.hackForUpdatersInForLoop = hackForUpdatersInForLoop;
         this.allowStaticallyAssigned = allowStaticallyAssigned;
+        this.directAssignmentVariables = directAssignmentVariables;
     }
 
     // see explanation below (makeHackInstance); called in SAInitializersAndUpdaters
     public Expression cloneWithHackForLoop() {
         return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true,
-                allowStaticallyAssigned);
+                allowStaticallyAssigned, directAssignmentVariables);
     }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
         this(Identifier.joined("new assignment", List.of(target.getIdentifier(), value.getIdentifier())), primitives,
-                target, value, null, null, true, true);
+                target, value, null, null, true, true, null);
+    }
+
+    // used in SAEvaluationOfMainExpression, for assignments to the return variable
+    public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value, Set<Variable> directAssignmentVariables) {
+        this(Identifier.joined("new assignment", List.of(target.getIdentifier(), value.getIdentifier())), primitives,
+                target, value, null, null, true, true, directAssignmentVariables);
     }
 
     public Assignment(Identifier identifier, Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(identifier, primitives, target, value, null, null, true, true);
+        this(identifier, primitives, target, value, null, null, true, true, null);
     }
 
     public Assignment(Identifier identifier,
@@ -101,7 +115,8 @@ public class Assignment extends BaseExpression implements Expression {
                       MethodInfo assignmentOperator,
                       Boolean prefixPrimitiveOperator,
                       boolean complainAboutAssignmentOutsideType,
-                      boolean allowStaticallyAssigned) {
+                      boolean allowStaticallyAssigned,
+                      Set<Variable> directAssignmentVariables) {
         super(identifier);
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
@@ -120,6 +135,7 @@ public class Assignment extends BaseExpression implements Expression {
         }
         hackForUpdatersInForLoop = false;
         this.allowStaticallyAssigned = allowStaticallyAssigned;
+        this.directAssignmentVariables = directAssignmentVariables;
     }
 
     @Override
@@ -142,10 +158,20 @@ public class Assignment extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translatedTarget = target.translate(inspectionProvider, translationMap);
         Expression translatedValue = value.translate(inspectionProvider, translationMap);
-        if (translatedValue == this.value && translatedTarget == this.target) return this;
+        Set<Variable> translatedDirect;
+        if (directAssignmentVariables == null) {
+            translatedDirect = null;
+        } else {
+            Set<Variable> translated = directAssignmentVariables.stream()
+                    .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
+            translatedDirect = translated.equals(directAssignmentVariables) ? directAssignmentVariables : translated;
+        }
+        if (translatedValue == this.value && translatedTarget == this.target && translatedDirect == directAssignmentVariables)
+            return this;
+
         return new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,
-                complainAboutAssignmentOutsideType, allowStaticallyAssigned);
+                complainAboutAssignmentOutsideType, allowStaticallyAssigned, directAssignmentVariables);
     }
 
     @Override
@@ -221,7 +247,7 @@ public class Assignment extends BaseExpression implements Expression {
         if (value.isDelayed()) {
             return new Assignment(identifier, primitives, target, value.mergeDelays(causesOfDelay),
                     assignmentOperator, prefixPrimitiveOperator, complainAboutAssignmentOutsideType, variableTarget,
-                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned);
+                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned, directAssignmentVariables);
         }
         return this;
     }
@@ -420,6 +446,11 @@ public class Assignment extends BaseExpression implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
+        LinkedVariables lvAfterDelay = computeLinkedVariables(context, resultOfExpression);
+        builder.assignment(at, resultOfExpression, lvAfterDelay);
+    }
+
+    private LinkedVariables computeLinkedVariables(EvaluationResult context, Expression resultOfExpression) {
         /*
         There are fundamentally two approaches to computing linked variables here.
         The first is to compute them on "value", the second one on "resultOfExpression".
@@ -429,25 +460,27 @@ public class Assignment extends BaseExpression implements Expression {
         We choose the former approach! this has repercussions...
          */
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
-        Set<Variable> directAssignment = value.directAssignmentVariables();
         LinkedVariables linkedVariables;
-        if (!directAssignment.isEmpty() && allowStaticallyAssigned) {
-            Map<Variable, DV> map = directAssignment.stream()
-                    .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
-            linkedVariables = lvExpression.merge(LinkedVariables.of(map));
+        if (allowStaticallyAssigned) {
+            Set<Variable> directAssignment = directAssignmentVariables != null ? directAssignmentVariables
+                    : value.directAssignmentVariables();
+            if (!directAssignment.isEmpty()) {
+                Map<Variable, DV> map = directAssignment.stream()
+                        .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
+                linkedVariables = lvExpression.merge(LinkedVariables.of(map));
+            } else {
+                linkedVariables = lvExpression;
+            }
         } else {
             linkedVariables = lvExpression;
         }
-        LinkedVariables lvAfterDelay;
         if (resultOfExpression.isDelayed()) {
             Set<Variable> vars = new HashSet<>(value.variables(true));
             Map<Variable, DV> map = vars.stream()
                     .collect(Collectors.toUnmodifiableMap(v -> v, v -> resultOfExpression.causesOfDelay()));
-            lvAfterDelay = linkedVariables.merge(LinkedVariables.of(map));
-        } else {
-            lvAfterDelay = linkedVariables;
+            return linkedVariables.merge(LinkedVariables.of(map));
         }
-        builder.assignment(at, resultOfExpression, lvAfterDelay);
+        return linkedVariables;
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {

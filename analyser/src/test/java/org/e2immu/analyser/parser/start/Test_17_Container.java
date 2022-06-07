@@ -369,7 +369,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("m2".equals(d.methodInfo().name)) {
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
@@ -387,10 +387,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-             //           .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //          .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //           .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //           .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

@@ -88,8 +88,6 @@ public interface StatementAnalysis extends Analysis,
          */
     FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue);
 
-    Expression initialValueOfReturnVariable(@NotNull Variable variable);
-
     VariableInfo findOrNull(@NotNull Variable variable, Stage level);
 
     VariableInfoContainer findOrNull(@NotNull Variable variable);

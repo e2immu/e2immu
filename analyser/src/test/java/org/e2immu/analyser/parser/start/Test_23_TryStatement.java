@@ -176,15 +176,15 @@ public class Test_23_TryStatement extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.simpleName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV,Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV,Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
         };
 
         testClass("TryStatement_5", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -33,10 +33,7 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.analyser.Property.MARK_CLEAR_INCREMENTAL;
@@ -344,17 +341,26 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         assert methodInfo().hasReturnValue();
         Structure structure = statementAnalysis.statement().getStructure();
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
-        Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
+        VariableInfo prev = statementAnalysis.getVariable(returnVariable.fullyQualifiedName()).getPreviousOrInitial();
+        Expression currentReturnValue = prev.getValue();
 
         EvaluationResult updatedContext;
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
+        Set<Variable> directAssignmentVariables;
         if (currentReturnValue instanceof UnknownExpression) {
             // simplest situation
             toEvaluate = expression;
             updatedContext = context;
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
+            directAssignmentVariables = null;
         } else {
+            /*
+            The reason we compute the directAssignmentVariables from the previous LV rather than from the current
+            translated expression is that the linked variables may be the product of a LV merge, which is different.
+            See AnalysisProvider_0 for a full example.
+             */
+            directAssignmentVariables = prev.getLinkedVariables().directAssignmentVariables();
             // substitute <return value> for the current expression, rather than rely on condition manager in eval context
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
@@ -368,7 +374,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     .doNotComplainInlineConditional().setIgnoreValueFromState().build();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
-                new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
+                new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate, directAssignmentVariables);
         return assignment.evaluate(updatedContext, forwardEvaluationInfo);
     }
 
