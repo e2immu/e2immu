@@ -303,9 +303,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
             Variable modifiedVariable = replaceScope(parameters, scope, typeOfTranslation, evaluationResult,
                     identifierOfMethodCall, variable, inspectionProvider, fieldReference);
 
+            /*
+            Lambda_4: simply being present is not good enough to ensure consistency wrt. linked variables
             if (evaluationResult.evaluationContext() != null && evaluationResult.evaluationContext().isPresent(modifiedVariable)) {
                 return new VariableExpression(modifiedVariable);
-            }
+            }*/
 
             if (effectivelyFinal.valueIsTrue()) {
                 ConstructorCall constructorCall = bestConstructorCall(evaluationResult, scope);

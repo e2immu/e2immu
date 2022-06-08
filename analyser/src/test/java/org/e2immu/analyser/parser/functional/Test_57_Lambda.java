@@ -110,7 +110,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "<m:get>" : "i$0";
+                    String expect = d.iteration() == 0 ? "<m:get>" : "`this.i`";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -121,7 +121,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("/*inline method*/i$0*i$0", srv.toString());
+                assertEquals("/*inline method*/i$0*`i`", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
@@ -136,9 +136,9 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "x.k";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "f:-1,x.k:-1,x:-1" : "x.k:1";
+                        String expectLv = d.iteration() == 0 ? "f:-1,x.k:-1,x:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -183,7 +183,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:x.k*i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:i$0*`x.k`", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -209,16 +209,16 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "x.k";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "f:-1" : "x.k:1";
+                        String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String linked = "f:-1??"; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
+                            String linked = ""; // FIXME changes to j:1 in iteration 1, caused by expansion of f.get()
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -296,7 +296,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline method*/x.k<=2?3:x.k*i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline method*/x.k<=2?3:i$0*`x.k`", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
@@ -357,7 +357,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("applyMethod".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
-                    assertEquals("/*inline applyMethod*/2*i*i+2*i*-i", e.toString());
+                    assertEquals("/*inline applyMethod*/2*i*i+2*i*-`i`", e.toString());
                     assertTrue(e instanceof InlinedMethod);
                 } else {
                     assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
