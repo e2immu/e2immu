@@ -214,7 +214,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("addNode".equals(d.methodInfo().name)) {
                 // ... or not, mm@Method_addNode
-                assertDv(d.p(0), 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {

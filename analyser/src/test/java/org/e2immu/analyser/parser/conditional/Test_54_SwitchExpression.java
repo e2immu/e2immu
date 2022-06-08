@@ -97,21 +97,6 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                 assertTrue(d.statementAnalysis().statement() instanceof ReturnStatement rs
                         && rs.expression instanceof Lambda lambda
                         && "$1".equals(lambda.definesType().simpleName));
-                String properties = switch (d.iteration()) {
-                    case 0 -> """
-                            b={modified in context=false:0, not null in context=initial:Choice.ONE@Method_apply_0-C;initial:Choice.THREE@Method_apply_2-C;initial:Choice.TWO@Method_apply_1-C;initial:c@Method_apply_0-E, read=true:1}, \
-                            c={modified in context=false:0, not null in context=nullable:1, read=true:1}\
-                            """;
-                    case 1 -> """
-                            b={modified in context=false:0, not null in context=initial:Choice.ONE@Method_apply_0-C;initial:Choice.TWO@Method_apply_1-C;initial:c@Method_apply_0-E, read=true:1}, \
-                            c={modified in context=false:0, not null in context=nullable:1, read=true:1}\
-                            """;
-                    default -> """
-                            b={modified in context=false:0, not null in context=not_null:5, read=true:1}, \
-                            c={modified in context=false:0, not null in context=nullable:1, read=true:1}\
-                            """;
-                };
-                assertEquals(properties, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
             }
         };
         testClass("SwitchExpression_4", 0, 1, new DebugConfiguration.Builder()

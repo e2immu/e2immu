@@ -97,13 +97,16 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("outputElement".equals(d.variableName())) {
-                    if ("8".equals(d.statementId()) || "9".equals(d.statementId())) {
+                    if("8".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8.0.5".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertDv(d, 3, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("9".equals(d.statementId())) {
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if ("string".equals(d.variableName())) {
@@ -147,7 +150,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 4, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
             }
         };

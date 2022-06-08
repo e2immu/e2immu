@@ -204,7 +204,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyInto".equals(d.methodInfo().name)) {
@@ -399,7 +399,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "<m:isEmpty>&&!<s:boolean>" : "!data.isEmpty()&&set.isEmpty()";
+                    String expected = d.iteration() == 0 ? "<precondition>&&<m:isEmpty>" : "!data.isEmpty()&&set.isEmpty()";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
@@ -413,7 +413,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 String expectEventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
-                    case 1 -> "[DelayedEventual:final@Field_set]";
+                    case 1 -> "[DelayedEventual:initial:this.set@Method_initialize_0-C;initial:this.set@Method_stream_0-C]";
                     case 2 -> "[DelayedEventual:initial@Field_set]";
                     default -> "@Only after: [set]";
                 };
@@ -440,7 +440,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // E1 approved preconditions is empty: all fields explicitly final
                 assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
                 if (d.iteration() < 2) {
-                    String expected = d.iteration() == 0 ? "final@Field_set" : "initial@Field_set";
+                    String expected = d.iteration() == 0 ? "initial:this.set@Method_initialize_0-C;initial:this.set@Method_stream_0-C" : "initial@Field_set";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
                     // E2 approved preconditions must contain "set"
@@ -487,7 +487,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "!<s:boolean>&&<m:size><=0" : "data.size()>=1&&set.size()<=0";
+                    String expected = d.iteration() == 0 ? "<precondition>&&<m:size><=0" : "data.size()>=1&&set.size()<=0";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
@@ -535,7 +535,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                    String expected = d.iteration() == 0 ? "!<s:boolean>&&0==<m:size>" : "0!=data.size()&&0==set.size()";
+                    String expected = d.iteration() == 0 ? "<precondition>&&0==<m:size>" : "0!=data.size()&&0==set.size()";
                     assertEquals(expected,
                             d.statementAnalysis().methodLevelData().combinedPreconditionGet().expression().toString());
                 }
@@ -567,8 +567,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_9".equals(d.typeInfo().simpleName)) {
-                assertEquals(d.iteration() <= 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                if (d.iteration() >= 2) {
+                assertEquals(d.iteration() <= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
+                if (d.iteration() >= 3) {
                     // we expect "value" to be guarded by isFinal (ComputingTypeAnalyser.findFieldsGuardedByEventuallyImmutableFields)
                     String expected = "isFinal=!isFinal";
                     // E1 approved preconditions

@@ -74,7 +74,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 // MUTABLE because without A API
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertDv(d, BIG, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

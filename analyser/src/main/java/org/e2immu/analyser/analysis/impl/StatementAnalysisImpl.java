@@ -1286,10 +1286,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         });
 
+        CausesOfDelay conditionCauses = lastStatements.stream().map(cav -> cav.condition.causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         ProgressAndDelay soFar = new ProgressAndDelay(progress, delay);
         ProgressAndDelay mergeStatus = linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap, soFar)
-                .addProgress(progress);
+                variablesWhereMergeOverwrites, newScopeVariables, prepareMerge, setCnnVariables, translationMap,
+                conditionCauses, soFar).addProgress(progress);
 
         Expression translatedAddToState = addToStateAfterMerge == null ? null :
                 addToStateAfterMerge.translate(evaluationContext.getAnalyserContext(), translationMap);
@@ -1364,6 +1366,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                        PrepareMerge prepareMerge,
                                                        Map<Variable, DV> setCnnVariables,
                                                        TranslationMap translationMap,
+                                                       CausesOfDelay conditionCauses,
                                                        ProgressAndDelay delay) {
 
         for (VariableInfoContainer vic : prepareMerge.toIgnore) {
@@ -1442,6 +1445,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ProgressAndDelay extIgnModStatus = computeLinkedVariables.write(EXTERNAL_IGNORE_MODIFICATIONS,
                 groupPropertyValues.getMap(EXTERNAL_IGNORE_MODIFICATIONS));
 
+        // extra delay.causes(): before we know whether branches get excluded, we cannot decide
         ProgressAndDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
@@ -1449,7 +1453,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
         ProgressAndDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED));
+                groupPropertyValues.getMap(CONTEXT_MODIFIED), conditionCauses);
+
         return delay.combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)

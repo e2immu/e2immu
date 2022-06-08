@@ -68,12 +68,17 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.parser.modification.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                if("0".equals(d.statementId())) {
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if("0.0.0".equals(d.statementId())) {
+                    assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, DV.TRUE_DV,Property.MODIFIED_METHOD);
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()

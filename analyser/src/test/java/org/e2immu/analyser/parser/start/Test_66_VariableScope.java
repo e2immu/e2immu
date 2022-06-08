@@ -79,23 +79,35 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
                         assertEquals("0", d.currentValue().toString());
                     } else if ("1.0.2.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "instance type int+j$1.0.2";
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<v:j>+<m:nextInt>";
+                            case 1 -> "j$1.0.2+<m:nextInt>";
+                            default -> "instance type int+j$1.0.2";
+                        };
                         assertEquals(expect, d.currentValue().toString());
-                    } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                    } else if ("1.0.2".equals(d.statementId())) {
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
+                            case 1 -> "instance type int<=9&&instance type int>=0?j$1.0.2+<m:nextInt>:0";
+                            default -> "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                        };
                         assertEquals(expect, d.currentValue().toString());
+                    } else if ("1.0.3".equals(d.statementId())) {
+                        //...
                     } else fail(d.statementId()); // no other statements
                 }
                 if ("k".equals(d.variableName())) {
                     if ("1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
+                            case 1 -> "instance type int<=9&&instance type int>=0?j$1.0.2+<m:nextInt>:0";
+                            default -> "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                        };
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
-                        String expect = d.iteration() == 0
+                        String expect = d.iteration() <= 1
                                 ? "<loopIsNotEmptyCondition>?<oos:j>+<m:nextInt>:0"
                                 : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:0):0";
                         assertEquals(expect, d.currentValue().toString());

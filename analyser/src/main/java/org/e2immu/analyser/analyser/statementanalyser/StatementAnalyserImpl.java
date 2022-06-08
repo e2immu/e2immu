@@ -258,7 +258,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
 
                 if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
-                    LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
+                    // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
                     // uncomment the following statement if you want to break only delays at one statement,
                     // instead of in the whole method
                     // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)

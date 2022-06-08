@@ -353,8 +353,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertTrue(inlinedMethod.containsVariableFields());
                     } else fail();
                 }
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
@@ -383,7 +383,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getPrecondition().expression().toString());
 
                 assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() >= 3) {
@@ -421,7 +421,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             }
 
             if ("getOrDefault".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 String expected = d.iteration() <= 1 ? "<m:getOrDefault>"
                         : "/*inline getOrDefault*/null==`t`?alternative/*@NotNull*/:`t`";
@@ -454,8 +454,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:this.t@Method_equals_3-C";
                         case 1 -> "[13 delays]";
-                        case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_other;cm@Parameter_t;mom@Parameter_t";
-                        case 3 -> "cm@Parameter_other;cm@Parameter_t;link:other@Method_copy_0:M;mom@Parameter_t";
+                        case 2 -> "break_init_delay:this.t@Method_set_1.0.0-C;cm@Parameter_message;cm@Parameter_other;cm@Parameter_t;mom@Parameter_t";
+                        case 3 -> "cm@Parameter_message;cm@Parameter_other;cm@Parameter_t;link:other@Method_copy_0:M;mom@Parameter_t";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());

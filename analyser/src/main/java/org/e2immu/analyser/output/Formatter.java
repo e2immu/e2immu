@@ -159,14 +159,14 @@ public record Formatter(FormattingOptions options) {
             tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
                     LINE_SPLIT, false));
         }
-        ForwardInfo exceeds = lookAhead.exceeds();
-        assert exceeds != null;
+        ForwardInfo exceeds9 = lookAhead.exceeds();
+        assert exceeds9 != null;
         if (lookAhead.current() != null) {
             writeLine(list, writer, pos, lookAhead.current().pos());
-            return exceeds.pos();
+            return exceeds9.pos();
         } else {
-            writeLine(list, writer, pos, exceeds.pos());
-            return exceeds.pos() + 1;
+            writeLine(list, writer, pos, exceeds9.pos());
+            return exceeds9.pos() + 1;
         }
     }
 

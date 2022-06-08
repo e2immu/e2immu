@@ -154,10 +154,10 @@ public class Test_45_Project extends CommonTestRunner {
 
         testClass("Project_0", 2, 19, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -172,9 +172,6 @@ public class Test_45_Project extends CommonTestRunner {
     @Test
     public void test_0bis() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if("0".equals(d.statementId())) {
-                assertEquals(d.iteration() == 5, d.context().evaluationContext().allowBreakDelay());
-            }
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     assert "prev".equals(fr.scope.toString());
@@ -189,17 +186,12 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                    String cause = switch (d.iteration()) {
-                        case 0 -> "initial:now@Method_recentlyReadAndUpdatedAfterwards_2.0.1.0.1-C;initial:this.kvStore@Method_recentlyReadAndUpdatedAfterwards_2-C";
-                        case 1, 2, 3, 4, 5, 6, 7, 8, 9 -> "ext_not_null@Field_kvStore;ext_not_null@Field_read;initial:now@Method_recentlyReadAndUpdatedAfterwards_2.0.1.0.1-C;initial:this.kvStore@Method_recentlyReadAndUpdatedAfterwards_2-C";
-                        default -> "";
-                    };
                     if ("container".equals(fr.scope.toString())) {
-                        if("2.0.1.0.1.0.0".equals(d.statementId())) {
-                            assertDv(d, cause, 6, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        if ("2.0.1.0.1.0.0".equals(d.statementId())) {
+                            assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                     } else if ("scope-container:2.0.1".equals(fr.scope.toString())) {
-                        assertDv(d, cause, 6, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     } else fail("Have " + fr.scope);
                 }
             }
@@ -207,57 +199,67 @@ public class Test_45_Project extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "previousRead".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 6, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 6, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "value".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 7, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+            }
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
+                    if ("scope-scope-111:28:0".equals(fr.scope.toString())) {
+                        assertNotNull(fr.scopeVariable);
+                        if ("0".equals(d.statementId())) {
+                            // as a result of breaking a delay
+                            assertDv(d, 20, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertEquals("scope-111:28:-1,this.kvStore:-1", d.variableInfo().getLinkedVariables().toString());
+                        }
                     }
                 }
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                String linked = switch (d.iteration()) {
-                    case 0, 1, 2, 3, 4, 5, 6, 7 -> "NOT_YET_SET";
-                    default -> "previousRead:0,scope-container:2.0.1.updated:2,this.kvStore:3";
-                };
+                assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                String linked = d.iteration() <= 16 ? "NOT_YET_SET" : "previousRead:0,scope-container:2.0.1.updated:2,this.kvStore:3";
+
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, 6, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 25, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("updated".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
                 String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("value".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
                 assertEquals("value:0", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 25, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 26, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 26, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                 assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -265,23 +267,23 @@ public class Test_45_Project extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 8 ? "<m:set>"
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < BIG ? "<m:set>"
                         : "/*inline set*/null==kvStore.get(key)?null:(kvStore.get(key)).value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 8 ? "<m:get>"
+                assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < BIG ? "<m:get>"
                         : "/*inline get*/null==kvStore.get(key)?null:container.value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
         testClass("Project_0", 1, DONT_CARE, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
@@ -335,10 +337,10 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addTypeMapVisitor(typeMapVisitor)
-         //      .addEvaluationResultVisitor(evaluationResultVisitor)
-         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //       .addTypeMapVisitor(typeMapVisitor)
+                //      .addEvaluationResultVisitor(evaluationResultVisitor)
+                //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

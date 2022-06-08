@@ -393,6 +393,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * DGSimplified_4, backupComparator line 135 shows a dilemma: bc == null ? 0 : bc.compare(...)
          * requires content not null in the "ifFalse" clause, but allows for null. Should we make the parameter
          * Nullable, or NotNull1? We prefer nullable.
+         * FIXME causes issue in Resources, _AAPI
          * <p>
          * we're breaking delays one variable at a time, so if we need to go into sources of loops, we'll do that
          * first. See e.g. Project_0
@@ -452,12 +453,24 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     return;
                 }
             }
+            if(value.isDelayed()) {
+                // cm is not delayed
+                List<Variable> vars = value.variables(true);
+                List<Variable> varsInCm = cm.variables();
+                if(!Collections.disjoint(vars, varsInCm)) {
+                    LOGGER.debug("Delaying CNN, delayed value shares variables with CM, {}", variable);
+                    setProperty(variable, Property.CONTEXT_NOT_NULL, value.causesOfDelay() );
+                    return;
+                }
+            }
+
             DV effectivelyNotNull = evaluationContext.notNullAccordingToConditionManager(variable)
                     .maxIgnoreDelay(evaluationContext.notNullAccordingToConditionManager(value));
             if (effectivelyNotNull.isDelayed()) {
                 setProperty(variable, Property.CONTEXT_NOT_NULL, effectivelyNotNull);
                 return;
             }
+
 
             // using le() instead of equals() here is controversial. if a variable is not null according to the
             // condition manager, and we're requesting content not null, e.g., then what to do? see header of this method.

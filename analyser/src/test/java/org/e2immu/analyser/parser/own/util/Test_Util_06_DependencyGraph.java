@@ -414,7 +414,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
     public void test_1() throws IOException {
         testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 3, 9,
                 new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(mavForFreezable)
+                  //      .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

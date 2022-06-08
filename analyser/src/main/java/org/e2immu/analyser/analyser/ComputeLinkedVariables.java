@@ -282,15 +282,19 @@ public class ComputeLinkedVariables {
     }
 
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
+        return write(property, propertyValues, CausesOfDelay.EMPTY);
+    }
+
+    public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues, CausesOfDelay extraDelay) {
         try {
-            return writeProperty(property, propertyValues);
+            return writeProperty(property, propertyValues, extraDelay);
         } catch (IllegalStateException ise) {
             LOGGER.error("Clusters assigned are: {}", clusters);
             throw ise;
         }
     }
 
-    private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues) {
+    private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues, CausesOfDelay extraDelay) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
         boolean broken = false;
@@ -341,6 +345,14 @@ public class ComputeLinkedVariables {
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
 
+            // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
+            // currently only for CM; example: TrieSimplified_0
+            if(extraDelay.isDelayed()) {
+                if(summary.isDone()) {
+                    LOGGER.debug("Extra is working");
+                }
+                summary = extraDelay;
+            }
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
                 if (allowBreakDelay && summary.valueIsFalse()) {
@@ -354,6 +366,7 @@ public class ComputeLinkedVariables {
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
             }
+            DV newValue = summary;
             for (Variable variable : cluster.variables) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
@@ -362,13 +375,13 @@ public class ComputeLinkedVariables {
                     if (current.isDelayed()) {
                         try {
                             DV inMap = propertyValues.get(variable);
-                            if (property.bestDv.equals(inMap)) {
+                            if (property.bestDv.equals(inMap) && extraDelay.isDone()) {
                                 // whatever happens, this value cannot get better (e.g., TRUE in CM)
                                 vic.setProperty(property, inMap, stage);
                                 progress = true;
                             } else {
-                                vic.setProperty(property, summary, stage);
-                                progress |= summary.isDone();
+                                vic.setProperty(property, newValue, stage);
+                                progress |= newValue.isDone();
                                 if (broken) {
                                     LOGGER.debug("**** Setting CM of {} to false in stmt {}", variable,
                                             statementAnalysis.index());
@@ -378,9 +391,9 @@ public class ComputeLinkedVariables {
                             LOGGER.error("Current cluster: {}", cluster);
                             throw ise;
                         }
-                    } else if (summary.isDone() && !summary.equals(current)) {
+                    } else if (newValue.isDone() && !newValue.equals(current)) {
                         LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
-                        LOGGER.error("Property {}, current {}, new {}", property, current, summary);
+                        LOGGER.error("Property {}, current {}, new {}", property, current, newValue);
                         throw new UnsupportedOperationException("Overwriting value");
                     }
                 }

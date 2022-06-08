@@ -753,7 +753,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:0"
                                 : "scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:2,v:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 8, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("sum".equals(d.variableName())) {
@@ -790,6 +790,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                             assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                             assertDv(d, 8, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                            assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                         // delays in clustering in iteration 2, otherwise we'd have CM
                         if ("0.0.1.0.5".equals(d.statementId())) {
@@ -798,7 +799,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                     : "";
                             assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         }
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // delays in clustering in iteration 2, otherwise we'd have CM

@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
@@ -556,74 +554,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
             }
-            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.minimalOutput());
-        /*    if (methodInfo.hasImplementations()) {// && !methodInfo.methodInspection.get().hasStatements()) {
-                // see Independent_4; can we improve here?
-                LOGGER.debug("Method has implementations, returning vanilla result: {}", methodInfo.fullyQualifiedName);
-                ParameterizedType formalType = methodInfo.returnType();
-                DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
-                DV independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
-                assert MultiLevel.independentConsistentWithImmutable(independent, immutable) :
-                        "formal independent value inconsistent with formal immutable value for method "
-                                + methodInfo.fullyQualifiedName + ": independent " + independent + ", immutable " + immutable;
-                DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
-                notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
-                Properties properties = Properties.ofWritable(Map.of(
-                        IMMUTABLE, immutable,
-                        INDEPENDENT, independent,
-                        NOT_NULL_EXPRESSION, notNullExpression,
-                        CONTAINER, container,
-                        IDENTITY, IDENTITY.falseDv,
-                        IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-                value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
-                methodAnalysis.setProperty(IMMUTABLE, immutable);
-                methodAnalysis.setProperty(INDEPENDENT, independent);
-                methodAnalysis.setProperty(NOT_NULL_EXPRESSION, notNullExpression);
-                methodAnalysis.setProperty(CONTAINER, container);
-            } else */
+            LOGGER.debug("It {} method {} has return value {}, delaying", sharedState.evaluationContext.getIteration(),
+                    methodInfo.distinguishingName(), value.minimalOutput());
             if (value.isDelayed()) {
-                IsVariableExpression ive;
-                boolean returnThis = methodAnalysis.getLastStatement().statement() instanceof ReturnStatement rs
-                        && (((ive = rs.expression.asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This
-                        || rs.expression instanceof Cast cast && (((ive = cast.getExpression().asInstanceOf(VariableExpression.class)) != null) && ive.variable() instanceof This));
-                boolean breakValueDelay = !returnThis && value.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE,
-                        c -> c instanceof SimpleCause sc && sc.location().getInfo() == methodInfo);
-                // this is maybe a bit of a cheap hack, but I don't see another solution at the moment
-                // we need the break for InstanceOf_16, we cannot have it for Fluent_xx.
-                if (breakValueDelay) {
-                    LOGGER.debug("Breaking delay in srv of {} -- self-reference", methodInfo.fullyQualifiedName);
-                    // see e.g. InstanceOf_16, ExplicitConstructorInvocation_10
-                    ParameterizedType formalType = methodInfo.returnType();
-                    DV immutable = analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv);
-                    if (!methodAnalysis.properties.isDone(IMMUTABLE))
-                        methodAnalysis.setProperty(IMMUTABLE, immutable);
-                    // now that we have a value for immutable, we give independent another go
-                    computeIndependent(sharedState);
-                    DV independent;
-                    if (methodAnalysis.properties.isDone(INDEPENDENT)) {
-                        independent = methodAnalysis.getProperty(INDEPENDENT);
-                    } else {
-                        independent = analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv);
-                        methodAnalysis.setProperty(INDEPENDENT, independent);
-                    }
-                    DV container = analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv);
-                    notNullExpression = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
-                    Properties properties = Properties.ofWritable(Map.of(
-                            IMMUTABLE, immutable,
-                            INDEPENDENT, independent,
-                            NOT_NULL_EXPRESSION, notNullExpression,
-                            CONTAINER, container,
-                            IDENTITY, IDENTITY.falseDv,
-                            IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
-                    value = Instance.forMethodResult(methodInfo.identifier, methodInfo.returnType(), properties);
-                    if (!methodAnalysis.properties.isDone(CONTAINER))
-                        methodAnalysis.setProperty(CONTAINER, container);
-                } else {
-                    return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
-                }
-            } else {
-                throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
+                return delayedSrv(concreteReturnType, value, variableInfo.getValue().causesOfDelay(), true);
             }
+            throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
         }
 
         // try to compute the dynamic immutable status of value

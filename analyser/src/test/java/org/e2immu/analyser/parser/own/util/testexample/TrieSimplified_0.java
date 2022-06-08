@@ -20,6 +20,12 @@ import org.e2immu.annotation.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+IMPORTANT: when executed without allowing the analyser to look beyond the static
+subtype for initialisation, 1.0.1 evaluates to Boolean TRUE, as node.map is never
+assigned the new HashMap value...
+This means that 1.0.1.1.0 is never executed!
+ */
 @E1Container
 public class TrieSimplified_0<T> {
 
@@ -37,7 +43,7 @@ public class TrieSimplified_0<T> {
             if (node.map == null) {
                 node.map = new HashMap<>();
             } else {
-                newTrieNode = node.map.get(s);
+                newTrieNode = node.map.get(s); // 1.0.1.1.0
                 if (newTrieNode == null) {
                     newTrieNode = new TrieNode<>();
                     node.map.put(s, newTrieNode); // null ptr

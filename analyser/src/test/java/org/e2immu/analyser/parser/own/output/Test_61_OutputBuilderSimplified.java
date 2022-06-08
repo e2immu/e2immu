@@ -70,7 +70,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -92,7 +92,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
 
                         // links have not been established

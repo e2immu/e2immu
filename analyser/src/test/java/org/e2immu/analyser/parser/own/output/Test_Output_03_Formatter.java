@@ -154,10 +154,18 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 }
             }
             if ("handleExceeds".equals(d.methodInfo().name)) {
-                if ("exceeds".equals(d.variableName())) {
+                if ("exceeds9".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         assertEquals("`lookAhead.exceeds`", d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                    if ("3.1.0".equals(d.statementId())) {
+                        assertEquals("<v:exceeds9>", d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("3.1.1".equals(d.statementId())) {
+                        assertEquals("<v:exceeds9>", d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -165,15 +173,24 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("handleExceeds".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals("CM{state=null!=`lookAhead.exceeds`;parent=CM{parent=CM{}}}",
+                            d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
+                }
                 if ("3.0.0".equals(d.statementId())) {
                     assertEquals("null!=`lookAhead.current`", d.condition().toString());
+                }
+                if ("3.1.0".equals(d.statementId())) {
+                    assertEquals("null==`lookAhead.current`", d.condition().toString());
+                    assertEquals("null==`lookAhead.current`&&null!=`lookAhead.exceeds`",
+                            d.absoluteState().toString());
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("NOT_END".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("writer".equals(d.fieldInfo().name) && "Tab".equals(d.fieldInfo().owner.simpleName)) {
                 assertDv(d, DV.FALSE_DV, Property.FINAL);
@@ -193,7 +210,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), BIG, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("writer".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
@@ -216,12 +233,12 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 0, 26, new DebugConfiguration.Builder()
-                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                      //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

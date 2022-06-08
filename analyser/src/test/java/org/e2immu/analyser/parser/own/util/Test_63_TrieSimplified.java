@@ -46,9 +46,67 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if ("node".equals(fr.scope.toString())) {
+                        assertNotNull(fr.scopeVariable);
+                        if ("1.0.0".equals(d.statementId())) {
+                            fail("Does not exist here");
+                        }
+                        if ("1.0.1".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0 -> "<null-check>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:map>";
+                                default -> "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:map>";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                            assertEquals("newTrieNode:-1,node:-1,s:-1,this.root:-1",
+                                    d.variableInfo().getLinkedVariables().toString());
+                            assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // FIXME to FALSE
+                            assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        }
+                        if ("1.0.1.1.0".equals(d.statementId())) {
+                            assertEquals("<f:map>", d.currentValue().toString());
+                            assertEquals("newTrieNode:-1,node:-1,s:-1,this.root:-1",
+                                    d.variableInfo().getLinkedVariables().toString());
+                            assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if("1.0.1".equals(d.statementId())) {
+                    String expected = switch( d.iteration()) {
+                        case 0 -> "<null-check>";
+                        default -> "null==<f:node.map>";
+                    };
+                    assertEquals(expected, d.statementAnalysis().stateData()
+                            .valueOfExpression.get().toString());
+                }
+                if ("1.0.1.1.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "initial:node@Method_add_1.0.1-C";
+                        default -> "wait_for_modification:node@Method_add_1-E";
+                    //    default -> fail("Not supposed to reach iteration 7"); // because field analyser does not go beyond subtype
+                    };
+                    assertEquals(expected, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+            }
+        };
         // null ptr warning
         testClass("TrieSimplified_0", 5, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
+    }
+
+
+    @Test
+    public void test_0bis() throws IOException {
+        testClass("TrieSimplified_0", 2, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     // there should be no null ptr warnings

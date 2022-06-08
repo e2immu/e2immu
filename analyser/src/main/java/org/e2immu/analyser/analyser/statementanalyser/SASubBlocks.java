@@ -716,6 +716,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
                     context.getPrimitives().booleanParameterizedType(), value, value.causesOfDelay());
         }
+        if (context.evaluationContext().getIteration() == 0) {
+            // FIXME this solves the problem by creating a delay loop... not really a solution
+            CausesOfDelay causes = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(Stage.MERGE), CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+            return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
+                    context.getPrimitives().booleanParameterizedType(), value, causes);
+        }
         if (value instanceof ArrayInitializer ai) {
             return new BooleanConstant(context.getPrimitives(), ai.multiExpression.expressions().length > 0);
         }

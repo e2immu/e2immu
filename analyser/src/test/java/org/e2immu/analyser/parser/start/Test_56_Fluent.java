@@ -72,7 +72,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<vp:instanceCopy:container@Class_Fluent_0>/*(Fluent_0)*/";
-                            case 1 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C>/*(Fluent_0)*/";
+                            case 1 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C;initial:this.value@Method_withValue_0-C>/*(Fluent_0)*/";
                             // to know @Container of Fluent_0, we must know the CM of instanceCopy, which will rely on this value (it is linked to it!)
                             case 2 -> "<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;initial@Field_value>/*(Fluent_0)*/";
                             case 3 -> "<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy>/*(Fluent_0)*/";
@@ -86,7 +86,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:container@Class_Fluent_0>/*(Fluent_0)*/:<m:build>";
-                            case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C>/*(Fluent_0)*/:<m:build>";
+                            case 1 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_another2;cm@Parameter_instance2;cm@Parameter_instanceCopy;cm@Parameter_instanceIdentity;initial:this.value@Method_hashCode_1-C;initial:this.value@Method_withValue_0-C>/*(Fluent_0)*/:<m:build>";
                             case 2 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_another;cm@Parameter_instance2;cm@Parameter_instanceCopy;initial@Field_value>/*(Fluent_0)*/:<m:build>";
                             case 3 -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?<vp:instanceCopy:cm@Parameter_instance2;cm@Parameter_instanceCopy>/*(Fluent_0)*/:<m:build>";
                             default -> "instanceCopy instanceof Fluent_0&&null!=instanceCopy?instanceCopy/*(Fluent_0)*/:new Fluent_0(`instance type Builder.value`)";

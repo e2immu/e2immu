@@ -213,8 +213,11 @@ public class Test_17_Container extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (S.equals(d.variableName()) && "addToS".equals(d.methodInfo().name)) {
-                if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
+                if ("0.0.0".equals(d.statementId())) {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if ("0".equals(d.statementId())) {
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
