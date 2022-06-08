@@ -18,10 +18,9 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,23 +42,34 @@ Default value: true
 Concerning delays: only condition and state are recursively combined, precondition is not.
  */
 public record ConditionManager(Expression condition,
+                               Set<Variable> conditionVariables,
                                Expression state,
+                               Set<Variable> stateVariables,
                                Precondition precondition,
                                ConditionManager parent) {
+
+    private static final Set<Variable> NO_VARS = Set.of();
 
     private static final ConditionManager SPECIAL = new ConditionManager();
 
     public static final int LIMIT_ON_COMPLEXITY = 200;
 
     private ConditionManager() {
-        this(UnknownExpression.forSpecial(), UnknownExpression.forSpecial(),
+        this(UnknownExpression.forSpecial(), NO_VARS, UnknownExpression.forSpecial(), NO_VARS,
                 new Precondition(UnknownExpression.forSpecial(), List.of()), null);
     }
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
+        checkVariables(condition, Objects.requireNonNull(conditionVariables));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
+        checkVariables(state, Objects.requireNonNull(stateVariables));
         Objects.requireNonNull(precondition);
+    }
+
+    // there can be more, but all the expression's variables should be included
+    private static void checkVariables(Expression e, Set<Variable> ev) {
+        assert ev.containsAll(e.variables(true));
     }
 
     public boolean isDelayed() {
@@ -87,44 +97,50 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, TRUE, Precondition.empty(TRUE), null);
+        return new ConditionManager(TRUE, NO_VARS, TRUE, NO_VARS, Precondition.empty(TRUE), null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, FALSE, new Precondition(FALSE, List.of()), null);
+        return new ConditionManager(FALSE, NO_VARS, FALSE, NO_VARS, new Precondition(FALSE, List.of()), null);
     }
 
     /*
     adds a new layer (parent this)
     Used in CompanionAnalyser, ComputingMethodAnalyser, FieldAnalyser
      */
-    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Precondition precondition) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition,
+                                                 Set<Variable> conditionVariables, Precondition precondition) {
+        return new ConditionManager(condition, conditionVariables, new BooleanConstant(primitives, true),
+                NO_VARS, precondition, this);
     }
 
     /*
     we guarantee a parent so that the condition counts!
     Used in: StatementAnalyserImpl.analyseAllStatementsInBlock
      */
-    public ConditionManager withCondition(EvaluationResult context, Expression switchCondition) {
-        return new ConditionManager(combine(context, condition, switchCondition), state, precondition, this);
+    public ConditionManager withCondition(EvaluationResult context, Expression switchCondition,
+                                          Set<Variable> conditionVariables) {
+        return new ConditionManager(combine(context, condition, switchCondition),
+                combine(this.conditionVariables, conditionVariables), state, stateVariables, precondition, this);
     }
 
     /*
     adds a new layer (parent this)
     Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects
     */
-    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition,
+                                                                        Set<Variable> conditionVariables) {
+        return new ConditionManager(condition, conditionVariables, new BooleanConstant(primitives, true),
+                NO_VARS, precondition, this);
     }
 
     /*
     adds a new layer (parent this)
     Used to: create a child CM that has more state
     */
-    public ConditionManager addState(Expression state) {
-        return new ConditionManager(condition, state, precondition, this);
+    public ConditionManager addState(Expression state, Set<Variable> stateVariables) {
+        return new ConditionManager(condition, conditionVariables, state, stateVariables, precondition, this);
     }
 
     /*
@@ -133,7 +149,7 @@ public record ConditionManager(Expression condition,
     This is the feedback loop from MethodLevelData.combinedPrecondition back into the condition manager
      */
     public ConditionManager withPrecondition(Precondition combinedPrecondition) {
-        return new ConditionManager(condition, state, combinedPrecondition, parent);
+        return new ConditionManager(condition, conditionVariables, state, stateVariables, combinedPrecondition, parent);
     }
 
     /*
@@ -141,7 +157,8 @@ public record ConditionManager(Expression condition,
     Used in EvaluationContext.nneForValue
      */
     public ConditionManager withoutState(Primitives primitives) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, parent);
+        return new ConditionManager(condition, conditionVariables,
+                new BooleanConstant(primitives, true), NO_VARS, precondition, parent);
     }
 
     /*
@@ -149,11 +166,13 @@ public record ConditionManager(Expression condition,
     Used in SASubBlocks
      */
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationResult evaluationContext,
-                                                                       Expression addToState) {
+                                                                       Expression addToState,
+                                                                       Set<Variable> addToStateVariables) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
-        return new ConditionManager(condition, newState, precondition, parent);
+        return new ConditionManager(condition, conditionVariables, newState,
+                combine(stateVariables, addToStateVariables), precondition, parent);
     }
 
     public Expression absoluteState(EvaluationResult evaluationContext) {
@@ -254,6 +273,9 @@ public record ConditionManager(Expression condition,
         return result;
     }
 
+    private Set<Variable> combine(Set<Variable> cv1, Set<Variable> cv2) {
+        return SetUtil.immutableUnion(cv1, cv2);
+    }
 
     private Expression combine(EvaluationResult evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
@@ -391,7 +413,8 @@ public record ConditionManager(Expression condition,
                     ? DelayedExpression.forSimplification(getIdentifier(), primitives.booleanParameterizedType(),
                     state, state.causesOfDelay())
                     : new BooleanConstant(primitives, true);
-            return new ConditionManager(condition, newState, precondition, parent);
+            Set<Variable> nsv = new HashSet<>(newState.variables(true));
+            return new ConditionManager(condition, conditionVariables, newState, nsv, precondition, parent);
         }
         if (withoutNegation instanceof And and) {
             Expression[] expressions = and.getExpressions().stream()
@@ -399,7 +422,8 @@ public record ConditionManager(Expression condition,
                     .toArray(Expression[]::new);
             Expression s = expressions.length == 0 ? new BooleanConstant(primitives, true) :
                     And.and(evaluationContext, expressions);
-            return new ConditionManager(condition, s, precondition, parent);
+            Set<Variable> nsv = new HashSet<>(s.variables(true));
+            return new ConditionManager(condition, conditionVariables, s, nsv, precondition, parent);
         }
         return this;
     }
@@ -410,9 +434,9 @@ public record ConditionManager(Expression condition,
 
     public List<Variable> variables() {
         return Stream.concat(parent == null ? Stream.of() : parent.variables().stream(),
-                Stream.concat(condition.variables(true).stream(),
+                Stream.concat(conditionVariables.stream(),
                         Stream.concat(precondition.expression().variables(true).stream(),
-                                state.variables(true).stream()))).toList();
+                                stateVariables.stream()))).toList();
     }
 
     public Expression multiExpression() {

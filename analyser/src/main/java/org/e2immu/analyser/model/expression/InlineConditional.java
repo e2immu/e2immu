@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 
@@ -125,13 +127,14 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            EvaluationResult child = context.child(condition);
+            Set<Variable> conditionVariables=  condition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+            EvaluationResult child = context.child(condition, conditionVariables);
             DV nneIfTrue = child.evaluationContext().getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
                 return nneIfTrue;
             }
             Expression notC = Negation.negate(context, condition);
-            EvaluationResult notChild = context.child(notC);
+            EvaluationResult notChild = context.child(notC, conditionVariables);
             DV nneIfFalse = notChild.evaluationContext().getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
             return nneIfFalse.min(nneIfTrue);
         }
@@ -195,6 +198,8 @@ public class InlineConditional extends BaseExpression implements Expression {
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
         Expression condition = conditionResult.value();
+        Set<Variable> conditionVariables = Stream.concat(this.condition.variables(true).stream(),
+                condition.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
@@ -206,12 +211,12 @@ public class InlineConditional extends BaseExpression implements Expression {
                 Math.max(ifTrue.getComplexity(), ifFalse.getComplexity()) >= 1000;
 
         EvaluationResult copyForThen = resultIsBoolean || tooComplex ? context :
-                context.child(condition);
+                context.child(condition, conditionVariables);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
         EvaluationResult copyForElse = resultIsBoolean ? context :
-                context.child(Negation.negate(context, condition));
+                context.child(Negation.negate(context, condition), conditionVariables);
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
@@ -242,9 +247,9 @@ public class InlineConditional extends BaseExpression implements Expression {
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
-        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition);
+        EvaluationResult copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition, condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
         Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
-        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition));
+        EvaluationResult copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition), condition.variables(true).stream().collect(Collectors.toUnmodifiableSet()));
         Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
 
         if (useState) {

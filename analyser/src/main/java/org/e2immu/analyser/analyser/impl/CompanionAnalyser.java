@@ -34,10 +34,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
@@ -187,15 +184,15 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+        public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
             return new EvaluationContextImpl(iteration, cm);
         }
 
         @Override
-        public EvaluationContext childState(Expression state) {
-            ConditionManager cm = conditionManager.addState(state);
+        public EvaluationContext childState(Expression state, Set<Variable> stateVariables) {
+            ConditionManager cm = conditionManager.addState(state, stateVariables);
             return new EvaluationContextImpl(iteration, cm);
         }
 

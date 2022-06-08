@@ -228,9 +228,9 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public EvaluationContext child(Expression condition) {
+        public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
             return new EvaluationContextImpl(conditionManager
-                    .newAtStartOfNewBlockDoNotChangePrecondition(PRIMITIVES, condition));
+                    .newAtStartOfNewBlockDoNotChangePrecondition(PRIMITIVES, condition, conditionVariables));
         }
 
         @Override

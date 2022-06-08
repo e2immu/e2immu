@@ -42,10 +42,7 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -245,8 +242,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
                 switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
+                Set<Variable> switchConditionVariables = switchCondition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
-                        .withCondition(context, switchCondition));
+                        .withCondition(context, switchCondition, switchConditionVariables));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
@@ -460,15 +458,18 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
                 Expression condition;
+                Set<Variable> conditionVariables;
                 if (forwardAnalysisInfo.switchSelectorIsDelayed().isDelayed()) {
                     CausesOfDelay causes = forwardAnalysisInfo.conditionManager().condition().causesOfDelay()
                             .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
                     condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
                             statementAnalysis.primitives(), forwardAnalysisInfo.switchSelector(), causes);
+                    conditionVariables = forwardAnalysisInfo.switchSelector().variables(true).stream().collect(Collectors.toUnmodifiableSet());
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
+                    conditionVariables = forwardAnalysisInfo.conditionManager().conditionVariables();
                 }
-                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(condition.getIdentifier(), previous, condition);
+                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(condition.getIdentifier(), previous, condition, conditionVariables);
             }
 
             EvaluationContext evaluationContext = new SAEvaluationContext(

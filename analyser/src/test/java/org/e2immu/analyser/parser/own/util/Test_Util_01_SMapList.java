@@ -92,7 +92,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("1".equals(d.statementId())) {
-                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertDv(d, 1, DV.FALSE_DV,Property.CONTEXT_MODIFIED);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
             }
             if ("3".equals(d.statementId())) {

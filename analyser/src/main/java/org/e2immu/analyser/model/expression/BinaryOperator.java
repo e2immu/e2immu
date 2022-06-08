@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.Precedence.*;
 
@@ -321,7 +322,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         Expression state = and ? l.value() : Negation.negate(context, l.value());
-        EvaluationResult child = context.childState(state);
+        Set<Variable> stateVariables = Stream.concat(state.variables(true).stream(),
+                lhs.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+        EvaluationResult child = context.childState(state, stateVariables);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value() instanceof BooleanConstant booleanConstant) {

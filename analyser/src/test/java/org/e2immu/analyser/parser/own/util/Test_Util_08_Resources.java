@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +75,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<m:endsWith>&&0==<delayed array length>";
                         default -> "file.getName().endsWith(\".annotated_api\")&&0==<delayed array length>";
-              //FIXME          default -> "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
+                        //FIXME          default -> "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -84,6 +85,15 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("recursivelyAddFiles".equals(d.methodInfo().name)) {
+                if ("1.0.1.0.0".equals(d.statementId())) {
+                    assertEquals("null!=(new File(baseDirectory,dirRelativeToBase.getPath())).listFiles(File::isDirectory)", d.condition().toString());
+                    assertEquals("baseDirectory, dirRelativeToBase, subDirs", d.conditionVariablesSorted());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("fqnToPath".equals(d.methodInfo().name)) {
                 if ("parts[i]".equals(d.variableName())) {
@@ -159,6 +169,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
                 0, 15, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

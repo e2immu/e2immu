@@ -1068,8 +1068,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         @Override
-        public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+        public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
             return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
         }

@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
@@ -717,8 +718,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
+        // we're not adding originals here  TODO would that be possible, necessary?
+        Set<Variable> newStateVariables = newState.get().variables(true).stream().collect(Collectors.toUnmodifiableSet());
         Expression companionValueTranslated = translateCompanionValue(context, companionAnalysis,
-                filterResult, newState.get(), parameterValues);
+                filterResult, newState.get(), newStateVariables, parameterValues);
 
         boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
         if (remove) {
@@ -782,6 +785,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                       CompanionAnalysis companionAnalysis,
                                                       Filter.FilterResult<MethodCall> filterResult,
                                                       Expression instanceState,
+                                                      Set<Variable> instanceStateVariables,
                                                       List<Expression> parameterValues) {
         TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
         if (filterResult != null) {
@@ -796,7 +800,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         Expression companionValue = companionAnalysis.getValue();
         Expression translated = companionValue.translate(context.getAnalyserContext(), translationMap.build());
-        EvaluationResult child = context.child(instanceState, true);
+        EvaluationResult child = context.child(instanceState, instanceStateVariables, true);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain()
                 .setInCompanionExpression().build();
         EvaluationResult companionValueTranslationResult = translated.evaluate(child, fwd);

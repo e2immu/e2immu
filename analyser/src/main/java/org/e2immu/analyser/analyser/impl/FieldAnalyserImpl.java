@@ -1648,8 +1648,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // used in short-circuiting, inline conditional, and lambda
 
         @Override
-        public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+        public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionVariables,
                     Precondition.empty(getPrimitives()));
             return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, allowBreakDelay, cm, closure);
         }

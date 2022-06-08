@@ -683,10 +683,13 @@ public class And extends ExpressionCanBeTooComplex {
         EvaluationResult context = evaluationResult;
         List<Expression> sortedExpressions = new ArrayList<>(expressions);
         Collections.sort(sortedExpressions);
+        Set<Variable> conditionVariables = new HashSet<>();
         for (Expression expression : sortedExpressions) {
             EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
+            conditionVariables.addAll(expression.variables(true));
+            conditionVariables.addAll(result.value().variables(true));
             clauseResults.add(result);
-            context = context.child(result.value());
+            context = context.child(result.value(), Set.copyOf(conditionVariables));
         }
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder(context)

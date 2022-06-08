@@ -69,7 +69,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
-                assertDv(d, 2, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 5, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -79,7 +79,9 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     String value = switch (d.iteration()) {
                         case 0 -> "<f:t>";
                         case 1 -> "<null-check>?<vp:t:initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
-                        case 2, 3, 4, 5, 6 -> "<wrapped:t>";
+                        case 2 -> "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                        case 3, 4 -> "<null-check>?<vp:t:break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t>:<m:requireNonNull>";
+                        case 5, 6 -> "<wrapped:t>";
                         default -> "t$1-E$0";
                     };
                     assertEquals(value, d.currentValue().toString());
@@ -88,8 +90,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 2, "instance type Supplier<T>/*@IgnoreMods*/");
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertCurrentValue(d, 5, "instance type Supplier<T>/*@IgnoreMods*/");
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
@@ -103,8 +105,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     assertCurrentValue(d, 7, "nullable instance type T");
                 }
                 String expect = switch (d.iteration()) {
-                    case 0, 1 -> "<m:requireNonNull>";
-                    case 2, 3, 4, 5, 6 -> "<wrapped:t>";
+                    case 0, 1, 2, 3, 4 -> "<m:requireNonNull>";
+                    case 5, 6 -> "<wrapped:t>";
                     default -> "nullable instance type T/*@NotNull*/";
                 };
                 if ("1".equals(d.statementId())) {
@@ -152,13 +154,14 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             String expected = switch (d.iteration()) {
                 case 0 -> "initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 case 1 -> "break_init_delay:this.t@Method_get_0-C;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
+                case 2, 3, 4 -> "break_init_delay:this.t@Method_get_0-C;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0-C;values:this.t@Field_t";
                 default -> "null,nullable instance type T/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
-            assertEquals(d.iteration() > 1, d.fieldAnalysis().valuesDelayed().isDone());
+            assertEquals(d.iteration() > 4, d.fieldAnalysis().valuesDelayed().isDone());
 
             assertDv(d, 6, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-            assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+            assertDv(d, 6, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));

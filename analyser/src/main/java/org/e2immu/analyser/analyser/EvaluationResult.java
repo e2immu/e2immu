@@ -152,13 +152,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return evaluationContext.currentValue(variable);
     }
 
-    public EvaluationResult child(Expression condition) {
-        EvaluationContext child = evaluationContext.child(condition);
+    public EvaluationResult child(Expression condition, Set<Variable> conditionVariables) {
+        EvaluationContext child = evaluationContext.child(condition, conditionVariables);
         return copy(child);
     }
 
-    public EvaluationResult child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-        EvaluationContext child = evaluationContext.child(condition, disableEvaluationOfMethodCallsUsingCompanionMethods);
+    public EvaluationResult child(Expression condition, Set<Variable> conditionVariables, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+        EvaluationContext child = evaluationContext.child(condition, conditionVariables,
+                disableEvaluationOfMethodCallsUsingCompanionMethods);
         return copy(child);
 
     }
@@ -168,8 +169,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return copy(child);
     }
 
-    public EvaluationResult childState(Expression state) {
-        EvaluationContext child = evaluationContext.childState(state);
+    public EvaluationResult childState(Expression state, Set<Variable> stateVariables) {
+        EvaluationContext child = evaluationContext.childState(state, stateVariables);
         return copy(child);
     }
 

@@ -29,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
@@ -354,6 +356,7 @@ public class EvaluateMethodCall {
                                                 List<Expression> parameterValues) {
         if (!context.evaluationContext().hasState(objectValue)) return null;
         Expression state = context.evaluationContext().state(objectValue);
+
         Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
         Optional<Map.Entry<CompanionMethodName, CompanionAnalysis>> optValue = cMap.entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.VALUE)
@@ -373,7 +376,8 @@ public class EvaluateMethodCall {
                 .forEach(pair -> builder.put(pair.k, pair.v));
         Expression translated = companionValue.translate(context.getAnalyserContext(), builder.build());
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        EvaluationResult child = context.child(state, true);
+        Set<Variable> stateVariables = state.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+        EvaluationResult child = context.child(state, stateVariables, true);
         ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().doNotReevaluateVariableExpressionsDoNotComplain()
                 .setInCompanionExpression().build();
         Expression resultingValue = translated.evaluate(child, fwd).value();

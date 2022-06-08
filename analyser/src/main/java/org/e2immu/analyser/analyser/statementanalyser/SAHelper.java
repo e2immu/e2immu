@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
 
@@ -202,6 +203,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             statementAnalysis,
                             statementAnalysis.index(),
                             cm == null ? null : cm.condition(),
+                            cm == null ? "": cm.conditionVariables().stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")),
                             cm == null ? null : cm.state(),
                             cm == null ? null : cm.absoluteState(sharedState.context()),
                             cm,

@@ -22,14 +22,13 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.statement.YieldStatement;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
@@ -110,7 +109,9 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
             if (switchEntry.structure.statements().size() == 1) {
                 // single expression
                 Expression condition = convertDefaultToNegationOfAllOthers(context, switchEntry.structure.expression());
-                EvaluationResult localContext = context.child(condition);
+                Set<Variable> conditionVariables = Stream.concat(condition.variables(true).stream(),
+                        selector.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
+                EvaluationResult localContext = context.child(condition, conditionVariables);
                 EvaluationResult entryResult;
                 Statement statement = switchEntry.structure.statements().get(0);
                 Expression expression = statement instanceof YieldStatement yieldStatement ? yieldStatement.expression

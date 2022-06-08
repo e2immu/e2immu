@@ -195,16 +195,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public EvaluationContext child(Expression condition) {
-        return child(condition, false);
+    public EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
+        return child(condition, conditionVariables, false);
     }
 
     @Override
-    public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+    public EvaluationContext child(Expression condition, Set<Variable> conditionVariables, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
                 iteration,
-                conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
+                conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, conditionVariables),
                 closure,
                 disableEvaluationOfMethodCallsUsingCompanionMethods, false, preventAbsoluteStateComputation,
                 delayStatementBecauseOfECI, allowBreakDelay);
@@ -220,10 +220,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 delayStatementBecauseOfECI, allowBreakDelay);
     }
 
-    public EvaluationContext childState(Expression state) {
+    @Override
+    public EvaluationContext childState(Expression state, Set<Variable> stateVariables) {
         return new SAEvaluationContext(statementAnalysis,
                 myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                iteration, conditionManager.addState(state), closure,
+                iteration, conditionManager.addState(state, stateVariables), closure,
                 false, false, preventAbsoluteStateComputation,
                 delayStatementBecauseOfECI, allowBreakDelay);
     }

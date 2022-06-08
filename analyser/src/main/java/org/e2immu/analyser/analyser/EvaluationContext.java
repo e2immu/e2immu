@@ -88,7 +88,7 @@ public interface EvaluationContext {
     }
 
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
-    default EvaluationContext child(Expression condition) {
+    default EvaluationContext child(Expression condition, Set<Variable> conditionVariables) {
         throw new UnsupportedOperationException();
     }
 
@@ -96,11 +96,11 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-        return child(condition);
+    default EvaluationContext child(Expression condition, Set<Variable> conditionVariables, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+        return child(condition, conditionVariables);
     }
 
-    default EvaluationContext childState(Expression state) {
+    default EvaluationContext childState(Expression state, Set<Variable> stateVariables) {
         throw new UnsupportedOperationException();
     }
 

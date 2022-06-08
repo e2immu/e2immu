@@ -32,6 +32,7 @@ public interface StatementAnalyserVisitor {
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                 String statementId,
                 Expression condition,
+                String conditionVariablesSorted,
                 Expression state,
                 Expression absoluteState,
                 ConditionManager conditionManagerForNextStatement,

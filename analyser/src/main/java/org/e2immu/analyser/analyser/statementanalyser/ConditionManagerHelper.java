@@ -22,9 +22,11 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
+import java.util.Set;
 
 class ConditionManagerHelper {
     /*
@@ -35,7 +37,8 @@ class ConditionManagerHelper {
          */
     static ConditionManager makeLocalConditionManager(Identifier identifier,
                                                       StatementAnalysis previous,
-                                                      Expression condition) {
+                                                      Expression condition,
+                                                      Set<Variable> conditionVariables) {
         Primitives primitives = previous.primitives();
         Precondition combinedPrecondition;
         if (previous.methodLevelData().combinedPreconditionIsFinal()) {
@@ -60,6 +63,7 @@ class ConditionManagerHelper {
             return previousCm.withPrecondition(combinedPrecondition);
         }
         // swap condition for the one from forwardAnalysisInfo
-        return new ConditionManager(condition, previousCm.state(), combinedPrecondition, previousCm.parent());
+        return new ConditionManager(condition, conditionVariables, previousCm.state(),
+                previousCm.stateVariables(), combinedPrecondition, previousCm.parent());
     }
 }

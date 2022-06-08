@@ -55,30 +55,29 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("write".equals(d.methodInfo().name)) {
                 if ("6.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<m:pop>" : "<no return value>";
+                    String expected = d.iteration() <= BIG ? "<m:pop>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 5, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 5, d.status().isDone());
-                    assertEquals(d.iteration() >= 4, d.externalStatus().isDone());
+                    assertEquals(d.iteration() >= BIG, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= BIG, d.status().isDone());
+                    assertEquals(d.iteration() >= BIG, d.externalStatus().isDone());
                 }
                 if ("7.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<m:write>" : "<no return value>";
+                    String expected = d.iteration() <= BIG ? "<m:write>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 5, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 5, d.status().isDone());
-                    assertEquals(d.iteration() >= 4, d.externalStatus().isDone());
-                    assertTrue(d.iteration() < 6);
+                    assertEquals(d.iteration() >= BIG, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= BIG, d.status().isDone());
+                    assertEquals(d.iteration() >= BIG, d.externalStatus().isDone());
+                    assertTrue(d.iteration() < BIG);
                 }
                 if ("7".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "!<vl:writeNewLine>";
-                        case 1, 2, 3 -> "!(end$5>pos$5?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):instance type boolean)";
-                        default -> "!(end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean)";
+                        default-> "!<vl:writeNewLine>";
+             //           default -> "!(end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() >= 4, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 4, d.status().isDone());
-                    assertEquals(d.iteration() >= 5, d.externalStatus().isDone());
+                    assertEquals(d.iteration() >= BIG, d.evaluationResult().causesOfDelay().isDone());
+                    assertEquals(d.iteration() >= BIG, d.status().isDone());
+                    assertEquals(d.iteration() >= BIG, d.externalStatus().isDone());
                 }
             }
         };
@@ -88,31 +87,32 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 if ("writeNewLine".equals(d.variableName())) {
                     if ("5".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<v:end>><v:pos>?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):<vl:writeNewLine>";
-                            case 1, 2, 3 -> "end$5>pos$5?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):instance type boolean";
-                            default -> "end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean";
+                            case 0 -> "(<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>))||<v:pos>>=<v:end>";
+                 default->"(<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>))||pos$5>=end$5";
+                   //         case 1, 2, 3 -> "end$5>pos$5?<null-check>?<s:boolean>:!<null-check>&&(<dv:scope-newLineDouble:5.writeNewLine>||!<null-check>):instance type boolean";
+                   //         default -> "end$5>pos$5?(scope-newLineDouble:5.writeNewLine||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`||null==``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`)&&(null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`||null!=`new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).exceeds`):instance type boolean";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() >= 4, d.currentValue().isDone());
+                        assertEquals(d.iteration() >= BIG, d.currentValue().isDone());
                     }
                     if ("5.0.6.1.0.1.4.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<f:newLineDouble.writeNewLine>"
+                        String expected = d.iteration() <= BIG ? "<f:newLineDouble.writeNewLine>"
                                 : "(`Position.END`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.endWithNewLine(),`writeNewLineBefore`,false,true):`Position.START`==`guide.position`?new NewLineDouble(``new CurrentExceeds(`currentForwardInfo`.get(),`exceeds`.get()).current`.guide`.startWithNewLine(),false,false,false):new NewLineDouble(true,`writeNewLineBefore`,true,false)).writeNewLine";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals(d.iteration() >= 4, d.currentValue().isDone());
+                        assertEquals(d.iteration() >= BIG, d.currentValue().isDone());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "NOT_END".equals(fr.fieldInfo.name)) {
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("6.0.0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -160,11 +160,13 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("3.1.0".equals(d.statementId())) {
-                        assertEquals("<v:exceeds9>", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
+                        assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.1.1".equals(d.statementId())) {
-                        assertEquals("<v:exceeds9>", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
+                        assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
@@ -210,7 +212,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), BIG, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("writer".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
