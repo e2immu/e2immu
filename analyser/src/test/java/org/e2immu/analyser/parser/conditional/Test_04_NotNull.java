@@ -122,10 +122,10 @@ public class Test_04_NotNull extends CommonTestRunner {
             }
         };
         testClass("NotNull_1", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

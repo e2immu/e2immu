@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -346,12 +347,14 @@ public class ComputeLinkedVariables {
                     .reduce(DV.FALSE_DV, DV::max);
 
             // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
-            // currently only for CM; example: TrieSimplified_0
-            if(extraDelay.isDelayed()) {
-                if(summary.isDone()) {
-                    LOGGER.debug("Extra is working");
+            // currently only for CM; example: TrieSimplified_0, _1_2, _1_2bis
+            if (extraDelay.isDelayed()) {
+                assert property == Property.CONTEXT_MODIFIED;
+                boolean self = extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
+                if(!self) {
+                    CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
+                    summary = extraDelay.merge(conditionDelayMarker);
                 }
-                summary = extraDelay;
             }
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {

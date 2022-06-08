@@ -163,8 +163,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -242,9 +242,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

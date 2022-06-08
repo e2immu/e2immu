@@ -82,8 +82,8 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

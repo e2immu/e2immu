@@ -169,10 +169,10 @@ public class Test_Util_08_Resources extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
                 0, 15, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());

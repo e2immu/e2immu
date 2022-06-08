@@ -133,12 +133,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
-                .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
-                .add(ANALYSE_IGNORE_MODIFICATIONS, sharedState -> analyseIgnoreModifications())
+                .add(ANALYSE_CONTAINER, this::analyseContainer)
+                .add(ANALYSE_IGNORE_MODIFICATIONS, this::analyseIgnoreModifications)
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
-                .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
+                .add(ANALYSE_MODIFIED, this::analyseModified)
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .setLimitCausesOfDelay(true)
@@ -441,7 +441,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     leaves: non-final class, @Contracted==FALSE. For now, simply return FALSE.
      */
-    private AnalysisStatus analyseContainer() {
+    private AnalysisStatus analyseContainer(SharedState sharedState) {
         if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
 
         DV safe = analyserContext.safeContainer(fieldInfo.type);
@@ -454,16 +454,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         assert formalType != null;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV formal = typeAnalysis.getProperty(Property.CONTAINER);
+        boolean allowBreak = sharedState.allowBreakDelay();
         if (formal.isDelayed()) {
-            LOGGER.debug("Delaying @Container of field {}, waiting for @Container of formal type", fqn);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, formal);
-            return AnalysisStatus.of(formal); //DELAY EXIT POINT
+            return delayContainer(formal.causesOfDelay(), "waiting for @Container of formal type", MultiLevel.CONTAINER_DV, allowBreak);
         }
-
         if (fieldAnalysis.valuesStatus().isDelayed()) {
-            LOGGER.debug("Delaying @Container on field {}, waiting for values", fqn);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, fieldAnalysis.valuesStatus());
-            return fieldAnalysis.valuesStatus(); //DELAY EXIT POINT
+            return delayContainer(fieldAnalysis.valuesStatus(), "waiting for values", formal, allowBreak);
         }
         DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
         boolean otherValues = false;
@@ -476,9 +472,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         if (safeMinimum.isDelayed() && safeMinimum != DV.MIN_INT_DV) {
-            LOGGER.debug("Delaying @Container on field {}, waiting for container on values", fqn);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
-            return AnalysisStatus.of(safeMinimum); //DELAY EXIT POINT
+            return delayContainer(safeMinimum.causesOfDelay(), "waiting for container on values", formal, allowBreak);
         }
         if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
             LOGGER.debug("Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
@@ -493,14 +487,23 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .map(vi -> vi.getProperty(CONTEXT_CONTAINER));
         DV bestOverContext = StreamUtil.reduceWithCancel(containerStream, MultiLevel.NOT_CONTAINER_DV, DV::max, DV::isDelayed);
         if (bestOverContext.isDelayed()) {
-            LOGGER.debug("Delay @Container on {}, waiting for context container", fqn);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
-            return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT--REDUCE WITH CANCEL
+            return delayContainer(bestOverContext.causesOfDelay(), "waiting for context container", formal, allowBreak);
         }
 
         LOGGER.debug("@Container on field {}: value of best over context: {}", fqn, bestOverContext);
         fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
         return AnalysisStatus.of(bestOverContext); //DELAY EXIT POINT
+    }
+
+    private AnalysisStatus delayContainer(CausesOfDelay causesOfDelay, String msg, DV backupValue, boolean allowBreak) {
+        if (allowBreak) {
+            LOGGER.debug("Breaking @Container delay on field {} to {}, {}", fqn, backupValue, msg);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, backupValue);
+            return DONE;
+        }
+        LOGGER.debug("Delaying @Container of field {}, {}", fqn, msg);
+        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, causesOfDelay);
+        return AnalysisStatus.of(causesOfDelay);
     }
 
     private DV safeContainer(ValueAndPropertyProxy proxy) {
@@ -1165,7 +1168,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 || expression instanceof MethodReference;
     }
 
-    private AnalysisStatus analyseIgnoreModifications() {
+    private AnalysisStatus analyseIgnoreModifications(SharedState sharedState) {
         DV currentIgnoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
         if (currentIgnoreMods.isDone()) {
             return DONE;
@@ -1181,7 +1184,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
-            LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field " + fqn);
+            if (sharedState.allowBreakDelay()) {
+                LOGGER.debug("Breaking @IgnoreModifications for field {}", fqn);
+                fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, MultiLevel.NOT_IGNORE_MODS_DV);
+                return DONE;
+            }
+            LOGGER.debug("Delaying @IgnoreModifications value, have no values yet for field {}", fqn);
             fieldAnalysis.setProperty(EXTERNAL_IGNORE_MODIFICATIONS, valuesStatus);
             return valuesStatus; //DELAY EXIT POINT
         }
@@ -1445,7 +1453,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return allMethodsAndConstructors(true);
     }
 
-    private AnalysisStatus analyseModified() {
+    private AnalysisStatus analyseModified(SharedState sharedState) {
         DV contract = fieldAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contract.isDone()) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contract);
@@ -1507,6 +1515,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .filter(VariableInfo::isRead)
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay().isDelayed());
             }).forEach(m -> LOGGER.debug("  cm problems in {}", m.getMethodInfo().fullyQualifiedName));
+        }
+        if (sharedState.allowBreakDelay()) {
+            LOGGER.debug("Breaking field @Modified delay broken to @NotModified, for {}", fqn);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+            return DONE;
         }
         fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contextModifications);
         LOGGER.debug("Field @Modified delayed because of {}", contextModifications);

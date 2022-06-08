@@ -310,12 +310,12 @@ public class Test_Expressions extends CommonTestRunner {
 
         testClass("Expressions_0", 0, 16,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+               //         .addEvaluationResultVisitor(evaluationResultVisitor)
+               //         .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

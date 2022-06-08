@@ -130,9 +130,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
 
         testClass("OutputBuilderSimplified_2", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
