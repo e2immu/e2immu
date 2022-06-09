@@ -361,8 +361,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // write a delayed value
                 CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
                         CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
-                return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, null
-                        , groupPropertyValues, causes);
+                return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, null,
+                        groupPropertyValues, causes);
             }
             // is the variable assigned inside the loop, but not in -E ?
             if (vic.hasMerge()) {
@@ -372,36 +372,78 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, null,
                             groupPropertyValues);
                 }
-                /* variable is modified somewhere in the loop, we cannot keep "new ..." and must switch to "instance type ..."
-                 see e.g. VariableInLoop_3
-
-                 IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
-                 in SASubBlocks.conditionManagerForFirstBlock.
-                 FIXME Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
-
-                 (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
-                 See Loops_8
-                */
-                DV modified = merge.getProperty(CONTEXT_MODIFIED);
-                if (!modified.valueIsFalse()) {
-                    // we know there is no assignment, so the value properties can remain the same, if we have them
-                    Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
-                    if (modified.isDelayed()) {
-                        CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
-                                CauseOfDelay.Cause.WAIT_FOR_MODIFICATION));
-                        return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, valueProperties,
-                                groupPropertyValues, causes);
-                    }
-                    // modified!
-                    return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, valueProperties,
-                            groupPropertyValues);
-                }
+                LoopResult loopResult = modifiedInLoop(sharedState, variable, vic, vi, changeData,
+                        groupPropertyValues, merge);
+                if (loopResult != null) return loopResult;
             }
             if (vic.hasEvaluation() && vi.isDelayed() && !vic.isInitial()) {
                 vic.copy();
             }
         }
         return new LoopResult(false, CausesOfDelay.EMPTY, false);
+    }
+
+    private LoopResult modifiedInLoop(StatementAnalyserSharedState sharedState,
+                                      Variable variable,
+                                      VariableInfoContainer vic,
+                                      VariableInfo vi,
+                                      EvaluationResult.ChangeData changeData,
+                                      GroupPropertyValues groupPropertyValues,
+                                      VariableInfo merge) {
+        VariableInfo vi1 = vic.getPreviousOrInitial();
+        // not assigned, but maybe modified? "new" will need to change...
+        // TODO check vi, if there was an assignment in this statement
+
+        // we'll apply this only when needed
+        // See ListUtilSimplified_0: not needed
+        // ListUtilSimplified_1: needed!
+        if (vi1.valueIsSet() && !mustChangeToInstance(vi1.getValue(), sharedState.evaluationContext())) {
+            return null;
+        }
+    /*
+
+     If the variable is modified somewhere in the loop, we cannot keep "new ..." and must switch to
+     "instance type ..." see e.g. VariableInLoop_3. However, if it is not modified, we must just keep
+     its old value.
+
+     Compounding the problem is that we must know the modification to obtain a value inside the loop,
+     and we cannot know the modification inside the loop before we have a value. This represents a cycle.
+     FIXME introduce CM_NO_VALUE?
+
+     IMPORTANT this part should not clash with the code that deals with the value AFTER the loop, which sits
+     in SASubBlocks.conditionManagerForFirstBlock.
+     FIXME Problem is that that one uses -E as the basis for the "previous value", messing up the value afterwards
+
+     (also interfering is the erasure of companion info during the evaluation of a modifying method (MethodCall))
+     See Loops_8
+    */
+        DV modified = merge.getProperty(CONTEXT_MODIFIED);
+        // see ListUtilSimplified_1 for an example why vi.valueIsSet() needs to be present: the delay can be
+        // broken in loop statement "1", which has an immediate effect on the next statement, which may come back...
+        // but now with modified == true && allowBreakDelay false, which causes an overwrite... not needed.
+        //  || sharedState.evaluationContext().allowBreakDelay() || vi.valueIsSet()....
+        if (modified.valueIsFalse()) {
+            return null;
+        }
+        // we know there is no assignment, so the value properties can remain the same, if we have them
+        Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
+        if (modified.isDelayed()) {
+            CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),
+                    CauseOfDelay.Cause.WAIT_FOR_MODIFICATION));
+            return delayValueForInstanceInLoop(sharedState, variable, vic, vi, changeData, valueProperties,
+                    groupPropertyValues, causes);
+        }
+        // modified!
+        return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, valueProperties,
+                groupPropertyValues);
+    }
+
+    // new XX() -> instance type X
+    // instance type X/*size==...*/ -> instance type X
+    private static boolean mustChangeToInstance(Expression value, EvaluationContext evaluationContext) {
+        ConstructorCall cc;
+        return ((cc = value.asInstanceOf(ConstructorCall.class)) != null) && cc.hasConstructor() ||
+                evaluationContext.hasState(value);
     }
 
     private LoopResult delayValueForInstanceInLoop(StatementAnalyserSharedState sharedState,

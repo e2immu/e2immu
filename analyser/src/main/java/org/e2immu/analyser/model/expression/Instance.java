@@ -98,10 +98,9 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(VariableIdentifier.variable(variable, index), parameterizedType, properties);
     }
 
-    public static Instance forLoopVariable(String index, Variable variable, Properties valueProperties) {
+    public static Instance forLoopVariable(Identifier identifier, Variable variable, Properties valueProperties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        return new Instance(VariableIdentifier.variable(variable, index),
-                parameterizedType, valueProperties);
+        return new Instance(identifier, parameterizedType, valueProperties);
     }
 
     /*

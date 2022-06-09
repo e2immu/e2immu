@@ -275,8 +275,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
             }
         };
         testClass("VariableInLoop_3", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

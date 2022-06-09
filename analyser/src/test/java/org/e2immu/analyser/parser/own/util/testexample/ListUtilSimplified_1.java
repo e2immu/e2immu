@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,31 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.own.util;
+package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.analyser.config.AnalyserConfiguration;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Trie;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-public class Test_Util_08_Resources_AAPI extends CommonTestRunner {
+/*
+Test introduced 20220609 due to delay loop.
+The problem is in "joinLists", but any solution must work for "compare" as well.
+ */
+public class ListUtilSimplified_1 {
 
-    public Test_Util_08_Resources_AAPI() {
-        super(true);
-    }
-
-    @Test
-    public void test() throws IOException {
-
-        testSupportAndUtilClasses(List.of(Resources.class, Trie.class),
-                0, 10,
-                new DebugConfiguration.Builder().build(),
-                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    public static <K, L> void joinLists(List<K> list1, List<L> list2In) {
+        List<L> list2 = new ArrayList<>(list2In);
+        for (K t1 : list1) {
+            if (list2.isEmpty()) break;
+            L t2 = list2.remove(0);
+        }
     }
 
 }

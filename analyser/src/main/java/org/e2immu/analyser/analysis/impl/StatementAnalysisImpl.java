@@ -1621,7 +1621,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = variable.parameterizedType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
         valueProperties.replaceDelaysByMinimalValue();
-        Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
+        Identifier identifier = Identifier.forVariableOutOfScope(variable, index);
+        Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);
         Properties properties = Properties.of(Map.of(
                 EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
                 EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
@@ -2144,7 +2145,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
             value = DelayedVariableExpression.forLocalVariableInLoop(loopVar, causes);
         } else {
-            value = Instance.forLoopVariable(index(), loopVar, valueProperties);
+            Identifier identifier = Identifier.forVariableOutOfScope(loopVar, index);
+            value = Instance.forLoopVariable(identifier, loopVar, valueProperties);
         }
         LinkedVariables linked = evaluatedIterable.linkedVariables(EvaluationResult.from(evaluationContext));
         /*

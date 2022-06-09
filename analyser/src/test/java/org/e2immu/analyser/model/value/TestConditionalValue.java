@@ -250,4 +250,38 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression and2 = newAndAppend(baseNull, baseNotNull);
         assertTrue(and2.isBoolValueFalse());
     }
+
+    // aims to test a problem with not-null warnings in Trie; the tests capture the idea but
+    // somehow not the actual problem. TODO!
+
+    @Test
+    public void testTrie() {
+        Expression v = inline(a, NULL_CONSTANT, s);
+        assertEquals("a?null:s", v.toString());
+        Expression vIsNull = equals(NULL_CONSTANT, v);
+        assertEquals("a||null==s", vIsNull.toString());
+        Expression vIsNotNull = negate(vIsNull);
+        assertEquals("!a&&null!=s", vIsNotNull.toString());
+
+        Expression and1 = newAndAppend(vIsNotNull, vIsNull);
+        assertEquals("false", and1.toString());
+        Expression and2 = newAndAppend(vIsNull, vIsNotNull);
+        assertEquals("false", and2.toString());
+    }
+
+    @Test
+    public void testTrie2() {
+        Expression v = inline(a, NULL_CONSTANT, inline(newOrAppend(equals(s1, NULL_CONSTANT),
+                equals(s2, NULL_CONSTANT)), s2, s3));
+        assertEquals("a?null:null==s1||null==s2?s2:s3", v.toString());
+        Expression vIsNull = equals(NULL_CONSTANT, v);
+        assertEquals("a||null==(null==s1||null==s2?s2:s3)", vIsNull.toString());
+        Expression vIsNotNull = negate(vIsNull);
+        assertEquals("!a&&null!=(null==s1||null==s2?s2:s3)", vIsNotNull.toString());
+
+        Expression and1 = newAndAppend(vIsNotNull, vIsNull);
+        assertEquals("false", and1.toString());
+        Expression and2 = newAndAppend(vIsNull, vIsNotNull);
+        assertEquals("false", and2.toString());
+    }
 }

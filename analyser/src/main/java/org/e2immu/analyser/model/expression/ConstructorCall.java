@@ -533,4 +533,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public List<Expression> parameterExpressions() {
         return parameterExpressions;
     }
+
+    public boolean hasConstructor() {
+        return constructor != null;
+    }
 }
