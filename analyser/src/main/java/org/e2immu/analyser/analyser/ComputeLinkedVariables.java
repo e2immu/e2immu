@@ -351,7 +351,7 @@ public class ComputeLinkedVariables {
             if (extraDelay.isDelayed()) {
                 assert property == Property.CONTEXT_MODIFIED;
                 boolean self = extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
-                if(!self) {
+                if (!self) {
                     CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
                     summary = extraDelay.merge(conditionDelayMarker);
                 }
@@ -369,10 +369,20 @@ public class ComputeLinkedVariables {
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
             }
-            DV newValue = summary;
+            DV newValue1 = summary;
             for (Variable variable : cluster.variables) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
+                    DV newValue;
+                    DV override = vic.propertyOverrides().getOrDefaultNull(property);
+                    boolean complain;
+                    if (override != null) {
+                        newValue = override;
+                        complain = false;
+                    } else {
+                        newValue = newValue1;
+                        complain = true;
+                    }
                     VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                     DV current = vi.getProperty(property);
                     if (current.isDelayed()) {
@@ -394,7 +404,8 @@ public class ComputeLinkedVariables {
                             LOGGER.error("Current cluster: {}", cluster);
                             throw ise;
                         }
-                    } else if (newValue.isDone() && !newValue.equals(current)) {
+
+                    } else if (complain && newValue.isDone() && !newValue.equals(current)) {
                         LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
                         LOGGER.error("Property {}, current {}, new {}", property, current, newValue);
                         throw new UnsupportedOperationException("Overwriting value");

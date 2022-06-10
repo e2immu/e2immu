@@ -428,13 +428,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // we know there is no assignment, so the value properties can remain the same, if we have them
         Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
         if (modified.isDelayed()) {
-            if (sharedState.evaluationContext().allowBreakDelay()
-               //     && modified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION,
-               //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
-                    // FIXME Project0bis needs this, DSG 0,1 don't want it
-            ){
-                // we'll decide to change instance, but we'll mark this
-                vic.markOverride(CONTEXT_MODIFIED, DV.TRUE_DV, EVALUATION);
+            if (sharedState.evaluationContext().allowBreakDelay()){
+                // the restriction is not needed for now 
+                //     && modified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION,
+                //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
+                // we'll decide to change to instance, but we'll mark this decision
+                // See: Loops_21, _21_1, ListUtilSimplified_0, _1, DependencyGraphSimplified_0, _1, Project_0bis
+                vic.markOverride(CONTEXT_MODIFIED, DV.TRUE_DV);
                 LOGGER.debug("Breaking delay loop, deciding on MODIFIED for {}", variable);
             } else {
                 CausesOfDelay causes = DelayFactory.createDelay(new VariableCause(variable, getLocation(),

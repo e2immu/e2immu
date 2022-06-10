@@ -202,7 +202,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("array".equals(d.variableName())) {
+                    if ("2.0.1".equals(d.statementId())) {
+                        DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
+                        assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
+                    }
                     if ("2.0.1.0.2".equals(d.statementId())) {
+                        DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
+                        assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
+
                         String linked = d.iteration() == 0 ? "array[i]:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
@@ -215,7 +222,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
             }
         };
-        testClass("Loops_21_1", 0, 0, new DebugConfiguration.Builder()
+        // potential null pointer array[i][j].length()
+        testClass("Loops_21_1", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

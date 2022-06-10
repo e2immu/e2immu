@@ -24,13 +24,11 @@ import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
-import org.e2immu.support.Either;
-import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.Freezable;
-import org.e2immu.support.SetOnce;
+import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -52,6 +50,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final Stage levelForPrevious;
 
     private final FlipSwitch removed = new FlipSwitch();
+    private final SetOnceMap<Property, DV> propertyOverrides;
 
     /*
     factory method for existing variables; potentially revert VariableDefinedOutsideLoop nature
@@ -64,7 +63,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return new VariableInfoContainerImpl(potentiallyRevertVariableDefinedOutsideLoop(previous, statementIndex),
                 Either.left(previous),
                 statementHasSubBlocks ? new SetOnce<>() : null,
-                previousIsParent ? Stage.EVALUATION : Stage.MERGE);
+                previousIsParent ? Stage.EVALUATION : Stage.MERGE,
+                previous.propertyOverrides());
     }
 
     /*
@@ -112,7 +112,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
-                Stage.MERGE);
+                Stage.MERGE,
+                previous.propertyOverrides());
     }
 
     /*
@@ -126,7 +127,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 Set.of(), null, variable.statementTime());
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableNature, Either.right(initial),
-                statementHasSubBlocks ? new SetOnce<>() : null, null);
+                statementHasSubBlocks ? new SetOnce<>() : null, null, new SetOnceMap<>());
     }
 
     /*
@@ -145,7 +146,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
-                Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
+                Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null,
+                new SetOnceMap<>());
     }
 
     /*
@@ -158,17 +160,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 new VariableNature.VariableDefinedOutsideLoop(previous.variableNature(), statementIndex),
                 Either.left(previous),
                 new SetOnce<>(),
-                previousIsParent ? Stage.EVALUATION : Stage.MERGE);
+                previousIsParent ? Stage.EVALUATION : Stage.MERGE,
+                previous.propertyOverrides());
     }
 
     private VariableInfoContainerImpl(VariableNature variableNature,
                                       Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial,
                                       SetOnce<VariableInfoImpl> merge,
-                                      Stage levelForPrevious) {
+                                      Stage levelForPrevious,
+                                      SetOnceMap<Property, DV> propertyOverrides) {
         this.variableNature = Objects.requireNonNull(variableNature);
         this.previousOrInitial = previousOrInitial;
         this.merge = merge;
         this.levelForPrevious = levelForPrevious;
+        this.propertyOverrides = propertyOverrides;
     }
 
     @Override
@@ -620,7 +625,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void markOverride(Property property, DV value, Stage stage) {
+    public void markOverride(Property property, DV value) {
+        assert value.isDone();
+        propertyOverrides.put(property, value);
+    }
 
+    @Override
+    public SetOnceMap<Property, DV> propertyOverrides() {
+        return propertyOverrides;
     }
 }
