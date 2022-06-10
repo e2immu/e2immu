@@ -311,6 +311,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         // essentially, the return expression may expand, and cause context changes
         for(Variable variable: variables(true)) {
             if(context.evaluationContext().isPresent(variable)) {
+                builder.setProperty(variable, Property.CONTEXT_MODIFIED, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_NOT_NULL, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_CONTAINER, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_IMMUTABLE, causesOfDelay);

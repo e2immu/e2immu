@@ -124,7 +124,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 }
                 if ("localD".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }

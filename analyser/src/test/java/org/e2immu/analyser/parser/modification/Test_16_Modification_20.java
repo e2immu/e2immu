@@ -93,7 +93,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("c".equals(fr.scope.toString())) {
                         if ("2".equals(d.statementId())) {
-                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, 6, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         }
                     }
                     // applies to c.set and d.set

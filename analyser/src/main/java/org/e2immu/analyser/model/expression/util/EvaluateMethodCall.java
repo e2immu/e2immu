@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
@@ -283,6 +282,12 @@ public class EvaluateMethodCall {
          */
         DelayedExpression delay = DelayedExpression.forMethod(identifier, methodInfo, concreteReturnType,
                 methodCall, finalDelays, cnnMap);
+        // see InstanceOf_16 as an example on why we should add these...
+        // essentially, the return expression may expand, and cause context changes
+        if (methodInfo.computedAnalysis()) {
+            EvaluationResult deResult = delay.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            builder.compose(deResult);
+        } // else: cannot be expanded, so this extra delay is not necessary
         return builder.setExpression(delay).build();
     }
 

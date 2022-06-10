@@ -333,7 +333,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     EvaluationResult.ChangeData cdField = d.findValueChange("v1");
-                    assertEquals("cnn@Parameter_s", cdField.getProperty(CONTEXT_NOT_NULL).causesOfDelay().toString());
+                    assertEquals("initial:this.field@Method_test3_0-C", cdField.getProperty(CONTEXT_NOT_NULL).causesOfDelay().toString());
                 }
             }
         };

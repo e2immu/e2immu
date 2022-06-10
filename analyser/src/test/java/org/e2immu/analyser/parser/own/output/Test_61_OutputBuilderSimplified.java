@@ -312,9 +312,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // modifying method, so the lambda becomes an instance
-                    String expect = d.iteration() <= 2 ? "<m:apply>" : "instance type $5";
+                    String expect = d.iteration() <= 3 ? "<m:apply>" : "instance type $5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("accumulator".equals(d.methodInfo().name)) {
@@ -368,7 +368,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -431,7 +431,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
              //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());

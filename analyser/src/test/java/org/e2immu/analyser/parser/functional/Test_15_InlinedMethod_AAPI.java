@@ -256,7 +256,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d.p(1), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
-        testClass("InlinedMethod_10", 0, 2, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_10", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -348,7 +348,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
