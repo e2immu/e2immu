@@ -210,6 +210,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     }
 
     @Test
+    public void test_3_2() throws IOException {
+        testClass("InstanceOf_3_2", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
@@ -917,11 +924,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_11", 0, 2, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
