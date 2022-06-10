@@ -428,6 +428,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
+        if(variable instanceof DependentVariable dv) {
+            return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
+                    dv.arrayVariable(), LinkedVariables.DEPENDENT_DV);
+        }
+        if(variable instanceof FieldReference fr && !fr.scopeIsThis() && fr.scopeVariable != null) {
+            return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
+                    fr.scopeVariable, LinkedVariables.DEPENDENT_DV);
+        }
         return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
     }
 

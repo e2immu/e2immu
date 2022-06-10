@@ -12,23 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.own.util.testexample;
+package org.e2immu.analyser.parser.loops.testexample;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+// variant on Loops_21, no assignment, hence no modification
+// important to still access the array
+public class Loops_21_1 {
 
-/*
-Variant on _0
- */
-public class ListUtilSimplified_1 {
+    public static String[][] method(int n, int m) {
+        String outer = "abc";
+        String[][] array = new String[n][m];
 
-    public static <K, L> void joinLists(List<K> list1, List<L> list2In) {
-        List<L> list2 = new ArrayList<>(list2In);
-        for (K t1 : list1) {
-            if (list2.isEmpty()) break;
-            L t2 = list2.remove(0);
+        for (int i = 0; i < n - 1; i++) { // 2
+
+            String inner = "xzy";
+            for (int j = i; j < m; j++) { // 2.0.1
+                int outerMod = i % outer.length(); // 2.0.1.0.0
+                int innerMod = j % inner.length();
+                if (array[i][j].length() < outerMod + innerMod) return null;
+            }
         }
+        return array;
     }
-
 }

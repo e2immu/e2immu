@@ -123,8 +123,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         String linked = switch (d.iteration()) {
-                            case 0 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
-                            case 1 -> "firstStatementAnalyser:0,sa.navigationData().next:3,scope-59:18:-1,scope-60:47:-1";
+                            case 0, 1 -> "firstStatementAnalyser:0,sa.navigationData().next:-1,scope-59:18:-1,scope-60:47:-1";
                             default -> "firstStatementAnalyser:0,sa.navigationData().next:3,scope-59:18:3,scope-60:47:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

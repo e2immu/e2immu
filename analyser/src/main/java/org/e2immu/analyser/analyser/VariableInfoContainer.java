@@ -202,4 +202,5 @@ public interface VariableInfoContainer {
                                                        Properties properties,
                                                        CausesOfDelay causesOfDelay);
 
+    void markOverride(Property property, DV value, Stage stage);
 }

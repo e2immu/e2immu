@@ -618,4 +618,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 expression, merged, vii.getLinkedVariables(), causesOfDelay);
         vii.setValue(dwe);
     }
+
+    @Override
+    public void markOverride(Property property, DV value, Stage stage) {
+
+    }
 }

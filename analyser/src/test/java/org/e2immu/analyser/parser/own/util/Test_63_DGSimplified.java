@@ -135,8 +135,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = switch (d.iteration()) {
-                                case 0 -> "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1";
-                                case 1 -> "accept:-1,copy:2,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1";
+                                case 0, 1 -> "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1";
                                 default -> "accept:3,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                             };
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
@@ -233,7 +232,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         // TODO improve on errors
-        testClass("DGSimplified_0", 6, 1, new DebugConfiguration.Builder()
+        testClass("DGSimplified_0", 5, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -308,7 +307,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        testClass("DGSimplified_1", 6, 1, new DebugConfiguration.Builder()
+        testClass("DGSimplified_1", 5, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

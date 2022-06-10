@@ -644,7 +644,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             VariableExpression.Suffix suffix = vic.variableNature().suffix();
-            VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME
+            Expression sv = variable instanceof FieldReference fr ? fr.scope : variable instanceof DependentVariable dv ? dv.arrayExpression() : null;
+            Expression iv = variable instanceof DependentVariable dv ? dv.indexExpression() : null;
+            VariableExpression veSuffix = new VariableExpression(bestValue.getIdentifier(), variable, suffix, sv, iv);
             Expression e;
             if (bestValue.isDone()) {
                 e = new VariableExpression(variable);

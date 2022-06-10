@@ -97,8 +97,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         // null ptr warning
         testClass("TrieSimplified_0", 5, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

@@ -887,7 +887,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
-                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0}*/:<return value>";
+                                : "s.length()==x.i?s.length()/*{L i:statically_assigned:0,x:dependent:2}*/:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() <= 1 ? "x.i:0,x:-1,xs:-1" : "x.i:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -895,7 +895,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()/*{L i:statically_assigned:0,x:dependent:2}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() <= 1 ? "scope-x:0.i:0,xs:-1" : "scope-x:0.i:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -903,7 +903,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
-                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0}*/";
+                                : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()/*{L i:statically_assigned:0,x:dependent:2}*/";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() <= 1 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0";
                         assertEquals(linked,

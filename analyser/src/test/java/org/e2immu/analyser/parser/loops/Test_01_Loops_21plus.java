@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,10 +90,17 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4
+                        String expected = d.iteration() <= 3
                                 ? "<v:array[i]>/*{DL array:initial@Class_Loops_21}*/"
                                 : "instance type String[]";
                         assertEquals(expected, d.currentValue().toString());
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "array:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
+                            case 1, 2, 3 -> "array:-1,av-32:17:-1,i:-1";
+                            default -> "array:2,av-32:17:1";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     } else if (!d.statementId().startsWith("2.0.1")) fail("In " + d.statementId());
                 }
                 if ("array".equals(d.variableName())) {
@@ -100,19 +108,24 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
+                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1" : "";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "array[i]:-1,av-32:17:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
+                            case 1, 2, 3 -> "array[i]:-1,av-32:17:-1,i:-1";
+                            default -> "array[i]:2,av-32:17:2";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String linkDelays = switch (d.iteration()) {
                             case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
-                            case 1, 2, 3, 4 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
+                            case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
                             default -> "";
                         };
                         assertEquals(linkDelays, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                     if ("2.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<vl:array>" : "new String[][](n,m)";
+                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
@@ -120,23 +133,39 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertEquals(expected, eval.getValue().toString());
                         assertEquals("", eval.getLinkedVariables().toString());
 
-                        // FIXME with compose, av-32:17[j] is not in the LVs
-                        String linked = d.iteration() <= 4 ? "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1" : "";
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "array[i]:-1,av-32:17:-1,i:-1,inner:-1,outer:-1";
+                            case 1, 2, 3 -> "array[i]:-1,av-32:17:-1,i:-1";
+                            default -> "array[i]:2,av-32:17:2";
+                        };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
                 if ("av-32:17[j]".equals(d.variableName())) {
                     assertTrue(d.variable() instanceof DependentVariable);
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() <= 4 ? "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1" : "";
+                        String linked = d.iteration() == 0 ? "array:-1,array[i]:-1,av-32:17:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("2.0.1.0.2-E", d.variableInfo().getAssignmentIds().toString());
                     }
                 }
                 if ("i".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+                if ("av-32:17".equals(d.variableName())) {
+                    if ("2.0.1.0.2".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0 -> "array:-1,array[i]:-1,av-32:17[j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1";
+                            case 1, 2, 3 -> "array:-1,array[i]:-1,i:-1";
+                            default -> "array:2,array[i]:1";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -152,19 +181,42 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
 
                 String expected = switch (d.iteration()) {
                     case 0 -> "var_missing:j@Method_method_2.0.1-C";
-                    case 1, 2, 3, 4 -> "initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
+                    case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
                     default -> "";
                 };
                 assertEquals(expected, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
-                assertEquals(d.iteration() >= 6, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
+                assertEquals(d.iteration() >= 5, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
             if (d.statementId().startsWith("2.0.1.")) {
-                assertEquals(d.iteration() >= 6, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
+                assertEquals(d.iteration() >= 5, d.statusesAsMap().values().stream().noneMatch(AnalysisStatus::isDelayed));
             }
         };
         testClass("Loops_21", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_21_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("array".equals(d.variableName())) {
+                    if ("2.0.1.0.2".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "array[i]:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
+                        assertEquals(expected, d.currentValue().toString());
+
+                        // TRUE instead of false, at the moment, because we don't have a proper guessing
+                        // mechanism yet (based on a direct CM, CM on the statically-assigned clustering)
+                        assertDv(d, 4, DV.TRUE_DV, CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        testClass("Loops_21_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -242,9 +294,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             }
         };
         testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }

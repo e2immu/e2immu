@@ -413,6 +413,13 @@ public class Assignment extends BaseExpression implements Expression {
                                   Variable at,
                                   Expression resultOfExpression) {
 
+        markModified(builder, context, at);
+
+        LinkedVariables lvAfterDelay = computeLinkedVariables(context, resultOfExpression);
+        builder.assignment(at, resultOfExpression, lvAfterDelay);
+    }
+
+    private void markModified(EvaluationResult.Builder builder, EvaluationResult context, Variable at) {
         // see if we need to raise an error (writing out to fields outside our class, etc.)
         if (at instanceof FieldReference fieldReference) {
 
@@ -441,13 +448,19 @@ public class Assignment extends BaseExpression implements Expression {
                 LinkedVariables lvs = fieldReference.scope.linkedVariables(context);
                 builder.modifyingMethodAccess(fieldReference.scopeVariable, instance, lvs);
 
+                // recurse!
+                markModified(builder, context, fieldReference.scopeVariable);
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
-        }
+        } else if(at instanceof DependentVariable dv) {
+            if(dv.arrayVariable() != null) {
+                builder.markContextModified(at.variable(), DV.TRUE_DV);
 
-        LinkedVariables lvAfterDelay = computeLinkedVariables(context, resultOfExpression);
-        builder.assignment(at, resultOfExpression, lvAfterDelay);
+                // recurse!
+                markModified(builder, context, dv.arrayVariable());
+            }
+        }
     }
 
     private LinkedVariables computeLinkedVariables(EvaluationResult context, Expression resultOfExpression) {
