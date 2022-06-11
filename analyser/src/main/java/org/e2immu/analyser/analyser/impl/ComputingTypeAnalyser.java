@@ -543,14 +543,29 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                         .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+
+        Set<MethodAnalyser> exclude;
         if (modificationDelays.isDelayed()) {
-            LOGGER.debug("Delaying only mark E2 in {}, modification delayed", typeInfo.fullyQualifiedName);
-            typeAnalysis.setApprovedPreconditionsE2Delays(modificationDelays);
-            return modificationDelays;
+            if (sharedState.allowBreakDelay()) {
+                exclude = myMethodAnalysersExcludingSAMs.stream()
+                        .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().isAbstract())
+                        .filter(methodAnalyser -> methodAnalyser.getMethodAnalysis()
+                                .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).isDelayed())
+                        .collect(Collectors.toUnmodifiableSet());
+                LOGGER.debug("Breaking E2 delay by marking excluding methods {}",
+                        exclude.stream().map(ma -> ma.getMethodInfo().name).collect(Collectors.joining(", ")));
+            } else {
+                LOGGER.debug("Delaying only mark E2 in {}, modification delayed", typeInfo.fullyQualifiedName);
+                typeAnalysis.setApprovedPreconditionsE2Delays(modificationDelays);
+                return modificationDelays;
+            }
+        } else {
+            exclude = Set.of();
         }
 
         CausesOfDelay preconditionForEventualDelays = myMethodAnalysersExcludingSAMs.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue())
+                .filter(ma -> !exclude.contains(ma))
                 .map(ma -> ma.getMethodAnalysis().getPreconditionForEventual().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (preconditionForEventualDelays.isDelayed()) {
@@ -562,6 +577,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue() &&
                         ma.getMethodAnalysis().getPreconditionForEventual() == null)
+                .filter(ma -> !exclude.contains(ma))
                 .findFirst();
         if (optEmptyPreconditions.isPresent()) {
             LOGGER.debug("Not all modifying methods have a valid precondition in {}: (findFirst) {}",
@@ -573,6 +589,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         Map<FieldReference, Set<MethodInfo>> methodsForApprovedField = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
+            if (exclude.contains(methodAnalyser)) continue;
             DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
             if (modified.valueIsTrue()) {
                 Precondition precondition = methodAnalyser.getMethodAnalysis().getPreconditionForEventual();
@@ -797,7 +814,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         if (typeImmutable.isDelayed()) {
             LOGGER.debug("Independence of type {} delayed, waiting for type immutability", typeInfo.fullyQualifiedName);
-            assert !sharedState.allowBreakDelay() : "Delay of IMMUTABLE should have been broken already";
             return delayIndependent(typeImmutable.causesOfDelay(), false);
         }
 
@@ -854,9 +870,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay, boolean allowBreakDelay) {
-       // DV value = allowBreakDelay ? MultiLevel.DEPENDENT_INCONCLUSIVE : causesOfDelay;
-      //  typeAnalysis.setProperty(INDEPENDENT, value);
-      //  return allowBreakDelay ? DONE : causesOfDelay;
+        // DV value = allowBreakDelay ? MultiLevel.DEPENDENT_INCONCLUSIVE : causesOfDelay;
+        //  typeAnalysis.setProperty(INDEPENDENT, value);
+        //  return allowBreakDelay ? DONE : causesOfDelay;
         typeAnalysis.setProperty(INDEPENDENT, causesOfDelay);
         return causesOfDelay;
     }
@@ -1276,7 +1292,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
                     return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
                 }
-            } else throw new UnsupportedOperationException("?");
+            } // excluded earlier in approved preconditions for E2: no idea about modification, ignored
         }
         if (causesMethods.isDelayed()) {
             return delayImmutable(causesMethods, sharedState.allowBreakDelay(), whenEXFails);

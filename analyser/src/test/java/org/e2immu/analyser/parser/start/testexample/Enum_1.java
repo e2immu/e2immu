@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
+import org.e2immu.annotation.ERContainer;
+
+@ERContainer
 public enum Enum_1 {
     ONE(1), TWO(2), THREE(3);
 

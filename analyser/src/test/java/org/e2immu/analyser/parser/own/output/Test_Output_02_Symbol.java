@@ -69,8 +69,8 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(OutputElement.class, FormattingOptions.class, Symbol.class, Space.class),
                 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

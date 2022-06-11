@@ -426,7 +426,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

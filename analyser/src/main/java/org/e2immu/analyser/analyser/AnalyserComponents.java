@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -30,6 +32,7 @@ import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
  * @param <S> shared state
  */
 public class AnalyserComponents<T, S> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnalyserComponents.class);
 
     public static class Info {
         private int cnt;
@@ -137,13 +140,17 @@ public class AnalyserComponents<T, S> {
         AnalysisStatus combined = DONE;
         boolean progress = false;
         S s = sIn;
-        for (AnalysisStatus.AnalysisResultSupplier<S> supplier : suppliers.values()) {
+        for (Map.Entry<T, AnalysisStatus.AnalysisResultSupplier<S>> entry : suppliers.entrySet()) {
+            AnalysisStatus.AnalysisResultSupplier<S> supplier = entry.getValue();
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
                 // execute
                 AnalysisStatus afterExec = supplier.apply(s);
                 assert afterExec != NOT_YET_EXECUTED;
                 if (afterExec == DONE || afterExec == DONE_ALL || afterExec.isProgress()) {
+                    if (!progress) {
+                        LOGGER.debug("First progress in {}", entry.getKey());
+                    }
                     progress = true;
                     if (updateUponProgress != null) {
                         s = updateUponProgress.apply(s);

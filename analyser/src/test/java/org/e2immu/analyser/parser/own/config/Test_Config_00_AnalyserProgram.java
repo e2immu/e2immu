@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
 
     @Test
@@ -39,13 +41,17 @@ public class Test_Config_00_AnalyserProgram extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalyserProgram".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Step".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInfo().isStatic());
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(AnalyserProgram.class), 0, 1,
                 new DebugConfiguration.Builder()
-                    //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeContextPropertiesOverAllMethods(true)
