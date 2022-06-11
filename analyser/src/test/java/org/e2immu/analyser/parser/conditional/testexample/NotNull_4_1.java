@@ -12,37 +12,35 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.own.util.testexample;
+package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+// tests because obtaining an inspection for java.util.List fails.
+// must keep the java.util.* import; it does work with explicit imports.
+// also works when with Annotated APIs, only fails without 20220611
 
-import java.util.Map;
+import java.util.*;
 
-@ERContainer
-public class TrieSimplified_3<T> {
+public class NotNull_4_1<T> {
+
     private final TrieNode<T> root = new TrieNode<>();
 
-    @ERContainer
     private static class TrieNode<T> {
-        Map<String, TrieNode<T>> map;
+        List<T> data;
+        final Map<String, TrieNode<T>> map = new HashMap<>();
     }
 
-    private TrieNode<T> goTo(String[] strings) {
-        return goTo(strings, strings.length);
-    }
-
-    @Nullable
-    @NotModified
     private TrieNode<T> goTo(String[] strings, int upToPosition) {
-        TrieNode<T> node = root;
-        for (int i = 0; i < upToPosition; i++) {
-            if (node.map == null) return null; // eval to true, always return null
-            node = node.map.get(strings[i]); // statement should be unreachable from it 1
-            if (node == null) return null; // unreachable from it 1
-        }
-        return node;
+        return strings.length <= upToPosition ? null : root;
     }
+
+    public boolean isStrictPrefix(String[] prefix) {
+        TrieNode<T> node = goTo(prefix, prefix.length);
+        return node != null && node.data == null;
+    }
+
+    public List<T> get(String[] strings) {
+        TrieNode<T> node = goTo(strings, strings.length);
+        return node == null ? null : node.data;
+    }
+
 }

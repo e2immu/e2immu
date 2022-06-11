@@ -41,11 +41,11 @@ public class Test_21_ConstantRange extends CommonTestRunner {
                         assertEquals("<return value>||\"c\".equals(s)", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = "input.length>0?<return value>||\"c\".equals(nullable instance type String):<return value>";
+                        String expected = "input.length>=1?<return value>||\"c\".equals(nullable instance type String):<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "\"c\".equals(nullable instance type String)&&input.length>0";
+                        String expected = "\"c\".equals(nullable instance type String)&&input.length>=1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

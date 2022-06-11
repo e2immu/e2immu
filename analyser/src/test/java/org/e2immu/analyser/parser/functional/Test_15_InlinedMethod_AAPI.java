@@ -460,7 +460,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("immutableConcat".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:immutableConcat>"
-                        : "/*inline immutableConcat*/List.copyOf(lists.length>0?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
+                        : "/*inline immutableConcat*/List.copyOf(lists.length>=1?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

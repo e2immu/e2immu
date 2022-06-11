@@ -586,20 +586,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         assert notNullExpression.isDone();
 
-        DV contextNotNull = variableInfo.getProperty(CONTEXT_NOT_NULL);
-        // see e.g. Identity_2
-        if (contextNotNull.isDelayed()) {
-            LOGGER.debug("Delaying return value of {}, waiting for context not null", methodInfo.fullyQualifiedName);
-            return delayedSrv(concreteReturnType, value, contextNotNull.causesOfDelay(), false);
-        }
-        assert contextNotNull.isDone();
-
         /* we already have a value for the value property NNE. We wait, however, until we have a value for ENN as well
-        if we take the non-constructing methods along for NNE computation.
+        if we take the non-constructing methods along for NNE computation, and the value is a variable (only variables
+        can have an ENN value)
          */
         DV externalNotNull;
-        if (analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
-                methodInfo.inConstruction()) {
+        if ((analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
+                methodInfo.inConstruction()) && valueBeforeInlining.isInstanceOf(VariableExpression.class)) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
@@ -608,7 +601,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } else {
             externalNotNull = MultiLevel.NOT_INVOLVED_DV;
         }
-        DV notNull = notNullExpression.max(externalNotNull).max(contextNotNull);
+        DV notNull = notNullExpression.max(externalNotNull);
         if (!methodAnalysis.properties.isDone(NOT_NULL_EXPRESSION)) {
             methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
         }

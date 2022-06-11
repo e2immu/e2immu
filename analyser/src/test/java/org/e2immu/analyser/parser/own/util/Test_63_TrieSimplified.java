@@ -77,8 +77,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if("1.0.1".equals(d.statementId())) {
-                    String expected = switch( d.iteration()) {
+                if ("1.0.1".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>";
                         default -> "null==<f:node.map>";
                     };
@@ -89,7 +89,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_add_1.0.1-C";
                         default -> "wait_for_modification:node@Method_add_1-E";
-                    //    default -> fail("Not supposed to reach iteration 7"); // because field analyser does not go beyond subtype
+                        //    default -> fail("Not supposed to reach iteration 7"); // because field analyser does not go beyond subtype
                     };
                     assertEquals(expected, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
@@ -97,8 +97,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         // null ptr warning
         testClass("TrieSimplified_0", 4, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -325,9 +325,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                        case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:upToPosition><oos:i>?<m:get>:<f:root>";
-                        case 2 -> "upToPosition>instance type int?null:<f:root>";
-                        default -> "upToPosition>instance type int?null:root";
+                        case 1 -> "-1+upToPosition>=<oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:-1-<oos:i>+upToPosition>=0?<m:get>:<f:root>";
+                        case 2 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
+                        default -> "-1-(instance type int)+upToPosition>=0?null:root";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -399,7 +399,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<f:map>";
-                            case 1 -> "upToPosition><oos:i>?<f:map>:null";
+                            case 1 -> "-1-<oos:i>+upToPosition>=0?<f:map>:null";
                             default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
@@ -443,16 +443,16 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                            case 1 -> "upToPosition><oos:i>?<m:get>:<f:root>";
-                            case 2 -> "upToPosition>instance type int?nullable instance type TrieNode<T>:<f:root>";
-                            default -> "upToPosition>instance type int?nullable instance type TrieNode<T>:root";
+                            case 1 -> "-1-<oos:i>+upToPosition>=0?<m:get>:<f:root>";
+                            case 2 -> "-1-(instance type int)+upToPosition>=0?nullable instance type TrieNode<T>:<f:root>";
+                            default -> "-1-(instance type int)+upToPosition>=0?nullable instance type TrieNode<T>:root";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0, 1, 2 -> "<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                            default -> "upToPosition>instance type int?nullable instance type TrieNode<T>:root";
+                            default -> "-1-(instance type int)+upToPosition>=0?nullable instance type TrieNode<T>:root";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         // FIXME this is wrong, can we live with it?
@@ -472,17 +472,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<return value>";
-                            case 1 -> "upToPosition><oos:i>&&(<null-check>||null==<f:node.map>)?<vp::initial@Field_map>:<return value>";
-                            default -> "upToPosition>instance type int?null:<return value>";
+                            case 1 -> "-1-<oos:i>+upToPosition>=0&&(<null-check>||null==<f:node.map>)?<vp::initial@Field_map>:<return value>";
+                            default -> "-1-(instance type int)+upToPosition>=0?null:<return value>";
                         };
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                            case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:upToPosition><oos:i>?<m:get>:<f:root>";
-                            case 2 -> "upToPosition>instance type int?null:<f:root>";
-                            default -> "upToPosition>instance type int?null:root";
+                            case 1 -> "-1+upToPosition>=<oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_map>:-1-<oos:i>+upToPosition>=0?<m:get>:<f:root>";
+                            case 2 -> "-1-(instance type int)+upToPosition>=0?null:<f:root>";
+                            default -> "-1-(instance type int)+upToPosition>=0?null:root";
                         };
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }
@@ -509,9 +509,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && n == 1) {
                 assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 2 ? "<m:goTo>"
+                        : "/*inline goTo*/-1-(instance type int)+strings.length>=0?null:`root`";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("goTo".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 2 ? "<m:goTo>"
+                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0?null:root";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

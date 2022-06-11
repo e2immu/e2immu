@@ -152,4 +152,11 @@ public class Test_04_NotNull extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
+
+    // unique combination fails: no AAPI, import with a * -> List inspection not known.
+    @Test
+    public void test_4_1() throws IOException {
+        testClass("NotNull_4_1", 0, 1, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
 }

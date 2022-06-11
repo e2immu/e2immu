@@ -200,7 +200,7 @@ public class And extends ExpressionCanBeTooComplex {
         // this works because of sorting
         // A && !A will always sit next to each other
         if (value instanceof Negation negatedValue && negatedValue.expression.equals(prev)) {
-            LOGGER.debug("Return FALSE in And, found opposites for {}", value);
+            LOGGER.debug("Return FALSE in And, found direct opposite for {}", value);
             return Action.FALSE;
         }
 
@@ -246,6 +246,7 @@ public class And extends ExpressionCanBeTooComplex {
                 }
                 // replace
                 Expression orValue = Or.or(evaluationContext, remaining);
+                LOGGER.debug("Replace {} by {}, found opposite in {}", value, orValue, newConcat);
                 newConcat.add(orValue);
                 return Action.SKIP;
             }
@@ -258,6 +259,7 @@ public class And extends ExpressionCanBeTooComplex {
             for (Expression value1 : components) {
                 for (Expression value2 : newConcat) {
                     if (value1.equals(value2)) {
+                        LOGGER.debug("Skipping {} in OR, already in other clause of And", value);
                         return Action.SKIP;
                     }
                 }
@@ -281,6 +283,7 @@ public class And extends ExpressionCanBeTooComplex {
             if (ok && !equal.isEmpty()) {
                 Expression orValue = Or.or(evaluationContext, equal);
                 newConcat.set(newConcat.size() - 1, orValue);
+                LOGGER.debug("Skipping {} in OR, simplified to {}", value, orValue);
                 return Action.SKIP;
             }
         }
@@ -327,6 +330,7 @@ public class And extends ExpressionCanBeTooComplex {
         if (value instanceof Or orValue) {
             if (orValue.expressions().size() == 1) {
                 newConcat.add(orValue.expressions().get(0));
+                LOGGER.debug("Simplification of OR into single And clause: {}", value);
                 return Action.SKIP;
             }
         }
@@ -496,8 +500,14 @@ public class And extends ExpressionCanBeTooComplex {
                 // if b==y then the end result should be x>b
                 if (y == xb.b() && ge.allowEquals()) {
                     newConcat.remove(newConcat.size() - 1);
-                    newConcat.add(new GreaterThanZero(ge.getIdentifier(), ge.booleanParameterizedType(),
-                            ge.expression(), false));
+                    GreaterThanZero gt;
+                    if (ge.expression().returnType().equals(primitives.intParameterizedType())) {
+                        Expression oneLess = Sum.sum(evaluationContext, ge.expression(), new IntConstant(primitives, -1));
+                        gt = new GreaterThanZero(ge.getIdentifier(), primitives, oneLess, true);
+                    } else {
+                        gt = new GreaterThanZero(ge.getIdentifier(), primitives, ge.expression(), false);
+                    }
+                    newConcat.add(gt);
                     return Action.SKIP;
                 }
             }

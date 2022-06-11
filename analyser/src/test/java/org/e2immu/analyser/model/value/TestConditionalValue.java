@@ -27,13 +27,14 @@ import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.e2immu.analyser.model.expression.NullConstant.NULL_CONSTANT;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestConditionalValue extends CommonAbstractValue {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestConditionalValue.class);
 
     @Test
     public void test1() {
@@ -196,7 +197,7 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void testReturnType() {
         CausesOfDelay delay = DelayFactory.createDelay(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
         Expression a = DelayedExpression.forState(Identifier.generate("test"), PRIMITIVES.booleanParameterizedType(),
-              EmptyExpression.EMPTY_EXPRESSION,  delay);
+                EmptyExpression.EMPTY_EXPRESSION, delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = UnknownExpression.forReturnVariable(Identifier.constant("unknown"), boxed);
         Expression inline = inline(c, a, b);
@@ -283,5 +284,53 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("false", and1.toString());
         Expression and2 = newAndAppend(vIsNull, vIsNotNull);
         assertEquals("false", and2.toString());
+    }
+
+    /*
+    in the real world test, we have
+    s = ``node`.map`
+    s1 = ``node`.map`.get(nullable instance type String)
+    a = prefix.length > instance type int
+
+    isNull:        a&&(null==s1||null==s)
+    cm/isNotNull:  (null!=s1 || !a) && (null != s || !a)
+     */
+    @Test
+    public void testTrie3() {
+        Expression v = inline(newAndAppend(a, newOrAppend(equals(NULL_CONSTANT, s),
+                equals(NULL_CONSTANT, s1))), NULL_CONSTANT, inline(a, s1, new StringConstant(PRIMITIVES, "x")));
+        assertEquals("a&&(null==s||null==s1)?null:a?s1:\"x\"", v.toString());
+
+        Expression vIsNull = equals(NULL_CONSTANT, v);
+        assertEquals("a&&(null==s||null==s1)", vIsNull.toString());
+
+        Expression vIsNotNull = negate(vIsNull);
+        assertEquals("(!a||null!=s)&&(!a||null!=s1)", vIsNotNull.toString());
+
+        LOGGER.debug("***** start *****");
+        assertEquals("false", newAndAppend(vIsNull, vIsNotNull).toString());
+        LOGGER.debug("*****  end  *****");
+        assertEquals("false", newAndAppend(vIsNotNull, vIsNull).toString());
+    }
+
+    // so we turn the "a" into an "i>j" which is in a different location, more close to the real world example
+    // SOLUTION: we must use allowEquals == true for integers
+    @Test
+    public void testTrie4() {
+        Expression a = GreaterThanZero.greater(context, i, Sum.sum(context, j, newInt(1)), true);
+        Expression v = inline(newAndAppend(a, newOrAppend(equals(NULL_CONSTANT, s),
+                equals(NULL_CONSTANT, s1))), NULL_CONSTANT, inline(a, s1, new StringConstant(PRIMITIVES, "x")));
+        assertEquals("-1+i>=j&&(null==s||null==s1)?null:-1+i>=j?s1:\"x\"", v.toString());
+
+        Expression vIsNull = equals(NULL_CONSTANT, v);
+        assertEquals("-1+i>=j&&(null==s||null==s1)", vIsNull.toString());
+
+        Expression vIsNotNull = negate(vIsNull);
+        assertEquals("(null!=s||j>=i)&&(null!=s1||j>=i)", vIsNotNull.toString());
+
+        LOGGER.debug("***** start *****");
+        assertEquals("false", newAndAppend(vIsNull, vIsNotNull).toString());
+        LOGGER.debug("*****  end  *****");
+        assertEquals("false", newAndAppend(vIsNotNull, vIsNull).toString());
     }
 }

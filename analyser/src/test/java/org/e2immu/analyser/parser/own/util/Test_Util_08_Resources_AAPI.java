@@ -35,7 +35,7 @@ public class Test_Util_08_Resources_AAPI extends CommonTestRunner {
     public void test() throws IOException {
 
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class),
-                0, 10,
+                0, 5,
                 new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

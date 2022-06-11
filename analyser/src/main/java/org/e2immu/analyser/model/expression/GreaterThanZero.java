@@ -31,17 +31,19 @@ import java.util.function.Predicate;
 
 public class GreaterThanZero extends BaseExpression implements Expression {
 
-    private final ParameterizedType booleanParameterizedType;
+    private final Primitives primitives;
     private final Expression expression;
     private final boolean allowEquals;
 
     public GreaterThanZero(Identifier identifier,
-                           ParameterizedType booleanParameterizedType,
+                           Primitives primitives,
                            Expression expression,
                            boolean allowEquals) {
         super(identifier);
-        this.booleanParameterizedType = Objects.requireNonNull(booleanParameterizedType);
+        this.primitives = Objects.requireNonNull(primitives);
         this.expression = Objects.requireNonNull(expression);
+        assert !expression.returnType().equals(primitives.intParameterizedType()) || allowEquals :
+                "integers must have allowEquals==true";
         this.allowEquals = allowEquals;
     }
 
@@ -141,25 +143,27 @@ public class GreaterThanZero extends BaseExpression implements Expression {
             return new BooleanConstant(primitives, ln.doubleValue() > rn.doubleValue());
         }
 
-        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType();
-
         if (ln != null && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
             Expression lMinusOne = IntConstant.intOrDouble(primitives, ln.doubleValue() - 1.0);
-            return new GreaterThanZero(identifier, booleanParameterizedType,
+            return new GreaterThanZero(identifier, primitives,
                     Sum.sum(evaluationContext, lMinusOne,
                             Negation.negate(evaluationContext, r)), true);
         }
         if (rn != null && !allowEquals && r.isDiscreteType()) {
             // x > 3 == -3 + x > 0 transform to x >= 4
             Expression minusRPlusOne = IntConstant.intOrDouble(primitives, -(rn.doubleValue() + 1.0));
-            return new GreaterThanZero(identifier, booleanParameterizedType,
+            return new GreaterThanZero(identifier, primitives,
                     Sum.sum(evaluationContext, l, minusRPlusOne), true);
         }
 
-        return new GreaterThanZero(identifier, booleanParameterizedType,
-                Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r)),
-                allowEquals);
+        Expression sum = Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r));
+        if (!allowEquals && sum.returnType().equals(primitives.intParameterizedType())) {
+            // GTZ cannot take allowEquals==false for integers
+            Expression minusOne = Sum.sum(evaluationContext, sum, new IntConstant(primitives, -1));
+            return new GreaterThanZero(identifier, primitives, minusOne, true);
+        }
+        return new GreaterThanZero(identifier, primitives, sum, allowEquals);
     }
 
     // mainly for testing
@@ -181,29 +185,32 @@ public class GreaterThanZero extends BaseExpression implements Expression {
             return new BooleanConstant(primitives, ln.doubleValue() < rn.doubleValue());
         }
 
-        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType();
-
         if (ln != null && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
             Expression minusLPlusOne = IntConstant.intOrDouble(primitives, -(ln.doubleValue() + 1.0));
-            return new GreaterThanZero(identifier, booleanParameterizedType,
+            return new GreaterThanZero(identifier, primitives,
                     Sum.sum(evaluationContext, minusLPlusOne, r), true);
         }
         if (rn != null && !allowEquals && r.isDiscreteType()) {
             // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
             Expression rMinusOne = IntConstant.intOrDouble(primitives, rn.doubleValue() - 1.0);
-            return new GreaterThanZero(identifier, booleanParameterizedType,
+            return new GreaterThanZero(identifier, primitives,
                     Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), rMinusOne), true);
         }
         // l < r <=> l-r < 0 <=> -l+r > 0
         if (ln != null) {
-            return new GreaterThanZero(identifier, booleanParameterizedType, Sum.sum(evaluationContext, ln.negate(), r), allowEquals);
+            return new GreaterThanZero(identifier, primitives, Sum.sum(evaluationContext, ln.negate(), r), allowEquals);
         }
 
         // TODO add tautology call
 
-        return new GreaterThanZero(identifier, primitives.booleanParameterizedType(), Sum.sum(evaluationContext,
-                Negation.negate(evaluationContext, l), r), allowEquals);
+        Expression sum = Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), r);
+        if (!allowEquals && sum.returnType().equals(primitives.intParameterizedType())) {
+            // GTZ cannot take allowEquals==false for integers
+            Expression minusOne = Sum.sum(evaluationContext, sum, new IntConstant(primitives, -1));
+            return new GreaterThanZero(identifier, primitives, minusOne, true);
+        }
+        return new GreaterThanZero(identifier, primitives, sum, allowEquals);
     }
 
     @Override
@@ -260,7 +267,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override
@@ -277,7 +284,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
             expression = new BooleanConstant(context.getPrimitives(),
                     allowEquals ? n.doubleValue() >= 0 : n.doubleValue() > 0);
         } else {
-            expression = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
+            expression = new GreaterThanZero(identifier, primitives, er.getExpression(), allowEquals);
         }
         return new EvaluationResult.Builder(context).compose(er).setExpression(expression).build();
     }
@@ -318,7 +325,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression translate = expression.translate(inspectionProvider, translationMap);
         if (translate == expression) return this;
-        return new GreaterThanZero(identifier, booleanParameterizedType, translate, allowEquals);
+        return new GreaterThanZero(identifier, primitives, translate, allowEquals);
     }
 
     @Override
@@ -329,7 +336,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         if (expression.isDelayed()) {
-            return new GreaterThanZero(identifier, booleanParameterizedType,
+            return new GreaterThanZero(identifier, primitives,
                     expression.mergeDelays(causesOfDelay), allowEquals);
         }
         return this;
@@ -344,7 +351,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     }
 
     public ParameterizedType booleanParameterizedType() {
-        return booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override
@@ -353,6 +360,6 @@ public class GreaterThanZero extends BaseExpression implements Expression {
         if (removed == null) {
             return new BooleanConstant(primitives, true);
         }
-        return new GreaterThanZero(identifier, primitives.booleanParameterizedType(), removed, allowEquals);
+        return new GreaterThanZero(identifier, primitives, removed, allowEquals);
     }
 }

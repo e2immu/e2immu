@@ -127,7 +127,7 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
         if (property == NOT_NULL_EXPRESSION) {
-            Set<Variable> conditionVariables=  condition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
+            Set<Variable> conditionVariables = condition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
             EvaluationResult child = context.child(condition, conditionVariables);
             DV nneIfTrue = child.evaluationContext().getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
@@ -137,6 +137,9 @@ public class InlineConditional extends BaseExpression implements Expression {
             EvaluationResult notChild = context.child(notC, conditionVariables);
             DV nneIfFalse = notChild.evaluationContext().getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
             return nneIfFalse.min(nneIfTrue);
+        }
+        if (property == EXTERNAL_NOT_NULL) {
+            throw new UnsupportedOperationException();
         }
         if (property == IDENTITY || property == IGNORE_MODIFICATIONS) {
             return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);

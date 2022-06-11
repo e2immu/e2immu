@@ -745,8 +745,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         }
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
-            return new GreaterThanZero(Identifier.generate("gt0"), context.getPrimitives().booleanParameterizedType(),
-                    new ArrayLength(value.getIdentifier(), context.getPrimitives(), value), false);
+            ArrayLength arrayLength = new ArrayLength(value.getIdentifier(), context.getPrimitives(), value);
+            Expression minusOne = Sum.sum(context, arrayLength, new IntConstant(context.getPrimitives(), -1));
+            return new GreaterThanZero(Identifier.generate("gt0"), context.getPrimitives(),
+                    minusOne, true);
         }
         if (returnType.typeInfo != null) {
             TypeInfo collection = returnType.typeInfo.recursivelyImplements(context.getAnalyserContext(),

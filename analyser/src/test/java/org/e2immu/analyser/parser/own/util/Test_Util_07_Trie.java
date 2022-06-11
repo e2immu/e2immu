@@ -49,9 +49,9 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<loopIsNotEmptyCondition>&&(<null-check>||<null-check>)?<vp::container@Class_TrieNode>:<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                        case 1 -> "upToPosition><oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_data;initial@Field_map>:upToPosition><oos:i>?<m:get>:<f:root>";
-                        case 2 -> "upToPosition>instance type int&&(<simplification>||<null-check>)?null:upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):<f:root>";
-                        default -> "upToPosition>instance type int&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        case 1 -> "-1+upToPosition>=<oos:i>&&(<null-check>||<null-check>)?<vp::initial@Field_data;initial@Field_map>:-1-<oos:i>+upToPosition>=0?<m:get>:<f:root>";
+                        case 2 -> "-1-(instance type int)+upToPosition>=0&&(<simplification>||<null-check>)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):<f:root>";
+                        default -> "-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -66,10 +66,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
-                            case 1 -> "strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
-                            case 2 -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):<f:root>";
-                            default -> "strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
+                            case 0 -> "strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            case 1 -> "strings.length>=1?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            case 2 -> "strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):<f:root>";
+                            default -> "strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -92,17 +92,17 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
-                            case 1 -> "null==<f:node.data>?strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>:strings.length>0?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
-                            case 2 -> "null==<f:node.data>?strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>:strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):<f:root>";
-                            default -> "null==(strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root).data$3?instance type TrieNode<T>:strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
+                            case 0 -> "strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            case 1 -> "null==<f:node.data>?strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>:strings.length>=1?null==<f:node.map>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            case 2 -> "null==<f:node.data>?strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>:strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):<f:root>";
+                            default -> "null==(strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root).data$3?instance type TrieNode<T>:strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2 -> "strings.length>0?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
-                            default -> "null==(strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root).data$3?instance type TrieNode<T>:strings.length>0?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
+                            case 0, 1, 2 -> "strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            default -> "null==(strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root).data$3?instance type TrieNode<T>:strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -177,7 +177,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1, 2 -> "<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                            default -> "upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                            default -> "-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -196,7 +196,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             if ("isStrictPrefix".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<m:goTo>" : "prefix.length>instance type int&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:prefix.length>instance type int?``node`.map`.get(nullable instance type String):`root`";
+                        String expected = d.iteration() <= 2 ? "<m:goTo>" : "-1-(instance type int)+prefix.length>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:-1-(instance type int)+prefix.length>=0?``node`.map`.get(nullable instance type String):`root`";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -209,7 +209,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>&&<null-check>";
                             case 1, 2 -> "<null-check>&&null==<f:node.data>";
-                            default -> "null==(prefix.length>instance type int&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:prefix.length>instance type int?``node`.map`.get(nullable instance type String):`root`).data$1&&(null!=``node`.map`.get(nullable instance type String)||instance type int>=prefix.length)&&(null!=``node`.map`||instance type int>=prefix.length)";
+                            default -> "null==(-1-(instance type int)+prefix.length>=0?``node`.map`.get(nullable instance type String):`root`).data$1&&(null!=``node`.map`.get(nullable instance type String)||instance type int>=prefix.length)&&(null!=``node`.map`||instance type int>=prefix.length)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -229,8 +229,8 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     assertEquals(expected, d.state().toString());
                     String cm = switch (d.iteration()) {
                         case 0 -> "CM{condition=<loopIsNotEmptyCondition>;state=!<null-check>;parent=CM{condition=<loopIsNotEmptyCondition>;parent=CM{parent=CM{}}}}";
-                        case 1 -> "CM{condition=upToPosition>i;state=null!=<f:node.map>;parent=CM{condition=upToPosition>i;parent=CM{parent=CM{}}}}";
-                        default -> "CM{condition=upToPosition>i;state=null!=node$1.map$0;parent=CM{condition=upToPosition>i;parent=CM{parent=CM{}}}}";
+                        case 1 -> "CM{condition=-1-i+upToPosition>=0;state=null!=<f:node.map>;parent=CM{condition=-1-i+upToPosition>=0;parent=CM{parent=CM{}}}}";
+                        default -> "CM{condition=-1-i+upToPosition>=0;state=null!=node$1.map$0;parent=CM{condition=-1-i+upToPosition>=0;parent=CM{parent=CM{}}}}";
                     };
                     assertEquals(cm, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());
                 }
@@ -249,7 +249,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             int params = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
                 String expected = d.iteration() <= 2 ? "<m:goTo>"
-                        : "/*inline goTo*/upToPosition>instance type int&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:upToPosition>instance type int?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

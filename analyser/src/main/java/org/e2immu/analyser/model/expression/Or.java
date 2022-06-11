@@ -157,7 +157,7 @@ public final class Or extends ExpressionCanBeTooComplex {
                     .map(v -> append(context, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+                LOGGER.debug("Found And-clause {}, components for new And are {}", firstAnd, Arrays.toString(components));
             }
             int complexityComponents = Arrays.stream(components).mapToInt(Expression::getComplexity).sum();
             if (complexityComponents < context.evaluationContext().limitOnComplexity()) {

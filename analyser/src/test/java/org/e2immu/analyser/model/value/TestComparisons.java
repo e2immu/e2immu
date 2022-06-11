@@ -300,7 +300,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iNot0 = negate(equals(i, newInt(0)));
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), true);
         Expression combined = newAndAppend(iNot0, iGe0);
-        assertEquals("i>0", combined.toString());
+        assertEquals("i>=1", combined.toString());
     }
 
     @Test
@@ -310,7 +310,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(context, i, newInt(0), true);
         Expression combined = newAndAppend(iNot0, jEq0, iGe0);
         // currently: 0!=i && 0==j && i>=0
-        assertEquals("i>0&&0==j", combined.toString());
+        assertEquals("i>=1&&0==j", combined.toString());
 
         Expression jGeI = GreaterThanZero.greater(context, j, i, true);
         assertEquals("j>=i", jGeI.toString());
@@ -321,10 +321,10 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testLoops7() {
-
         Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
-        Expression iGtI1 = GreaterThanZero.greater(context, i, i1, false);
-        assertEquals("i>instance type int", iGtI1.toString());
+        Expression iMinusOne = Sum.sum(context, i, newInt(-1));
+        Expression iGtI1 = GreaterThanZero.greater(context,iMinusOne, i1, true);
+        assertEquals("-1-(instance type int)+i>=0", iGtI1.toString());
         Expression iLeI2 = GreaterThanZero.less(context, i, i1, true);
         assertEquals("instance type int>=i", iLeI2.toString());
         assertEquals("false", newAndAppend(iGtI1, iLeI2).toString());
@@ -384,4 +384,24 @@ public class TestComparisons extends CommonAbstractValue {
         assertEquals("false", newAndAppend(gt0, lt10, eq10).toString());
         assertEquals("false", newAndAppend(eq10, gt0, lt10).toString());
     }
+
+    @Test
+    public void testNumeric() {
+        Expression iGej = GreaterThanZero.greater(context, i, j, true);
+        assertEquals("i>=j", iGej.toString());
+        Expression iLtj = GreaterThanZero.greater(context, Sum.sum(context, j, newInt(-1)), i, true);
+        assertEquals("-1-i+j>=0", iLtj.toString());
+        assertEquals("false", newAndAppend(iGej, iLtj).toString());
+        assertEquals("false", newAndAppend(iLtj, iGej).toString());
+    }
+
+    @Test
+    public void testNumericNegation() {
+        Expression iGej = GreaterThanZero.greater(context, i, j, true);
+        Expression jMinusOne = Sum.sum(context, j, newInt(-1));
+        Expression jGti = GreaterThanZero.greater(context, jMinusOne, i, true);
+        Expression notJGti = negate(jGti);
+        assertEquals(iGej, notJGti);
+    }
+
 }

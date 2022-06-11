@@ -61,7 +61,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
+                    String expect = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$1+n>=0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
@@ -116,11 +116,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                     assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
 
-                    String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
+                    String expect = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$1+n>=0";
                     assertEquals(expect, d.absoluteState().toString());
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
+                    String expect = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$1+n>=0";
                     assertEquals(expect, d.absoluteState().toString());
                     assertEquals(expect, d.condition().toString());
                     String expectInterrupt = "{}";
@@ -216,8 +216,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "strings.length>0?null:<f:in>"
-                                : "strings.length>0?null:\"abc\"";
+                        String expect = d.iteration() == 0 ? "strings.length>=1?null:<f:in>"
+                                : "strings.length>=1?null:\"abc\"";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -419,7 +419,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                             .stream().sorted().collect(Collectors.joining(",")));
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "n><v:i>" : "n>i$2";
+                    String expected = d.iteration() == 0 ? "-1-<v:i>+n>=0" : "-1-i$2+n>=0";
                     assertEquals(expected, d.absoluteState().toString());
                 }
             }

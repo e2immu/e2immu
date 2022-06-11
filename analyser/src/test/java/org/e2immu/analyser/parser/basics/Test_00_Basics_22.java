@@ -64,7 +64,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
 
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
-                        String expect = "path.split(\"/\").length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
+                        String expect = "path.split(\"/\").length>=1?(instance type ByteArrayOutputStream).toByteArray():<return value>";
                         assertEquals(expect, d.currentValue().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
