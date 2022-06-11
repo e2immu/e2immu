@@ -378,6 +378,13 @@ public class ResolverImpl implements Resolver {
             LOGGER.debug("Set field inspection of " + fieldInfo.fullyQualifiedName());
 
             doAnnotations(fieldInspection.getAnnotations(), expressionContext);
+
+            // "touch" the type inspection of the field's type -- it may not explicitly appear in the import list
+            // see NotNull_4_1
+            if(fieldInfo.type.typeInfo != null) {
+                TypeInspection fieldTypeInspection = expressionContext.typeContext().getTypeInspection( fieldInfo.type.typeInfo);
+                assert fieldTypeInspection != null;
+            }
         });
     }
 
@@ -525,6 +532,16 @@ public class ResolverImpl implements Resolver {
             subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
                     methodInfo.name);
             typeParameters.forEach(subContext.typeContext()::addToContext);
+        }
+
+        // "touch" the type inspection of the method'sr eturn type -- it may not explicitly appear in the import list
+        // see NotNull_4_1
+        if(methodInspection.getReturnType() != null) {
+            TypeInfo returnType = methodInspection.getReturnType().typeInfo;
+            if(returnType != null) {
+                TypeInspection returnTypeInspection = expressionContext.typeContext().getTypeInspection(returnType);
+                assert returnTypeInspection != null;
+            }
         }
 
         // BODY
