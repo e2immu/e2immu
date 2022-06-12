@@ -188,7 +188,7 @@ public class Test_05_Final extends CommonTestRunner {
             if ("s1".equals(d.fieldInfo().name)) {
                 String expect = d.iteration() == 0 ? "<f:s1>" : "[s1+\"abc\",s1]";
                 assertEquals(expect, d.fieldAnalysis().getValue().toString());
-                String linked = d.iteration() == 0 ? "NOT_YET_SET" : "s1:0";
+                String linked = d.iteration() == 0 ? "s1:-1,s1:-1,this.s3:-1" : "s1:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {

@@ -42,7 +42,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        case 1 -> "null==<f:x.s>";
+                        case 1, 2 -> "null==<f:x.s>";
                         default -> "null==map.getOrDefault(pos,a)"; // and not "a", because of the assignment to the field
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -53,12 +53,12 @@ public class Test_00_Basics_24 extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("x".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<new:X>" : "new X(a)";
+                        String expected = d.iteration() <= 2 ? "<new:X>" : "new X(a)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<new:X>";
+                            case 0, 1, 2 -> "<new:X>";
                             default -> "instance type X";
                         }; // and not new X(a)!!!
                         assertEquals(expected, d.currentValue().toString());
@@ -72,7 +72,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?\"b\":<m:getOrDefault>";
-                            case 1 -> "null==<f:x.s>?\"b\":map.getOrDefault(pos,a)";
+                            case 1, 2 -> "null==<f:x.s>?\"b\":map.getOrDefault(pos,a)";
                             default -> "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -80,7 +80,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if (d.statementId().compareTo("1") >= 0) {
-                        String expected = d.iteration() <= 1 ? "<f:map>" : "instance type Map<Integer,String>";
+                        String expected = d.iteration() <= 2 ? "<f:map>" : "instance type Map<Integer,String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
@@ -92,7 +92,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
-                            case 1 -> "x.s:0,x:-1";
+                            case 1 -> "a:-1,x.s:0,x:-1";
+                            case 2 -> "x.s:0,x:-1";
                             default -> "x.s:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

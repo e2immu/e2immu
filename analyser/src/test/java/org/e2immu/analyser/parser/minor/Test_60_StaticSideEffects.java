@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -26,8 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_60_StaticSideEffects extends CommonTestRunner {
 
@@ -50,8 +50,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3 -> "<null-check>";
-                        default -> "null==<vp:counter:link@NOT_YET_SET>";
-                        // default -> "null==StaticSideEffects_1.counter";
+                        default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
@@ -69,8 +68,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1, 2, 3 -> "<null-check>";
-                        default -> "null==<vp:counter:link@NOT_YET_SET>";
-                        //default -> "null==StaticSideEffects_1.counter";
+                        default -> "null==StaticSideEffects_1.counter";
                     };
                     assertEquals(expected, d.condition().toString());
                     assertTrue(d.statementAnalysis().flowData().interruptsFlowIsSet());
@@ -85,10 +83,17 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "k".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
                     if ("0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertEquals("k", d.currentValue().toString());
+//FIXME                        assertDv(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
+                }
+                if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
+                    assertNotEquals("0", d.statementId());
+                    assertEquals("StaticSideEffects_1", fr.scope.toString());
+
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("new AtomicInteger()", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
@@ -98,40 +103,58 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
                             case 1 -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            case 2, 3 -> "<null-check>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
-                            default -> "null==<vp:counter:link@NOT_YET_SET>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
-                            //    default -> "<null-check>?new AtomicInteger():<vp:counter:link@NOT_YET_SET>";
-                            //     default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
+                            case 2, 3 -> "<null-check>?new AtomicInteger():<vp:counter:link@Field_counter>";
+                            default -> "null==nullable instance type AtomicInteger?new AtomicInteger():nullable instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
                         String expectedValue = switch (d.iteration()) {
                             case 0 -> "<null-check>?new AtomicInteger():<f:counter>";
-                            default -> "<wrapped:counter>"; // result of breaking delay in Merge
-                            //    default -> "instance type AtomicInteger";
+                            case 1, 2, 3 -> "<wrapped:counter>"; // result of breaking delay in Merge
+                            default -> "instance type AtomicInteger";
                         };
                         assertEquals(expectedValue, d.currentValue().toString());
 
                         // important! (see SAApply) the value properties do not change
                         // they are the cause of the potential null pointer exception that we still need to get rid of.
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("counter".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+
                 if (d.iteration() > 0) {
                     String expected = "new AtomicInteger(),null";
                     assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 }
+            }
+            if ("k".equals(d.fieldInfo().name)) {
+                assertDv(d, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertEquals("k", d.fieldAnalysis().getValue().toString());
+                assertEquals("k:0", d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 5, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                String assigned = d.iteration() <= 4 ? "assign_to_field@Parameter_k" : "";
+                assertEquals(assigned, p0.assignedToFieldDelays().toString());
+                assertEquals(d.iteration() >= 5, p0.assignedToFieldDelays().isDone());
             }
         };
 
@@ -141,6 +164,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

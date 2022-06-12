@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -1367,10 +1368,20 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .filter(DV::isDelayed)
                 .findFirst().orElse(null);
         if (causesOfDelay != null) {
-            LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo.fullyQualifiedName());
-            // IMPORTANT: we're not computing all delays, just one. we don't really care which one it is
-            fieldAnalysis.setLinkedVariables(LinkedVariables.NOT_YET_SET);
-            return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
+            if(causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING, c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)) {
+                LOGGER.debug("Breaking linking delay on field {}", fieldInfo);
+            } else {
+                LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo);
+                CausesOfDelay linkDelay = fieldInfo.delay(CauseOfDelay.Cause.LINKING);
+                Set<Variable> vars = allMethodsAndConstructors(true)
+                        .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                        .filter(VariableInfo::isAssigned)
+                        .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
+                        collect(Collectors.toUnmodifiableSet());
+                LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
+                fieldAnalysis.setLinkedVariables(lv);
+                return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
+            }
         }
 
         Map<Variable, DV> map = allMethodsAndConstructors(true)
