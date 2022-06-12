@@ -50,7 +50,7 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "options".equals(pi.name)) {
                     String expected = d.iteration() == 0 ? "<p:options>" : "nullable instance type FormattingOptions/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("length".equals(d.methodInfo().name) && "OutputElement".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -65,12 +65,19 @@ public class Test_Output_02_Symbol extends CommonTestRunner {
             if ("length".equals(d.methodInfo().name) && "OutputElement".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
             }
+            if("right".equals(d.methodInfo().name) && "Symbol".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expected = d.iteration()==0 ? "<m:right>":"/*inline right*/right";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                String pc = d.iteration()<=2? "<precondition>":"true";
+                assertEquals(pc, d.methodAnalysis().getPreconditionForEventual().expression().toString());
+            }
         };
 
+        // TODO solve errors at some point?
         testSupportAndUtilClasses(List.of(OutputElement.class, FormattingOptions.class, Symbol.class, Space.class),
-                0, 0, new DebugConfiguration.Builder()
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                2, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

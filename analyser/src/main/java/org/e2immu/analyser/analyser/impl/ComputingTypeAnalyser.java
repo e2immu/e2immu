@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
@@ -822,6 +823,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         DV valueFromFields = myFieldAnalysers.stream()
                 .filter(fa -> !fa.getFieldInfo().isPrivate())
+                .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {

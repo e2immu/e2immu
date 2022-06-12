@@ -103,7 +103,7 @@ public class Test_46_Singleton extends CommonTestRunner {
                 String delays = switch (d.iteration()) {
                     case 0 -> "initial:SingletonClass.SINGLETON@Method_test_0-C";
                     case 1 -> "container@Class_SingletonClass";
-                    case 2, 3 -> "initial@Field_created;initial@Field_k";
+                    case 2 -> "initial@Field_created;initial@Field_k";
                     default -> "";
                 };
                 assertEquals(delays, d.evaluationResult().causesOfDelay().toString());

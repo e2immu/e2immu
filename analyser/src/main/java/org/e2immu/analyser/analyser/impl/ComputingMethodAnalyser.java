@@ -146,8 +146,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
-                .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
-                .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer())
+                .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
+                .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
@@ -332,8 +332,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .map(fa -> fa.getProperty(Property.FINAL))
                     .reduce(Property.FINAL.bestDv, DV::min);
             if (finalOverFields.isDelayed()) {
-                LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
-                        methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying eventual in {} until we know about @Final of fields", methodInfo);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
                         EmptyExpression.EMPTY_EXPRESSION, finalOverFields.causesOfDelay(), primitives));
                 return finalOverFields.causesOfDelay();
@@ -360,7 +359,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
-                LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
+                if (sharedState.allowBreakDelay) {
+                    LOGGER.debug("Breaking eventual precondition delay on {}", methodInfo);
+                    break;
+                }
+                LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo);
                 methodAnalysis.setPreconditionForEventual(Precondition.forDelayed(methodInfo.identifier,
                         EmptyExpression.EMPTY_EXPRESSION, haveEventuallyImmutableFields.causesOfDelay(), primitives));
                 return haveEventuallyImmutableFields.causesOfDelay();
@@ -663,29 +666,33 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
     }
 
-    private AnalysisStatus computeImmutable() {
+    private AnalysisStatus computeImmutable(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE).isDone()) return DONE;
-        DV immutable = computeImmutableValue();
+        DV immutable = computeImmutableValue(sharedState.allowBreakDelay());
         methodAnalysis.setProperty(IMMUTABLE, immutable);
         if (immutable.isDelayed()) return immutable.causesOfDelay();
         LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
-    private AnalysisStatus computeContainer() {
+    private AnalysisStatus computeContainer(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
-        DV container = computeContainerValue();
+        DV container = computeContainerValue(sharedState.allowBreakDelay());
         if (container.isDelayed()) return container.causesOfDelay();
         methodAnalysis.setProperty(CONTAINER, container);
         LOGGER.debug("Set @Container to {} on {}", container, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
-    private DV computeContainerValue() {
+    private DV computeContainerValue(boolean allowBreakDelay) {
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
-            LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo.fullyQualifiedName);
-            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
+            if (allowBreakDelay) {
+                LOGGER.debug("Breaking @Container delay on {}", methodInfo);
+            } else {
+                LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo);
+                return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
+            }
         }
         if (expression.isConstant()) {
             return MultiLevel.CONTAINER_DV;
@@ -697,7 +704,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return dynamic.max(dynamicExt);
     }
 
-    private DV computeImmutableValue() {
+    private DV computeImmutableValue(boolean allowBreakDelay) {
         DV formalImmutable = analyserContext.defaultImmutable(methodInfo.returnType(), true);
         if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
@@ -705,8 +712,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         Expression expression = methodAnalysis.getSingleReturnValue();
         if (expression.isDelayed()) {
-            LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
-            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
+            if (allowBreakDelay) {
+                LOGGER.debug("Breaking @Immutable delay on {}", methodInfo);
+            } else {
+                LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo);
+                return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(expression.causesOfDelay());
+            }
         }
         if (expression.isConstant()) {
             return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
