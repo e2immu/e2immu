@@ -348,7 +348,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()

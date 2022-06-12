@@ -56,7 +56,7 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 6, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
             }

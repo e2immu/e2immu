@@ -418,13 +418,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "reportIndependent".equals(pi.name)) {
                     if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 17, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 18, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
             if ("dependencies".equals(d.variableName())) {
                 if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 16 ? "<f:entry.getValue().dependsOn>"
+                    String expected = d.iteration() <= 17 ? "<f:entry.getValue().dependsOn>"
                             : "(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -445,7 +445,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("1.0.2.0.0.0.0.0.0".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
-                    if ("1".equals(d.statementId())||"2".equals(d.statementId())) {
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -460,13 +460,19 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        // FIXME this is ridiculous
                         assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 15, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -474,11 +480,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("sorted".equals(d.methodInfo().name)) {
                 if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 16 ? "<c:boolean>" : "null!=reportIndependent";
+                    String expected = d.iteration() <= 17 ? "<c:boolean>" : "null!=reportIndependent";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 16 ? "!<null-check>&&!<m:isEmpty>"
+                    String expected = d.iteration() <= 17 ? "!<null-check>&&!<m:isEmpty>"
                             : "!(entry.getValue()).dependsOn$0.isEmpty()&&null!=(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.condition().toString());
                 }
@@ -488,6 +494,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 6, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+            }
+            if ("singleRemoveStep".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
         testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()

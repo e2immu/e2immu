@@ -300,7 +300,7 @@ public class ComputeLinkedVariables {
         boolean progress = false;
         boolean broken = false;
 
-        // TODO blatant code copying
+        // IMPORTANT: reduced code for the return variable, still a lot has been copied from the code further in this method
         if (returnVariable != null) {
             assert returnValueCluster.variables.stream().allMatch(propertyValues::containsKey);
             DV rvSummary = property.propertyType == Property.PropertyType.CONTEXT
