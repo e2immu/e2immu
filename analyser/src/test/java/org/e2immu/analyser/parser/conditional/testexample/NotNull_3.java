@@ -51,7 +51,7 @@ public class NotNull_3<T> {
         TrieNode<T> node = root;
         for (String s : strings) {
             TrieNode<T> newTrieNode;
-            if (node.map == null) { // 2.0.1
+            if (node.map == null) { // 1.0.1
                 node.map = new HashMap<>();
                 newTrieNode = new TrieNode<>();
                 node.map.put(s, newTrieNode);
@@ -62,7 +62,7 @@ public class NotNull_3<T> {
                     node.map.put(s, newTrieNode);
                 }
             }
-            node = newTrieNode;
+            node = newTrieNode; // 1.0.2
         }
         if (node.data == null) node.data = new LinkedList<>();
         node.data.add(Objects.requireNonNull(data));

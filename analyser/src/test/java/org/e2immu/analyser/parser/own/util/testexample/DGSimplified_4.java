@@ -69,10 +69,10 @@ public class DGSimplified_4<T> {
         for (T t : set) {
             dg.addNode(t, Set.of());
             Node<T> node = nodeMap.get(t);
-            if (node.dependsOn != null) {
+            if (node.dependsOn != null) { // 1.0.2
                 for (T d : node.dependsOn) {
-                    if (set.contains(d)) {
-                        dg.addNode(d, Set.of(t));
+                    if (set.contains(d)) { // 1.0.2.0.0.0.0
+                        dg.addNode(d, Set.of(t)); // 1.0.2.0.0.0.0.0.0
                     }
                 }
             }

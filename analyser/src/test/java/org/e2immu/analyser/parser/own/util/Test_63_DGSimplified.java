@@ -76,7 +76,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "cm@Parameter_dependsOn;cm@Parameter_t;initial:node.dependsOn@Method_accept_0.0.0-C;mom@Parameter_dependsOn;mom@Parameter_t";
+                        case 0 -> "initial:node.dependsOn@Method_accept_0.0.0-C";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
@@ -93,7 +93,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String state = d.iteration() <= 2 ? "!<m:get>" : "!changed.get()";
+                    String state = d.iteration() <= 1 ? "!<m:get>" : "!changed.get()";
                     assertEquals(state, d.state().toString());
                 }
             }
@@ -182,16 +182,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:get>?<vl:changed>:new AtomicBoolean(true)";
-                            case 1, 2 -> "changed$1.get()?<vl:changed>:new AtomicBoolean(true)";
+                            case 1 -> "changed$1.get()?<vl:changed>:new AtomicBoolean(true)";
                             default -> "changed$1.get()?instance type AtomicBoolean:new AtomicBoolean(true)";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<vl:changed>" : "instance type AtomicBoolean";
+                        String expected = d.iteration() <= 1 ? "<vl:changed>" : "instance type AtomicBoolean";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -334,8 +334,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_2", 1, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -406,9 +406,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -418,13 +418,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("sorted".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "reportIndependent".equals(pi.name)) {
                     if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 17, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
             if ("dependencies".equals(d.variableName())) {
                 if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<f:entry.getValue().dependsOn>"
+                    String expected = d.iteration() <= 16 ? "<f:entry.getValue().dependsOn>"
                             : "(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.currentValue().toString());
                 }
@@ -440,23 +440,60 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     }
                 }
             }
+            if ("reverse".equals(d.methodInfo().name)) {
+                if ("dg".equals(d.variableName())) {
+                    if ("1.0.2.0.0.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())||"2".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
+                    if ("1.0.2.0.0.0.0".equals(d.statementId()) || "1.0.2.0.0".equals(d.statementId())
+                            || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "set".equals(pi.name)) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        // FIXME this is ridiculous
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("sorted".equals(d.methodInfo().name)) {
                 if ("3.0.1.0.3.0.2.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<c:boolean>" : "null!=reportIndependent";
+                    String expected = d.iteration() <= 16 ? "<c:boolean>" : "null!=reportIndependent";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("3.0.1.0.2.1.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<null-check>&&!<m:isEmpty>"
+                    String expected = d.iteration() <= 16 ? "!<null-check>&&!<m:isEmpty>"
                             : "!(entry.getValue()).dependsOn$0.isEmpty()&&null!=(entry.getValue()).dependsOn$0";
                     assertEquals(expected, d.condition().toString());
                 }
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("reverse".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+        };
         testClass("DGSimplified_4", 0, 4, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 }

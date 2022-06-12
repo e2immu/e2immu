@@ -114,7 +114,7 @@ public class Test_63_ListUtilSimplified extends CommonTestRunner {
                 }
                 if ("t2".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<s:L>" : "list2$1.remove(0)";
+                        String expected = d.iteration() == 0 ? "<s:L>" : "list2$1.remove(0)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

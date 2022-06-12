@@ -357,6 +357,7 @@ public class ComputeLinkedVariables {
                 }
             }
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
+            // does not interfere with the next situation, as than one requires a done cluster
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
                 if (allowBreakDelay && summary.valueIsFalse()) {
                     LOGGER.debug("Breaking linking delay on CM==FALSE, cluster {}", cluster);
@@ -365,6 +366,36 @@ public class ComputeLinkedVariables {
                 } else {
                     summary = summary.causesOfDelay().merge(cluster.delays);
                 }
+            }
+
+            /*
+            1st of 2 pieces of code that ensure that once a context property has reached its highest value in the
+            previous statement, it should have it in this statement as well.
+            First: if the cluster is done, and ANY of the previous ones reaches the highest value, then all should have it.
+             */
+            boolean clusterComplain;
+            if (property.propertyType == Property.PropertyType.CONTEXT
+                    && !summary.equals(property.bestDv)
+                    && cluster.delays.isDone()
+                    && cluster.variables.size() > 1) {
+                // if any of the previous values has a max value, we'll need to have it, too
+                DV best = cluster.variables.stream().map(v -> {
+                    VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+                    if (vic != null) {
+                        VariableInfo vi1 = vic.getPreviousOrInitial();
+                        return vi1.getProperty(property);
+                    } else {
+                        return property.falseDv;
+                    }
+                }).reduce(DV.MIN_INT_DV, DV::max);
+                if (best.equals(property.bestDv)) {
+                    summary = best;
+                    clusterComplain = false;
+                } else {
+                    clusterComplain = true;
+                }
+            } else {
+                clusterComplain = true;
             }
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
@@ -381,11 +412,23 @@ public class ComputeLinkedVariables {
                         complain = false;
                     } else {
                         newValue = newValue1;
-                        complain = true;
+                        complain = clusterComplain;
                     }
                     VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
                     DV current = vi.getProperty(property);
-                    if (current.isDelayed()) {
+                    VariableInfo vi1 = vic.getPreviousOrInitial();
+                    DV previous = vi1.getProperty(property);
+                    if (property.propertyType == Property.PropertyType.CONTEXT && property.bestDv.equals(previous)) {
+                        /*
+                        Second of code that ensures that once a context property has reached its highest value,
+                        it should keep it in subsequent statements. Note that this
+                        does not work for external properties, as they are reset to NOT_INVOLVED after an assignment
+                         */
+                        if (current.isDelayed()) {
+                            vic.setProperty(property, previous, stage);
+                            progress = true;
+                        } // else don't complain!!!
+                    } else if (current.isDelayed()) {
                         try {
                             DV inMap = propertyValues.get(variable);
                             if (property.bestDv.equals(inMap) && extraDelay.isDone()) {

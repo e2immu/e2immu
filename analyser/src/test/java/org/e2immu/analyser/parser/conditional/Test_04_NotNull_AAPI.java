@@ -72,7 +72,44 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
     // than ComputeContextPropertiesOverAllMethods. (used to crash before better logic in GreaterThanZero and And...)
     @Test
     public void test_3_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("newTrieNode".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1.0.2".equals(d.statementId())) {
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1.1.1".equals(d.statementId())) {
+                        assertTrue(d.iteration() < 2);
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        String linked = d.iteration() <= 1 ? "node.map:-1,node:0,s:-1,this.root:-1" : "node:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("node".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1.0.2".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1.0.1.1.1".equals(d.statementId())) {
+                        assertTrue(d.iteration() < 2);
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        String linked = d.iteration() <= 1 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1" : "newTrieNode:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)
                 .build());
