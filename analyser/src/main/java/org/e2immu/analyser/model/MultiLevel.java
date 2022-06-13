@@ -128,6 +128,7 @@ public class MultiLevel {
     public static final DV INDEPENDENT_1_DV = compose(EFFECTIVE, Level.INDEPENDENT_1, "independent1");
     public static final DV INDEPENDENT_2_DV = compose(EFFECTIVE, Level.INDEPENDENT_2, "independent2");
     public static final DV INDEPENDENT_DV = compose(EFFECTIVE, Level.INDEPENDENT_R, "independent");
+    public static final DV INDEPENDENT_INCONCLUSIVE = new Inconclusive(compose(EFFECTIVE, Level.INDEPENDENT_R, "independent"));
 
     // IMMUTABLE
     public static final DV EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV =

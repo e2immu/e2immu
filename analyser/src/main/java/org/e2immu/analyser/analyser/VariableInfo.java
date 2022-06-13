@@ -135,10 +135,10 @@ public interface VariableInfo {
                     i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : DV.FALSE_DV;
 
     List<MergeOp> MERGE = List.of(
-            new MergeOp(IN_NOT_NULL_CONTEXT, DV::min, IN_NOT_NULL_CONTEXT.bestDv),
+            new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.bestDv),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
-            new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
+            new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
 
             new MergeOp(IMMUTABLE, DV::min, IMMUTABLE.bestDv),

@@ -815,21 +815,33 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         if (typeImmutable.isDelayed()) {
             LOGGER.debug("Independence of type {} delayed, waiting for type immutability", typeInfo.fullyQualifiedName);
-            return delayIndependent(typeImmutable.causesOfDelay(), false);
+            return delayIndependent(typeImmutable.causesOfDelay());
         }
 
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
+        boolean inconclusive = false;
         DV valueFromFields = myFieldAnalysers.stream()
                 .filter(fa -> !fa.getFieldInfo().isPrivate())
                 .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
-            LOGGER.debug("Independence of type {} delayed, waiting for field independence",
-                    typeInfo.fullyQualifiedName);
-            return delayIndependent(valueFromFields.causesOfDelay(), sharedState.allowBreakDelay());
+            if (sharedState.allowBreakDelay()) {
+                valueFromFields = myFieldAnalysers.stream()
+                        .filter(fa -> !fa.getFieldInfo().isPrivate())
+                        .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
+                        .map(fa -> independenceOfField(fa.getFieldAnalysis()))
+                        .filter(DV::isDone)
+                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+                LOGGER.debug("Breaking delay in INDEPENDENT of type {}, ignoring some fields", typeInfo);
+                inconclusive = true;
+            } else {
+                LOGGER.debug("Independence of type {} delayed, waiting for field independence",
+                        typeInfo.fullyQualifiedName);
+                return delayIndependent(valueFromFields.causesOfDelay());
+            }
         }
         DV valueFromMethodParameters;
         if (valueFromFields.equals(MultiLevel.DEPENDENT_DV)) {
@@ -841,9 +853,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
-                LOGGER.debug("Independence of type {} delayed, waiting for parameter independence",
-                        typeInfo.fullyQualifiedName);
-                return delayIndependent(valueFromMethodParameters.causesOfDelay(), sharedState.allowBreakDelay());
+                if (sharedState.allowBreakDelay()) {
+                    valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
+                            .filter(ma -> !ma.getMethodInfo().isPrivate(analyserContext))
+                            .flatMap(ma -> ma.getParameterAnalyses().stream())
+                            .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
+                            .filter(DV::isDone)
+                            .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+                    LOGGER.debug("Breaking delay in INDEPENDENT of type {}, ignoring some method parameters", typeInfo);
+                    inconclusive = true;
+                } else {
+                    LOGGER.debug("Independence of type {} delayed, waiting for parameter independence",
+                            typeInfo.fullyQualifiedName);
+                    return delayIndependent(valueFromMethodParameters.causesOfDelay());
+                }
             }
         }
         DV valueFromMethodReturnValue;
@@ -857,24 +880,39 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodReturnValue.isDelayed()) {
-                LOGGER.debug("Independence of type {} delayed, waiting for method independence",
-                        typeInfo.fullyQualifiedName);
-                return delayIndependent(valueFromMethodReturnValue.causesOfDelay(), sharedState.allowBreakDelay());
+                if (sharedState.allowBreakDelay()) {
+                    valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
+                            .filter(ma -> !ma.getMethodInfo().isPrivate()
+                                    && ma.getMethodInfo().hasReturnValue()
+                                    && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType()))
+                            .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
+                            .filter(DV::isDone)
+                            .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+                    LOGGER.debug("Breaking delay in INDEPENDENT of type {}, ignoring some methods", typeInfo);
+                    inconclusive = true;
+                } else {
+                    LOGGER.debug("Independence of type {} delayed, waiting for method independence",
+                            typeInfo.fullyQualifiedName);
+                    return delayIndependent(valueFromMethodReturnValue.causesOfDelay());
+                }
             }
         }
         DV finalValue = parentOrEnclosing.maxValue
                 .min(valueFromMethodReturnValue)
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
-        LOGGER.debug("Set independence of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
+        assert finalValue.isDone();
+        if (inconclusive) {
+            finalValue = new Inconclusive(finalValue);
+            LOGGER.debug("Setting inconclusive INDEPENDENT value for type {}: {}", typeInfo, finalValue);
+        } else {
+            LOGGER.debug("Set independence of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
+        }
         typeAnalysis.setProperty(Property.INDEPENDENT, finalValue);
         return DONE;
     }
 
-    private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay, boolean allowBreakDelay) {
-        // DV value = allowBreakDelay ? MultiLevel.DEPENDENT_INCONCLUSIVE : causesOfDelay;
-        //  typeAnalysis.setProperty(INDEPENDENT, value);
-        //  return allowBreakDelay ? DONE : causesOfDelay;
+    private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay) {
         typeAnalysis.setProperty(INDEPENDENT, causesOfDelay);
         return causesOfDelay;
     }
