@@ -141,17 +141,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         Expression value = result.value();
         assert value != null; // EmptyExpression in case there really is no value
-        boolean valueIsDelayed = value.isDelayed() || statusPost.isDelayed();
 
         CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
-        if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
+        if (value.isDone() && (statementAnalysis.statement() instanceof IfElseStatement ||
                 statementAnalysis.statement() instanceof AssertStatement)) {
             value = eval_IfElse_Assert(sharedState, value);
             if (value.isDelayed()) {
                 // for example, an if(...) inside a loop, when the loop's range is being computed
                 stateForLoop = value.causesOfDelay();
             }
-        } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
+        } else if (value.isDone() && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
             eval_Switch(sharedState, value, switchStatement);
         } else if (statementAnalysis.statement() instanceof ReturnStatement) {
             stateForLoop = addLoopReturnStatesToState(sharedState);

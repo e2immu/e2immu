@@ -87,7 +87,7 @@ public class TestDependencyGraph {
         List<Character> sorted = graph.sorted(cs -> {
             if (cs.contains('b')) throw new UnsupportedOperationException();
         }, null, null);
-        assertEquals("[a, c, b]", sorted.toString());
+        assertEquals("[b, a, c]", sorted.toString());
 
         Set<Character> elements = new TreeSet<>();
         graph.visit((c, list) -> elements.add(c));

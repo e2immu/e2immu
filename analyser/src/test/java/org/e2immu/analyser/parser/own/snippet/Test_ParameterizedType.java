@@ -45,6 +45,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
     }
 
     // IMPROVE for this test, it is fortunate that List.of().isEmpty() doesn't go to FALSE
+
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -57,9 +58,34 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                if ("4.0.0".equals(d.statementId())) {
+                    String reached = d.iteration() == 0
+                            ? "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E"
+                            : "CONDITIONALLY:1";
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                    String absolute = d.iteration() == 0
+                            ? "<null-check>&&<null-check>&&!<m:isEmpty>&&!<null-check>"
+                            : "!List.of().isEmpty()&&null==from.typeInfo$0&&null!=from.typeParameter$0&&null!=target.typeParameter$0";
+                    assertEquals(absolute, d.absoluteState().toString());
+                    assertEquals(absolute, d.conditionManagerForNextStatement().absoluteState(d.context()).toString());
+                }
                 if ("4.0.1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<m:isEmpty>" : "List.of().isEmpty()";
                     assertEquals(expected, d.condition().toString());
+                    String reached = switch (d.iteration()) {
+                        case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E;initial:target.typeParameter@Method_targetIsATypeParameter_0-C";
+                        case 1 -> "CONDITIONALLY:1"; // should be a delay
+                        default -> "never reaches this point";
+                    };
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+                if ("4.0.1".equals(d.statementId())) {
+                    String reached = switch (d.iteration()) {
+                        case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E";
+                        case 1 -> "CONDITIONALLY:1"; // should be a delay
+                        default -> "NEVER:0";
+                    };
+                    assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
             }
         };
@@ -81,7 +107,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:isEmpty>?7:<return value>" : "<return value>";
+                        String expected = d.iteration() == 0 ? "<m:isEmpty>?7:<return value>"
+                                : "<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4.0.4".equals(d.statementId())) {
@@ -95,13 +122,17 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 }
                 if ("fromTypeBounds".equals(d.variableName())) {
                     assertNotEquals("4", d.statementId(), "Variable should not exist here!");
+                    if ("4.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<s:List<E>>" : "List.of()";// FIXME companion state data?
+                        assertEquals(expected, d.currentValue().toString());
+                    }
                     // Note: the variable may exist in "5", as part of the evaluation of the return variable
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable lv) {
                         if ("4.0.4".equals(d.statementId())) {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<E>>";
-                                case 1, 2, 3, 4 -> "List.of().isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 1, 2, 3, 4 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -135,10 +166,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
 
         testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

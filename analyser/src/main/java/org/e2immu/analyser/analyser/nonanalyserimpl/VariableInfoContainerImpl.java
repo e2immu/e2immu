@@ -28,7 +28,6 @@ import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -627,7 +626,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void markOverride(Property property, DV value) {
         assert value.isDone();
-        propertyOverrides.put(property, value);
+        DV inMap = propertyOverrides.getOrDefaultNull(property);
+        if (inMap == null) {
+            propertyOverrides.put(property, value);
+        } else if (!inMap.equals(value)) {
+            throw new UnsupportedOperationException("Overwriting the override, from " + inMap + " to " + value);
+        }
     }
 
     @Override

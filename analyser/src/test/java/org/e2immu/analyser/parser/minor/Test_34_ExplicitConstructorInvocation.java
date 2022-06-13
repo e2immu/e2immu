@@ -307,7 +307,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                             && ve.variable() instanceof ParameterInfo pi
                             && "parent".equals(pi.name));
                     // parent is of mySelf type; IMMUTABLE_BREAK...
-                    assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 }
             }
         };

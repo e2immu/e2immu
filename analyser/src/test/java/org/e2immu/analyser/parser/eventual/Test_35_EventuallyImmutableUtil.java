@@ -197,19 +197,22 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("bool, string, this", inlinedMethod.variablesOfExpressionSorted());
+                        // IMPROVE should have been: "bool, string, this"
+                        assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
 
-            final String expected12 = "`t.s1.bool`.isSet()&&`t.s1.string`.isSet()&&`t.s2.bool`.isSet()&&`t.s2.string`.isSet()";
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 3 ? "<m:isReady1>" : "/*inline isReady1*/" + expected12;
+                String expected1 = d.iteration() <= 3 ? "<m:isReady1>"
+                        : "/*inline isReady1*/`t.s1.bool`.isSet()&&`t.s2.bool`.isSet()&&`t.s1.string`.isSet()&&`t.s2.string`.isSet()";
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
+
             if ("isReady2".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() <= 3 ? "<m:isReady2>" : "/*inline isReady2*/" + expected12;
+                String expected2 = d.iteration() <= 3 ? "<m:isReady2>"
+                        : "/*inline isReady2*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }

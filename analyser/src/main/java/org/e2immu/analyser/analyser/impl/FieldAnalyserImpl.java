@@ -40,6 +40,7 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ListOfSortedTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
@@ -821,6 +822,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return worstOverValues.causesOfDelay(); //DELAY EXIT POINT
         }
 
+        if (MultiLevel.MUTABLE_DV.equals(worstOverValues) && fieldInfo.owner.isMyself(fieldInfo.type, InspectionProvider.DEFAULT)) {
+            if (staticallyImmutable.isDelayed()) {
+                LOGGER.debug("Delaying @Immutable on {}, self-type, waiting for immutable of type", fieldInfo);
+            } else {
+                LOGGER.debug("Setting @Immutable of self-type {} to {}", fieldInfo, staticallyImmutable);
+            }
+            fieldAnalysis.setProperty(EXTERNAL_IMMUTABLE, staticallyImmutable);
+            return AnalysisStatus.of(staticallyImmutable);
+        }
         // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
         // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
         if (MultiLevel.isBefore(worstOverValues)) {
@@ -1368,7 +1378,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .filter(DV::isDelayed)
                 .findFirst().orElse(null);
         if (causesOfDelay != null) {
-            if(causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING, c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)) {
+            if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING, c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)) {
                 LOGGER.debug("Breaking linking delay on field {}", fieldInfo);
             } else {
                 LOGGER.debug("LinkedVariables not yet set for {}", fieldInfo);

@@ -156,7 +156,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, FINAL);
                 String expected = "[null,parent2Param]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("level2".equals(d.fieldInfo().name)) {
