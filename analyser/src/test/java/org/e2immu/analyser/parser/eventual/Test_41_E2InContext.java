@@ -152,14 +152,42 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
                     assertEquals("this", fr.scope.toString());
                     assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, Property.IMMUTABLE);
-                    assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                    // from iteration 3, set is @Mark
+                    String delay = switch (d.iteration()) {
+                        case 0 -> "initial@Method_E2InContext_2_0-C";
+                        case 1 -> "cm@Parameter_t;mom@Parameter_t";
+                        case 2 -> "break_init_delay:this.t@Method_set_1-C";
+                        default -> "";
+                    };
+                    assertDv(d, delay, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+
+                    String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance type Eventually<String>";
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                String values = d.iteration() == 0
+                        ? "initial:this.t@Method_set_1-C;no precondition info@Method_set_0.0.0-C;state:this.t@Method_set_2-E;values:this.t@Field_t"
+                        : "";
+                assertEquals(values, d.fieldAnalysis().valuesDelayed().toString());
+            }
             if ("eventually".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                String immDelay = switch (d.iteration()) {
+                    case 0 -> "immutable@Class_Eventually";
+                    case 1 -> "final@Field_t"; // haven't seen t yet
+                    case 2 -> "break_init_delay:this.t@Method_set_1-C"; // working towards values of t
+                    default -> "";
+                };
+                assertDv(d, immDelay, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.EXTERNAL_IMMUTABLE);
+                String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance type Eventually<String>";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
+
+                String delay = d.iteration() <= 2 ? "initial@Field_eventually" : "";
+                assertEquals(delay, d.fieldAnalysis().getValue().causesOfDelay().toString());
             }
         };
 
@@ -177,7 +205,14 @@ public class Test_41_E2InContext extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Eventually".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
         testClass("E2InContext_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

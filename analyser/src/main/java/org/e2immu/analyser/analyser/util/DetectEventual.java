@@ -144,7 +144,7 @@ public record DetectEventual(MethodInfo methodInfo,
             } else if (bestTypeAnalysis.isEventual()) {
                 for (VariableInfo vi : methodAnalysis().getFieldAsVariable(fieldInfo)) {
                     // currently, only looking at EXT_IMM: no assignment on this field!!
-                    DV immutableField = vi.getProperty(Property.EXTERNAL_IMMUTABLE);
+                    DV immutableField = vi.getProperty(Property.CONTEXT_IMMUTABLE);
                     if (immutableField.isDelayed()) {
                         causes = causes.merge(immutableField.causesOfDelay());
                     } else {

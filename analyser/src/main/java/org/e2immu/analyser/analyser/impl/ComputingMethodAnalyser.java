@@ -726,8 +726,23 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV dynamic = variableInfo.getProperty(IMMUTABLE);
         DV dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-        DV dynamicCtx = variableInfo.getProperty(CONTEXT_IMMUTABLE);
+        // important! there is no such thing as a context immutable property on the return variable
+        // we must take it from a variable
+        DV dynamicCtx;
+        IsVariableExpression ive;
+        if ((ive = variableInfo.getValue().asInstanceOf(IsVariableExpression.class)) != null) {
+            dynamicCtx = getVariableInfo(ive.variable()).getProperty(CONTEXT_IMMUTABLE);
+        } else {
+            dynamicCtx = MultiLevel.MUTABLE_DV;
+        }
         return formalImmutable.max(dynamic).max(dynamicExt).max(dynamicCtx);
+    }
+
+
+    private VariableInfo getVariableInfo(Variable variable) {
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement(true);
+        assert lastStatement != null;
+        return lastStatement.getLatestVariableInfo(variable.fullyQualifiedName());
     }
 
     /*

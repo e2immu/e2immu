@@ -146,10 +146,6 @@ public record MergeHelper(EvaluationContext evaluationContext,
         boolean b = mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         if (b) progress.set(true);
 
-        if (evaluationContext.isMyself(vi.variable())) {
-            if (vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV)) progress.set(true);
-            if (vi.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV)) progress.set(true);
-        }
         return new ProgressAndDelay(progress.get(), mergedValue.causesOfDelay());
     }
 

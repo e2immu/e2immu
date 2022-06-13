@@ -41,7 +41,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
-import static org.e2immu.analyser.model.MultiLevel.Effective.*;
+import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_AFTER;
+import static org.e2immu.analyser.model.MultiLevel.Effective.EVENTUAL_BEFORE;
 
 /*
 Contains all side effects of analysing an expression.
@@ -288,9 +289,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             this.evaluationContext = Objects.requireNonNull(evaluationResult.evaluationContext);
             this.statementTime = evaluationContext.getInitialStatementTime();
         }
+
         public Builder(EvaluationContext evaluationContext) {
             this.previousResult = null;
-            this.evaluationContext =evaluationContext;
+            this.evaluationContext = evaluationContext;
             this.statementTime = evaluationContext.getInitialStatementTime();
         }
 
@@ -454,13 +456,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     return;
                 }
             }
-            if(value.isDelayed()) {
+            if (value.isDelayed()) {
                 // cm is not delayed
                 List<Variable> vars = value.variables(true);
                 List<Variable> varsInCm = cm.variables();
-                if(!Collections.disjoint(vars, varsInCm)) {
+                if (!Collections.disjoint(vars, varsInCm)) {
                     LOGGER.debug("Delaying CNN, delayed value shares variables with CM, {}", variable);
-                    setProperty(variable, Property.CONTEXT_NOT_NULL, value.causesOfDelay() );
+                    setProperty(variable, Property.CONTEXT_NOT_NULL, value.causesOfDelay());
                     return;
                 }
             }
@@ -583,20 +585,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
-            Property property;
-            if (variable instanceof This || variable instanceof ParameterInfo) {
-                property = Property.EXTERNAL_IMMUTABLE;
-            } else if (variable instanceof FieldReference fr) {
-                // assignment, or in constructor, part of construction
-                property = hasBeenAssigned(fr) || evaluationContext.inConstruction() ? Property.CONTEXT_IMMUTABLE
-                        : Property.EXTERNAL_IMMUTABLE;
-            } else {
-                property = Property.CONTEXT_IMMUTABLE;
-            }
             if (requiredImmutable.isDelayed()) {
-                if (property == Property.CONTEXT_IMMUTABLE) {
-                    setProperty(variable, property, requiredImmutable.causesOfDelay());
-                }
+                setProperty(variable, Property.CONTEXT_IMMUTABLE, requiredImmutable.causesOfDelay());
                 return;
             }
             MultiLevel.Effective requiredEffective = MultiLevel.effective(requiredImmutable);
@@ -604,11 +594,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // no reason, not a method call that changed state
                 return;
             }
-            DV currentImmutable = getPropertyFromInitial(variable, property);
+            // TODO use extImm to produce errors, but not to compute stuff
+            //DV extImm = getPropertyFromInitial(variable, Property.EXTERNAL_IMMUTABLE);
+            DV ctxImm = getPropertyFromInitial(variable, Property.CONTEXT_IMMUTABLE);
+            DV imm = getPropertyFromInitial(variable, Property.IMMUTABLE);
+            DV currentImmutable = ctxImm.max(imm);
+
             if (currentImmutable.isDelayed()) {
-                if (property == Property.CONTEXT_IMMUTABLE) {
-                    setProperty(variable, property, currentImmutable.causesOfDelay());
-                }
+                setProperty(variable, Property.CONTEXT_IMMUTABLE, currentImmutable.causesOfDelay());
                 return; // let's wait
             }
             MultiLevel.Effective currentEffective = MultiLevel.effective(currentImmutable);
@@ -623,14 +616,24 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // everything proceeds as normal, we change EXTERNAL_IMMUTABLE
             assert nextImmutable.isDone();
             MultiLevel.Effective nextEffective = MultiLevel.effective(nextImmutable);
-            if ((currentEffective == EVENTUAL_BEFORE || currentEffective == MultiLevel.Effective.EVENTUAL) && nextEffective == EVENTUAL_AFTER) {
+            if (nextEffective == EVENTUAL_AFTER || nextEffective == EVENTUAL_BEFORE) {
                 // switch from before or unknown, to after
-                DV extImm = MultiLevel.afterImmutableDv(MultiLevel.level(currentImmutable));
-                setProperty(variable, property, extImm);
-            } else if (currentEffective == EVENTUAL && nextEffective == EVENTUAL_BEFORE) {
-                DV extImm = MultiLevel.beforeImmutableDv(MultiLevel.level(currentImmutable));
-                setProperty(variable, property, extImm);
+
+                // note that we cannot use IMM, because 'this' will have 'mutable', always level 0
+                DV formal = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(),
+                        true);
+                if (formal.isDelayed()) {
+                    // we're in a self situation (formal not yet known, but imm is mutable)... waiting
+                    setProperty(variable, Property.CONTEXT_IMMUTABLE, formal);
+                } else {
+                    int levelOfFormal = MultiLevel.level(formal);
+                    DV nextImm = nextEffective == EVENTUAL_AFTER
+                            ? MultiLevel.afterImmutableDv(levelOfFormal)
+                            : MultiLevel.beforeImmutableDv(levelOfFormal);
+                    setProperty(variable, Property.CONTEXT_IMMUTABLE, nextImm);
+                }
             }
+
         }
 
         private boolean hasBeenAssigned(FieldReference fr) {

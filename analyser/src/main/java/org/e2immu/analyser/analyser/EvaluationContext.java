@@ -373,6 +373,12 @@ public interface EvaluationContext {
         return isMyself(variable.parameterizedType());
     }
 
+    default boolean isMyselfExcludeThis(Variable variable) {
+        if (variable instanceof This) return false;
+        if (variable instanceof FieldReference fr && fr.isStatic) return false;
+        return isMyself(variable.parameterizedType());
+    }
+
     default boolean isMyself(ParameterizedType type) {
         return getCurrentType().isMyself(type, getAnalyserContext());
     }

@@ -78,8 +78,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         return switch (k) {
             case EXTERNAL_CONTAINER, EXTERNAL_IGNORE_MODIFICATIONS -> prev.minIgnoreNotInvolved(change);
             case CONTEXT_MODIFIED, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL -> prev.max(change);
-            case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
-            case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);
+            case CONTEXT_IMMUTABLE -> prev.max(change);
+            case CONTEXT_CONTAINER -> evaluationContext.isMyselfExcludeThis(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);
             case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
             default -> throw new UnsupportedOperationException();
         };
@@ -203,7 +203,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             statementAnalysis,
                             statementAnalysis.index(),
                             cm == null ? null : cm.condition(),
-                            cm == null ? "": cm.conditionVariables().stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")),
+                            cm == null ? "" : cm.conditionVariables().stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")),
                             cm == null ? null : cm.state(),
                             cm == null ? null : cm.absoluteState(sharedState.context()),
                             cm,
