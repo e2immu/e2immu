@@ -104,7 +104,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         both.forEach(k -> {
             DV prev = previous.getOrDefault(k, k.valueWhenAbsent());
             DV change = changeData.getOrDefault(k, k.valueWhenAbsent());
-            if (GroupPropertyValues.PROPERTIES.contains(k)) {
+            if (k.isGroupProperty()) {
                 DV value = groupPropertyValue(k, prev, change, evaluationContext, variable);
                 groupPropertyValues.set(k, variable, value);
             } else {

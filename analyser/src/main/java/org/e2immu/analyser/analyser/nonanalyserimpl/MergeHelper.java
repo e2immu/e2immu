@@ -228,7 +228,7 @@ public record MergeHelper(EvaluationContext evaluationContext,
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
-            if (GroupPropertyValues.PROPERTIES.contains(property)) {
+            if (property.isGroupProperty()) {
                 groupPropertyValues.set(property, variable, commonValue);
             } else {
                 if (commonValue.isDone()) {

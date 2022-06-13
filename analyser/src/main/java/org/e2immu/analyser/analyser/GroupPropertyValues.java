@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
@@ -28,14 +29,19 @@ import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 public class GroupPropertyValues {
 
     public static final Set<Property> PROPERTIES = Set.of(
-            Property.CONTEXT_MODIFIED,
-            Property.CONTEXT_NOT_NULL,
-            Property.CONTEXT_IMMUTABLE,
-            Property.CONTEXT_CONTAINER,
-            Property.EXTERNAL_NOT_NULL,
-            Property.EXTERNAL_IMMUTABLE,
-            Property.EXTERNAL_CONTAINER,
+            CONTEXT_MODIFIED,
+            CONTEXT_NOT_NULL,
+            CONTEXT_IMMUTABLE,
+            CONTEXT_CONTAINER,
+            EXTERNAL_NOT_NULL,
+            EXTERNAL_IMMUTABLE,
+            EXTERNAL_CONTAINER,
             EXTERNAL_IGNORE_MODIFICATIONS);
+
+    static {
+        Set<Property> computed = Arrays.stream(values()).filter(Property::isGroupProperty).collect(Collectors.toUnmodifiableSet());
+        assert PROPERTIES.equals(computed);
+    }
 
     private final Map<Property, Map<Variable, DV>> map = new HashMap<>();
 

@@ -75,7 +75,7 @@ public enum Property {
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted", CauseOfDelay.Cause.IMMUTABLE_BEFORE_CONTRACTED),
     NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV,
             MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.NEXT_C_IMM,
-             PropertyType.OTHER),
+            PropertyType.OTHER),
 
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, PropertyType.VALUE),
@@ -83,20 +83,20 @@ public enum Property {
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE, PropertyType.CONTEXT),
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
             MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM,
-             PropertyType.EXTERNAL),
+            PropertyType.EXTERNAL),
 
     // internal, used for enclosing-nested or type-subtype interactions (e.g., in the enclosing we have a field whose
     // type is an anonymous (non-static) subtype)
     PARTIAL_IMMUTABLE("partial @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV,
-            CauseOfDelay.Cause.PARTIAL_IMM,  PropertyType.OTHER),
+            CauseOfDelay.Cause.PARTIAL_IMM, PropertyType.OTHER),
     // internal, temporary
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null,
-             PropertyType.OTHER),
+            PropertyType.OTHER),
 
     IMMUTABLE_BREAK("@Immutable break", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE,  PropertyType.OTHER),
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE, PropertyType.OTHER),
 
     // separate property for fields, in conjunction with a finalizer
     BEFORE_MARK("@BeforeMark", CauseOfDelay.Cause.BEFORE_MARK),
@@ -149,19 +149,19 @@ public enum Property {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL,  PropertyType.OTHER),
+    FINAL("@Final", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL, PropertyType.OTHER),
     FINALIZER("@Finalizer", CauseOfDelay.Cause.FINALIZER),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
     CONTAINER("@Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER, PropertyType.VALUE),
-    EXTERNAL_CONTAINER("external @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_CONTAINER,  PropertyType.EXTERNAL),
+    EXTERNAL_CONTAINER("external @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_CONTAINER, PropertyType.EXTERNAL),
     CONTEXT_CONTAINER("context @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTEXT_CONTAINER, PropertyType.CONTEXT),
-    PARTIAL_CONTAINER("partial @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER,  PropertyType.OTHER),
+    PARTIAL_CONTAINER("partial @Container", MultiLevel.NOT_CONTAINER_DV, MultiLevel.CONTAINER_DV, MultiLevel.NOT_CONTAINER_DV, CauseOfDelay.Cause.CONTAINER, PropertyType.OTHER),
 
     IGNORE_MODIFICATIONS("@IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS, PropertyType.VALUE),
-    EXTERNAL_IGNORE_MODIFICATIONS("external @IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS,  PropertyType.EXTERNAL),
+    EXTERNAL_IGNORE_MODIFICATIONS("external @IgnoreModifications", MultiLevel.NOT_IGNORE_MODS_DV, MultiLevel.IGNORE_MODS_DV, MultiLevel.NOT_IGNORE_MODS_DV, CauseOfDelay.Cause.IGNORE_MODIFICATIONS, PropertyType.EXTERNAL),
 
     CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
@@ -175,8 +175,21 @@ public enum Property {
     // marker in CommaExpression, used in conjunction with PropertyWrapper; cause of delay completely irrelevant
     MARK_CLEAR_INCREMENTAL("mark clear incremental", CauseOfDelay.Cause.CONSTANT);
 
+    public boolean isGroupProperty() {
+        return propertyType.isGroupProperty;
+    }
+
     public enum PropertyType {
-        EXTERNAL, VALUE, CONTEXT, OTHER
+        EXTERNAL(true),
+        VALUE(false),
+        CONTEXT(true),
+        OTHER(false);
+
+        private final boolean isGroupProperty;
+
+        PropertyType(boolean isGroupProperty) {
+            this.isGroupProperty = isGroupProperty;
+        }
     }
 
     public final String name;

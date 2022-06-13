@@ -424,7 +424,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue(),
                 vi1.variable().statementTime());
         write.setValue(vi1.getValue());
-        vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
+        vi1.propertyStream().filter(e -> !e.getKey().isGroupProperty())
                 .forEach(e -> {
                     assert e.getKey().propertyType != Property.PropertyType.VALUE
                             || vi1.getValue().isDelayed() || e.getValue().isDone();
@@ -451,7 +451,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             previous.propertyStream()
-                    .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
+                    .filter(e -> !e.getKey().isGroupProperty())
                     .forEach(e -> {
                         assert e.getKey().propertyType != Property.PropertyType.VALUE
                                 || previous.getValue().isDelayed() || e.getValue().isDone();
@@ -472,7 +472,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo previous = getPreviousOrInitial();
         AtomicBoolean progress = new AtomicBoolean();
         previous.propertyStream()
-                .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
+                .filter(e -> !e.getKey().isGroupProperty())
                 .forEach(e -> {
                     assert e.getKey().propertyType != Property.PropertyType.VALUE
                             || previous.getValue().isDelayed()
@@ -528,7 +528,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     Property vp = e.getKey();
                     DV value = e.getValue();
                     // other variables may refer to us, but we'll not be written by the clustering
-                    if (GroupPropertyValues.PROPERTIES.contains(vp)) {
+                    if (vp.isGroupProperty()) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
                         assert vp.propertyType != Property.PropertyType.VALUE
@@ -555,7 +555,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 .forEach(e -> {
                     Property vp = e.getKey();
                     DV value = e.getValue();
-                    if (GroupPropertyValues.PROPERTIES.contains(vp)) {
+                    if (vp.isGroupProperty()) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
                         assert vp.propertyType != Property.PropertyType.VALUE
