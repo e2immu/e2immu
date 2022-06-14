@@ -14,27 +14,9 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import java.util.Objects;
-
-public class ExplicitConstructorInvocation_12 {
+public class ExplicitConstructorInvocation_12_1 {
     interface Expression {
         int getComplexity();
-    }
-
-    enum Precedence {
-        HIGH, LOW, AND
-    }
-
-    record MethodInfo(String name, Expression expression) {
-        int getComplexity() {
-            return 1 + expression.getComplexity();
-        }
-    }
-
-    record Primitives(Expression bitwiseAnd) {
-        public MethodInfo bitwiseAndOperatorInt() {
-            return new MethodInfo("&", bitwiseAnd);
-        }
     }
 
     record Identifier() {
@@ -71,27 +53,9 @@ public class ExplicitConstructorInvocation_12 {
     }
 
     static class X3_BinaryOperator extends X5_BaseExpression implements Expression {
-        protected final Primitives primitives;
-        public final Expression lhs;
-        public final Expression rhs;
-        public final Precedence precedence;
-        public final MethodInfo operator;
 
-        public X3_BinaryOperator(Identifier identifier3,
-                                 Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
-            super(identifier3, operator.getComplexity() + lhs.getComplexity() + rhs.getComplexity());
-            this.lhs = Objects.requireNonNull(lhs);
-            this.rhs = Objects.requireNonNull(rhs);
-            this.precedence = precedence;
-            this.operator = Objects.requireNonNull(operator);
-            this.primitives = primitives;
-        }
-    }
-
-    static class X4_BitwiseAnd extends X3_BinaryOperator {
-
-        private X4_BitwiseAnd(Identifier identifier4, Primitives primitives, Expression lhs, Expression rhs) {
-            super(identifier4, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.AND);
+        public X3_BinaryOperator(Identifier identifier3) {
+            super(identifier3, 0);
         }
     }
 }

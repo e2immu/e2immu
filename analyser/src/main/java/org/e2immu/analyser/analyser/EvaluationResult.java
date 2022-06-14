@@ -77,7 +77,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public EvaluationResult {
         assert evaluationContext != null;
-        assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
         assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
                 : "Causes of delay: " + causesOfDelay;
     }
@@ -217,13 +216,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                              LinkedVariables toRemoveFromLinkedVariables,
                              Map<Property, DV> properties) {
         public ChangeData {
-            Objects.requireNonNull(linkedVariables);
             Objects.requireNonNull(readAtStatementTime);
             Objects.requireNonNull(properties);
         }
 
         public ChangeData merge(ChangeData other) {
-            LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
+            LinkedVariables combinedLinkedVariables = linkedVariables == null ? other.linkedVariables : linkedVariables.merge(other.linkedVariables);
             LinkedVariables combinedToRemove = toRemoveFromLinkedVariables.merge(other.toRemoveFromLinkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<Property, DV> combinedProperties = VariableInfo.mergeIgnoreAbsent(properties, other.properties);
@@ -870,7 +868,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData current = valueChanges.get(variable);
             ChangeData newVcd;
             if (current == null) {
-                assert linkedVariables != null;
                 CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
                 newVcd = new ChangeData(instance, stateIsDelayed, stateIsDelayed, false, Set.of(),
                         linkedVariables, LinkedVariables.EMPTY,
