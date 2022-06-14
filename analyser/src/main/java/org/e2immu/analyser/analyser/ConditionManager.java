@@ -472,10 +472,5 @@ public record ConditionManager(Expression condition,
                                        ForwardEvaluationInfo forwardEvaluationInfo) {
             return new VariableExpression(variable, VariableExpression.NO_SUFFIX, scopeValue, indexValue);
         }
-
-        @Override
-        public LinkedVariables linkedVariables(Variable variable) {
-            return LinkedVariables.EMPTY;
-        }
     }
 }

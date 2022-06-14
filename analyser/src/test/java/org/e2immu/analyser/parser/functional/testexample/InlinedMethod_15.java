@@ -38,7 +38,7 @@ public interface InlinedMethod_15 {
         return List.copyOf(builder);
     }
 
-    static <T> List<T> concatImmutable(List<T> list1, List<T> list2) {
+    static <T> List<T> concatImmutable(@NotNull1 List<T> list1, @NotNull1 List<T> list2) {
         if (list1.isEmpty()) return list2;
         if (list2.isEmpty()) return list1;
         return immutableConcat(list1, list2);

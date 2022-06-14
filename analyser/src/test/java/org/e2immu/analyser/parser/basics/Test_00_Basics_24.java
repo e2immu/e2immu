@@ -41,8 +41,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<null-check>";
-                        case 1, 2 -> "null==<f:x.s>";
+                        case 0, 1 -> "<null-check>";
+                        case 2 -> "null==<f:x.s>";
                         default -> "null==map.getOrDefault(pos,a)"; // and not "a", because of the assignment to the field
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
@@ -66,13 +66,13 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:getOrDefault>" : "map.getOrDefault(pos,a)";
+                        String expected = d.iteration() <= 2 ? "<m:getOrDefault>" : "map.getOrDefault(pos,a)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<null-check>?\"b\":<m:getOrDefault>";
-                            case 1, 2 -> "null==<f:x.s>?\"b\":map.getOrDefault(pos,a)";
+                            case 0, 1 -> "<null-check>?\"b\":<m:getOrDefault>";
+                            case 2 -> "null==<f:x.s>?\"b\":map.getOrDefault(pos,a)";
                             default -> "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -84,15 +84,14 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "a:-1,pos:-1,x.s:-1,x:-1" : "";
+                        String linked = d.iteration() <= 1 ? "a:-1,pos:-1,x.s:-1,x:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
-                            case 0 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
-                            case 1 -> "a:-1,x.s:0,x:-1";
+                            case 0, 1 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
                             case 2 -> "x.s:0,x:-1";
                             default -> "x.s:0";
                         };
@@ -103,8 +102,8 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         };
 
         testClass("Basics_24", 0, 0, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true).build());

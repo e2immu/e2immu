@@ -135,6 +135,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(Identifier.generate("replacement"), msg, parameterizedType, original, causes);
     }
 
+    public static Expression forModification(Expression original,
+                                             CausesOfDelay causes) {
+        String msg = brackets("mod:" + original.returnType().printSimple());
+        return new DelayedExpression(original.getIdentifier(), msg, original.returnType(), original, causes);
+    }
+
     public static Expression forArrayLength(Identifier identifier,
                                             Primitives primitives,
                                             Expression original,
@@ -309,8 +315,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
         // see InstanceOf_16 as an example on why we should add these...
         // essentially, the return expression may expand, and cause context changes
-        for(Variable variable: variables(true)) {
-            if(context.evaluationContext().isPresent(variable)) {
+        for (Variable variable : variables(true)) {
+            if (context.evaluationContext().isPresent(variable)) {
                 builder.setProperty(variable, Property.CONTEXT_MODIFIED, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_NOT_NULL, causesOfDelay);
                 builder.setProperty(variable, Property.CONTEXT_CONTAINER, causesOfDelay);

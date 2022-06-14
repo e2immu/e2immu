@@ -59,9 +59,9 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "cm@Parameter_setC;mom@Parameter_setC";
-                            case 1 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
-                            case 2, 3 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;initial@Field_set;mom@Parameter_setC";
+                            case 0 -> "cm@Parameter_setC;link@NOT_YET_SET;mom@Parameter_setC";
+                            case 1 -> "mom@Parameter_setC";
+                            case 2, 3 -> "break_mom_delay@Parameter_setC;cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
                             default -> "";
                         };
                         assertDv(d, expectedDelay, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -71,7 +71,11 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
-                        String expected = d.iteration() == 0 ? "<f:s2>" : "instance type HashSet<String>";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:s2>";
+                            case 1, 2, 3, 4 -> "<mod:Set<String>>";
+                            default -> "instance type HashSet<String>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
@@ -79,7 +83,8 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
 
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2, 3, 4 -> "c.set:-1,c:-1";
+                            case 0 -> "c:-1";
+                            case 1, 2, 3, 4 -> "c.set:-1,c:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -178,7 +183,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if("example1".equals(d.methodInfo().name)) {
+            if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 4, d.context().evaluationContext().allowBreakDelay());
                 }

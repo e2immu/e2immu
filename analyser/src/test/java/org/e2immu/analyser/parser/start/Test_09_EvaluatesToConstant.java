@@ -53,14 +53,16 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                String expected = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
+                assertEquals(expected, d.absoluteState().toString());
                 Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
                 assertEquals("\"xzy\"", value.toString());
                 assertTrue(value instanceof StringConstant);
             }
             if ("1.0.1".equals(d.statementAnalysis().index())) {
-                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
-                assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
+                String expected = d.iteration() == 0 ? "<m:contains>&&!<c:boolean>" : "param.contains(\"a\")";
+                assertEquals(expected, d.absoluteState().toString());
+                assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index())) {
                 String expected = d.iteration() == 0 ? "<c:boolean>&&<m:contains>" : "false";
@@ -108,14 +110,16 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<mod:String>" : "nullable instance type String/*@Identity*/";
+                    assertEquals(expected, d.currentValue().toString());
                     assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
-                    assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
+                    String expected = d.iteration() == 0 ? "<mod:String>" : "nullable instance type String/*@Identity*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
                 }
                 // this is the if(a==null) { ..} statement, where the expression evaluates to false
                 if ("1.0.1".equals(d.statementId())) {
@@ -142,7 +146,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
                 assertNotEquals("1", d.statementId());
@@ -161,7 +165,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     assertEquals("(null==param?\"x\":param)+\"c\"", d.currentValue().toString());
                     if (d.iteration() == 0) {
-                        assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     } else {
@@ -169,12 +173,14 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertEquals("<return value>", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>" : "<return value>";
+                    assertEquals(expected, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("<return value>", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<m:contains>&&<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>" : "<return value>";
+                    assertEquals(expected, d.currentValue().toString());
                     CausesOfDelay causesOfDelayOfLinkedVars = d.variableInfo().getLinkedVariables().causesOfDelay();
                     assertTrue(causesOfDelayOfLinkedVars.isDone());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -200,7 +206,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals("", d.evaluationResult().causesOfDelay().toString());
             }
             if ("1".equals(d.statementId())) {
-                assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
+                String expected = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
+                assertEquals(expected, d.evaluationResult().value().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 assertTrue(d.evaluationResult().causesOfDelay().isDone());
@@ -226,7 +233,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 5, 0, new DebugConfiguration.Builder()
+        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

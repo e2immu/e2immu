@@ -572,11 +572,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public LinkedVariables linkedVariables(Variable variable) {
-            return LinkedVariables.EMPTY;
-        }
-
-        @Override
         public Properties getValueProperties(Expression value) {
             return evaluationContext.getValueProperties(value);
         }

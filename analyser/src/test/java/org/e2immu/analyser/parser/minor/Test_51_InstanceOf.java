@@ -323,7 +323,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
 
-                        String expect = "nullable instance type Object/*@Identity*/";
+                        String expect = d.iteration() == 0 ? "<mod:String>" : "nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
 
@@ -340,7 +340,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals("object/*(String)*/", prev.getValue().toString());
 
-                        assertEquals("object/*(String)*/", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<mod:String>" : "object/*(String)*/";
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
@@ -1091,8 +1092,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("", lvs);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("NOT_YET_SET", lvs);
 
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

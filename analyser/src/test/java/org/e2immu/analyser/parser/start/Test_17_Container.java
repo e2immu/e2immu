@@ -406,7 +406,7 @@ public class Test_17_Container extends CommonTestRunner {
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<p:coll5>" : "nullable instance type Collection<String>/*@Identity*/";
+                    String expected = d.iteration() == 0 ? "<mod:Collection<String>>" : "nullable instance type Collection<String>/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? "this:-1" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

@@ -1750,10 +1750,5 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
         }
-
-        @Override
-        public LinkedVariables linkedVariables(Variable variable) {
-            return LinkedVariables.EMPTY; // TODO make sure this is right
-        }
     }
 }

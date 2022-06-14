@@ -317,6 +317,18 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
     }
 
+
+    @Test
+    public void testMapKeySet() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("keySet", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
+    }
+
     @Test
     public void testTreeMapFirstEntry() {
         TypeInfo typeInfo = typeContext.getFullyQualified(TreeMap.class);

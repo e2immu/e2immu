@@ -155,7 +155,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodC".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "paramC".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:paramC>"
+                        String expectValue = d.iteration() <= 3 ? "<mod:String>"
                                 : "nullable instance type String/*@Identity*/";
                         // note that the value in its>0 is not "b" (see SAEvalOfMain.makeContext)
                         assertEquals(expectValue, d.currentValue().toString());

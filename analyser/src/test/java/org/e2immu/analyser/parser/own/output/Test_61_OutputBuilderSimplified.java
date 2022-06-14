@@ -130,9 +130,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
 
         testClass("OutputBuilderSimplified_2", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -275,7 +275,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
                             case 1 -> "<vp:NONE:container@Class_Space>==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
-                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<p:start>";
+                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -291,14 +291,18 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<p:end>" : "nullable instance type OutputElement";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<p:end>";
+                            case 2 -> "<mod:OutputElement>";
+                            default -> "nullable instance type OutputElement";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<f:NONE>==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
-                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<p:end>";
+                            case 2 -> "Space.NONE==nullable instance type OutputElement?nullable instance type OutputElement:<mod:OutputElement>";
                             default -> "nullable instance type OutputElement";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -432,7 +436,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
@@ -613,10 +617,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         testClass("OutputBuilderSimplified_12", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(false).build());
     }
 

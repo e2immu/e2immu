@@ -42,8 +42,11 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
         this.expression = expression;
         this.state = state;
+        assert state == null || !state.isBoolValueTrue();
         this.properties = properties;
+        assert properties == null || !properties.isEmpty();
         this.linkedVariables = linkedVariables;
+        assert linkedVariables == null || !linkedVariables.isEmpty();
         this.castType = castType;
         assert state != null && !state.isBoolValueTrue() ||
                 properties != null && !properties.isEmpty() ||
@@ -134,12 +137,12 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
             return new PropertyWrapper(pw.expression, pw.state, pw.properties,
                     pw.linkedVariables == null ? linkedVariables : pw.linkedVariables.merge(linkedVariables), pw.castType);
         }
-        return new PropertyWrapper(value, null, Map.of(), linkedVariables, null);
+        return new PropertyWrapper(value, null, null, linkedVariables, null);
     }
 
     public static Expression addState(Expression expression, Expression state) {
         assert state != null;
-        return new PropertyWrapper(expression, state, Map.of(), null, null);
+        return new PropertyWrapper(expression, state, null, null, null);
     }
 
     public static Expression addState(Expression expression, Expression state, Map<Property, DV> properties) {
@@ -198,7 +201,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        String propertyString = properties.entrySet().stream()
+        String propertyString = properties == null ? "" : properties.entrySet().stream()
                 .filter(e -> e.getValue().gt(e.getKey().falseDv))
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
@@ -265,7 +268,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                         property == Property.INDEPENDENT)) {
             return context.getAnalyserContext().getProperty(castType, property, false);
         }
-        DV inMap = properties.getOrDefault(property, null);
+        DV inMap = properties == null ? null : properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
         return context.evaluationContext().getProperty(expression, property, duringEvaluation, false);
     }
@@ -391,5 +394,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
             return expression;
         }
         return this;
+    }
+
+    public Expression unwrapState() {
+        if (linkedVariables == null && properties == null && castType == null) return expression;
+        return new PropertyWrapper(expression, null, properties, linkedVariables, castType);
     }
 }

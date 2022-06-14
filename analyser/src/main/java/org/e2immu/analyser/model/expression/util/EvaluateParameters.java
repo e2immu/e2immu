@@ -21,7 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
@@ -89,6 +89,7 @@ public class EvaluateParameters {
         Expression parameterValue;
         EvaluationResult parameterResult;
         DV contextNotNull;
+        DV contextModified;
         if (methodInfo != null) {
             ParameterInfo parameterInfo = getParameterInfo(methodInfo, position);
             // NOT_NULL, NOT_MODIFIED
@@ -120,16 +121,17 @@ public class EvaluateParameters {
                 return false;
             });
             // FIXME REMOVED BREAK
-            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle ;//|| self;
-            doContextContainer(methodInfo, recursivePartOfCallSelf, map);
-            doContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
+            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle;//|| self;
+            computeContextContainer(methodInfo, recursivePartOfCallSelf, map);
+            computeContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
+
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
             if (recursivePartOfCallSelf) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
-                if(contextNotNull.gt(MultiLevel.NULLABLE_DV)) {
+                if (contextNotNull.gt(MultiLevel.NULLABLE_DV)) {
                     String msg;
-                    if(parameterExpression instanceof VariableExpression ve) {
-                        msg="Variable "+ve.variable().simpleName();
+                    if (parameterExpression instanceof VariableExpression ve) {
+                        msg = "Variable " + ve.variable().simpleName();
                     } else {
                         msg = "";
                     }
@@ -142,20 +144,93 @@ public class EvaluateParameters {
                     .addProperties(map).build();
             parameterResult = parameterExpression.evaluate(context, forward);
             parameterValue = parameterResult.value();
+            contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else {
             parameterResult = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             parameterValue = parameterResult.value();
             contextNotNull = Property.CONTEXT_NOT_NULL.bestDv;
+            contextModified = Property.CONTEXT_MODIFIED.bestDv;
         }
-
         builder.compose(parameterResult);
-        parameterValues.add(parameterValue);
+
+        Expression afterModification;
+        if (!contextModified.valueIsFalse()) {
+            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression,
+                    parameterValue, contextModified);
+            if (er != null) {
+                afterModification = er.getExpression() == null ? parameterValue : er.getExpression();
+                builder.compose(er);
+            } else {
+                afterModification = parameterValue;
+            }
+        } else {
+            afterModification = parameterValue;
+        }
+        assert afterModification != null;
+        parameterValues.add(afterModification);
         return contextNotNull;
     }
 
-    private static void doContextContainer(MethodInfo methodInfo,
-                                           boolean recursiveOrPartOfCallCycle,
-                                           Map<Property, DV> map) {
+    /*
+    See e.g. Modification_23: if the parameter is modified, and the argument is a variable (or an expression linked
+    to a variable) whose value is a constructor call, this constructor should change into an instance, much in the same
+    way as this happens for objects upon which a modifying method is called (see MethodCall).
+     */
+    private static EvaluationResult potentiallyModifyConstructorCall(EvaluationResult context,
+                                                                     Expression parameterExpression,
+                                                                     Expression parameterValue,
+                                                                     DV contextModified) {
+
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        LinkedVariables linkedVariables1 = parameterExpression.linkedVariables(context);
+        LinkedVariables linkedVariables2 = parameterValue.linkedVariables(context);
+        LinkedVariables linkedVariables = linkedVariables1.merge(linkedVariables2);
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        boolean changed = false;
+        for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
+            DV dv = e.getValue();
+            Variable variable = e.getKey();
+            if (dv.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
+                if (dv.le(LinkedVariables.DEPENDENT_DV)) {
+                    Expression varVal = context.currentValue(variable);
+                    ConstructorCall cc;
+                    if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
+                        Properties valueProperties = context.evaluationContext().getValueProperties(cc);
+                        Expression instance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
+                        LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                        builder.modifyingMethodAccess(variable, instance, lv);
+                        changed = true;
+                    } else if(varVal.hasState()) {
+                        // drop this state -- IMPROVE we won't do any companion code here at the moment
+                        if(varVal instanceof PropertyWrapper pw) {
+                            Expression withoutState = pw.unwrapState();
+                            LinkedVariables lv = withoutState.linkedVariables(context);
+                            builder.modifyingMethodAccess(variable, withoutState, lv);
+                            changed = true;
+                        }
+                    }
+                }
+            } else {
+                // delay the end result
+                CausesOfDelay merge = dv.causesOfDelay().merge(parameterValue.causesOfDelay())
+                        .merge(contextModified.causesOfDelay());
+                Expression delayed = parameterValue.isDone() ? DelayedExpression.forModification(parameterValue, merge)
+                        : parameterValue;
+                LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                builder.modifyingMethodAccess(variable, delayed, lv == null ? LinkedVariables.NOT_YET_SET: lv);
+                causes = causes.merge(merge);
+                changed = true;
+            }
+        }
+        if (changed) {
+            return builder.build();
+        }
+        return null;
+    }
+
+    private static void computeContextContainer(MethodInfo methodInfo,
+                                                boolean recursiveOrPartOfCallCycle,
+                                                Map<Property, DV> map) {
         if (recursiveOrPartOfCallCycle) {
             map.put(Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         } else {
@@ -167,10 +242,10 @@ public class EvaluateParameters {
         }
     }
 
-    private static void doContextModified(MethodInfo methodInfo,
-                                          boolean recursiveOrPartOfCallCycle,
-                                          Map<Property, DV> map,
-                                          DV scopeIsContainer) {
+    private static void computeContextModified(MethodInfo methodInfo,
+                                               boolean recursiveOrPartOfCallCycle,
+                                               Map<Property, DV> map,
+                                               DV scopeIsContainer) {
         if (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else if (scopeIsContainer.isDelayed()) {

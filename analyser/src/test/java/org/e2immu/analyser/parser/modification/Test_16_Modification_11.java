@@ -83,7 +83,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String expected = switch (d.iteration()) {
-                            case 0, 1 , 2-> "c:-1";
+                            case 0, 1, 2 -> "c:-1";
                             default -> "c:2";
                         };
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
@@ -100,7 +100,8 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c.set:-1,this.s2:-1";
+                            case 0 -> "this.s2:-1";
+                            case 1, 2 -> "c.set:-1,this.s2:-1";
                             default -> "c.set:2,this.s2:2";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

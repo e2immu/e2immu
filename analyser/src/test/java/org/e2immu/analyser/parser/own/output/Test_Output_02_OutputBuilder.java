@@ -45,7 +45,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("2.0.0".equals(d.statementId())) { // a.add(separator); add is fluent; the identity is there because "a" is the first parameter of apply
-                    String expected = d.iteration() == 0 ? "<m:add>" : "nullable instance type OutputBuilder/*@Identity*//*{L a:statically_assigned:0}*//*@NotNull*/";
+                    String expected = d.iteration() <= 1 ? "<m:add>" : "nullable instance type OutputBuilder/*@Identity*//*{L a:statically_assigned:0}*//*@NotNull*/";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }

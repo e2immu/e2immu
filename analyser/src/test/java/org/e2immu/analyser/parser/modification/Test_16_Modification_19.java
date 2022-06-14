@@ -85,14 +85,13 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 }
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
                             case 1 -> "cm@Parameter_setC;initial@Field_set;mom@Parameter_setC";
-                            case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                            case 2 -> "mom@Parameter_setC";
                             default -> "xxx";
                         };
-                        assertCurrentValue(d, 3, expectedDelay, expectValue);
+                        assertCurrentValue(d, 3, expectedDelay, "new C1(s2)");
 
                         String link = switch (d.iteration()) {
                             case 0, 1 -> "this.s2:-1";
@@ -106,11 +105,16 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
                     assertEquals("set", fr.fieldInfo.name);
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<f:set>" : "nullable instance type Set<String>";
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "<f:set>";
+                            case 1, 2 -> "<cc-exp:C1:set>";
+                            default -> "nullable instance type Set<String>";
+                        };
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String links = switch (d.iteration()) {
-                            case 0, 1 -> "c:-1,this.s2:-1";
+                            case 0 -> "NOT_YET_SET";
+                            case 1 -> "c:-1,this.s2:-1";
                             default -> "c:2,this.s2:2";
                         };
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
@@ -118,7 +122,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         assertEquals("c", fr.scopeVariable.toString());
 
-                        String cmDelay = "cm@Parameter_c;cm@Parameter_setC;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                        String cmDelay = "cm@Parameter_c;link@NOT_YET_SET";
                         assertDv(d, cmDelay, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
