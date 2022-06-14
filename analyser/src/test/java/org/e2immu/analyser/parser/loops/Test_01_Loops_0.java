@@ -153,9 +153,9 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             }
         };
         testClass("Loops_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

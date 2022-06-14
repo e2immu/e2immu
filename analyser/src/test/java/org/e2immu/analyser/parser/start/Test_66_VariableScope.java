@@ -735,6 +735,27 @@ public class Test_66_VariableScope extends CommonTestRunner {
     // first (recursive) call commented out
     @Test
     public void test_8_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d-> {
+          if("output2".equals(d.methodInfo().name)) {
+              if("gg".equals(d.variableName())) {
+                  if("2.0.0.0.1".equals(d.statementId())) {
+                      assertEquals("<null-check>?new GuideGenerator(){public OutputElement start(){return null;}public OutputElement end(){return null;}public OutputElement mid(){return null;}}:<mod:GuideGenerator>", d.currentValue().toString());
+                      assertEquals("guideGenerator:0,outputBuilder:-1",d.variableInfo().getLinkedVariables().toString());
+                  }
+              }
+              if("outputBuilder".equals(d.variableName())) {
+                  if("2.0.0.0.1".equals(d.statementId())) {
+                      assertEquals("<new:OutputBuilder>", d.currentValue().toString());
+                  }
+              }
+              if(d.variable() instanceof ParameterInfo pi && "guideGenerator".equals(pi.name)) {
+                  if("2.0.0.0.1".equals(d.statementId())) {
+                      String expected = d.iteration()==0 ? "<mod:GuideGenerator>": "nullable instance type GuideGenerator";
+                      assertEquals(expected, d.currentValue().toString());
+                  }
+              }
+          }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -752,6 +773,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         testClass("VariableScope_8_2", 1, DONT_CARE, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }

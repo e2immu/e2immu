@@ -71,7 +71,7 @@ public class Test_01_Loops_20 extends CommonTestRunner {
             }
         };
         testClass("Loops_20", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

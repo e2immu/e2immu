@@ -106,8 +106,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         }
         // IMPROVE it would really be good if we never had two PropertyWrappers in a row
 
-        Map<Property, DV> reduced = reduce(evaluationContext, newValue, properties);
-        boolean dropWrapper = reduced.isEmpty() && state == null && linkedVariables == null && castType == null;
+        Map<Property, DV> reduced = properties == null ? null : reduce(evaluationContext, newValue, properties);
+        boolean dropWrapper = (reduced == null || reduced.isEmpty()) && state == null && linkedVariables == null && castType == null;
         Expression result = dropWrapper ? newValue : new PropertyWrapper(newValue, state, reduced, linkedVariables, castType);
 
         return builder.setExpression(result).build();

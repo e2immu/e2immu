@@ -159,7 +159,7 @@ public class VariableScope_8_2 {
                         gg = guideGenerator;
                     }
                     //outputBuilder.add(methodCall.output2(qualification, gg)); // recursive call
-                    outputBuilder.add(gg.mid());
+                    outputBuilder.add(gg.mid()); // 2.0.0.0.1
                 }
             }
 

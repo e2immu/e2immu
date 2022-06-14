@@ -382,8 +382,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
-                            case 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
+                            case 0, 1 -> "object instanceof Boolean&&null!=object?<new:BooleanConstant>:object instanceof String&&null!=object?<new:StringConstant>:<return value>";
                             default -> "object instanceof Boolean&&null!=object?new BooleanConstant(object/*(Boolean)*/):object instanceof String&&null!=object?new StringConstant(object/*(String)*/):<return value>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -1092,8 +1091,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("NOT_YET_SET", lvs);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("", lvs);
 
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

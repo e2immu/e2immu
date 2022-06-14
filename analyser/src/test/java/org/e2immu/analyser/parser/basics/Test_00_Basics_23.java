@@ -140,8 +140,8 @@ public class Test_00_Basics_23 extends CommonTestRunner {
         // 2x 2 warnings, assert always true
         // TODO 7 would be better, we'd need another round of evaluation
         testClass("Basics_23", 0, 5, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

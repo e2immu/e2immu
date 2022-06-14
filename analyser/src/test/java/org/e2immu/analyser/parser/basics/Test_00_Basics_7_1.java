@@ -75,9 +75,9 @@ public class Test_00_Basics_7_1 extends CommonTestRunner {
         };
 
         testClass("Basics_7_1", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
     }

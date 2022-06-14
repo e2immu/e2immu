@@ -175,6 +175,10 @@ public class EvaluateParameters {
     See e.g. Modification_23: if the parameter is modified, and the argument is a variable (or an expression linked
     to a variable) whose value is a constructor call, this constructor should change into an instance, much in the same
     way as this happens for objects upon which a modifying method is called (see MethodCall).
+
+    we have to handle (1) the variable if parameterExpression is a varible, and (2) all variables referred to
+    in parameterValue.
+    IMPORTANT: we're not allowed to change linked variables!
      */
     private static EvaluationResult potentiallyModifyConstructorCall(EvaluationResult context,
                                                                      Expression parameterExpression,
@@ -183,6 +187,8 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         LinkedVariables linkedVariables1 = parameterExpression.linkedVariables(context);
+        IsVariableExpression ive;
+        Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable(): null;
         LinkedVariables linkedVariables2 = parameterValue.linkedVariables(context);
         LinkedVariables linkedVariables = linkedVariables1.merge(linkedVariables2);
         CausesOfDelay causes = CausesOfDelay.EMPTY;
@@ -193,18 +199,17 @@ public class EvaluateParameters {
             if (dv.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
                 if (dv.le(LinkedVariables.DEPENDENT_DV)) {
                     Expression varVal = context.currentValue(variable);
+                    LinkedVariables lv = variable == theVariable ? linkedVariables1: context.evaluationContext().linkedVariables(variable);
                     ConstructorCall cc;
                     if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
                         Properties valueProperties = context.evaluationContext().getValueProperties(cc);
                         Expression instance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
-                        LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
                         builder.modifyingMethodAccess(variable, instance, lv);
                         changed = true;
                     } else if(varVal.hasState()) {
                         // drop this state -- IMPROVE we won't do any companion code here at the moment
                         if(varVal instanceof PropertyWrapper pw) {
                             Expression withoutState = pw.unwrapState();
-                            LinkedVariables lv = withoutState.linkedVariables(context);
                             builder.modifyingMethodAccess(variable, withoutState, lv);
                             changed = true;
                         }
@@ -216,8 +221,8 @@ public class EvaluateParameters {
                         .merge(contextModified.causesOfDelay());
                 Expression delayed = parameterValue.isDone() ? DelayedExpression.forModification(parameterValue, merge)
                         : parameterValue;
-                LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
-                builder.modifyingMethodAccess(variable, delayed, lv == null ? LinkedVariables.NOT_YET_SET: lv);
+                LinkedVariables lv = variable == theVariable ? linkedVariables1: linkedVariables2;
+                builder.modifyingMethodAccess(variable, delayed, lv);
                 causes = causes.merge(merge);
                 changed = true;
             }

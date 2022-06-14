@@ -2034,7 +2034,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return variables.stream()
                 .filter(e -> e.getValue().isNotRemoved())
                 .filter(e -> switch (level) {
-                    case INITIAL -> throw new UnsupportedOperationException();
+                    case INITIAL -> !e.getValue().hasEvaluation() && !e.getValue().hasMerge();
                     case EVALUATION -> e.getValue().hasEvaluation();
                     case MERGE -> true;
                 });

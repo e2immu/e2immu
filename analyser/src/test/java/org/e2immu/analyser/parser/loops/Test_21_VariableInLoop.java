@@ -72,8 +72,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
             }
         };
         testClass("VariableInLoop_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -173,8 +173,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         };
         // sa.navigationData(), x2
         testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

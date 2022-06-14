@@ -77,7 +77,7 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(evaluationContext.getPrimitives(),
                         new VariableExpression(iop.instanceOf().patternVariable()),
-                        PropertyWrapper.propertyWrapper(iop.instanceOf().expression(), Map.of(),
+                        PropertyWrapper.propertyWrapper(iop.instanceOf().expression(), null,
                                 iop.instanceOf().parameterizedType())))
                 .toList();
     }

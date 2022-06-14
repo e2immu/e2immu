@@ -56,6 +56,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return statementAnalysis.statement();
     }
 
+    private record DelayAndLinked(CausesOfDelay delay, LinkedVariables linkedVariables) {
+    }
+
     /*
     The main loop calls the apply method with the results of an evaluation.
     For every variable, a number of steps are executed:
@@ -97,6 +100,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
+        Set<Variable> variablesWithoutEvaluation =statementAnalysis.variableEntryStream(INITIAL)
+                .map(e->e.getValue().getPreviousOrInitial().variable())
+                .filter(v -> !(v instanceof This) && !(v instanceof ReturnVariable))
+                .collect(Collectors.toSet());
 
         Map<Variable, VariableInfoContainer> variablesDefinedOutsideLoop = statementAnalysis.rawVariableStream()
                 .filter(e -> e.getValue().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
@@ -110,10 +117,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay cumulativeDelay = evaluationResult.causesOfDelay();
         boolean progress = false;
 
+        Map<Variable, DelayAndLinked> setEvalValueToDelayed = new HashMap<>();
+
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
             variablesDefinedOutsideLoop.remove(variable);
+            variablesWithoutEvaluation.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
 
             // we're now guaranteed to find the variable
@@ -137,7 +147,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     progress |= status.isProgress();
                 }
             }
+            delayVariablesNotMentioned(variablesWithoutEvaluation, setEvalValueToDelayed, vi);
         }
+
+        delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
 
         for (Map.Entry<Variable, VariableInfoContainer> e : variablesDefinedOutsideLoop.entrySet()) {
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
@@ -174,6 +187,65 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         return applyStatusAndEnnStatus;
     }
+
+    /*
+    We'll have to delay copying from vi1 to vi when a variable is not mentioned at all, and has no eval yet,
+    because modification of a method argument may have a follow-on effect on linked variables
+    (see VariableScope_8_2 as the example for the follow-on, and Modification_23 as the primary example without delays).
+    */
+    private void delayVariablesNotMentioned(Set<Variable> variablesWithoutEvaluation, Map<Variable, DelayAndLinked> setEvalValueToDelayed, VariableInfo vi) {
+        if (!vi.valueIsSet()) {
+            // to make sure that their value is not immediately copied across... interferes with modification as argument
+            // see e.g. VariableScope_8_2
+            if (vi.getLinkedVariables() == LinkedVariables.NOT_YET_SET) {
+                for (Variable v : variablesWithoutEvaluation) {
+                    if (!setEvalValueToDelayed.containsKey(v)) {
+                        Map<Variable, DV> map = variablesWithoutEvaluation.stream()
+                                .filter(vv -> !v.equals(vv)) // no self-references!
+                                .collect(Collectors.toUnmodifiableMap(x -> x, x -> vi.getValue().causesOfDelay()));
+                        LinkedVariables lv = map.isEmpty() ? LinkedVariables.NOT_YET_SET: LinkedVariables.of(map);
+                        DelayAndLinked dal = new DelayAndLinked(vi.getValue().causesOfDelay(), lv);
+                        setEvalValueToDelayed.put(v, dal);
+                    }
+                }
+            } else {
+                Set<Variable> linkedVariables = vi.getLinkedVariables().variables().keySet();
+                for (Variable v : linkedVariables) {
+                    if (!setEvalValueToDelayed.containsKey(v)) {
+                        LinkedVariables removed = vi.getLinkedVariables().remove(Set.of(v));
+                        LinkedVariables lv = removed.isEmpty() ? LinkedVariables.NOT_YET_SET: removed;
+                        DelayAndLinked dal = new DelayAndLinked(vi.getValue().causesOfDelay(), lv);
+                        setEvalValueToDelayed.put(v, dal);
+                    }
+                }
+            }
+        }
+    }
+
+    /*
+    delay for variables not mentioned at all continued
+     */
+    private void delayVariablesNotMentioned2(Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Map<Variable, DelayAndLinked> setEvalValueToDelayed) {
+        for (Map.Entry<Variable, DelayAndLinked> entry : setEvalValueToDelayed.entrySet()) {
+            Variable variable = entry.getKey();
+            DelayAndLinked dal = entry.getValue();
+            VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
+            VariableInfo vi1 = vic.getPreviousOrInitial();
+            if (vi1.valueIsSet()) {
+                if (!vic.hasEvaluation()) {
+                    vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
+                }
+                VariableInfo eval = vic.best(EVALUATION);
+                if(!eval.valueIsSet()) {
+                    Expression delay = DelayedExpression.forModification(vi1.getValue(), dal.delay);
+                    LinkedVariables lv = eval.getLinkedVariables().isDone() ? eval.getLinkedVariables(): dal.linkedVariables;
+                    vic.setValue(delay, lv, Properties.EMPTY, EVALUATION);
+                }
+            }
+        }
+        existingVariablesNotVisited.keySet().removeAll(setEvalValueToDelayed.keySet());
+    }
+
 
     private EvaluationResult potentiallyModifyEvaluationResult(StatementAnalyserSharedState sharedState,
                                                                EvaluationResult evaluationResultIn) {
@@ -428,7 +500,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // we know there is no assignment, so the value properties can remain the same, if we have them
         Properties valueProperties = vic.getPreviousOrInitial().valueProperties();
         if (modified.isDelayed()) {
-            if (sharedState.evaluationContext().allowBreakDelay()){
+            if (sharedState.evaluationContext().allowBreakDelay()) {
                 // the restriction is not needed for now 
                 //     && modified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION,
                 //     c -> c instanceof VariableCause vc && vc.variable().equals(variable))) {
