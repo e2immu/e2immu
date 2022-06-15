@@ -271,15 +271,9 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertTrue(d.evaluationResult().causesOfDelay().isDone());
             }
             if ("variables".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:collect>"
-                        : "this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
+                String expected = "this.subElements().stream().flatMap(instance type $1).collect(Collectors.toList())";
                 assertEquals(expected, d.evaluationResult().value().toString());
-                String delays = switch (d.iteration()) {
-                    case 0 -> "srv@Method_apply";
-                    case 1 -> "initial@Field_name;srv@Method_apply";
-                    default -> "";
-                };
-                assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                assertEquals("", d.evaluationResult().causesOfDelay().toString());
                 EvaluationResult.ChangeData cd = d.findValueChangeByToString("this");
                 assertEquals(DV.FALSE_DV, cd.getProperty(Property.CONTEXT_MODIFIED));
             }
@@ -317,26 +311,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
-                String expected = d.iteration() <= 1 ? "<m:variables>"
-                        : "/*inline variables*/this.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList())";
+                String expected = "/*inline variables*/this.subElements().stream().flatMap(instance type $1).collect(Collectors.toList())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 2) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("this", inlinedMethod.variablesOfExpressionSorted());
-                        if (inlinedMethod.expression() instanceof MethodCall mc1) {
-                            if (mc1.object instanceof MethodCall mc2) {
-                                assertEquals(1, mc2.parameterExpressions.size());
-                                if (mc2.parameterExpressions.get(0) instanceof InlinedMethod inlinedMethod2) {
-                                    assertEquals("e", inlinedMethod2.variablesOfExpressionSorted());
-                                } else fail();
-                            } else fail();
-                        } else fail();
-                    }
-                }
             }
             if ("compare".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:compare>"
-                        : "/*inline compare*/e1.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(/*inline apply*/e.variables().stream()).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
+                String expected = "/*inline compare*/e1.subElements().stream().flatMap(instance type $1).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")).compareTo(e2.subElements().stream().flatMap(instance type $1).collect(Collectors.toList()).stream().map(Variable::name).sorted().collect(Collectors.joining(\",\")))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
@@ -402,7 +381,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
 
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("List.of().stream().flatMap(/*inline apply*/`e.typesReferenced().map`.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
+                        assertEquals("List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
                         // no "this", because subElements is inlined!
                         assertEquals("", inlinedMethod.variablesOfExpressionSorted());
@@ -436,7 +415,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
 
                 if (d.iteration() >= 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("List.of().stream().flatMap(/*inline apply*/`e.typesReferenced().map`.entrySet().stream()).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
+                        assertEquals("List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})",
                                 inlinedMethod.expression().toString());
                         assertEquals("", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();

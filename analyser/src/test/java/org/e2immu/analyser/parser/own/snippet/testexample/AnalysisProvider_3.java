@@ -37,14 +37,14 @@ public interface AnalysisProvider_3 {
 
     DV EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV = new DV(805, List.of(Cause.C1, Cause.C3));
 
-    default DV defaultImmutable(ParameterizedType parameterizedType) {
-        return defaultImmutable(parameterizedType, 1);
+    default DV a(ParameterizedType a0) {
+        return b(a0, 1);
     }
 
-    default DV defaultImmutable(ParameterizedType parameterizedType, int n) {
-        if(n < 1) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
-        DV paramValue = parameterizedType.parameters.stream()
-                .map(pt -> defaultImmutable(pt)) // HERE is the difference
+    default DV b(ParameterizedType b0, int n) {
+        if (n < 1) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+        DV paramValue = b0.parameters.stream()
+                .map(pt -> a(pt)) // HERE is the difference
                 .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
         return sumImmutableLevels(paramValue);
     }

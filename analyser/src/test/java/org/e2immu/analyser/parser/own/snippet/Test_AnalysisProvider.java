@@ -179,7 +179,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_1", 0, 6,
                 new DebugConfiguration.Builder()
-                        //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -298,10 +298,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_2", 0, 1,
                 new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
@@ -314,22 +314,121 @@ public class Test_AnalysisProvider extends CommonTestRunner {
     // _4 is simpler, there we deal with a direct method call.
     @Test
     public void test_3() throws IOException {
-        String callCycle = "apply,defaultImmutable,defaultImmutable,sumImmutableLevels";
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("b".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() <= 2 ? "<m:reduce>"
+                            : "b0.parameters.stream().map(instance type $2).reduce(AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,DV::min)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("b".equals(d.methodInfo().name)) {
+                if ("paramValue".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0, 1, 2 -> "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0.parameters:-1,b0:-1,this:-1";
+                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "b0.parameters:-1,b0:-1";
+                            default -> "b0.parameters:3,b0:3";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof This) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() <= 2
+                                ? "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0.parameters:-1,b0:-1,paramValue:-1"
+                                : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof ParameterInfo pi && "b0".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = switch (d.iteration()) {
+                            case 0, 1, 2 -> "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0.parameters:-1,paramValue:-1,this:-1";
+                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "b0.parameters:-1,paramValue:-1";
+                            default -> "b0.parameters:2,paramValue:3";
+                        };
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof ParameterInfo pi && "n".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("instance type int", d.currentValue().toString());
+                        String linked = "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = "instance type int";
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof FieldReference fr && "EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() <= 2 ? "b0.parameters:-1,b0:-1,paramValue:-1,this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else if (d.variable() instanceof FieldReference fr && "parameters".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() <= 2
+                                ? "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0:-1,paramValue:-1,this:-1"
+                                : d.iteration() <= 13 ? "b0:-1,paramValue:-1"
+                                : "b0:2,paramValue:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                } else fail("? " + d.variableName());
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    // can only be solved when "a" is fully done, which happens after "b" is fully done
+                    String expected = d.iteration() <= 15 ? "<m:a>"
+                            : "this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = d.iteration() <= 16 ? "pt:-1,this:-1" : "this:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("b".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertFalse(d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDelayed());
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals(d.iteration() <= 13, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDelayed());
+                }
+            }
+        };
+        String callCycle = "a,apply,b,sumImmutableLevels";
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            int numParams = d.methodInfo().methodInspection.get().getParameters().size();
             MethodResolution methodResolution = d.methodInfo().methodResolution.get();
-            if ("defaultImmutable".equals(d.methodInfo().name)) {
-                if (numParams == 1) {
-                    assertTrue(methodResolution.partOfCallCycle());
-                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                    assertEquals(callCycle, methodResolution
-                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
-                } else if (numParams == 2) {
-                    assertTrue(methodResolution.partOfCallCycle());
-                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                    assertEquals(callCycle, methodResolution
-                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
-                } else fail();
+            if ("a".equals(d.methodInfo().name)) {
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+            }
+            if ("b".equals(d.methodInfo().name)) {
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
@@ -338,20 +437,24 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
 
-                String expected = d.iteration() <= BIG ? "<m:apply>" : "/*inline apply*/this.defaultImmutable(pt)";
+                String expected = d.iteration() <= 15 ? "<m:apply>"
+                        : "/*inline apply*/this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(d.fieldInfo().name)) {
                 // after breaking delay in field analyser
-                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
-        testClass("AnalysisProvider_3", 0, 6,
+        testClass("AnalysisProvider_3", 0, 1,
                 new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
