@@ -904,7 +904,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        boolean recursiveCall = context.getCurrentMethod() != null && methodInfo == context.getCurrentMethod().getMethodInfo();
+        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         if (recursiveCall) {
             return property.bestDv;
         }

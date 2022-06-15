@@ -264,21 +264,20 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 38, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
                     if ("node".equals(fr.scope.toString())) {
                         if ("3".equals(d.statementId())) {
-                            String expected = switch (d.iteration()) {
-                                case 0 -> "<f:dependsOn>";
-                                case 1 -> "<null-check>&&null!=nullable instance type List<T>?<f:dependsOn>:nullable instance type List<T>";
-                                default -> "nullable instance type List<T>";
-                            };
+                            String expected = d.iteration() == 0
+                                    ? "<f:dependsOn>" : d.iteration() <= 37
+                                    ? "<null-check>&&null!=nullable instance type List<T>?<f:dependsOn>:nullable instance type List<T>"
+                                    : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("3.0.0".equals(d.statementId())) { // forEach() call
-                            String expected = d.iteration() <= 1 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                            String expected = d.iteration() <= 37 ? "<f:dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("nodeMap.get(t)".equals(fr.scope.toString())) {
@@ -291,15 +290,39 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         }
                     } else fail("Scope " + fr.scope);
                 }
+                if (d.variable() instanceof ParameterInfo pi && "result".equals(pi.name)) {
+                    if ("3.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:3";
+                        assertEquals(linked, eval.getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ParameterInfo pi && "result".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        assertEquals(linked, eval.getLinkedVariables().toString());
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 38, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name)) {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
-                    assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 39, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
                     assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
@@ -312,10 +335,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_1", 5, 1, new DebugConfiguration.Builder()
-                //       .addEvaluationResultVisitor(evaluationResultVisitor)
-                //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

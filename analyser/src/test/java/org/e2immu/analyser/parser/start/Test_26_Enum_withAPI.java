@@ -52,7 +52,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 2) {
+            if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 3) {
                 assertFalse(d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
@@ -74,16 +74,16 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 3, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 4, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() >= 3, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 4, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
@@ -112,21 +112,21 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expect = d.iteration() <= 2 ? "<m:valueOf>"
+                String expect = d.iteration() <= 3 ? "<m:valueOf>"
                         : "/*inline valueOf*/Arrays.stream({`Enum_0.ONE`,`Enum_0.TWO`,`Enum_0.THREE`}).filter(/*inline test*/(instance type String).equals(name)).findFirst().orElseThrow()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                mustSeeIteration(d, 3);
+                mustSeeIteration(d, 4);
 
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 2 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() <= 3 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 2 ? "<m:isThree>" : "/*inline isThree*/Enum_0.THREE==this";
+                String expect = d.iteration() <= 3 ? "<m:isThree>" : "/*inline isThree*/Enum_0.THREE==this";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
-                mustSeeIteration(d, 3);
+                mustSeeIteration(d, 4);
             }
         };
 
@@ -169,7 +169,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "1==<m:getCnt>" : "true";
+                    String expectValue = d.iteration() <= 3 ? "1==<m:getCnt>" : "true";
                     // ===  1==Enum_4.ONE.cnt, with ONE=new Enum_4(1)
 
                     assertEquals(expectValue, d.evaluationResult().value().toString());

@@ -134,7 +134,7 @@ public interface VariableInfoContainer {
     @Modified
     boolean setValue(Expression value, LinkedVariables linkedVariables, Properties propertiesToSet, Stage stage);
 
-    // a version used to copy from an outer method into a sub-type
+    // a version used to copy from an outer method into a subtype
     @Modified
     void safeSetValue(Expression value, LinkedVariables linkedVariables, Properties valueProperties, Stage initial);
 
@@ -208,4 +208,9 @@ public interface VariableInfoContainer {
     void markOverride(Property property, DV value);
 
     SetOnceMap<Property, DV> propertyOverrides();
+
+    default LinkedVariables initialLinkedVariables() {
+        return variableNature() == VariableNature.FROM_ENCLOSING_METHOD
+                ? LinkedVariables.NOT_YET_SET : LinkedVariables.EMPTY;
+    }
 }

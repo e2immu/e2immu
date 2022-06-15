@@ -67,6 +67,7 @@ public class ComputeLinkedVariables {
     private final Variable returnVariable;
     private final WeightedGraph weightedGraph;
     private final boolean allowBreakDelay;
+    private final Set<Variable> linkingNotYetSet;
 
     private record Cluster(Set<Variable> variables, CausesOfDelay delays) {
         @Override
@@ -85,7 +86,8 @@ public class ComputeLinkedVariables {
                                    List<Cluster> clusters,
                                    Cluster returnValueCluster,
                                    Variable returnVariable,
-                                   boolean allowBreakDelay) {
+                                   boolean allowBreakDelay,
+                                   Set<Variable> linkingNotYetSet) {
         this.clusters = clusters;
         this.returnValueCluster = returnValueCluster;
         this.returnVariable = returnVariable;
@@ -93,6 +95,7 @@ public class ComputeLinkedVariables {
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;
         this.allowBreakDelay = allowBreakDelay;
+        this.linkingNotYetSet = linkingNotYetSet;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
@@ -107,6 +110,7 @@ public class ComputeLinkedVariables {
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> variables = new HashSet<>();
         Set<Variable> atStage = new HashSet<>();
+        Set<Variable> linkingNotYetSet = new HashSet<>();
         AtomicReference<CausesOfDelay> encounteredNotYetSet = new AtomicReference<>(CausesOfDelay.EMPTY);
         statementAnalysis.variableEntryStream(stage).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
@@ -119,6 +123,7 @@ public class ComputeLinkedVariables {
                         externalLinkedVariables, evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
                 variables.addAll(curated.variables().keySet());
                 if (curated == LinkedVariables.NOT_YET_SET) {
+                    linkingNotYetSet.add(variable);
                     encounteredNotYetSet.set(curated.causesOfDelay());
                 }
             }
@@ -151,7 +156,7 @@ public class ComputeLinkedVariables {
             delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.clusters,
-                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay());
+                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), linkingNotYetSet);
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -578,8 +583,14 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         Map<Variable, DV> map = weightedGraph.links(variable, null, true);
                         map.keySet().removeIf(toRemove::contains);
+
+                        Cluster cluster = clusters.stream().filter(c -> c.variables.contains(variable)).findFirst().orElse(null);
+                        CausesOfDelay clusterDelay = linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
+                                : cluster != null && cluster.delays.isDelayed() ? cluster.delays
+                                : CausesOfDelay.EMPTY;
+
                         LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
-                                variable, map, CausesOfDelay.EMPTY);
+                                variable, map, clusterDelay);
                         vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(Stage.MERGE), Stage.MERGE);
                         if (vic.setLinkedVariables(linkedVariables, stage)) {
                             progress.set(true);

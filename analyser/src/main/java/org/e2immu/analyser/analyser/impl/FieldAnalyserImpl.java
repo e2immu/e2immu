@@ -1389,6 +1389,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
                         collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
+                if(lv.isEmpty()) lv = LinkedVariables.NOT_YET_SET;
                 fieldAnalysis.setLinkedVariables(lv);
                 return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
             }

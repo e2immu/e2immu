@@ -609,8 +609,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfo hereInitial = here.getRecursiveInitialOrNull();
                     if (hereInitial != null) {
                         // E2Immutable_7 shows that we cannot simply keep copying in LVs
-                        here.safeSetValue(viInClosure.getValue(), null, viInClosure.valueProperties(),
-                                INITIAL);
+                        // there's sufficient guarantee that copying in can work, but as soon as some statements are DONE,
+                        // we need to be more careful
+                        LinkedVariables lv = hereInitial.getLinkedVariables().isDone() ? null : viInClosure.getLinkedVariables();
+                        here.safeSetValue(viInClosure.getValue(), lv, viInClosure.valueProperties(), INITIAL);
                     }
                 } // else: it is perfectly possible for variables to be returned by variablesFromClosure that were not
                 // present in the initial call in iteration 0 (see Warnings_5, VariableScope_5, e.g.)
@@ -810,7 +812,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         if (!viInitial.valueIsSet()) {
-            vic.setValue(initialValue, LinkedVariables.EMPTY, map, INITIAL);
+            vic.setValue(initialValue, vic.initialLinkedVariables(), map, INITIAL);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
 
@@ -1662,7 +1664,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
             DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
             if (lvIndependent.equals(LinkedVariables.NO_LINKING_DV)) {
-                linkedVariables = LinkedVariables.EMPTY;
+                linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
             } else {
                 linkedVariables = lvArrayBase.changeAllTo(lvIndependent);
@@ -1671,7 +1673,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
         } else {
             initialValue = UnknownExpression.forNotYetAssigned(Identifier.generate("not yet assigned"), variable.parameterizedType());
-            linkedVariables = LinkedVariables.EMPTY;
+            linkedVariables = vic.initialLinkedVariables();
         }
         vic.setValue(initialValue, linkedVariables, properties, INITIAL);
     }
@@ -1743,7 +1745,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
-        vic.setValue(value, LinkedVariables.EMPTY, properties, INITIAL);
+        vic.setValue(value, vic.initialLinkedVariables(), properties, INITIAL);
     }
 
     private void initializeFieldReference(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldReference fieldReference) {
@@ -1796,7 +1798,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             toWrite = value;
         }
-        vic.setValue(toWrite, LinkedVariables.EMPTY, combined, INITIAL);
+        vic.setValue(toWrite, vic.initialLinkedVariables(), combined, INITIAL);
     }
 
     private DV contextImmutable(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldAnalysis fieldAnalysis, DV valueProperty) {
@@ -1870,7 +1872,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(IDENTITY, DV.fromBoolDv(identity));
 
         Expression value = Instance.initialValueOfParameter(parameterInfo, properties);
-        vic.setValue(value, LinkedVariables.EMPTY, properties, INITIAL);
+        vic.setValue(value, vic.initialLinkedVariables(), properties, INITIAL);
     }
 
     private Properties sharedContext(DV contextNotNull) {
