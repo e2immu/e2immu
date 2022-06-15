@@ -298,12 +298,140 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_2", 0, 1,
                 new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
+    // cycle of 3, stripped
+    // _4 is simpler, there we deal with a direct method call.
+    @Test
+    public void test_3() throws IOException {
+        String callCycle = "apply,defaultImmutable,defaultImmutable,sumImmutableLevels";
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int numParams = d.methodInfo().methodInspection.get().getParameters().size();
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+            if ("defaultImmutable".equals(d.methodInfo().name)) {
+                if (numParams == 1) {
+                    assertTrue(methodResolution.partOfCallCycle());
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(callCycle, methodResolution
+                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                } else if (numParams == 2) {
+                    assertTrue(methodResolution.partOfCallCycle());
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertEquals(callCycle, methodResolution
+                            .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                } else fail();
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("$2", d.methodInfo().typeInfo.simpleName);
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                assertTrue(methodResolution.partOfCallCycle());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
+
+                String expected = d.iteration() <= BIG ? "<m:apply>" : "/*inline apply*/this.defaultImmutable(pt)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(d.fieldInfo().name)) {
+                // after breaking delay in field analyser
+                assertDv(d, 21, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        testClass("AnalysisProvider_3", 0, 6,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .build());
+    }
+
+    // apply as a method call rather than something hidden in a lambda
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("c".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "c0".equals(pi.name)) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                } else if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                } else if (d.variable() instanceof This) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                } else fail("?: " + d.variableName());
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("c".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+
+                assertEquals("", d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
+            }
+        };
+        String callCycle = "a,b,c,sumImmutableLevels";
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+            if ("a".equals(d.methodInfo().name)) {
+
+                assertTrue(methodResolution.partOfCallCycle());
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+
+                String expected = d.iteration() <= 3 ? "<m:a>" : "nullable instance type DV";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("b".equals(d.methodInfo().name)) {
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+
+                String expected = d.iteration() <= 2 ? "<m:b>"
+                        : "this.sumImmutableLevels(n<=9?this.a(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("c".equals(d.methodInfo().name)) {
+                assertEquals(callCycle, methodResolution
+                        .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
+                assertTrue(methodResolution.partOfCallCycle());
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+
+                String expected = "/*inline c*/this.a(c0)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV".equals(d.fieldInfo().name)) {
+                assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("DV".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+        testClass("AnalysisProvider_4", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

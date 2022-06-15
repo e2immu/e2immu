@@ -62,7 +62,8 @@ public class EvaluateMethodCall {
                                         ParameterizedType concreteReturnTypeIn,
                                         List<Expression> parameters,
                                         ForwardEvaluationInfo forwardEvaluationInfo,
-                                        Expression modifiedInstance) {
+                                        Expression modifiedInstance,
+                                        boolean firstInCallCycle) {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
@@ -86,8 +87,7 @@ public class EvaluateMethodCall {
             return builder.setExpression(EmptyExpression.NO_RETURN_VALUE).build();
         }
 
-        boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
-        if (recursiveCall) {
+        if (firstInCallCycle) {
             MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
         }
