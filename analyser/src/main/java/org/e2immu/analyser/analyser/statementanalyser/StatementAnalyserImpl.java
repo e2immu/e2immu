@@ -667,8 +667,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                      Only when the links have been established, can we be sure that modified will progress in a stable fashion.
                      */
 
-                            DV combined = modified.isDelayed() || linksEstablished.isDone() ? modified :
-                                    modified.causesOfDelay().merge(linksEstablished);
+                            DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
+                                    ? modified
+                                    : modified.causesOfDelay().merge(linksEstablished);
                             builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
                             if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
 

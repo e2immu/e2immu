@@ -812,7 +812,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         if (!viInitial.valueIsSet()) {
-            vic.setValue(initialValue, vic.initialLinkedVariables(), map, INITIAL);
+            LinkedVariables lv1 = viInitial.getLinkedVariables();
+            LinkedVariables lv = lv1.isEmpty() ? vic.initialLinkedVariables(): lv1;
+            vic.setValue(initialValue, lv, map, INITIAL);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
 

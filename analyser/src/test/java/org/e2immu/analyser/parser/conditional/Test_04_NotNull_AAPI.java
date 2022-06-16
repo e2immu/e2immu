@@ -95,7 +95,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
                         assertTrue(d.iteration() < 2);

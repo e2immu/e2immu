@@ -1025,7 +1025,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "operator".equals(fr.fieldInfo.name)) {
@@ -1069,8 +1069,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals(value, d.currentValue().toString());
                     assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = switch (d.iteration()) {
-                        case 0, 1 -> "NOT_YET_SET";
-                        case 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1";
+                        case 0 -> "NOT_YET_SET";
+                        case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1";
                         default -> "expression:2,scope-negation:0.en:2,scope-negation:0:2,unaryOperator:2";
                     };
                     assertEquals(linked, lvs);
