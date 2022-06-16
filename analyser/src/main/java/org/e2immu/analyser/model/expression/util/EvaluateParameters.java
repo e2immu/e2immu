@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.Expression;
@@ -23,6 +25,8 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Pair;
@@ -176,7 +180,7 @@ public class EvaluateParameters {
     to a variable) whose value is a constructor call, this constructor should change into an instance, much in the same
     way as this happens for objects upon which a modifying method is called (see MethodCall).
 
-    we have to handle (1) the variable if parameterExpression is a varible, and (2) all variables referred to
+    we have to handle (1) the variable if parameterExpression is a variable, and (2) all variables referred to
     in parameterValue.
     IMPORTANT: we're not allowed to change linked variables!
      */
@@ -187,50 +191,71 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         LinkedVariables linkedVariables1 = parameterExpression.linkedVariables(context);
-        IsVariableExpression ive;
-        Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable(): null;
         LinkedVariables linkedVariables2 = parameterValue.linkedVariables(context);
         LinkedVariables linkedVariables = linkedVariables1.merge(linkedVariables2);
-        CausesOfDelay causes = CausesOfDelay.EMPTY;
+        IsVariableExpression ive;
+        Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable() : null;
         boolean changed = false;
         for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
             DV dv = e.getValue();
             Variable variable = e.getKey();
-            if (dv.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
-                if (dv.le(LinkedVariables.DEPENDENT_DV)) {
-                    Expression varVal = context.currentValue(variable);
-                    LinkedVariables lv = variable == theVariable ? linkedVariables1: context.evaluationContext().linkedVariables(variable);
-                    ConstructorCall cc;
-                    if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
-                        Properties valueProperties = context.evaluationContext().getValueProperties(cc);
-                        Expression instance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
-                        builder.modifyingMethodAccess(variable, instance, lv);
-                        changed = true;
-                    } else if(varVal.hasState()) {
-                        // drop this state -- IMPROVE we won't do any companion code here at the moment
-                        if(varVal instanceof PropertyWrapper pw) {
-                            Expression withoutState = pw.unwrapState();
-                            builder.modifyingMethodAccess(variable, withoutState, lv);
-                            changed = true;
-                        }
-                    }
-                }
-            } else {
-                // delay the end result
-                CausesOfDelay merge = dv.causesOfDelay().merge(parameterValue.causesOfDelay())
-                        .merge(contextModified.causesOfDelay());
-                Expression delayed = parameterValue.isDone() ? DelayedExpression.forModification(parameterValue, merge)
-                        : parameterValue;
-                LinkedVariables lv = variable == theVariable ? linkedVariables1: linkedVariables2;
-                builder.modifyingMethodAccess(variable, delayed, lv);
-                causes = causes.merge(merge);
-                changed = true;
-            }
+            changed |= potentiallyChangeOneVariable(context, parameterValue, contextModified, builder,
+                    linkedVariables1, linkedVariables2, theVariable, dv, variable);
         }
         if (changed) {
             return builder.build();
         }
         return null;
+    }
+
+    private static boolean potentiallyChangeOneVariable(EvaluationResult context,
+                                                        Expression parameterValue,
+                                                        DV contextModified,
+                                                        EvaluationResult.Builder builder,
+                                                        LinkedVariables linkedVariables1,
+                                                        LinkedVariables linkedVariables2,
+                                                        Variable theVariable,
+                                                        DV dvLink,
+                                                        Variable variable) {
+        if (variable instanceof This || variable instanceof ReturnVariable
+                || !context.evaluationContext().isPresent(variable)){
+            return false;
+        }
+        if (dvLink.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
+            if (dvLink.le(LinkedVariables.DEPENDENT_DV)) {
+                Expression varVal = context.currentValue(variable);
+                ConstructorCall cc;
+                Expression newInstance;
+                if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
+                    Properties valueProperties = context.evaluationContext().getValueProperties(cc);
+                    newInstance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
+                } else if (varVal.hasState() && varVal instanceof PropertyWrapper pw) {
+                    // drop this state -- IMPROVE we won't do any companion code here at the moment
+                    newInstance = pw.unwrapState();
+                } else {
+                    newInstance = null;
+                }
+                if (newInstance != null) {
+                    LinkedVariables lv = variable == theVariable
+                            ? linkedVariables1
+                            : context.evaluationContext().linkedVariables(variable);
+                    builder.modifyingMethodAccess(variable, newInstance, lv);
+                    return true;
+                }
+            } // else: this variable is not affected
+        } else {
+            // delay the end result
+            CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
+                    CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+            CausesOfDelay merge = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
+                    .merge(contextModified.causesOfDelay()).merge(delayMarker);
+            Expression delayed = parameterValue.isDone() ? DelayedExpression.forModification(parameterValue, merge)
+                    : parameterValue;
+            LinkedVariables lv = variable == theVariable ? linkedVariables1 : linkedVariables2;
+            builder.modifyingMethodAccess(variable, delayed, lv);
+            return true;
+        }
+        return false;
     }
 
     private static void computeContextContainer(MethodInfo methodInfo,

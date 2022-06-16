@@ -38,6 +38,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         CNN_TRAVELS_TO_PC("cnn_travels_to_pc", "Context not null travels to precondition, does not result in warning"),
         CONDITION("condition", "condition in inline merge"),
         CONSTANT("constant", ""),
+        CONSTRUCTOR_TO_INSTANCE("constructor-to-instance", "", HIGH),
         CONTAINER("container", "container property not yet determined"),
         CONTEXT_CONTAINER("c_cont", "context-container property not yet determined"),
         CONTEXT_IMMUTABLE("c_imm", "context immutable"),

@@ -100,8 +100,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
-        Set<Variable> variablesWithoutEvaluation =statementAnalysis.variableEntryStream(INITIAL)
-                .map(e->e.getValue().getPreviousOrInitial().variable())
+        Set<Variable> variablesWithoutEvaluation = statementAnalysis.variableEntryStream(INITIAL)
+                .map(e -> e.getValue().getPreviousOrInitial().variable())
                 .filter(v -> !(v instanceof This) && !(v instanceof ReturnVariable))
                 .collect(Collectors.toSet());
 
@@ -118,6 +118,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         boolean progress = false;
 
         Map<Variable, DelayAndLinked> setEvalValueToDelayed = new HashMap<>();
+        boolean delayNotEvaluated = evaluationResult.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE);
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
@@ -147,10 +148,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     progress |= status.isProgress();
                 }
             }
-            delayVariablesNotMentioned(variablesWithoutEvaluation, setEvalValueToDelayed, vi);
+            if(delayNotEvaluated) {
+                delayVariablesNotMentioned(variablesWithoutEvaluation, setEvalValueToDelayed, vi);
+            }
         }
 
-        delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+        if(delayNotEvaluated) {
+            delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
+        }
 
         for (Map.Entry<Variable, VariableInfoContainer> e : variablesDefinedOutsideLoop.entrySet()) {
             LoopResult loopResult = setValueForVariablesInLoopDefinedOutsideAssignedInside(sharedState, e.getKey(),
@@ -193,7 +198,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     because modification of a method argument may have a follow-on effect on linked variables
     (see VariableScope_8_2 as the example for the follow-on, and Modification_23 as the primary example without delays).
     */
-    private void delayVariablesNotMentioned(Set<Variable> variablesWithoutEvaluation, Map<Variable, DelayAndLinked> setEvalValueToDelayed, VariableInfo vi) {
+    private void delayVariablesNotMentioned(Set<Variable> variablesWithoutEvaluation,
+                                            Map<Variable, DelayAndLinked> setEvalValueToDelayed,
+                                            VariableInfo vi) {
         if (!vi.valueIsSet()) {
             // to make sure that their value is not immediately copied across... interferes with modification as argument
             // see e.g. VariableScope_8_2
@@ -203,7 +210,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         Map<Variable, DV> map = variablesWithoutEvaluation.stream()
                                 .filter(vv -> !v.equals(vv)) // no self-references!
                                 .collect(Collectors.toUnmodifiableMap(x -> x, x -> vi.getValue().causesOfDelay()));
-                        LinkedVariables lv = map.isEmpty() ? LinkedVariables.NOT_YET_SET: LinkedVariables.of(map);
+                        LinkedVariables lv = map.isEmpty() ? LinkedVariables.NOT_YET_SET : LinkedVariables.of(map);
                         DelayAndLinked dal = new DelayAndLinked(vi.getValue().causesOfDelay(), lv);
                         setEvalValueToDelayed.put(v, dal);
                     }
@@ -211,9 +218,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             } else {
                 Set<Variable> linkedVariables = vi.getLinkedVariables().variables().keySet();
                 for (Variable v : linkedVariables) {
-                    if (!setEvalValueToDelayed.containsKey(v)) {
+                    if (!setEvalValueToDelayed.containsKey(v) && variablesWithoutEvaluation.contains(v)) {
                         LinkedVariables removed = vi.getLinkedVariables().remove(Set.of(v));
-                        LinkedVariables lv = removed.isEmpty() ? LinkedVariables.NOT_YET_SET: removed;
+                        LinkedVariables lv = removed.isEmpty() ? LinkedVariables.NOT_YET_SET : removed;
                         DelayAndLinked dal = new DelayAndLinked(vi.getValue().causesOfDelay(), lv);
                         setEvalValueToDelayed.put(v, dal);
                     }
@@ -236,9 +243,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     vic.ensureEvaluation(getLocation(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getReadAtStatementTimes());
                 }
                 VariableInfo eval = vic.best(EVALUATION);
-                if(!eval.valueIsSet()) {
+                if (!eval.valueIsSet()) {
                     Expression delay = DelayedExpression.forModification(vi1.getValue(), dal.delay);
-                    LinkedVariables lv = eval.getLinkedVariables().isDone() ? eval.getLinkedVariables(): dal.linkedVariables;
+                    LinkedVariables lv = eval.getLinkedVariables().isDone() ? eval.getLinkedVariables() : dal.linkedVariables;
                     vic.setValue(delay, lv, Properties.EMPTY, EVALUATION);
                 }
             }

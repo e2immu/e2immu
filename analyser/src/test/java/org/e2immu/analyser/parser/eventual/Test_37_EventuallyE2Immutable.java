@@ -319,16 +319,14 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
                         // assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
-                        assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<p:other>"
+                        String expected = d.iteration() <= 1 ? "<p:other>"
                                 : "nullable instance type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-
-                        //        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
-                        assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }
@@ -341,11 +339,10 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 }
             }
             if ("error4".equals(d.methodInfo().name)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expectPc = switch (d.iteration()) {
                     case 0 -> "Precondition[expression=<precondition>, causes=[]]";
                     case 1 -> "Precondition[expression=<precondition>&&<precondition>&&<precondition>&&<precondition>, causes=[]]";
-                    case 2 -> "Precondition[expression=<precondition>&&null==`other.t`&&null!=t&&null==other.t, causes=[methodCall:setT, methodCall:getT, methodCall:setT]]";
                     default -> "Precondition[expression=null!=t, causes=[methodCall:getT, methodCall:setT, methodCall:getT, methodCall:setT]]";
                 };
                 assertEquals(expectPc, d.methodAnalysis().getPreconditionForEventual().toString());
@@ -354,7 +351,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_4".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
