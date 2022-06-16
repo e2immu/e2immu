@@ -248,9 +248,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         }
 
 
-        TypeInfo typeInfo = methodAnalysis.getMethodInfo().typeInfo;
-        ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
-        TypeInfo eciType = eci.isSuper && parentClass != null ? parentClass.typeInfo : typeInfo;
+        TypeInfo eciType = methodAnalysis.getMethodInfo().typeInfo;
         TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
         List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
         for (FieldInfo fieldInfo : visibleFields) {

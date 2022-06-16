@@ -389,10 +389,10 @@ public class Test_14_Warnings extends CommonTestRunner {
             if ("ChildClass".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {

@@ -342,19 +342,6 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     // problem when forcing alphabetic analysis; works perfectly fine if we can do things in good order
     @Test
     public void test_11() throws IOException {
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("BinaryOperator".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isConstructor);
-                if ("0".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "<m:getComplexity>+<m:getComplexity>+<m:getComplexity>";
-                        case 1 -> "lhs1.getComplexity()+rhs1.getComplexity()+<m:getComplexity>";
-                        default -> "1+lhs1.getComplexity()+rhs1.getComplexity()+`operator1.expression`.getComplexity()";
-                    };
-                    assertEquals(expected, d.evaluationResult().value().toString());
-                }
-            }
-        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("BaseExpression".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -374,7 +361,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("BitwiseAnd".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -394,7 +381,6 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -413,20 +399,87 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+                String delay = switch (d.iteration()) {
+                    case 0, 1 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
+                    default -> "cm@Parameter_identifier3";
+                };
+                assertDv(d.p(0), delay, 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+                assertDv(d.p(0), "cm@Parameter_identifier4", 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("X1_ElementImpl".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("X5_BaseExpression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("X3_BinaryOperator".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("X4_BitwiseAnd".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("ExplicitConstructorInvocation_12", 0, 1, new DebugConfiguration.Builder()
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setForceAlphabeticAnalysisInPrimaryType(true)
+                        .build());
+    }
+
+
+    // trimmed down version of 12_1
+    @Test
+    public void test_12_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "identifier".equals(fr.fieldInfo.name)) {
+                    assertEquals("this", fr.scope.toString());
+                    String expected = d.iteration() == 0 ? "<eci>" : "identifier3";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("X5_BaseExpression".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+            }
+            if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+            }
+            if ("X1_ElementImpl".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("X1_ElementImpl".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("X5_BaseExpression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("X3_BinaryOperator".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("ExplicitConstructorInvocation_12_1", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
@@ -442,11 +495,11 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals(10, n);
 
                 if (d.variable() instanceof ParameterInfo pi && "identifier".equals(pi.name)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "variableTarget".equals(fr.fieldInfo.name)) {
                     assertTrue(d.statementId().compareTo("7") >= 0);
-                    String expected = d.iteration() == 0 ? "<vp:variableTarget:eci_helper@Method_Assignment_7-E>"
+                    String expected = d.iteration() == 0 ? "<p:variableTarget>"
                             : "variableTarget";
                     assertEquals(expected, d.currentValue().toString());
                 }

@@ -121,7 +121,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         // important! (see SAApply) the value properties do not change
                         // they are the cause of the potential null pointer exception that we still need to get rid of.
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }

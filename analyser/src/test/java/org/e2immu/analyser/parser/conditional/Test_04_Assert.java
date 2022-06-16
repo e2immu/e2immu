@@ -148,7 +148,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // no Annotated APIs...
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -200,7 +200,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // no Annotated APIs...
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }

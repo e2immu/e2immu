@@ -350,7 +350,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return dependent.ge(STATICALLY_ASSIGNED_DV) && dependent.le(DEPENDENT_DV);
     }
 
-    private static final CausesOfDelay NOT_YET_SET_DELAY = DelayFactory.createDelay(Location.NOT_YET_SET,
+    public static final CausesOfDelay NOT_YET_SET_DELAY = DelayFactory.createDelay(Location.NOT_YET_SET,
             CauseOfDelay.Cause.LINKING);
 
     public CausesOfDelay causesOfDelay() {

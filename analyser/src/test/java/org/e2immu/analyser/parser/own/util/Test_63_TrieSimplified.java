@@ -57,19 +57,19 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("1.0.1".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<null-check>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:map>";
-                                default -> "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:map>";
+                                case 1, 2, 3, 4 -> "null==<f:node.map>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<f:map>";
+                                default -> "new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                             };
                             assertEquals(expected, d.currentValue().toString());
-                            assertEquals("newTrieNode:-1,node:-1,s:-1,this.root:-1",
-                                    d.variableInfo().getLinkedVariables().toString());
-                            assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // FIXME to FALSE
-                            assertDv(d, BIG, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                            String linked = d.iteration() <= 4 ? "newTrieNode:-1,node:-1,s:-1,this.root:-1" : "";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                            assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                         if ("1.0.1.1.0".equals(d.statementId())) {
                             assertEquals("<f:map>", d.currentValue().toString());
                             assertEquals("newTrieNode:-1,node:-1,s:-1,this.root:-1",
                                     d.variableInfo().getLinkedVariables().toString());
-                            assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                 }
@@ -80,7 +80,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        default -> "null==<f:node.map>";
+                        case 1, 2, 3, 4 -> "null==<f:node.map>";
+                        default -> "true";
                     };
                     assertEquals(expected, d.statementAnalysis().stateData()
                             .valueOfExpression.get().toString());
@@ -97,8 +98,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
         // null ptr warning
         testClass("TrieSimplified_0", 4, 0, new DebugConfiguration.Builder()
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

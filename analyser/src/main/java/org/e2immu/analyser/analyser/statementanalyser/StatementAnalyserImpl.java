@@ -28,6 +28,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -642,44 +643,49 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
         EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
         if (closure != null) {
-            VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
-            AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
-            TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
-            CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
-            statementAnalysis.variableStream().forEach(vi -> {
-                // naive approach
-                Variable variable = vi.variable();
-                if (closure.acceptForVariableAccessReport(variable, currentType)) {
-                    // mark, irrespective of whether it is present there or not (given that we are not the owner)
-                    // readId will be 0-E, index 0
-                    if (vi.isRead()) {
-                        builder.addVariableRead(variable);
-                    }
-                    if (!(variable instanceof This)) {
-                        DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+            MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
+            boolean firstCallInCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+            if (!firstCallInCycle) {
+                VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
+                AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
+                TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
+                CausesOfDelay linksEstablished = statementAnalysis.methodLevelData().getLinksHaveBeenEstablished();
+                statementAnalysis.variableStream().forEach(vi -> {
+                    // naive approach
+                    Variable variable = vi.variable();
+                    if (closure.acceptForVariableAccessReport(variable, currentType)) {
+                        // mark, irrespective of whether it is present there or not (given that we are not the owner)
+                        // readId will be 0-E, index 0
+                        if (vi.isRead()) {
+                            builder.addVariableRead(variable);
+                        }
+                        if (!(variable instanceof This)) {
+                            DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
 
                     /*
                      the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
                      Only when the links have been established, can we be sure that modified will progress in a stable fashion.
                      */
 
-                        DV combined = modified.isDelayed() || linksEstablished.isDone() ? modified :
-                                modified.causesOfDelay().merge(linksEstablished);
-                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
-                        if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
+                            DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
+                                    ? modified
+                                    : modified.causesOfDelay().merge(linksEstablished);
+                            builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
+                            if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
 
-                        DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
-                        builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
-                        if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
-                    } // else: context modified on this == modified_method
+                            DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
+                            builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
+                            if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
+                        } // else: context modified on this == modified_method
+                    }
+                });
+                VariableAccessReport variableAccessReport = builder.build();
+                analyserResultBuilder.setVariableAccessReport(variableAccessReport);
+
+                if (causes.get().isDelayed()) {
+                    LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
+                    return causes.get();
                 }
-            });
-            VariableAccessReport variableAccessReport = builder.build();
-            analyserResultBuilder.setVariableAccessReport(variableAccessReport);
-
-            if (causes.get().isDelayed()) {
-                LOGGER.debug("Delay transfer from closure to result: {}", causes.get());
-                return causes.get();
             }
         }
         return DONE;

@@ -412,7 +412,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 String expectEventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
-                    case 1 -> "[DelayedEventual:initial:this.set@Method_initialize_0-C;initial:this.set@Method_stream_0-C]";
+                    case 1 -> "[DelayedEventual:initial:this.set@Method_stream_0-C]";
                     case 2 -> "[DelayedEventual:initial@Field_set]";
                     default -> "@Only after: [set]";
                 };
@@ -439,7 +439,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // E1 approved preconditions is empty: all fields explicitly final
                 assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
                 if (d.iteration() < 2) {
-                    String expected = d.iteration() == 0 ? "initial:this.set@Method_initialize_0-C;initial:this.set@Method_stream_0-C" : "initial@Field_set";
+                    String expected = d.iteration() == 0 ? "initial:this.set@Method_stream_0-C" : "initial@Field_set";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
                     // E2 approved preconditions must contain "set"

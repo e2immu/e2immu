@@ -99,7 +99,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 NOT_YET_READ, Set.of(), newValue, outside.variable().statementTime());
         initial.newVariable();
         initial.setValue(newValue);
-        initial.setLinkedVariables(outside.getLinkedVariables());
+        // we leave the LinkedVariables at NOT_YET_SET, a value will be copied in from iteration 1+
+        assert initial.getLinkedVariables() == LinkedVariables.NOT_YET_SET;
 
         outside.propertyStream().forEach(e -> {
             Property property = e.getKey();

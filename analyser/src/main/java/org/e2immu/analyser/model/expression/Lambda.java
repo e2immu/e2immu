@@ -212,7 +212,14 @@ public class Lambda extends BaseExpression implements Expression {
             result = noLocalAnalysersYet(context);
         } else {
             MethodAnalysis methodAnalysis = context.evaluationContext().findMethodAnalysisOfLambda(methodInfo);
-            result = withLocalAnalyser(parameterizedType, methodAnalysis);
+            boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+            boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
+            boolean firstInCycle = breakCallCycleDelay || recursiveCall;
+            if(firstInCycle) {
+                result = makeInstance(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            } else {
+                result = withLocalAnalyser(parameterizedType, methodAnalysis);
+            }
         }
 
         builder.setExpression(result);

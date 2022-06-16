@@ -261,41 +261,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        MethodInfo concreteMethod;
-
-        /* abstract method... is there a concrete implementation? we should give preference to that one
-           we don't allow switching when we're expanding an inline method ... this may lead to new variables
-           being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
-
-         */
-        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
-            EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-            Expression expression = objProbe.value();
-            TypeInfo typeInfo = expression.typeInfoOfReturnType();
-            if (typeInfo != null) {
-                MethodInfo concrete = methodInfo.implementationIn(typeInfo);
-                concreteMethod = concrete == null ? methodInfo : concrete;
-            } else {
-                concreteMethod = methodInfo;
-            }
-        } else {
-            concreteMethod = methodInfo;
-        }
+        MethodInfo concreteMethod = concreteMethod(context, forwardEvaluationInfo);
 
         boolean breakCallCycleDelay = concreteMethod.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
         boolean recursiveCall = recursiveCall(concreteMethod, context.evaluationContext());
+        boolean firstInCallCycle = recursiveCall || breakCallCycleDelay;
 
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(concreteMethod);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
-        DV modified = recursiveCall || breakCallCycleDelay ? DV.FALSE_DV : modifiedMethod;
+        DV modified = firstInCallCycle ? DV.FALSE_DV : modifiedMethod;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(concreteMethod,
                 forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
 
-        ImmutableData immutableData = recursiveCall || breakCallCycleDelay ? NOT_EVENTUAL :
+        ImmutableData immutableData = firstInCallCycle ? NOT_EVENTUAL :
                 computeContextImmutable(context, concreteMethod);
 
         // modification on a type expression -> make sure that this gets modified too!
@@ -330,7 +312,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 context, forwardEvaluationInfo, concreteMethod,
-                recursiveCall || breakCallCycleDelay, objectValue, allowUpgradeCnnOfScope);
+                firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
@@ -344,7 +326,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(),
                     LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
-        LinkedVariables linked1Scope = recursiveCall ? LinkedVariables.EMPTY : linked1VariablesScope(context);
+        LinkedVariables linked1Scope = firstInCallCycle ? LinkedVariables.EMPTY : linked1VariablesScope(context);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
             DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
@@ -353,7 +335,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         linksBetweenParameters(builder, context, concreteMethod);
 
         // increment the time, irrespective of NO_VALUE
-        if (!recursiveCall) {
+        if (!firstInCallCycle) {
             EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, builder, modified);
             if (delayedMethod != null) return delayedMethod;
         }
@@ -387,7 +369,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
                 .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
-                        parameterValues, forwardEvaluationInfo, modifiedInstance);
+                        parameterValues, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
         builder.compose(mv);
 
         MethodInspection methodInspection = concreteMethod.methodInspection.get();
@@ -396,6 +378,30 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(builder, context, concreteMethod, objectValue);
 
         return builder.build();
+    }
+
+    private MethodInfo concreteMethod(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+        MethodInfo concreteMethod;
+
+        /* abstract method... is there a concrete implementation? we should give preference to that one
+           we don't allow switching when we're expanding an inline method ... this may lead to new variables
+           being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
+
+         */
+        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
+            EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            Expression expression = objProbe.value();
+            TypeInfo typeInfo = expression.typeInfoOfReturnType();
+            if (typeInfo != null) {
+                MethodInfo concrete = methodInfo.implementationIn(typeInfo);
+                concreteMethod = concrete == null ? methodInfo : concrete;
+            } else {
+                concreteMethod = methodInfo;
+            }
+        } else {
+            concreteMethod = methodInfo;
+        }
+        return concreteMethod;
     }
 
     /* we have to probe the object first, to see if there is a value
@@ -904,8 +910,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        boolean recursiveCall = context.getCurrentMethod() != null && methodInfo == context.getCurrentMethod().getMethodInfo();
-        if (recursiveCall) {
+        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
+        boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        if (recursiveCall||breakCallCycleDelay) {
             return property.bestDv;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
@@ -1034,7 +1041,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public LinkedVariables linkedVariables(EvaluationResult context) {
         // RULE 1: void method cannot link
         if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
-
+        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
+        boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        if (recursiveCall||breakCallCycleDelay) {
+            return LinkedVariables.EMPTY;
+        }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
 
         // RULE 2: @Identity links to the 1st parameter

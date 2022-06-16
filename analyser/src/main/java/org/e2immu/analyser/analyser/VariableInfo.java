@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
@@ -133,6 +134,9 @@ public interface VariableInfo {
     BinaryOperator<DV> MAX_CM = (i1, i2) ->
             i1.valueIsTrue() || i2.valueIsTrue() ? DV.TRUE_DV :
                     i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : DV.FALSE_DV;
+    BinaryOperator<DV> MAX_CC = (i1, i2) ->
+            i1.equals(MultiLevel.CONTAINER_DV) || i2.equals(MultiLevel.CONTAINER_DV) ? MultiLevel.CONTAINER_DV :
+                    i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : MultiLevel.NOT_CONTAINER_DV;
 
     List<MergeOp> MERGE = List.of(
             new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.bestDv),
@@ -147,7 +151,7 @@ public interface VariableInfo {
 
             new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
             new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
-            new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
+            new MergeOp(CONTEXT_CONTAINER, MAX_CC, CONTEXT_CONTAINER.falseDv),
 
             new MergeOp(IDENTITY, DV::min, IDENTITY.bestDv),
             new MergeOp(IGNORE_MODIFICATIONS, DV::min, IGNORE_MODIFICATIONS.bestDv),
