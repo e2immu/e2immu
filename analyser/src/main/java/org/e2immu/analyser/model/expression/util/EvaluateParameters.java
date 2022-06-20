@@ -208,15 +208,15 @@ public class EvaluateParameters {
         return null;
     }
 
-    private static boolean potentiallyChangeOneVariable(EvaluationResult context,
-                                                        Expression parameterValue,
-                                                        DV contextModified,
-                                                        EvaluationResult.Builder builder,
-                                                        LinkedVariables linkedVariables1,
-                                                        LinkedVariables linkedVariables2,
-                                                        Variable theVariable,
-                                                        DV dvLink,
-                                                        Variable variable) {
+    public static boolean potentiallyChangeOneVariable(EvaluationResult context,
+                                                       Expression parameterValue,
+                                                       DV contextModified,
+                                                       EvaluationResult.Builder builder,
+                                                       LinkedVariables linkedVariables1,
+                                                       LinkedVariables linkedVariables2,
+                                                       Variable theVariable,
+                                                       DV dvLink,
+                                                       Variable variable) {
         if (variable instanceof This || variable instanceof ReturnVariable
                 || !context.evaluationContext().isPresent(variable)){
             return false;
@@ -229,7 +229,7 @@ public class EvaluateParameters {
                 if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
                     Properties valueProperties = context.evaluationContext().getValueProperties(cc);
                     newInstance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
-                } else if (varVal.hasState() && varVal instanceof PropertyWrapper pw) {
+                } else if (varVal instanceof PropertyWrapper pw && pw.hasState()) {
                     // drop this state -- IMPROVE we won't do any companion code here at the moment
                     newInstance = pw.unwrapState();
                 } else {

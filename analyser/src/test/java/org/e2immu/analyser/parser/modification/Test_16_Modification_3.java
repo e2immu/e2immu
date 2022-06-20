@@ -95,8 +95,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                         // there is a variable info in level 1, copied from level 1 in statement 0
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
-                        assertEquals("instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/",
-                                vi1.getValue().toString());
+                        assertEquals("set3", vi1.getValue().toString());
                         assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     String expectedLinks = d.iteration() == 0 ? "this.set3:0,v:-1" : "this.set3:0";
@@ -114,7 +113,8 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                     assertTrue(d.variableInfo().isRead());
                     String expectedLinks = d.iteration() == 0 ? "local3:0,v:-1" : "local3:0";
                     assertEquals(expectedLinks, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
+                    String expectValue = d.iteration() == 0 ? SET3_DELAYED
+                            : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
                     assertEquals(expectValue, d.variableInfo().getValue().toString());
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }

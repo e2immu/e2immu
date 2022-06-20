@@ -41,7 +41,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type Map<String, Integer>", d.currentValue().toString());
+                        assertEquals("instance type HashMap<String,Integer>", d.currentValue().toString());
                     }
                 }
                 if ("keySet".equals(d.variableName())) {
@@ -50,8 +50,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                         assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        // we're doing it fine with the object!
-                        assertEquals("middle.keySet()/*@NotNull this.size()==in.size()*/", d.currentValue().toString());
+                        assertEquals("instance type Set<String>", d.currentValue().toString());
                         assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -64,7 +63,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("1".equals(d.statementId())) {
-                        assertEquals("instance type Map<String, Integer>",
+                        assertEquals("instance type HashMap<String,Integer>",
                                 d.currentValue().toString());
                     }
                 }

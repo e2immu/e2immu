@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -610,41 +611,84 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue.isDelayed()) return objectValue; // don't even try
         if (objectValue.cannotHaveState()) return null; // ditto
 
-        Expression state;
-        BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
-        if (context.evaluationContext().hasState(objectValue)) {
-            state = context.evaluationContext().state(objectValue);
-            if (state.isDelayed()) return null; // DELAY
+        Expression newState = computeNewState(context, methodInfo, objectValue, parameterValues);
+        if (newState == null) return null; // delay on current state of evaluation context
+
+        IsVariableExpression ive = object == null ? null : object.asInstanceOf(IsVariableExpression.class);
+        IsVariableExpression iveValue = objectValue.asInstanceOf(IsVariableExpression.class);
+
+        Expression newInstance = createNewInstance(context, methodInfo, objectValue, iveValue, identifier, original);
+        boolean inLoop = iveValue instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
+
+        Expression modifiedInstance;
+        if (newState.isBoolValueTrue() || inLoop) {
+            modifiedInstance = newInstance;
         } else {
-            state = TRUE;
+            modifiedInstance = PropertyWrapper.addState(newInstance, newState);
         }
 
-        AtomicReference<Expression> newState = new AtomicReference<>(state);
-        // NOTE: because of the code that selects concrete implementations, we must go up in hierarchy, to collect all companions
-        Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
-        if (cMap.isEmpty()) {
-            // modifying method, without instructions on how to change the state... we simply clear it!
-            newState.set(TRUE);
-        } else {
-            cMap.keySet().stream()
-                    .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
-                    .sorted()
-                    .forEach(cmn -> companionMethod(context, methodInfo, parameterValues, newState, cmn, cMap.get(cmn)));
 
-            if (containsEmptyExpression(newState.get())) {
-                newState.set(TRUE);
+        if (object != null) {
+            // ideally we change the underlying variable, otherwise the static one
+            if (iveValue != null && !(iveValue.variable() instanceof This)) {
+                builder.modifyingMethodAccess(iveValue.variable(), modifiedInstance, null);
+            } else if (ive != null && !(ive.variable() instanceof This)) {
+                builder.modifyingMethodAccess(ive.variable(), modifiedInstance, null);
+            }
+
+            LinkedVariables linkedVariables = object.linkedVariables(context);
+            LinkedVariables linkedVariablesValue = objectValue.linkedVariables(context);
+            LinkedVariables linkedVariablesCombined = linkedVariables.merge(linkedVariablesValue);
+            for (Map.Entry<Variable, DV> e : linkedVariablesCombined.variables().entrySet()) {
+                DV dv = e.getValue();
+                Variable variable = e.getKey();
+                if (ive == null || !variable.equals(ive.variable())) {
+                    if (dv.isDone()) {
+                        if (dv.le(LinkedVariables.DEPENDENT_DV)) {
+                            ConstructorCall cc;
+                            Expression i;
+                            Expression varVal = context.currentValue(variable);
+                            if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
+                                Properties valueProperties = context.evaluationContext().getValueProperties(cc);
+                                i = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
+                            } else if (varVal instanceof PropertyWrapper pw && pw.hasState()) {
+                                // drop this state -- IMPROVE we won't do any companion code here at the moment
+                                i = pw.unwrapState();
+                            } else {
+                                i = null;
+                            }
+                            if (i != null) {
+                                LinkedVariables lv = context.evaluationContext().linkedVariables(variable);
+                                builder.modifyingMethodAccess(variable, i, lv);
+                            }
+                        }
+                    } else {
+                        // delay
+                        CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
+                                CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+                        Expression delayed = DelayedExpression.forModification(objectValue, delayMarker);
+                        builder.modifyingMethodAccess(variable, delayed, linkedVariablesValue);
+                    }
+                } // else: already done: modifiedInstance
             }
         }
-        Expression newInstance;
 
-        IsVariableExpression ive;
+        return modifiedInstance;
+    }
+
+    private static Expression createNewInstance(EvaluationResult context,
+                                                MethodInfo methodInfo,
+                                                Expression objectValue,
+                                                IsVariableExpression ive,
+                                                Identifier identifier,
+                                                Expression original) {
         Expression createInstanceBasedOn;
-        boolean inLoop = false;
+        Expression newInstance;
         if (objectValue.isInstanceOf(Instance.class) ||
                 objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
             newInstance = unwrap(objectValue);
             createInstanceBasedOn = null;
-        } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
+        } else if (ive != null) {
             Expression current = context.currentValue(ive.variable());
             if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
                 newInstance = unwrap(current);
@@ -653,7 +697,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 createInstanceBasedOn = current;
                 newInstance = null;
             }
-            inLoop = ive instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
         } else {
             createInstanceBasedOn = objectValue;
             newInstance = null;
@@ -669,24 +712,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
                             original, causesOfDelay, Map.of());
-                    // FIXME is this null correct? some type of createInstanceBasedOn??
                 }
             }
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
+        return newInstance;
+    }
 
-        Expression modifiedInstance;
-        if (newState.get().isBoolValueTrue() || inLoop) {
-            modifiedInstance = newInstance;
+    private static Expression computeNewState(EvaluationResult context,
+                                              MethodInfo methodInfo,
+                                              Expression objectValue,
+                                              List<Expression> parameterValues) {
+        Expression state;
+        BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
+        if (context.evaluationContext().hasState(objectValue)) {
+            state = context.evaluationContext().state(objectValue);
         } else {
-            modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
+            state = TRUE;
         }
+        assert state.isDone();
 
-        VariableExpression ve;
-        if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
-            builder.modifyingMethodAccess(ve.variable(), modifiedInstance, null);
+        AtomicReference<Expression> newState = new AtomicReference<>(state);
+        // NOTE: because of the code that selects concrete implementations, we must go up in hierarchy, to collect all companions
+        Map<CompanionMethodName, CompanionAnalysis> cMap = methodInfo.collectCompanionMethods(context.getAnalyserContext());
+        if (cMap.isEmpty()) {
+            // modifying method, without instructions on how to change the state... we simply clear it!
+            newState.set(TRUE);
+        } else {
+            cMap.keySet().stream()
+                    .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
+                    .sorted()
+                    .forEach(cmn -> companionMethod(context, methodInfo, parameterValues, newState, cmn, cMap.get(cmn)));
+            if (containsEmptyExpression(newState.get())) {
+                newState.set(TRUE);
+            }
         }
-        return modifiedInstance;
+        return newState.get();
     }
 
     private static void companionMethod(EvaluationResult context,
@@ -912,7 +973,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        if (recursiveCall||breakCallCycleDelay) {
+        if (recursiveCall || breakCallCycleDelay) {
             return property.bestDv;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
@@ -1043,7 +1104,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
         boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        if (recursiveCall||breakCallCycleDelay) {
+        if (recursiveCall || breakCallCycleDelay) {
             return LinkedVariables.EMPTY;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);

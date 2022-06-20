@@ -49,8 +49,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:s2>"
-                                : "instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/";
+                        String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLv = d.iteration() == 0 ? "s:-1,this.s2:0" : "this.s2:0";
@@ -69,6 +68,10 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
                     if (("2".equals(d.statementId()) || "3".equals(d.statementId()))) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+
+                        String expected = d.iteration() == 0 ? "<f:s2>"
+                                : "instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());

@@ -47,6 +47,9 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                         assertFalse(tryResource.removeInSubBlockMerge("1.0.0.1"));
                     } else fail();
                     assertTrue(d.statementId().startsWith("1.0.0"));
+                    if ("1.0.0.0.0".equals(d.statementId()) || "1.0.0.0.1".equals(d.statementId())) {
+                        assertEquals("instance type ByteArrayOutputStream", d.currentValue().toString());
+                    }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // return statement

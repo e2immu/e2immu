@@ -64,6 +64,9 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                         // via statical assignments
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String expected = d.iteration() == 0 ? "<f:set4>"
+                                : "instance type Set<String>/*this.contains(v)&&this.size()>=1*/";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("local4".equals(d.variableName())) {
@@ -79,8 +82,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                        String expect = d.iteration() == 0 ? "<f:set4>"
-                                : "instance type Set<String>/*this.contains(v)&&this.size()>=1*/";
+                        String expect = d.iteration() == 0 ? "<f:set4>" : "set4";
                         assertEquals(expect, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "this.set4:0,v:-1" : "this.set4:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

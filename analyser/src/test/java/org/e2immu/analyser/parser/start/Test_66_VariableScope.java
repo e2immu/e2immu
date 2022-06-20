@@ -504,8 +504,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("combine".equals(d.methodInfo().name)) {
                 if ("m".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
-                    assertEquals(expected, d.currentValue().toString());
+                    if("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "new VariableScope_7()";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if("3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<s:VariableScope_7>" : "instance type VariableScope_7";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
                 }
                 if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo.name)) {
                     assertTrue(Set.of("this", "other", "m").contains(fr.scope.toString()));
