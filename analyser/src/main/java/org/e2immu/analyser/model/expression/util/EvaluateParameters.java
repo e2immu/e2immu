@@ -201,7 +201,7 @@ public class EvaluateParameters {
         for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
             DV dv = e.getValue();
             Variable variable = e.getKey();
-            changed |= potentiallyChangeOneVariable(context, parameterValue, contextModified, builder,
+            changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterValue, contextModified, builder,
                     linkedVariables1, linkedVariables2, theVariable, dv, variable);
         }
         if (changed) {
@@ -211,6 +211,7 @@ public class EvaluateParameters {
     }
 
     public static boolean potentiallyChangeOneVariable(EvaluationResult context,
+                                                       Expression parameterExpression,
                                                        Expression parameterValue,
                                                        DV contextModified,
                                                        EvaluationResult.Builder builder,
@@ -255,7 +256,7 @@ public class EvaluateParameters {
             } else {
                 CausesOfDelay merge = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
                         .merge(contextModified.causesOfDelay()).merge(delayMarker);
-                delayed = DelayedExpression.forModification(parameterValue, merge);
+                delayed = DelayedExpression.forModification(parameterExpression, merge);
             }
             LinkedVariables lv = variable == theVariable ? linkedVariables1 : linkedVariables2;
             builder.modifyingMethodAccess(variable, delayed, lv, true);

@@ -548,7 +548,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", eval.getValue().toString());
                         // no change after block
                         String expected = d.iteration() == 0
-                                ? "instance type boolean?<mod:HashSet<String>>:instance type HashSet<String>"
+                                ? "instance type boolean?<mod:Set<String>>:instance type HashSet<String>"
                                 : "instance type boolean?instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/:instance type HashSet<String>";
                         assertEquals(expected, d.currentValue().toString());
                     }

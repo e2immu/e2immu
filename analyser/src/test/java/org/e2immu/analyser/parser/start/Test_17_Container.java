@@ -440,7 +440,7 @@ public class Test_17_Container extends CommonTestRunner {
                         // even with all the code in EvaluateParameter and MethodCall to transform new objects into instances,
                         // (see Modification_23, _24), we cannot see its effect here (because coll5 is NOT linked to list!!)
                         // However, the field "list" will have an "instance" as value!
-                        String expectValue = d.iteration() == 0 ? "<mod:ArrayList<String>>"
+                        String expectValue = d.iteration() == 0 ? "<mod:List<String>>"
                                 : "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }

@@ -680,7 +680,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         }
                     } else {
                         // delay
-                        Expression delayed = DelayedExpression.forModification(objectValue, delayMarker);
+                        Expression delayed = DelayedExpression.forModification(object, delayMarker);
                         builder.modifyingMethodAccess(variable, delayed, linkedVariablesValue);
                     }
                 } // else: already done: modifiedInstance

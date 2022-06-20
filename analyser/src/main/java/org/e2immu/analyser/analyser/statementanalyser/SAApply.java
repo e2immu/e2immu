@@ -244,7 +244,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
                 VariableInfo eval = vic.best(EVALUATION);
                 if (!eval.valueIsSet()) {
-                    Expression delay = DelayedExpression.forModification(vi1.getValue(), dal.delay);
+                    VariableExpression ve = new VariableExpression(variable);
+                    Expression delay = DelayedExpression.forModification(ve, dal.delay);
                     LinkedVariables lv = eval.getLinkedVariables().isDone()
                             ? eval.getLinkedVariables()
                             : eval.getLinkedVariables().merge(dal.linkedVariables);
