@@ -330,7 +330,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
-
+                if(initialiserValue.isDelayed()) {
+                    return AnalysisStatus.of(initialiserValue.causesOfDelay());
+                }
                 makeVariableAccessReport(initialiserValue, sharedState.closure());
                 LOGGER.debug("Set initialiser of field {} to {}", fqn, evaluationResult.value());
                 if (evaluationResult.causesOfDelay().isDelayed()) {

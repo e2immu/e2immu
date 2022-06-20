@@ -373,7 +373,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedExpression(identifier, msg, parameterizedType, original, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedExpression(identifier, msg, parameterizedType, original, this.causesOfDelay.merge(causesOfDelay),
+                priorityProperties, cnnMap, shortCutMap);
     }
 
     // see VariableExpression.tryShortCut, ConstructorCall.evaluate

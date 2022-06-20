@@ -87,8 +87,9 @@ public class CompanionAnalyser {
                     .getMethodBody().structure.statements().get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
-            EvaluationResult evaluationResult = returnStatement.expression.evaluate(EvaluationResult.from(evaluationContext),
-                    ForwardEvaluationInfo.DEFAULT);
+            ForwardEvaluationInfo forward = new ForwardEvaluationInfo.Builder().setInCompanionExpression().build();
+            EvaluationResult context = EvaluationResult.from(evaluationContext);
+            EvaluationResult evaluationResult = returnStatement.expression.evaluate(context, forward);
             if (evaluationResult.value().isDelayed()) {
                 return companionMethod.delay(CauseOfDelay.Cause.VALUE);
             }

@@ -148,12 +148,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     progress |= status.isProgress();
                 }
             }
-            if(delayNotEvaluated) {
+            if (delayNotEvaluated) {
                 delayVariablesNotMentioned(variablesWithoutEvaluation, setEvalValueToDelayed, vi);
             }
         }
 
-        if(delayNotEvaluated) {
+        if (delayNotEvaluated) {
             delayVariablesNotMentioned2(existingVariablesNotVisited, setEvalValueToDelayed);
         }
 
@@ -245,7 +245,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 VariableInfo eval = vic.best(EVALUATION);
                 if (!eval.valueIsSet()) {
                     Expression delay = DelayedExpression.forModification(vi1.getValue(), dal.delay);
-                    LinkedVariables lv = eval.getLinkedVariables().isDone() ? eval.getLinkedVariables() : dal.linkedVariables;
+                    LinkedVariables lv = eval.getLinkedVariables().isDone()
+                            ? eval.getLinkedVariables()
+                            : eval.getLinkedVariables().merge(dal.linkedVariables);
                     vic.setValue(delay, lv, Properties.EMPTY, EVALUATION);
                 }
             }

@@ -642,10 +642,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
         if (currentIdentity.isDelayed()) {
-            VariableExpression ve2;
-            boolean isIdentity = (ve2 = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
-                    ve2.variable() instanceof ParameterInfo pi && pi.getMethod() == methodInfo && pi.index == 0;
-            methodAnalysis.setProperty(IDENTITY, DV.fromBoolDv(isIdentity));
+            DV identity = variableInfo.getProperty(IDENTITY);
+            methodAnalysis.setProperty(IDENTITY, identity);
         }
 
         DV currentIgnoreMods = methodAnalysis.getProperty(IGNORE_MODIFICATIONS);

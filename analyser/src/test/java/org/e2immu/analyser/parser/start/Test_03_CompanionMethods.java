@@ -547,7 +547,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", eval.getValue().toString());
                         // no change after block
-                        assertEquals("instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/", d.currentValue().toString());
+                        assertEquals("instance type boolean?instance type HashSet<String>/*this.contains(s)&&this.size()>=1*/:instance type HashSet<String>", d.currentValue().toString());
                     }
                 }
             }

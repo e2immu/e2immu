@@ -117,7 +117,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("in instanceof Number&&null!=in?in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
+                        assertEquals("in instanceof Number&&null!=in?in/*(Number)*/ instanceof Integer&&null!=in/*(Number)*/?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
                                 d.currentValue().toString());
                     }
                 }
@@ -1067,7 +1067,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("unaryOperator", fr.scope.toString());
                     String value = d.iteration() == 0 ? "<f:operator>" : "nullable instance type Operator";
                     assertEquals(value, d.currentValue().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > 0) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator:-1";
@@ -1078,7 +1081,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("scope-negation:0", fr.scope.toString());
                     String value = d.iteration() == 0 ? "<f:en>" : "nullable instance type Expression";
                     assertEquals(value, d.currentValue().toString());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > 0) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         case 1, 2 -> "expression:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
@@ -1086,7 +1092,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(linked, lvs);
                 } else if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         case 1, 2 -> "scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1,unaryOperator:-1";
@@ -1094,7 +1100,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(linked, lvs);
                 } else if ("scope-negation:0".equals(d.variableName())) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > 0) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         case 1, 2 -> "expression:-1,scope-negation:0.en:-1,unaryOperator.operator:-1,unaryOperator:-1";
@@ -1102,7 +1111,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     };
                     assertEquals(expected, lvs);
                 } else if ("unaryOperator".equals(d.variableName())) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals(d.iteration() > 0, d.variableInfoContainer().hasEvaluation());
+                    if (d.iteration() > 0) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     String expected = switch (d.iteration()) {
                         case 0 -> "NOT_YET_SET";
                         case 1, 2 -> "expression:-1,scope-negation:0.en:-1,scope-negation:0:-1,unaryOperator.operator:-1";
@@ -1112,8 +1124,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "positive".equals(fr.fieldInfo.name)) {
                     assertNotNull(fr.scopeVariable);
                     assertEquals("iop", fr.scopeVariable.simpleName());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertEquals("", lvs);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String expected = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                    assertEquals(expected, lvs);
 
                 } else if (d.variable() instanceof ParameterInfo pi && "iop".equals(pi.name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

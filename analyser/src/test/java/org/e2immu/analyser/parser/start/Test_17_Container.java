@@ -101,7 +101,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:s>" : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
+                        String expected = d.iteration() == 0 ? "<f:s>" :"p";// "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -421,14 +421,24 @@ public class Test_17_Container extends CommonTestRunner {
                 }
             }
             if (CONTAINER_5.equals(d.methodInfo().name) && n == 1) {
+                if (d.variable() instanceof ParameterInfo pi && "coll5".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("nullable instance type Collection<String>/*@Identity*/",
+                                d.currentValue().toString());
+                    }
+                }
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        // this is not correct (addAll5 modifies) but the field should hold the modified version anyway
-                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                        // even with all the code in EvaluateParameter and MethodCall to transform new objects into instances,
+                        // (see Modification_23, _24), we cannot see its effect here (because coll5 is NOT linked to list!!)
+                        // However, the field "list" will have an "instance" as value!
+                        String expectValue = d.iteration() == 0 ? "<mod:ArrayList<String>>"
+                                : "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

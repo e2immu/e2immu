@@ -203,7 +203,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
                 LinkedVariables originalLv = e.getKey().linkedVariables(context);
                 LinkedVariables lv = originalLv.merge(newLv);
-                Expression wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv);
+                Expression currentValue = evaluationContext.currentValue(ve.variable());
+                Expression wrapped;
+                // IMPROVE this is more or less hard coded to solve Identity_2, code should be generalised
+                if (currentValue instanceof Instance instance && instance.valueProperties().getOrDefault(Property.IDENTITY, DV.FALSE_DV).valueIsTrue()) {
+                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv, Map.of(Property.IDENTITY, DV.TRUE_DV));
+                } else if (currentValue instanceof PropertyWrapper pw) {
+                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv, pw);
+                } else {
+                    wrapped = PropertyWrapper.propertyWrapper(e.getValue(), lv);
+                }
                 builder.modifyingMethodAccess(ve.variable(), wrapped, lv);
             }
 

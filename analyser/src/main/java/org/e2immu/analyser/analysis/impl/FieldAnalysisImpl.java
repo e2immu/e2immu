@@ -344,7 +344,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public void setInitialiserValue(Expression value) {
             if (value.isDelayed()) {
                 initializerValue.setVariable(value);
-            } else {
+            } else if (!value.equals(initializerValue.get())) {
                 initializerValue.setFinal(value);
             }
         }

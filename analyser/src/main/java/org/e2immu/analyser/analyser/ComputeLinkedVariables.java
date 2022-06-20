@@ -430,7 +430,7 @@ public class ComputeLinkedVariables {
                         does not work for external properties, as they are reset to NOT_INVOLVED after an assignment
                          */
                         if (current.isDelayed()) {
-                            vic.setProperty(property, previous, stage);
+                            vic.setProperty(property, property.bestDv, stage);
                             progress = true;
                         } // else don't complain!!!
                     } else if (current.isDelayed()) {
@@ -438,7 +438,7 @@ public class ComputeLinkedVariables {
                             DV inMap = propertyValues.get(variable);
                             if (property.bestDv.equals(inMap) && extraDelay.isDone()) {
                                 // whatever happens, this value cannot get better (e.g., TRUE in CM)
-                                vic.setProperty(property, inMap, stage);
+                                vic.setProperty(property, property.bestDv, stage);
                                 progress = true;
                             } else {
                                 vic.setProperty(property, newValue, stage);

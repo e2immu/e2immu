@@ -865,16 +865,27 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void modifyingMethodAccess(Variable variable, Expression instance, LinkedVariables linkedVariables) {
+            modifyingMethodAccess(variable, instance, linkedVariables, false);
+        }
+
+        public void modifyingMethodAccess(Variable variable,
+                                          Expression instance,
+                                          LinkedVariables linkedVariables,
+                                          boolean markDelays) {
             ChangeData current = valueChanges.get(variable);
             ChangeData newVcd;
             if (current == null) {
                 CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
-                newVcd = new ChangeData(instance, stateIsDelayed, stateIsDelayed, false, Set.of(),
+                newVcd = new ChangeData(instance,
+                        markDelays ? stateIsDelayed.merge(instance.causesOfDelay()) : stateIsDelayed,
+                        stateIsDelayed, false, Set.of(),
                         linkedVariables, LinkedVariables.EMPTY,
                         Map.of());
             } else {
                 LinkedVariables lvs = linkedVariables == null ? current.linkedVariables : linkedVariables;
-                newVcd = new ChangeData(instance, current.delays, current.stateIsDelayed, current.markAssignment,
+                newVcd = new ChangeData(instance,
+                        markDelays ? current.delays.merge(instance.causesOfDelay()) : current.delays,
+                        current.stateIsDelayed, current.markAssignment,
                         current.readAtStatementTime, lvs, current.toRemoveFromLinkedVariables, current.properties);
             }
             valueChanges.put(variable, newVcd);

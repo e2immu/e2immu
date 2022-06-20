@@ -132,6 +132,14 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return new PropertyWrapper(value, null, properties, null, castType);
     }
 
+    public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables, PropertyWrapper other) {
+        return new PropertyWrapper(value, other.state, other.properties, linkedVariables, other.castType);
+    }
+
+    public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables, Map<Property, DV> altProps) {
+        return new PropertyWrapper(value, null, altProps, linkedVariables, null);
+    }
+
     public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables) {
         if (value instanceof PropertyWrapper pw) {
             return new PropertyWrapper(pw.expression, pw.state, pw.properties,
@@ -301,29 +309,22 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return expression.isInstanceOf(clazz);
     }
 
-    // @Override
-    public boolean equalsXX(Object o) {
+    /*
+    Which equality to choose? purely one based on the expression being wrapped (which would be compatible with the
+    comparator), or a literal one, looking at all the fields?
+
+    We must choose the literal one, or implement unwrapping in EVERY equality in Expression subclasses, otherwise
+    equals() is not symmetrical.
+     */
+    @Override
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PropertyWrapper pw)) return false;
         return expression.equals(pw.expression)
                 && Objects.equals(state, pw.state)
                 && Objects.equals(castType, pw.castType)
-                && properties.equals(pw.properties)
+                && Objects.equals(properties, pw.properties)
                 && Objects.equals(linkedVariables, pw.linkedVariables);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Expression oUnboxed)) return false;
-        Expression unboxed = this;
-        while (unboxed instanceof PropertyWrapper propertyWrapper) {
-            unboxed = propertyWrapper.expression;
-        }
-        while (oUnboxed instanceof PropertyWrapper propertyWrapper) {
-            oUnboxed = propertyWrapper.expression;
-        }
-        return unboxed.equals(oUnboxed);
     }
 
     @Override

@@ -158,7 +158,9 @@ public class EvaluateParameters {
         builder.compose(parameterResult);
 
         Expression afterModification;
-        if (!contextModified.valueIsFalse()) {
+        // we don't want delays when processing companion expressions, which are never modifying and cause
+        // unnecessary stress to the shallow analyser
+        if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
             EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression,
                     parameterValue, contextModified);
             if (er != null) {
@@ -218,7 +220,7 @@ public class EvaluateParameters {
                                                        DV dvLink,
                                                        Variable variable) {
         if (variable instanceof This || variable instanceof ReturnVariable
-                || !context.evaluationContext().isPresent(variable)){
+                || !context.evaluationContext().isPresent(variable)) {
             return false;
         }
         if (dvLink.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
@@ -244,15 +246,19 @@ public class EvaluateParameters {
                 }
             } // else: this variable is not affected
         } else {
-            // delay the end result
-            CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
-                    CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
-            CausesOfDelay merge = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
-                    .merge(contextModified.causesOfDelay()).merge(delayMarker);
-            Expression delayed = parameterValue.isDone() ? DelayedExpression.forModification(parameterValue, merge)
-                    : parameterValue;
+            // we're only triggering the C->I delay as soon as there is a value...
+            CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext()
+                    .getLocation(Stage.EVALUATION), CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+            Expression delayed;
+            if (parameterValue.isDelayed()) {
+                delayed = parameterValue.mergeDelays(delayMarker);
+            } else {
+                CausesOfDelay merge = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
+                        .merge(contextModified.causesOfDelay()).merge(delayMarker);
+                delayed = DelayedExpression.forModification(parameterValue, merge);
+            }
             LinkedVariables lv = variable == theVariable ? linkedVariables1 : linkedVariables2;
-            builder.modifyingMethodAccess(variable, delayed, lv);
+            builder.modifyingMethodAccess(variable, delayed, lv, true);
             return true;
         }
         return false;
