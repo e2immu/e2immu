@@ -126,7 +126,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "i+<m:nextInt>" : "i+r";
+                    String expected = d.iteration() == 0 ? "<mod:int>+<m:nextInt>" : "i+r";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertTrue(d.evaluationResult().value() instanceof Sum);
                 }

@@ -79,8 +79,10 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        assertEquals("nullable instance type Set<String>/*@Identity*/", d.currentValue().toString());
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        String expected = d.iteration() == 0 ? "<mod:Set<String>>"
+                                : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
@@ -99,9 +101,10 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("p", d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertEquals("p:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:s>" :"p";// "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
+                        String expected = d.iteration() == 0 ? "<f:s>" : "p";// "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
@@ -135,7 +138,7 @@ public class Test_17_Container extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                final String DELAYED = "initial:this.s@Method_setS_1-C;values:this.s@Field_s";
+                final String DELAYED = "constructor-to-instance@Method_setS_1-E;initial:this.s@Method_setS_1-C;values:this.s@Field_s";
 
                 assertDv(d, DELAYED, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, DELAYED, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);

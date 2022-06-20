@@ -136,7 +136,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0
-                        ? "initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set"
+                        ? "constructor-to-instance@Method_ConditionalInitialization_1_0.1.0-E;initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set"
                         : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,c?setParam:null,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().valuesDelayed().isDelayed());

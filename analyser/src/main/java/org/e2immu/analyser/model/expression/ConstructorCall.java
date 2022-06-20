@@ -398,15 +398,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
-            List<Variable> variables = variables(true);
-            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
-                    constructor, null, this, res.v, this);
-            if (modifiedInstance == null) {
+            MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
+                    constructor, null, this, res.v, this, DV.TRUE_DV);
+            if (modReturn == null) {
                 instance = this;
+            } else if (modReturn.expression() != null) {
+                instance = modReturn.expression().isDelayed()
+                        ? createDelayedValue(identifier, context, modReturn.expression().causesOfDelay())
+                        : modReturn.expression();
             } else {
-                instance = modifiedInstance.isDelayed()
-                        ? createDelayedValue(identifier, context, modifiedInstance.causesOfDelay())
-                        : modifiedInstance;
+                instance = createDelayedValue(identifier, context, modReturn.causes());
             }
         } else {
             instance = this;

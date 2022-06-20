@@ -155,8 +155,8 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     // from iteration 3, set is @Mark
                     String delay = switch (d.iteration()) {
                         case 0 -> "initial@Method_E2InContext_2_0-C";
-                        case 1 -> "cm@Parameter_t;mom@Parameter_t";
-                        case 2 -> "break_init_delay:this.t@Method_set_1-C";
+                        case 1 -> "cm@Parameter_t;constructor-to-instance@Method_E2InContext_2_0-E;mom@Parameter_t";
+                        case 2 -> "break_init_delay:this.t@Method_set_1-C;constructor-to-instance@Method_E2InContext_2_0-E";
                         default -> "";
                     };
                     assertDv(d, delay, 3, MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);

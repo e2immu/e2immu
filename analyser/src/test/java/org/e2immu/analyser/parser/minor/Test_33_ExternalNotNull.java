@@ -50,15 +50,15 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             }
             if ("upperCaseR".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "r".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() == 0 ? "<f:r>" : "instance type String";
+                    String expectValue = d.iteration() <= 1 ? "<f:r>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     // because NNE > 0, there cannot be a warning!
                 }
             }
             if ("upperCaseP".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() == 0 ? "<f:p>" : "instance type String";
+                    String expectValue = d.iteration() <= 1 ? "<f:p>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 }
@@ -69,11 +69,11 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
                 if ("6".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0,
+                    assertEquals(d.iteration() <= 1,
                             null == d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
                 if ("7".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0,
+                    assertEquals(d.iteration() <= 1,
                             null == d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
             }
@@ -100,20 +100,20 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
              */
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 2) {
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(2), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(3), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(2), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(3), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("setQ".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("setR".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -122,27 +122,35 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             FieldAnalysisImpl.Builder fai = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
 
             if ("o".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.NULLABLE_DV, enn);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.TRUE_DV, effFinal);
-                assertEquals("[null,\"hello\"]", d.fieldAnalysis().getValue().toString());
+                String expected = d.iteration() == 0 ? "<f:o>" : "[null,\"hello\"]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
-                assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                if(d.iteration()>0) {
+                    assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                }
             }
             if ("p".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.TRUE_DV, effFinal);
-                assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
+                String expected = d.iteration() == 0 ? "<f:p>" : "[p1,p2]";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("p1:0,p2:0", d.fieldAnalysis().getLinkedVariables().toString());
-                assertTrue(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                if (d.iteration() > 0) {
+                    assertTrue(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                }
             }
             if ("q".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.NULLABLE_DV, enn);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
-                assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                if (d.iteration() > 0) {
+                    assertFalse(fai.valuesAreLinkedToParameters(MultiLevel.EFFECTIVELY_NOT_NULL_DV));
+                }
             }
             if ("r".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }

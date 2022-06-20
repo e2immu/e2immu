@@ -104,7 +104,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(STRING_FIELD, d.variableName());
 
                     assertCurrentValue(d, 1,
-                            "initial:this.string@Method_add_0-C;initial@Field_string", "nullable instance type String");
+                            "constructor-to-instance@Method_add_0-E;initial:this.string@Method_add_0-C;initial@Field_string",
+                            "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertFalse(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));

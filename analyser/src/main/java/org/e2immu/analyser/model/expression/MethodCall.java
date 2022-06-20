@@ -349,21 +349,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay());
 
+
         Expression modifiedInstance;
-        if (delays1.isDone() && modified.valueIsTrue()) {
-            // companion methods
-            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(identifier, builder, context,
-                    concreteMethod, object, objectValue, parameterValues, this);
-            if (unlinkedModifiedInstance != null) {
+        ModReturn modReturn = checkCompanionMethodsModifying(identifier, builder, context,
+                concreteMethod, object, objectValue, parameterValues, this, modified);
+        if (modReturn != null) {
+            // mod delayed or true
+            if (modReturn.expression != null) {
+                // delay in expression
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
-                modifiedInstance = linkedVariables.isEmpty() ? unlinkedModifiedInstance
-                        : PropertyWrapper.propertyWrapper(unlinkedModifiedInstance, linkedVariables);
+                modifiedInstance = linkedVariables.isEmpty() ? modReturn.expression
+                        : PropertyWrapper.propertyWrapper(modReturn.expression, linkedVariables);
             } else {
+                // delay in separate causes
                 modifiedInstance = null;
+                assert modReturn.causes != null && modReturn.causes.isDelayed();
+                delays1 = delays1.merge(modReturn.causes);
             }
         } else {
+            // no modification at all
             modifiedInstance = null;
         }
+
 
         CausesOfDelay delays2 = modifiedInstance == null ? delays1
                 : delays1.merge(modifiedInstance.causesOfDelay());
@@ -599,7 +606,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return NOT_EVENTUAL;
     }
 
-    static Expression checkCompanionMethodsModifying(
+    public record ModReturn(Expression expression, CausesOfDelay causes) {
+    }
+
+    static ModReturn checkCompanionMethodsModifying(
             Identifier identifier,
             EvaluationResult.Builder builder,
             EvaluationResult context,
@@ -607,12 +617,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues,
-            Expression original) {
-        if (objectValue.isDelayed()) return objectValue; // don't even try
-        if (objectValue.cannotHaveState()) return null; // ditto
+            Expression original,
+            DV modified) {
+        if (modified.valueIsFalse()) return null;
 
-        Expression newState = computeNewState(context, methodInfo, objectValue, parameterValues);
-        if (newState == null) return null; // delay on current state of evaluation context
+        CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
+                CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+        if (objectValue.isDelayed() || modified.isDelayed()) {
+            return new ModReturn(null, delayMarker);
+        }
 
         IsVariableExpression ive = object == null ? null : object.asInstanceOf(IsVariableExpression.class);
         IsVariableExpression iveValue = objectValue.asInstanceOf(IsVariableExpression.class);
@@ -620,13 +633,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance = createNewInstance(context, methodInfo, objectValue, iveValue, identifier, original);
         boolean inLoop = iveValue instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
 
+        Expression newState = computeNewState(context, methodInfo, objectValue, parameterValues);
+        if(newState.isDelayed()) {
+            return new ModReturn(null, delayMarker.merge(newState.causesOfDelay()));
+        }
         Expression modifiedInstance;
         if (newState.isBoolValueTrue() || inLoop) {
             modifiedInstance = newInstance;
         } else {
             modifiedInstance = PropertyWrapper.addState(newInstance, newState);
         }
-
 
         if (object != null) {
             // ideally we change the underlying variable, otherwise the static one
@@ -664,8 +680,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         }
                     } else {
                         // delay
-                        CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
-                                CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
                         Expression delayed = DelayedExpression.forModification(objectValue, delayMarker);
                         builder.modifyingMethodAccess(variable, delayed, linkedVariablesValue);
                     }
@@ -673,7 +687,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        return modifiedInstance;
+        return new ModReturn(modifiedInstance, null);
     }
 
     private static Expression createNewInstance(EvaluationResult context,
