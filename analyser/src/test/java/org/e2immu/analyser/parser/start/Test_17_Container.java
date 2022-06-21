@@ -79,7 +79,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        String expected = d.iteration() == 0 ? "<mod:Set<String>>"
+                        String expected = d.iteration() == 0 ? "<p:p>"
                                 : "nullable instance type Set<String>/*@Identity*//*this.contains(toAdd)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
@@ -440,8 +440,7 @@ public class Test_17_Container extends CommonTestRunner {
                         // even with all the code in EvaluateParameter and MethodCall to transform new objects into instances,
                         // (see Modification_23, _24), we cannot see its effect here (because coll5 is NOT linked to list!!)
                         // However, the field "list" will have an "instance" as value!
-                        String expectValue = d.iteration() == 0 ? "<mod:List<String>>"
-                                : "new ArrayList<>()/*0==this.size()*/";
+                        String expectValue = d.iteration() == 0 ? "<f:list>" : "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

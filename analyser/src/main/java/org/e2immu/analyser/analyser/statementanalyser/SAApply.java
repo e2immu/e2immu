@@ -244,12 +244,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
                 VariableInfo eval = vic.best(EVALUATION);
                 if (!eval.valueIsSet()) {
-                    VariableExpression ve = new VariableExpression(variable);
-                    Expression delay = DelayedExpression.forModification(ve, dal.delay);
                     LinkedVariables lv = eval.getLinkedVariables().isDone()
                             ? eval.getLinkedVariables()
                             : eval.getLinkedVariables().merge(dal.linkedVariables);
-                    vic.setValue(delay, lv, Properties.EMPTY, EVALUATION);
+                    vic.setLinkedVariables(lv, EVALUATION);
                 }
             }
         }

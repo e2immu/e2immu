@@ -300,10 +300,80 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("C".equals(d.methodInfo().name) && n == 0) {
+                assertEquals("0", d.statementId()); // ECI!
+                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo.name)) {
+                    assertEquals("this.state:-1", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
+                    assertEquals("UnknownExpression.E1:-1", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("<s:Expression>", d.currentValue().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
+                    assertEquals("UnknownExpression.E2:-1", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("<dv:UnknownExpression.E2>", d.currentValue().toString());
+                }
+            }
+            if ("C".equals(d.methodInfo().name) && n == 4) {
+                if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo.name)) {
+                    fail("should not exist here");
+                }
+                if (d.variable() instanceof ParameterInfo pi && "condition".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "<mod:Expression>" : "condition";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "state".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "<p:state>" : "state";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("condition:0", d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "<s:Expression>" : "condition";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
+                    if ("4".equals(d.statementId())) {
+                        assertEquals("state:0", d.variableInfo().getLinkedVariables().toString());
+                        String expected = d.iteration() == 0 ? "<p:state>" : "state";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+            if ("absolute".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    assertEquals("<f:parent>", d.currentValue().toString());
+                    assertEquals("parent.condition:2", d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
+                    if ("parent".equals(fr.scope.toString())) {
+                        assertEquals("<f:condition>", d.currentValue().toString());
+                        assertEquals("this.parent:2", d.variableInfo().getLinkedVariables().toString());
+                    } else if (fr.scopeIsThis()) {
+                        assertEquals("<f:condition>", d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    } else fail("Found " + fr.scope);
+                }
+            }
+        };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("E1".equals(d.fieldInfo().name)) {
+                assertEquals("new UnknownExpression(true)", d.fieldAnalysis().getValue().toString());
+            }
             if ("C".equals(d.fieldInfo().owner.simpleName)) {
                 if ("parent".equals(d.fieldInfo().name)) {
-                    if(d.iteration()>0) {
+                    if (d.iteration() > 0) {
                         assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression ve
                                 && ve.variable() instanceof ParameterInfo pi
                                 && "parent".equals(pi.name));
@@ -335,8 +405,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         testClass("ExplicitConstructorInvocation_10", 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

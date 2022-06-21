@@ -193,9 +193,9 @@ public class EvaluateParameters {
                                                                      DV contextModified) {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        LinkedVariables linkedVariables1 = parameterExpression.linkedVariables(context);
-        LinkedVariables linkedVariables2 = parameterValue.linkedVariables(context);
-        LinkedVariables linkedVariables = linkedVariables1.merge(linkedVariables2);
+        LinkedVariables lvExpression = parameterExpression.linkedVariables(context);
+        LinkedVariables lvValue = parameterValue.linkedVariables(context);
+        LinkedVariables linkedVariables = lvExpression.merge(lvValue);
         IsVariableExpression ive;
         Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable() : null;
         boolean changed = false;
@@ -203,7 +203,7 @@ public class EvaluateParameters {
             DV dv = e.getValue();
             Variable variable = e.getKey();
             changed |= potentiallyChangeOneVariable(context, parameterInfo, parameterExpression, parameterValue,
-                    contextModified, builder, linkedVariables1, linkedVariables2, theVariable, dv, variable);
+                    contextModified, builder, lvExpression, lvValue, theVariable, dv, variable);
         }
         if (changed) {
             return builder.build();
@@ -217,8 +217,8 @@ public class EvaluateParameters {
                                                        Expression parameterValue,
                                                        DV contextModified,
                                                        EvaluationResult.Builder builder,
-                                                       LinkedVariables linkedVariables1,
-                                                       LinkedVariables linkedVariables2,
+                                                       LinkedVariables lvExpression,
+                                                       LinkedVariables lvValue,
                                                        Variable theVariable,
                                                        DV dvLink,
                                                        Variable variable) {
@@ -250,7 +250,7 @@ public class EvaluateParameters {
                 }
                 if (newInstance != null) {
                     LinkedVariables lv = variable == theVariable
-                            ? linkedVariables1
+                            ? lvExpression
                             : context.evaluationContext().linkedVariables(variable);
                     builder.modifyingMethodAccess(variable, newInstance, lv);
                     return true;
@@ -268,7 +268,7 @@ public class EvaluateParameters {
                         .merge(contextModified.causesOfDelay()).merge(delayMarker);
                 delayed = DelayedExpression.forModification(parameterExpression, merge);
             }
-            LinkedVariables lv = variable == theVariable ? linkedVariables1 : linkedVariables2;
+            LinkedVariables lv = variable == theVariable ? lvExpression : lvValue;
             builder.modifyingMethodAccess(variable, delayed, lv, true);
             return true;
         }

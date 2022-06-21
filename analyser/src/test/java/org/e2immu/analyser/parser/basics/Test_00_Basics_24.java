@@ -106,7 +106,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
                 String delay = switch (d.iteration()) {
-                    case 0 -> "cm@Parameter_s;constructor-to-instance@Method_method_0-E;initial:this.map@Method_method_1-C;mom@Parameter_s";
+                    case 0 -> "cm@Parameter_s;constructor-to-instance@Method_method_0-E;initial:pos@Method_method_0-E;initial:this.map@Method_method_1-C;mom@Parameter_s";
                     case 1 -> "constructor-to-instance@Method_method_0-E;initial@Field_s;mom@Parameter_s";
                     case 2, 3 -> "constructor-to-instance@Method_method_0-E;mom@Parameter_s";
                     default -> "condition@Method_method_2:M";
