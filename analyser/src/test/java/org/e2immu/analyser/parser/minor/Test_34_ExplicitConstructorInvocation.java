@@ -370,7 +370,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertTrue(fr.scopeIsThis());
                     String expected = d.iteration() <= 4 ? "<f:parent>" : "nullable instance type C";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() <= 4 ? "parent.condition:-1" : "parent.condition:2";
+                    String linked = d.iteration() == 0 ? "parent.condition:-1" : "parent.condition:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
@@ -381,12 +381,13 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                             default -> "instance type Expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 4 ? "this.parent:-1" : "this.parent:2";
+                        String linked = d.iteration() == 0 ? "this.parent:-1" : "this.parent:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     } else if (fr.scopeIsThis()) {
                         String expected = d.iteration() <= 4 ? "<f:condition>" : "instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     } else fail("Found " + fr.scope);
                 }
             }

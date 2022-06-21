@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -52,12 +53,12 @@ public class Test_Expressions extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expected = d.iteration() == 0
                             ? "<null-check>&&<instanceOf:ConstantExpression<?>>&&<null-check>&&expression instanceof Product"
-                            : d.iteration() < 51 ? "<null-check>&&<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs"
-                            : "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs";
+                            : d.iteration() < 42 ? "<null-check>&&<null-check>&&expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression instanceof Product&&null!=expression/*(Product)*/.lhs"
+                            : "expression/*(Product)*/.lhs instanceof ConstantExpression<?>&&expression/*(Product)*/.rhs instanceof MethodCall&&expression instanceof Product&&null!=expression/*(Product)*/.lhs&&null!=expression/*(Product)*/.rhs&&null!=expression/*(Product)*/.rhs/*(MethodCall)*/";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    String expected = d.iteration() < BIG ? "<null-check>" : "expression instanceof MethodCall";
+                    String expected = d.iteration() < 49 ? "<null-check>" : "expression instanceof MethodCall";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -65,11 +66,11 @@ public class Test_Expressions extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
-                    String expected = d.iteration() < BIG ? "<null-check>" : "expression instanceof MethodCall";
+                    String expected = d.iteration() < 49 ? "<null-check>" : "expression instanceof MethodCall";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
                 if ("6".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= BIG, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 49, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
                 if ("6.0.2".equals(d.statementId())) {
                     assertEquals("modified in context=true:1, not null in context=not_null:5, read=true:1",
@@ -83,14 +84,14 @@ public class Test_Expressions extends CommonTestRunner {
             if ("recursivelyCollectTerms".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() < 51 ? "<p:expression>" : "instance type Expression/*@Identity*/";
+                        String expected = d.iteration() < 42 ? "<p:expression>" : "instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 51, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 42, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() < BIG ? "<p:expression>" : "instance type Expression/*@Identity*/";
+                        String expected = d.iteration() < 49 ? "<p:expression>" : "instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 49, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "terms".equals(pi.name)) {
@@ -113,57 +114,70 @@ public class Test_Expressions extends CommonTestRunner {
                             assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
                         if ("0.0.1".equals(d.statementId())) {
-                            assertDv(d, 51, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                            assertDv(d, 42, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
                     } else if ("scope-sum:0".equals(fr.scopeVariable.toString())) {
-                        assertDv(d, 51, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 42, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     } else if ("product".equals(fr.scopeVariable.toString())) {
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     } else fail("Have " + fr.scopeVariable);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("7".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<instanceOf:Negation>?<m:recursivelyCollectTerms>:([<m:recursivelyCollectTerms>,<m:recursivelyCollectTerms>,<instanceOf:Sum>,<null-check>,<instanceOf:ConstantExpression<?>>,<null-check>,<instanceOf:ConstantExpression<?>>,<null-check>,<too complex>])"
-                                : d.iteration() < 51
-                                ? "<instanceOf:Negation>?<m:recursivelyCollectTerms>:(<instanceOf:ConstantExpression<?>>||<null-check>||<instanceOf:Sum>)&&(<instanceOf:ConstantExpression<?>>||<null-check>||<m:recursivelyCollectTerms>)&&(<instanceOf:ConstantExpression<?>>||<null-check>||<m:recursivelyCollectTerms>)"
-                                : "<instanceOf:Negation>?<m:recursivelyCollectTerms>:(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.lhs,terms)||<instanceOf:ConstantExpression<?>>||<null-check>)&&(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.rhs,terms)||<instanceOf:ConstantExpression<?>>||<null-check>)&&(<instanceOf:ConstantExpression<?>>||<null-check>||<instanceOf:Sum>)";
-
-                        assertEquals(expected, d.currentValue().toString());
+                        assertCurrentValue(d, 49, "expression instanceof Negation?Expressions_0.recursivelyCollectTerms(expression/*(Negation)*/.expression,new ArrayList<>()/*0==this.size()*/):(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.lhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.rhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(expression instanceof ConstantExpression<?>||expression instanceof MethodCall||expression instanceof Sum)");
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "rhs".equals(fr.fieldInfo.name)) {
+                    if ("product".equals(fr.scope.toString())) {
+                        if ("2".equals(d.statementId())) {
+                            String linked = d.iteration() < 42
+                                    ? "ce:-1,expression:-1,oneVariableRhs:-1,product.lhs:-1,product:-1,scope-sum:0.lhs:-1,scope-sum:0.rhs:-1,scope-sum:0:-1"
+                                    : "ce:2,expression:2,oneVariableRhs:1,product.lhs:2,product:2,scope-sum:0.lhs:2,scope-sum:0.rhs:2,scope-sum:0:2";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
+                }
+                if ("product".equals(d.variableName())) {
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
+                    assertTrue(d.statementId().startsWith("2"));
+                    if ("2".equals(d.statementId())) {
+                        String linked = d.iteration() < 42 ? "ce:-1,expression:-1,oneVariableRhs:-1,product.lhs:-1,product.rhs:-1,scope-sum:0.lhs:-1,scope-sum:0.rhs:-1,scope-sum:0:-1"
+                                : "ce:2,expression:1,oneVariableRhs:2,product.lhs:2,product.rhs:2,scope-sum:0.lhs:2,scope-sum:0.rhs:2,scope-sum:0:2";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
             if ("accept1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "perComponent".equals(fr.fieldInfo.name)) {
                     if ("0.0.1.0.0".equals(d.statementId())) {
-                        assertDv(d, 19, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 51, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 52, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, 19, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.1".equals(d.statementId())) {
-                        assertDv(d, 19, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 20, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 52, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
             if ("accept6".equals(d.methodInfo().name)) {
                 if ("xEquals".equals(d.variableName())) {
                     if ("01".equals(d.statementId())) {
-                        String expected = d.iteration() < 44 ? "<s:Double>"
+                        String expected = d.iteration() < 42 ? "<s:Double>"
                                 : "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("03".equals(d.statementId())) {
-                        String expected = d.iteration() < 44 ? "<s:Double>"
+                        String expected = d.iteration() < 42 ? "<s:Double>"
                                 : "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -171,7 +185,7 @@ public class Test_Expressions extends CommonTestRunner {
                 if ("inequality".equals(d.variableName())) {
                     if ("04.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<s:LinearInequalityInOneVariable>"
-                                : d.iteration() < 44 ? "<new:LinearInequalityInOneVariable>"
+                                : d.iteration() < 42 ? "<new:LinearInequalityInOneVariable>"
                                 : "new LinearInequalityInOneVariable(b,y,a*xEquals+c,allowEquals)";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -232,11 +246,9 @@ public class Test_Expressions extends CommonTestRunner {
                 String expected = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
-                String srv = d.iteration() <= BIG ? "<m:extractInterval1>" : "null";
-                // FIXME this is really wrong, the null is only 1 of 3 return values
-                //       : "/*inline extractInterval1*/2==expressions.size()?null==nullable instance type Interval?null:Double.isFinite(`i1.left`)&&null!=nullable instance type Interval&&Infinity==`i1.right`&&2==expressions.size()?new Interval(`i1.left`,`i1.leftIncluded`,`i2.right`,`i2.rightIncluded`):Double.isFinite(`i1.right`)&&null!=nullable instance type Interval&&-Infinity==`left`&&2==expressions.size()&&(!Double.isFinite(`i1.left`)||Infinity!=`i1.right`)?new Interval(`i2.left`,`i2.leftIncluded`,`i1.right`,`i2.rightIncluded`):<return value>:1==expressions.size()?nullable instance type Interval:null";
+                String srv = d.iteration() <= 51 ? "<m:extractInterval1>" : "/*inline extractInterval1*/2==expressions.size()?instance type boolean?null:!instance type boolean&&Double.isFinite(`left`)&&Infinity==`right`&&2==expressions.size()?new Interval(`expressions.get(0) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.left`,`expressions.get(0) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.leftIncluded`,`expressions.get(1) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.right`,`expressions.get(1) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.rightIncluded`):!instance type boolean&&Double.isFinite(`right`)&&-Infinity==`left`&&2==expressions.size()&&(!Double.isFinite(`left`)||Infinity!=`right`)?new Interval(`expressions.get(1) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.left`,`expressions.get(1) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.leftIncluded`,`expressions.get(0) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.right`,`expressions.get(1) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(1)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&2==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null.rightIncluded`):<return value>:expressions.get(0) instanceof GreaterThanZero&&2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expressions.get(0)/*(GreaterThanZero)*/.allowEquals()):null instanceof LinearInequalityInOneVariable&&1==expressions.size()&&(1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()||2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size())?`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.a`>0?new Interval(-`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`,`Double.POSITIVE_INFINITY`,true):new Interval(`Double.NEGATIVE_INFINITY`,true,`bOverA`,`2==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInTwoVariables(``scope-t1:7`.a`,``scope-t1:7`.v`,``scope-t2:7`.a`,``scope-t2:7`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):1==`terms`.stream()/*0==this.size()*/.filter(null!=``t`.v`).toList().size()?new LinearInequalityInOneVariable(``scope-t1:6`.a`,``scope-t1:6`.v`,`c`,expression/*(GreaterThanZero)*/.allowEquals()):null/*(LinearInequalityInOneVariable)*/.allowEquals`):null";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 52) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
                         assertEquals("expressions", im.variablesOfExpressionSorted());
                     } else fail();
@@ -255,21 +267,21 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept3".equals(d.methodInfo().name)) {
-                assertDv(d, 12, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < BIG ? "<m:accept3>" :
-                        "/*inline accept3*/null!=nullable instance type Interval&&1==expressionsInV.size()?instance type boolean:null==expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?null||expressionsInV.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`):`allowEquals`?expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0:-1+expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0";
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 52 ? "<m:accept3>" :
+                        "/*inline accept3*/!expressionsInV.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`)&&null==expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?instance type boolean:null==expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?<return value>||expressionsInV.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`):`allowEquals`?expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0:-1+expressionsInV.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+`b`>=0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 52) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
                         assertEquals("expressionsInV", im.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
             if ("accept4".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("interval".equals(d.methodInfo().name)) {
-                assertDv(d, 8, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 9, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("LinearInequalityInOneVariable".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -280,12 +292,12 @@ public class Test_Expressions extends CommonTestRunner {
             if ("accept6".equals(d.methodInfo().name)) {
                 assertDv(d, BIG + 1, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
-                assertDv(d, 16, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < BIG ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
+                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 52 ? "<m:accept6>" : "/*inline accept6*/(!expressionsInX.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`)||null!=expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null))&&(!expressionsInY.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`)||null!=expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null))?instance type boolean:null!=expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)&&null!=expressionsInY.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)?`allowEquals`?expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+expressionsInY.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`b`+`c`>=0:-1+expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`a`+expressionsInY.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)*`b`+`c`>=0:<return value>||expressionsInX.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`)||expressionsInY.stream().allMatch(/*inline test*/(VariableExpression.class).isAssignableFrom(``eq`.rhs`.getClass())&&e instanceof Negation&&``eq`.lhs` instanceof ConstantExpression<?>&&``n`.expression` instanceof Equals&&null!=e&&null!=``n`.expression`&&null!=``eq`.lhs`)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= BIG) {
+                if (d.iteration() >= 52) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
-                        assertEquals("", im.variablesOfExpressionSorted());
+                        assertEquals("expressionsInX, expressionsInY", im.variablesOfExpressionSorted());
                     } else fail();
                 }
             }
@@ -303,7 +315,7 @@ public class Test_Expressions extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Interval".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Precondition_11".equals(d.typeInfo().simpleName)) {
                 TypeAnalysisImpl.Builder b = (TypeAnalysisImpl.Builder) d.typeAnalysis();
@@ -316,23 +328,23 @@ public class Test_Expressions extends CommonTestRunner {
                 assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
             }
             if ("LinearInequalityInOneVariable".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 12, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
-                assertDv(d, 13, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, 13, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 14, MultiLevel.CONTAINER_DV, CONTAINER);
             }
             if ("Term".equals(d.typeInfo().simpleName)) {
-                assertDv(d, BIG, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 48, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
 
         testClass("Expressions_0", 0, 16,
                 new DebugConfiguration.Builder()
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)

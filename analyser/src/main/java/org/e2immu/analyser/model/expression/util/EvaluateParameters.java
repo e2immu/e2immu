@@ -203,7 +203,7 @@ public class EvaluateParameters {
             DV dv = e.getValue();
             Variable variable = e.getKey();
             changed |= potentiallyChangeOneVariable(context, parameterInfo, parameterExpression, parameterValue,
-                    contextModified, builder, lvExpression, lvValue, theVariable, dv, variable);
+                    contextModified, builder, lvExpression, theVariable, dv, variable);
         }
         if (changed) {
             return builder.build();
@@ -218,7 +218,6 @@ public class EvaluateParameters {
                                                        DV contextModified,
                                                        EvaluationResult.Builder builder,
                                                        LinkedVariables lvExpression,
-                                                       LinkedVariables lvValue,
                                                        Variable theVariable,
                                                        DV dvLink,
                                                        Variable variable) {
@@ -269,7 +268,13 @@ public class EvaluateParameters {
             }
             // IMPORTANT: we're not taking lvExpression each time we take the delayed variant of parameterExpression
             // See Mod_23 and InstanceOf_9 why that goes wrong. We only need it for the primary variable "theVariable".
-            LinkedVariables lv = variable == theVariable ? lvExpression : lvValue;
+            LinkedVariables lv;
+            if (variable == theVariable) {
+                lv = lvExpression;
+            } else {
+               LinkedVariables computed = context.evaluationContext().linkedVariables(variable);
+               lv = computed == null ? LinkedVariables.NOT_YET_SET: computed;
+            }
             builder.modifyingMethodAccess(variable, delayed, lv, true);
             return true;
         }
@@ -283,7 +288,7 @@ public class EvaluateParameters {
             return fr.scope.variables(true).stream()
                     .allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
         }
-        if(variable instanceof This || variable instanceof ReturnVariable) return true;
+        if (variable instanceof This || variable instanceof ReturnVariable) return true;
         return evaluationContext.isPresent(variable);
     }
 

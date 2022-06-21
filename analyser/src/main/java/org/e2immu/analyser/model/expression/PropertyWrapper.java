@@ -41,12 +41,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         super(expression.getIdentifier(), expression.getComplexity());
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
         this.expression = expression;
-        this.state = state;
-        assert state == null || !state.isBoolValueTrue();
-        this.properties = properties;
-        assert properties == null || !properties.isEmpty();
-        this.linkedVariables = linkedVariables;
-        assert linkedVariables == null || !linkedVariables.isEmpty();
+        this.state = state != null && state.isBoolValueTrue() ? null : state;
+        this.properties = properties != null && properties.isEmpty() ? null : properties;
+        this.linkedVariables = linkedVariables != null && linkedVariables.isEmpty() ? null : linkedVariables;
         this.castType = castType;
         assert state != null && !state.isBoolValueTrue() ||
                 properties != null && !properties.isEmpty() ||
