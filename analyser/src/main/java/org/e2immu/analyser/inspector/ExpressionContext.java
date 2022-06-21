@@ -22,12 +22,11 @@ import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.SortedTypes;
-import org.e2immu.analyser.resolver.impl.SortedType;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public interface ExpressionContext {
 
@@ -61,10 +60,9 @@ public interface ExpressionContext {
 
     ExpressionContext newTypeContext(FieldInfo fieldInfo);
 
-    /*
-        used for compact constructors: we have already added some synthetic statements
-         */
-    Block continueParsingBlock(BlockStmt blockStmt, Block.BlockBuilder blockBuilder);
+    Block continueParsingBlock(BlockStmt blockStmt,
+                               Block.BlockBuilder blockBuilder,
+                               Consumer<Block.BlockBuilder> compactConstructorAppender);
 
     Block parseBlockOrStatement(Statement stmt);
 

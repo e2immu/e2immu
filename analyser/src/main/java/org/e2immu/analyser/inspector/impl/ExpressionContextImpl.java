@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 // cannot even be a @Container, since the VariableContext passed on to us gets modified along the way
@@ -156,13 +157,16 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
     }
 
     /*
-    used for compact constructors: we have already added some synthetic statements
+    used for compact constructors: append some synthetic statements
      */
     @Override
-    public Block continueParsingBlock(BlockStmt blockStmt, Block.BlockBuilder blockBuilder) {
+    public Block continueParsingBlock(BlockStmt blockStmt,
+                                      Block.BlockBuilder blockBuilder,
+                                      Consumer<Block.BlockBuilder> compactConstructorAppender) {
         for (Statement statement : blockStmt.getStatements()) {
             parseStatement(blockBuilder, statement, null);
         }
+        compactConstructorAppender.accept(blockBuilder);
         return blockBuilder.build();
     }
 

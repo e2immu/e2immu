@@ -44,6 +44,7 @@ import javax.annotation.processing.Generated;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -381,8 +382,8 @@ public class ResolverImpl implements Resolver {
 
             // "touch" the type inspection of the field's type -- it may not explicitly appear in the import list
             // see NotNull_4_1
-            if(fieldInfo.type.typeInfo != null) {
-                TypeInspection fieldTypeInspection = expressionContext.typeContext().getTypeInspection( fieldInfo.type.typeInfo);
+            if (fieldInfo.type.typeInfo != null) {
+                TypeInspection fieldTypeInspection = expressionContext.typeContext().getTypeInspection(fieldInfo.type.typeInfo);
                 assert fieldTypeInspection != null;
             }
         });
@@ -514,6 +515,9 @@ public class ResolverImpl implements Resolver {
         });
     }
 
+    private static final Consumer<Block.BlockBuilder> NOT_A_COMPACT_CONSTRUCTOR = bb -> {
+    };
+
     private void doMethodOrConstructor(TypeInspection typeInspection,
                                        MethodInfo methodInfo,
                                        MethodInspectionImpl.Builder methodInspection,
@@ -536,9 +540,9 @@ public class ResolverImpl implements Resolver {
 
         // "touch" the type inspection of the method'sr eturn type -- it may not explicitly appear in the import list
         // see NotNull_4_1
-        if(methodInspection.getReturnType() != null) {
+        if (methodInspection.getReturnType() != null) {
             TypeInfo returnType = methodInspection.getReturnType().typeInfo;
-            if(returnType != null) {
+            if (returnType != null) {
                 TypeInspection returnTypeInspection = expressionContext.typeContext().getTypeInspection(returnType);
                 assert returnTypeInspection != null;
             }
@@ -551,14 +555,14 @@ public class ResolverImpl implements Resolver {
             BlockStmt block = methodInspection.getBlock();
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ?
                     Identifier.generate("resolved empty block") : Identifier.from(block));
-            if (methodInspection.compactConstructor) {
-                addCompactConstructorSyntheticAssignments(expressionContext.typeContext(), blockBuilder,
-                        typeInspection, methodInspection);
-            }
+            Consumer<Block.BlockBuilder> compactConstructorAppender = methodInspection.compactConstructor
+                    ? addCompactConstructorSyntheticAssignments(expressionContext.typeContext(), typeInspection, methodInspection)
+                    : NOT_A_COMPACT_CONSTRUCTOR;
             if (block != null && !block.getStatements().isEmpty()) {
                 LOGGER.debug("Parsing block of method {}", methodInfo.name);
-                doBlock(subContext, methodInfo, methodInspection, block, blockBuilder);
+                doBlock(subContext, methodInfo, methodInspection, block, blockBuilder, compactConstructorAppender);
             } else {
+                compactConstructorAppender.accept(blockBuilder);
                 methodInspection.setInspectedBlock(blockBuilder.build());
             }
         }
@@ -581,20 +585,21 @@ public class ResolverImpl implements Resolver {
         doAnnotations(methodInspection.getAnnotations(), expressionContext);
     }
 
-    private void addCompactConstructorSyntheticAssignments(InspectionProvider inspectionProvider,
-                                                           Block.BlockBuilder blockBuilder,
-                                                           TypeInspection typeInspection,
-                                                           MethodInspectionImpl.Builder methodInspection) {
-        int i = 0;
-        for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (!fieldInfo.isStatic(inspectionProvider)) {
-                VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
-                VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
-                Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
-                Identifier id = Identifier.generate("synthetic assignment compact constructor");
-                blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, true));
+    private Consumer<Block.BlockBuilder> addCompactConstructorSyntheticAssignments(InspectionProvider inspectionProvider,
+                                                                                   TypeInspection typeInspection,
+                                                                                   MethodInspectionImpl.Builder methodInspection) {
+        return blockBuilder -> {
+            int i = 0;
+            for (FieldInfo fieldInfo : typeInspection.fields()) {
+                if (!fieldInfo.isStatic(inspectionProvider)) {
+                    VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
+                    VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
+                    Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
+                    Identifier id = Identifier.generate("synthetic assignment compact constructor");
+                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, true));
+                }
             }
-        }
+        };
     }
 
     /*
@@ -715,13 +720,14 @@ public class ResolverImpl implements Resolver {
                          MethodInfo methodInfo,
                          MethodInspectionImpl.Builder methodInspection,
                          BlockStmt block,
-                         Block.BlockBuilder blockBuilder) {
+                         Block.BlockBuilder blockBuilder,
+                         Consumer<Block.BlockBuilder> compactConstructorAppender) {
         try {
             ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(methodInspection.getReturnType());
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, forwardReturnTypeInfo);
             methodInspection.getParameters().forEach(newContext.variableContext()::add);
             LOGGER.debug("Parsing block with variable context {}", newContext.variableContext());
-            Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);
+            Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder, compactConstructorAppender);
             methodInspection.setInspectedBlock(parsedBlock);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));
