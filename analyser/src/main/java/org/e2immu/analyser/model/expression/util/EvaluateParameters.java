@@ -223,7 +223,7 @@ public class EvaluateParameters {
                                                        DV dvLink,
                                                        Variable variable) {
         if (variable instanceof This || variable instanceof ReturnVariable
-                || !context.evaluationContext().isPresent(variable)) {
+                || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
             return false;
         }
         if (context.evaluationContext().allowBreakDelay()
@@ -257,7 +257,6 @@ public class EvaluateParameters {
                 }
             } // else: this variable is not affected
         } else {
-            // we're only triggering the C->I delay as soon as there is a value...
             CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext()
                     .getLocation(Stage.EVALUATION), CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
             Expression delayed;
@@ -268,11 +267,24 @@ public class EvaluateParameters {
                         .merge(contextModified.causesOfDelay()).merge(delayMarker);
                 delayed = DelayedExpression.forModification(parameterExpression, merge);
             }
+            // IMPORTANT: we're not taking lvExpression each time we take the delayed variant of parameterExpression
+            // See Mod_23 and InstanceOf_9 why that goes wrong. We only need it for the primary variable "theVariable".
             LinkedVariables lv = variable == theVariable ? lvExpression : lvValue;
             builder.modifyingMethodAccess(variable, delayed, lv, true);
             return true;
         }
         return false;
+    }
+
+    private static boolean variableIsRecursivelyPresentOrField(EvaluationContext evaluationContext, Variable variable) {
+        // IMPROVE the restriction on "static" feels a little ad-hoc
+        // it fixes AnalysisProvider_0, _1
+        if (variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+            return fr.scope.variables(true).stream()
+                    .allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
+        }
+        if(variable instanceof This || variable instanceof ReturnVariable) return true;
+        return evaluationContext.isPresent(variable);
     }
 
     private static void computeContextContainer(MethodInfo methodInfo,

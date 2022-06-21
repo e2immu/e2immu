@@ -305,15 +305,30 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if ("C".equals(d.methodInfo().name) && n == 0) {
                 assertEquals("0", d.statementId()); // ECI!
                 if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo.name)) {
-                    assertEquals("this.state:-1", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() <= 2 ? "this.state:-1" : "this.state:1";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
-                    assertEquals("UnknownExpression.E1:-1", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals("<s:Expression>", d.currentValue().toString());
+                    String linked = d.iteration() <= 2 ? "UnknownExpression.E1:-1" : "UnknownExpression.E1:1";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<s:Expression>";
+                        case 1 -> "<vp:E1:container@Record_UnknownExpression>";
+                        case 2 -> "<vp:E1:cm@Parameter_condition;initial@Field_v>";
+                        default -> "UnknownExpression.E1";
+                    };
+                    assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo.name)) {
-                    assertEquals("UnknownExpression.E2:-1", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals("<dv:UnknownExpression.E2>", d.currentValue().toString());
+                    String linked = d.iteration() <= 2 ? "UnknownExpression.E2:-1" : "UnknownExpression.E2:1";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<dv:UnknownExpression.E2>";
+                        case 1 -> "<vp:E2:container@Record_UnknownExpression>";
+                        case 2 -> "<vp:E2:cm@Parameter_condition;initial@Field_v>";
+                        default -> "UnknownExpression.E2";
+                    };
+                    assertEquals(expected, d.currentValue().toString());
                 }
             }
             if ("C".equals(d.methodInfo().name) && n == 4) {
@@ -323,14 +338,14 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "condition".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<mod:Expression>" : "condition";
+                        String expected = d.iteration() == 0 ? "<mod:Expression>" : "nullable instance type Expression/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "state".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        String expected = d.iteration() == 0 ? "<p:state>" : "state";
+                        String expected = d.iteration() == 0 ? "<p:state>" : "nullable instance type Expression";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -353,15 +368,24 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertEquals("<f:parent>", d.currentValue().toString());
-                    assertEquals("parent.condition:2", d.variableInfo().getLinkedVariables().toString());
+                    String expected = d.iteration() <= 4 ? "<f:parent>" : "nullable instance type C";
+                    assertEquals(expected, d.currentValue().toString());
+                    String linked = d.iteration() <= 4 ? "parent.condition:-1" : "parent.condition:2";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo.name)) {
                     if ("parent".equals(fr.scope.toString())) {
-                        assertEquals("<f:condition>", d.currentValue().toString());
-                        assertEquals("this.parent:2", d.variableInfo().getLinkedVariables().toString());
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<f:condition>";
+                            case 2, 3, 4 -> "<f:parent.condition>";
+                            default -> "instance type Expression";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        String linked = d.iteration() <= 4 ? "this.parent:-1" : "this.parent:2";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     } else if (fr.scopeIsThis()) {
-                        assertEquals("<f:condition>", d.currentValue().toString());
+                        String expected = d.iteration() <= 4 ? "<f:condition>" : "instance type Expression";
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     } else fail("Found " + fr.scope);
                 }

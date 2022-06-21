@@ -327,9 +327,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
 
-                        assertEquals("string:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("string:0", d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("string".equals(d.variableName())) {
@@ -345,7 +345,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
 
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern);
-                        assertEquals("object:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("object:0", d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
@@ -443,11 +443,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
