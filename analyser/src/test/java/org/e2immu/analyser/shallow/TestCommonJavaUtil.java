@@ -273,6 +273,31 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
     }
 
+    @Test
+    public void testMapGetOrDefault() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("getOrDefault", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+
+        // key
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        // type: object
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+
+        // default value
+        ParameterAnalysis p1 = methodInfo.parameterAnalysis(1);
+        assertEquals(MultiLevel.NULLABLE_DV, p1.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.FALSE_DV, p1.getProperty(Property.MODIFIED_VARIABLE));
+        // type: V
+        assertEquals(MultiLevel.INDEPENDENT_DV, p1.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.NOT_INVOLVED_DV, p1.getProperty(Property.IMMUTABLE));
+    }
+
 
     @Test
     public void testMapCopyOf() {

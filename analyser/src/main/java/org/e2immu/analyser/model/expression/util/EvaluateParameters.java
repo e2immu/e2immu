@@ -94,8 +94,8 @@ public class EvaluateParameters {
         EvaluationResult parameterResult;
         DV contextNotNull;
         DV contextModified;
+        ParameterInfo parameterInfo = methodInfo == null ? null : getParameterInfo(methodInfo, position);
         if (methodInfo != null) {
-            ParameterInfo parameterInfo = getParameterInfo(methodInfo, position);
             // NOT_NULL, NOT_MODIFIED
             Map<Property, DV> map;
             try {
@@ -161,7 +161,7 @@ public class EvaluateParameters {
         // we don't want delays when processing companion expressions, which are never modifying and cause
         // unnecessary stress to the shallow analyser
         if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
-            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression,
+            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterInfo, parameterExpression,
                     parameterValue, contextModified);
             if (er != null) {
                 afterModification = er.getExpression() == null ? parameterValue : er.getExpression();
@@ -187,6 +187,7 @@ public class EvaluateParameters {
     IMPORTANT: we're not allowed to change linked variables!
      */
     private static EvaluationResult potentiallyModifyConstructorCall(EvaluationResult context,
+                                                                     ParameterInfo parameterInfo,
                                                                      Expression parameterExpression,
                                                                      Expression parameterValue,
                                                                      DV contextModified) {
@@ -201,8 +202,8 @@ public class EvaluateParameters {
         for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
             DV dv = e.getValue();
             Variable variable = e.getKey();
-            changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterValue, contextModified, builder,
-                    linkedVariables1, linkedVariables2, theVariable, dv, variable);
+            changed |= potentiallyChangeOneVariable(context, parameterInfo, parameterExpression, parameterValue,
+                    contextModified, builder, linkedVariables1, linkedVariables2, theVariable, dv, variable);
         }
         if (changed) {
             return builder.build();
@@ -211,6 +212,7 @@ public class EvaluateParameters {
     }
 
     public static boolean potentiallyChangeOneVariable(EvaluationResult context,
+                                                       ParameterInfo parameterInfo,
                                                        Expression parameterExpression,
                                                        Expression parameterValue,
                                                        DV contextModified,
@@ -222,6 +224,14 @@ public class EvaluateParameters {
                                                        Variable variable) {
         if (variable instanceof This || variable instanceof ReturnVariable
                 || !context.evaluationContext().isPresent(variable)) {
+            return false;
+        }
+        if (context.evaluationContext().allowBreakDelay()
+                && parameterInfo != null
+                && contextModified.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD,
+                c -> c instanceof SimpleCause sc && sc.location().getInfo().equals(parameterInfo))) {
+            LOGGER.debug("Breaking delay -- for now only used in Basics_24");
+            context.evaluationContext().getCurrentStatement().getStatementAnalysis().setBrokeDelay();
             return false;
         }
         if (dvLink.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
