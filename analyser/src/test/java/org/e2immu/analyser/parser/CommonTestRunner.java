@@ -36,7 +36,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
     public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
     public static final int DONT_CARE = -1;
-    public static final int BIG = 100; // Expressions_0 currently at 50+
+    public static final int BIG = 200; // Expressions_0 currently at 97
     public final boolean withAnnotatedAPIs;
 
     protected CommonTestRunner(boolean withAnnotatedAPIs) {

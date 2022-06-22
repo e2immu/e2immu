@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -937,6 +938,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     .filter(e -> e.getValue().properties.containsKey(Property.CONTEXT_NOT_NULL))
                     .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                             e -> e.getValue().getProperty(Property.CONTEXT_NOT_NULL)));
+        }
+
+        public Builder copyChangeData(EvaluationResult result, Variable variable) {
+            ChangeData cd = result.changeData.get(variable);
+            if(cd != null) {
+                valueChanges.put(variable, cd);
+            }
+            return this;
         }
     }
 }

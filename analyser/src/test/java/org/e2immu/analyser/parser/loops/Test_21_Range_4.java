@@ -82,8 +82,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:0" :
-                                "0";//   "1==i?5:0"; // FIXME structurally wrong
+                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:0" : "1==i?5:0";
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }
@@ -119,7 +118,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "10/*{L i:statically_assigned:0}*/";
+                        String expectReturn = d.iteration() == 0 ? "<v:i>" : "10";///*{L i:statically_assigned:0}*/";
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }

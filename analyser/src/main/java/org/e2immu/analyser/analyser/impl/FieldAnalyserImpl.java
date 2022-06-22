@@ -330,7 +330,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         new ForwardEvaluationInfo.Builder().setEvaluatingFieldExpression().build());
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
-                if(initialiserValue.isDelayed()) {
+                if (initialiserValue.isDelayed()) {
                     return AnalysisStatus.of(initialiserValue.causesOfDelay());
                 }
                 makeVariableAccessReport(initialiserValue, sharedState.closure());
@@ -629,7 +629,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private DV constantNotNullOverValues() {
         return fieldAnalysis.getValues().stream()
-                .filter(ValueAndPropertyProxy::validValueProperties)
                 .filter(proxy -> proxy.getValue().isConstant())
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
@@ -637,7 +636,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private DV computeWorstNotNullOverValues(boolean computeContextPropertiesOverAllMethods, DV bestOverContext) {
         DV worstOverValuesUnfiltered = fieldAnalysis.getValues().stream()
-                .filter(ValueAndPropertyProxy::validValueProperties)
                 .map(this::notNullInProxy)
                 .reduce(DV.MAX_INT_DV, DV::min);
 
@@ -664,7 +662,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered) {
         DV worstOverValues;
         DV worst = fieldAnalysis.getValues().stream()
-                .filter(ValueAndPropertyProxy::validValueProperties)
                 .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION ||
                         !proxy.isLinkedToParameter(bestOverContext))
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
@@ -813,7 +810,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
-                .filter(ValueAndPropertyProxy::validValueProperties)
                 .filter(proxy -> !(proxy.getValue().isInstanceOf(NullConstant.class)))
                 .map(this::immutableOfProxy)
                 .reduce(DV.MAX_INT_DV, DV::min);

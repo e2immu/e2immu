@@ -298,8 +298,52 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("in instanceof String&&null!=in?in.toString():<return value>", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("in instanceof String&&null!=in?in.toString():\"Object\"", d.currentValue().toString());
+                    }
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("null==in?<return value>:in.toString()", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("null==in?\"Object\":in.toString()", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("CM{state=!(in instanceof String)||null==in;parent=CM{}}",
+                            d.conditionManagerForNextStatement().toString());
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("CM{state=null==in;parent=CM{}}", d.conditionManagerForNextStatement().toString());
+                }
+            }
+        };
         testClass("InstanceOf_8", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -443,11 +487,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -1034,7 +1078,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("3".equals(d.statementId())) {
-                            assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                     } else if ("unaryOperator".equals(fr.scope.toString())) {
                         if ("0".equals(d.statementId())) {
@@ -1214,7 +1258,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("InstanceOf_16", 0, 5, new DebugConfiguration.Builder()
+        testClass("InstanceOf_16", 0, 7, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

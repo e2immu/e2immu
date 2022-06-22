@@ -20,7 +20,7 @@ public class Range_4 {
     // picked up by NumericalRange: standard condition and increment, no extra write to loop variable
     // specifically testing to detect clean interrupts, which mess up the computations
 
-    @Constant("0") // because the "return 5" is ignored, and the exit value says i==10
+    @Constant(absent = true)
     public static int method1() {
         int i = 0;
         for (; i < 10; i++) {

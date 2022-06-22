@@ -437,6 +437,46 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent1
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3,  @NotNull H e4);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8, @NotNull H e9);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4, @NotNull H e5, @NotNull H e6, @NotNull H e7, @NotNull H e8, @NotNull H e9, @NotNull H e10);
+
+        @NotNull1
+        @E2Container
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull1 H... hs);
+
         default boolean remove$Modification$Size(int i, Integer j, Object o) {
             return JavaUtil.setRemoveModificationHelper(i, j, contains(o));
         }

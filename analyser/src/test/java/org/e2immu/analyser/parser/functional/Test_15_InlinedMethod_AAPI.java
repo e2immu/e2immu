@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -208,6 +207,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("parameterizedType".equals(d.fieldInfo().name)) {
                 assertEquals("parameterizedType", d.fieldAnalysis().getValue().toString());
                 assertDv(d, DV.TRUE_DV, Property.FINAL);
+            }
+            if ("ZERO_PARAMS".equals(d.fieldInfo().name)) {
+                assertEquals("Set.of(\"toString\",\"hashCode\",\"clone\",\"finalize\",\"getClass\",\"notify\",\"notifyAll\",\"wait\")", d.fieldAnalysis().getValue().toString());
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
+                assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         testClass("InlinedMethod_8", 0, 3, new DebugConfiguration.Builder()
@@ -395,11 +399,12 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
         };
 
-        testClass("InlinedMethod_13", 0, 5, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_13", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(true) // solves all the potential null pointer warnings!
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -427,10 +432,11 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("[new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,map]", d.fieldAnalysis().getValue().toString());
             }
         };
-        testClass("InlinedMethod_14", 0, 5, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_14", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(true) // solves all the potential null pointer warnings!
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

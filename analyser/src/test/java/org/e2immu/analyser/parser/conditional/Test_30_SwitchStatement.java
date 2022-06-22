@@ -64,7 +64,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     code follows the second path in SAEvaluationOfMainExpression.createAndEvaluateReturnStatement:
                     the condition is moved into the expression.
                     */
-                    assertEquals("true", condition);
+                    assertEquals("'b'==c", condition);
                     assertEquals("\"b\"", d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {

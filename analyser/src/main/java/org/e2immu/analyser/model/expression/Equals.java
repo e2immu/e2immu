@@ -82,6 +82,10 @@ public class Equals extends BinaryOperator {
 
         if (checkForNull) {
             if (l.isInstanceOf(NullConstant.class)) {
+                if (r.isInstanceOf(NullConstant.class)) {
+                    // esp. meant for null == null/*some property wrapped...*/
+                    return new BooleanConstant(primitives, true);
+                }
                 DV dv = context.evaluationContext().isNotNull0(r, false, forwardEvaluationInfo);
                 if (dv.valueIsTrue()) return new BooleanConstant(primitives, false);
                 if (dv.isDelayed())

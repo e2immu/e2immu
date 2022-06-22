@@ -284,7 +284,10 @@ public class EvaluateParameters {
     private static boolean variableIsRecursivelyPresentOrField(EvaluationContext evaluationContext, Variable variable) {
         // IMPROVE the restriction on "static" feels a little ad-hoc
         // it fixes AnalysisProvider_0, _1
-        if (variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+        if (variable instanceof FieldReference fr) {
+            if(fr.fieldInfo.isStatic()) {
+                return false;
+            }
             return fr.scope.variables(true).stream()
                     .allMatch(v -> variableIsRecursivelyPresentOrField(evaluationContext, v));
         }

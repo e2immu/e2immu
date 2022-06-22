@@ -98,16 +98,24 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
         EvaluationResult context = makeContext(sharedState.evaluationContext());
 
-        EvaluationResult result;
+
+        LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
+        ForwardEvaluationInfo forwardEvaluationInfo;
         if (statementAnalysis.statement() instanceof ReturnStatement) {
-            assert structure.expression() != EmptyExpression.EMPTY_EXPRESSION;
-            // here is a good breakpoint location (return statements) -->
-            result = createAndEvaluateReturnStatement(context, toEvaluate);
+            // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
+            ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
+                    .setAssignmentTarget(new ReturnVariable(methodInfo()));
+            if (methodInfo().returnType().isPrimitiveExcludingVoid()) fwdBuilder.setCnnNotNull();
+            ;
+            forwardEvaluationInfo = fwdBuilder.build();
         } else {
-            LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
-            ForwardEvaluationInfo forwardEvaluationInfo = structure.forwardEvaluationInfo();
-            // here is a good breakpoint location (all other statements) -->
-            result = toEvaluate.evaluate(context, forwardEvaluationInfo);
+            forwardEvaluationInfo = structure.forwardEvaluationInfo();
+        }
+        // here is a good breakpoint location (all other statements) -->
+        EvaluationResult result = toEvaluate.evaluate(context, forwardEvaluationInfo);
+
+        if (statementAnalysis.statement() instanceof ReturnStatement) {
+            result = createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
         }
         if (statementAnalysis.statement() instanceof LoopStatement) {
             Range range = statementAnalysis.rangeData().getRange();
@@ -345,8 +353,11 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
       See Eg. Warnings_5, ConditionalChecks_4
    */
 
-    private EvaluationResult createAndEvaluateReturnStatement(EvaluationResult context, Expression expression) {
+    private EvaluationResult createAndEvaluateReturnStatement(EvaluationContext evaluationContext,
+                                                              Expression expression,
+                                                              EvaluationResult result) {
         assert methodInfo().hasReturnValue();
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
         Structure structure = statementAnalysis.statement().getStructure();
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
         VariableInfo prev = statementAnalysis.getVariable(returnVariable.fullyQualifiedName()).getPreviousOrInitial();
@@ -383,7 +394,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate, directAssignmentVariables);
-        return assignment.evaluate(updatedContext, forwardEvaluationInfo);
+        EvaluationResult evaluatedAssignment = assignment.evaluate(updatedContext, forwardEvaluationInfo);
+        return new EvaluationResult.Builder(context)
+                .compose(result)
+                .copyChangeData(evaluatedAssignment, returnVariable)
+                .setExpression(evaluatedAssignment.getExpression())
+                .build();
     }
 
     /*

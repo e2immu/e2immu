@@ -409,7 +409,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         String expectValue = switch (d.iteration()) {
-                            case 0, 1 -> "<f:map>";
+                            case 0 -> "<f:map>";
+                            case 1 -> "-1-<oos:i>+upToPosition>=0?<f:map>:null";
                             default -> "null";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
