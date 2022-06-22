@@ -67,7 +67,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
                          Expression expression,
                          Set<VariableExpression> variablesOfExpression,
                          boolean containsVariableFields) {
-        super(identifier);
+        super(identifier, expression.getComplexity());
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.expression = Objects.requireNonNull(expression);
         assert !expression.isDelayed() : "Trying to create an inlined method with delays";
@@ -582,8 +582,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Instance currentValue(Variable variable) {
-            return Instance.forInlinedMethod(identifier, variable.parameterizedType());
+        public Expression currentValue(Variable variable) {
+            return UnknownExpression.forUnknownReturnValue(identifier, variable.parameterizedType());
         }
 
         @Override

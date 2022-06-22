@@ -52,17 +52,6 @@ public final class Instance extends BaseExpression implements Expression {
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
-    public static Instance forInlinedMethod(Identifier identifier,
-                                            ParameterizedType parameterizedType) {
-        return new Instance(identifier, parameterizedType,
-                Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
-                        Property.INDEPENDENT, MultiLevel.DEPENDENT_DV,
-                        Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV,
-                        Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
-                        Property.IDENTITY, Property.IDENTITY.falseDv)));
-    }
-
     public static Expression forMethodResult(Identifier identifier,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {

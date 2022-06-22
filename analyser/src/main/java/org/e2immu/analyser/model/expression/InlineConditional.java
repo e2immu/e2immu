@@ -210,11 +210,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         Expression conditionAfterState = context.evaluationContext().getConditionManager()
                 .evaluate(context, condition, false);
 
-        boolean tooComplex = conditionAfterState.getComplexity() *
-                Math.max(ifTrue.getComplexity(), ifFalse.getComplexity()) >= 1000;
-
-        EvaluationResult copyForThen = resultIsBoolean || tooComplex ? context :
-                context.child(condition, conditionVariables);
+        EvaluationResult copyForThen = resultIsBoolean ? context : context.child(condition, conditionVariables);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
@@ -228,12 +224,6 @@ public class InlineConditional extends BaseExpression implements Expression {
 
         if (condition.isEmpty() || t.isEmpty() || f.isEmpty()) {
             throw new UnsupportedOperationException();
-        }
-
-        if (tooComplex) {
-            LOGGER.debug("Reduced complexity in inline conditional");
-            InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition, t, f);
-            return builder.setExpression(inlineConditional).build();
         }
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null);

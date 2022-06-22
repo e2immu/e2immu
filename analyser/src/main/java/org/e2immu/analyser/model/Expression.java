@@ -35,6 +35,7 @@ import java.util.Set;
 
 public interface Expression extends Element, Comparable<Expression> {
     int HARD_LIMIT_ON_COMPLEXITY = 1000;
+    int COMPLEXITY_LIMIT_OF_INLINED_METHOD = 100;
 
     int getComplexity();
 

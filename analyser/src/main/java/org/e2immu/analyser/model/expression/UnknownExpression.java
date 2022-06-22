@@ -38,6 +38,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static final String VARIABLE_VALUE = "variable value";
     public static final String NOT_YET_ASSIGNED = "not yet assigned";
     public static final String NO_RETURN_VALUE = "no return value";
+    public static final String UNDETERMINED_RETURN_VALUE = "undetermined return value";
 
     private final ParameterizedType parameterizedType;
     private final String msg;
@@ -84,6 +85,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public static Expression forUnreachableStatement() {
         return new UnknownExpression(Identifier.constant("__unreachable__"),
                 ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, "unreachable");
+    }
+
+    public static Expression forUnknownReturnValue(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, UNDETERMINED_RETURN_VALUE);
     }
 
     @Override
