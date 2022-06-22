@@ -140,8 +140,12 @@ public class ComputeLinkedVariables {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null && !ignore.test(vic, variable)) {
                     VariableInfo vi1 = vic.getPreviousOrInitial();
-                    add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
+                    LinkedVariables curated =   add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
                             evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
+                    if (curated == LinkedVariables.NOT_YET_SET) {
+                        linkingNotYetSet.add(variable);
+                        encounteredNotYetSet.set(curated.causesOfDelay());
+                    }
                 }
             }
         }

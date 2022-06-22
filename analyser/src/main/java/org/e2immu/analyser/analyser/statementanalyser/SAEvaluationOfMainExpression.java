@@ -105,8 +105,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
             ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
                     .setAssignmentTarget(new ReturnVariable(methodInfo()));
-            if (methodInfo().returnType().isPrimitiveExcludingVoid()) fwdBuilder.setCnnNotNull();
-            ;
+            if (methodInfo().returnType().isPrimitiveExcludingVoid()) {
+                fwdBuilder.setCnnNotNull();
+            }
             forwardEvaluationInfo = fwdBuilder.build();
         } else {
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
