@@ -179,7 +179,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("4.0.0.0.3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "q==<p:q>" : "true";
+                    String expected = d.iteration() == 0 ? "<simplification>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -215,16 +215,16 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("4.0.0.0.3".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "q==<p:q>&&<f:i>==<f:i>" : "i$1==i$2";
+                    String expected = d.iteration() == 0 ? "<simplification>&&<f:i>==<f:i>" : "i$1==i$2";
                     assertEquals(expected, d.absoluteState().toString());
                 }
             }
         };
 
         testClass("Basics_8", 0, 3, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

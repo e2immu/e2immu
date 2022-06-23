@@ -277,15 +277,15 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "(projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?<vl:countUpdated>:1+<v:countUpdated>"
-                                : "(projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?instance type int:1+countUpdated$1";
+                                ? "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
+                                : "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue()/*(String)*/)||null==projectName?1+countUpdated$1:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
         };
         testClass(List.of("Project_0", "Store_8"), 3, DONT_CARE, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

@@ -206,7 +206,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("defaultImmutable".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "<m:reduce>" : "parameterizedType.parameters.stream().map(/*inline apply*/this.defaultImmutable(pt)).reduce(AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,DV::min)";
+                    String expected = d.iteration() <= 2 ? "<m:reduce>"
+                            : "parameterizedType.parameters.stream().map(instance type $2).reduce(AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,DV::min)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -253,11 +254,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String linkedRv = switch (d.iteration()) {
-                        case 0 -> "pt:-1,this:-1";
-                        case 1, 2, 3 -> "this:-1";
-                        default -> "this:3";
-                    };
+                    String linkedRv = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linkedRv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -266,25 +263,19 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("defaultImmutable".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String props = switch (d.iteration()) {
-                        case 0 -> "parameterizedType={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={read=true:1}";
+                        case 0 -> "";
                         case 1 -> "parameterizedType={modified in context=initial:AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV@Method_defaultImmutable_0-C;initial:parameterizedType.parameters@Method_defaultImmutable_0-C;initial@Field_causes;initial@Field_value;link@NOT_YET_SET, not null in context=nullable:1}, this={read=true:1}";
                         case 2 -> "parameterizedType={modified in context=initial@Field_EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;initial@Field_bestTypeInfo;initial@Field_causes;initial@Field_parameters;initial@Field_value, not null in context=nullable:1}, this={read=true:1}";
                         case 3 -> "parameterizedType={modified in context=initial:AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV@Method_defaultImmutable_0-C;initial:parameterizedType.parameters@Method_defaultImmutable_0-C;initial@Field_EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;initial@Field_bestTypeInfo;initial@Field_causes;initial@Field_parameters;initial@Field_value;link@NOT_YET_SET, not null in context=nullable:1}, this={read=true:1}";
                         default -> "parameterizedType={modified in context=false:0, not null in context=nullable:1}, this={read=true:1}";
                     };
-                    assertEquals(props, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+                    assertEquals("", d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);
                 assertEquals("0", d.statementId());
-                String delay = switch (d.iteration()) {
-                    case 0 -> "link@NOT_YET_SET";
-                    case 1 -> "initial:AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV@Method_defaultImmutable_0-C;initial:parameterizedType.parameters@Method_defaultImmutable_0-C;initial@Field_causes;initial@Field_value;link@NOT_YET_SET";
-                    case 2 -> "initial@Field_EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;initial@Field_bestTypeInfo;initial@Field_causes;initial@Field_parameters;initial@Field_value";
-                    case 3 -> "initial:AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV@Method_defaultImmutable_0-C;initial:parameterizedType.parameters@Method_defaultImmutable_0-C;initial@Field_EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;initial@Field_bestTypeInfo;initial@Field_causes;initial@Field_parameters;initial@Field_value;link@NOT_YET_SET";
-                    default -> "";
-                };
+                String delay = d.iteration() == 0 ? "link@NOT_YET_SET" : "";
                 assertEquals(delay, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().toString());
             }
         };
@@ -313,10 +304,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         testClass("AnalysisProvider_2", 0, 1,
                 new DebugConfiguration.Builder()
-                        //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                        //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),

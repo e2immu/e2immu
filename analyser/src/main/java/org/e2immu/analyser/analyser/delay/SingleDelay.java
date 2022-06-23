@@ -88,7 +88,7 @@ public class SingleDelay extends AbstractDelay {
         }
         Map<String, CauseOfDelay> map = new HashMap<>();
         map.put(cause.withoutStatementIdentifier(), cause);
-        return SimpleSet.mergeIntoMapAndReturn(other.causesStream(), map, maxPriority());
+        return SimpleSet.mergeIntoMapAndReturn(other.causesStream(), map);
     }
 
     @Override

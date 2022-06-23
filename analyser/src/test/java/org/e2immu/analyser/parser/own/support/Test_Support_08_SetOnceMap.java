@@ -77,7 +77,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 2) {
-                        String expected = "setOnceMap={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, not null in context=not_null:5, read=true:1}";
+                        String expected = "setOnceMap={modified in context=false:0, not null in context=nullable:1}, this={read=true:1}";
                         assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                     }
                 }
@@ -87,23 +87,29 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ParameterInfo p && "e".equals(p.name)) {
-                    String expect = d.iteration() <= 2 ? "<p:e>" : "nullable instance type Entry<K,V>/*@Identity*/";
+                    String expect =switch( d.iteration()) {
+                        case 0, 1 -> "<mod:V>";
+                        case 2 -> "<mod:K>";
+                        default -> "nullable instance type Entry<K,V>/*@Identity*/";
+                    };
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
-                    String expectValue = d.iteration() == 0 ? "<p:k>" : "nullable instance type K/*@Identity*/";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    String linked = d.iteration() == 0 ? "k?" : "k:0";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    if("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<mod:K>" : "nullable instance type K/*@Identity*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "this:-1" : "";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<mmc:map>" : "instance type HashMap<K,V>";
+                        String expectValue = d.iteration() == 0 ? "<f:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -111,12 +117,12 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type K/*@Identity*/", d.currentValue().toString());
-                        assertEquals("k:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
+                        String expectValue = d.iteration() <= 1 ? "<mod:K>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "" : "k:0";
+                        String linked = d.iteration() <= 1 ? "this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -124,22 +130,22 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
                     if ("1".equals(d.statementId())) {
                         assertEquals("nullable instance type V", d.currentValue().toString());
-                        assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         assertEquals("nullable instance type V", d.currentValue().toString());
-                        assertEquals("v:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String lvs = d.iteration() <= 1 ? "k:-1,this.map:3,this:-1,v:0" : "k:3,this.map:3,v:0";
+                        String lvs = d.iteration() <= 1 ? "k:-1,this.map:-1,this:-1" : "k:3,this.map:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -207,11 +213,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-                        //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build());
     }
 

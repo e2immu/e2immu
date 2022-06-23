@@ -41,7 +41,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
@@ -58,7 +58,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertDv(d, BIG, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
             }
@@ -78,10 +78,10 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(0), 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(d.iteration() <= BIG, p0.assignedToFieldDelays().isDelayed());
-                if (d.iteration() > BIG) {
+                assertEquals(d.iteration() == 0, p0.assignedToFieldDelays().isDelayed());
+                if (d.iteration() > 0) {
                     assertEquals("{myContainerLinkedToParameter=assigned:1}", p0.getAssignedToField().toString());
                 }
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
@@ -108,8 +108,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-                // FIXME breaking delay badly
-                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 assertEquals("consumer:0", d.fieldAnalysis().getLinkedVariables().toString());
@@ -134,11 +133,11 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
 
         // modification not allowed (breach of @Container contract on parameter)
         testClass("ExternalContainer_0", 1, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

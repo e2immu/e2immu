@@ -269,15 +269,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() <= BIG ? "<vl:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() <= 1 ? "<vl:result>" : "instance type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -286,15 +286,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("5".equals(d.statementId())) {
-                        String expectValue = switch (d.iteration()) {
-                            default -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
-                            //      case 1 -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?instance type Map<String,String>:<vl:result>";
-                            //      default -> "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
-                        };
+                        String expectValue = d.iteration() <= 1
+                                ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>"
+                                : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -323,8 +321,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // potential null pointer exception: both "now" and the result of the "now()" call
         testClass("Loops_11", 0, 2, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -716,10 +714,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
 
         // TODO see Loops_17, one warning too many
         testClass("Loops_18", 0, 2, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -784,9 +782,9 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         };
         // TODO See Loops_17, one warning too many
         testClass("Loops_19", 0, 4, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

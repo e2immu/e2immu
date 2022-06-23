@@ -59,14 +59,14 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     String expected = d.iteration() <= 6 ? "<m:pop>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 7, d.status().isDone());
+                    assertEquals(d.iteration() >= 8, d.status().isDone());
                     assertEquals(d.iteration() >= 8, d.externalStatus().isDone());
                 }
                 if ("7.0.0".equals(d.statementId())) {
                     String expected = d.iteration() <= 6 ? "<m:write>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 7, d.status().isDone());
+                    assertEquals(d.iteration() >= 8, d.status().isDone());
                     assertEquals(d.iteration() >= 8, d.externalStatus().isDone());
                 }
                 if ("7".equals(d.statementId())) {
@@ -75,7 +75,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 7, d.status().isDone());
+                    assertEquals(d.iteration() >= 8, d.status().isDone());
                     assertEquals(d.iteration() >= 9, d.externalStatus().isDone());
                 }
             }
@@ -158,14 +158,14 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("3.1.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
+                        String expected = d.iteration() <= 1 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.1.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
+                        String expected = d.iteration() <= 1 ? "<v:exceeds9>" : "`lookAhead.exceeds`";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -238,12 +238,12 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
                 0, 26, new DebugConfiguration.Builder()
-                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

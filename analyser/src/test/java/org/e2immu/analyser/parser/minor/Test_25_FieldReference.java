@@ -57,7 +57,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "changeData".equals(fr.fieldInfo.name)) {
-                    assertCurrentValue(d, 8, "nullable instance type Map<String,ChangeData>");
+                    assertCurrentValue(d, 1, "nullable instance type Map<String,ChangeData>");
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     }
@@ -73,13 +73,13 @@ public class Test_25_FieldReference extends CommonTestRunner {
 
                 // MUTABLE because without A API
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 7, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && "ChangeData".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/`properties`.get(s)";
@@ -104,10 +104,10 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

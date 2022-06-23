@@ -131,10 +131,10 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(FirstThen.class), 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

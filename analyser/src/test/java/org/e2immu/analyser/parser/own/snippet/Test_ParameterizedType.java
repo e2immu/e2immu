@@ -78,8 +78,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 if ("4.0.1".equals(d.statementId())) {
                     String reached = switch (d.iteration()) {
                         case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E";
-                        case 1 -> "CONDITIONALLY:1"; // should be a delay
-                        default -> "NEVER:0";
+                        case 1, 2 -> "CONDITIONALLY:1";
+                        default -> throw new UnsupportedOperationException();
                     };
                     assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
@@ -109,8 +109,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     }
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>?<loopIsNotEmptyCondition>&&<v:min>><m:size>?<m:size>:<vl:min>:<f:MAX_VALUE>)";
-                            case 1, 2, 3, 4 -> "8+(List.of().isEmpty()?2147483647:<loopIsNotEmptyCondition>&&instance type int><m:size>?<m:size>:instance type int)";
+                            case 0 -> "<m:isEmpty>?7:8+(<loopIsNotEmptyCondition>?<loopIsNotEmptyCondition>&&-1+<v:min>>=<m:size>?<m:size>:<vl:min>:<f:MAX_VALUE>)";
+                            case 1 -> "8+(List.of().isEmpty()?2147483647:fromTypeBounds$4.0.3.isEmpty()||<m:size>>=instance type int?instance type int:<m:size>)";
                             default -> "8+(List.of().isEmpty()?2147483647:fromTypeBounds$4.0.3.isEmpty()||`otherBound.typeInfo`.length()>=instance type int?instance type int:`otherBound.typeInfo`.length())";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -128,7 +128,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<E>>";
-                                case 1, 2, 3, 4 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
+                                case 1 -> "List.of().isEmpty()||fromTypeBounds$4.0.3.isEmpty()?List.of():<vl:fromTypeBounds>";
                                 default -> "List.of()";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -162,10 +162,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
 
         testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
-                //     .addEvaluationResultVisitor(evaluationResultVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -467,8 +467,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("normalType".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "findType".equals(pi.name)) {
-                    assertEquals("nullable instance type FindType/*@Identity*/", d.currentValue().toString());
                     if ("0".equals(d.statementId())) {
+                        assertEquals("nullable instance type FindType/*@Identity*/", d.currentValue().toString());
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
@@ -530,9 +530,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
         testClass("ParameterizedType_4", 1, 3,
                 new DebugConfiguration.Builder()
-                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 

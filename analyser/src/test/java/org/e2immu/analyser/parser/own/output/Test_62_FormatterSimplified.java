@@ -97,7 +97,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("outputElement".equals(d.variableName())) {
-                    if("8".equals(d.statementId())) {
+                    if ("8".equals(d.statementId())) {
                         assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("8.0.5".equals(d.statementId())) {
@@ -106,13 +106,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
                     }
                     if ("9".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if ("string".equals(d.variableName())) {
                     if ("8.0.3.0.2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1, 2-> "<m:symbol>";
+                            case 0, 1, 2 -> "<m:symbol>";
                             default -> "`list.get(pos$8)/*(Symbol)*/.symbol`";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -121,7 +121,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3.1.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?\"\":\"abc\"";
+                            case 1, 2 -> "<c:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -130,7 +130,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     if ("8.0.3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<instanceOf:Symbol>?<m:symbol>:<instanceOf:Guide>?\"\":<m:write>";
-                            case 1, 2 -> "<s:boolean>?<m:symbol>:<s:boolean>?\"\":\"abc\"";
+                            case 1, 2 -> "<c:boolean>?<m:symbol>:<c:boolean>?\"\":\"abc\"";
                             default -> "outputElement instanceof Symbol symbol?`list.get(pos$8)/*(Symbol)*/.symbol`:outputElement instanceof Guide?\"\":\"abc\"";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -150,7 +150,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             }
             if ("forward".equals(d.methodInfo().name)) {
                 if ("8".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 4, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 3, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
             }
         };
@@ -179,11 +179,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         // 2 errors: overwriting a previous value; valid, I'd say
         // 2 re-assignment warnings, ok given the null returned by elementarySpace
         testClass("FormatterSimplified_2", 2, 2, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

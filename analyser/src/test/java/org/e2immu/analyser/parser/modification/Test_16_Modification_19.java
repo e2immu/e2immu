@@ -112,10 +112,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String links = switch (d.iteration()) {
-                            case 0, 1, 2 -> "c:-1,this.s2:-1";
-                            default -> "c:2,this.s2:2";
-                        };
+                        String links = d.iteration() <= 1 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
                         assertNotNull(fr.scopeVariable);
@@ -181,10 +178,10 @@ public class Test_16_Modification_19 extends CommonTestRunner {
         };
 
         testClass("Modification_19", 0, 2, new DebugConfiguration.Builder()
-              //          .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //           .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               //         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-               //         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

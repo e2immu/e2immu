@@ -64,17 +64,20 @@ class SimpleSet extends AbstractDelay {
         if (other.isDone()) return this;
         if (maxPriority < other.maxPriority()) return other;
         if (maxPriority > other.maxPriority()) return this;
+        if (maxPriority == CauseOfDelay.LOW) return this; // we're delayed, the other is too, same level
 
         // more complicated than simply merge two sets. We keep only the earliest location of each delay
         Map<String, CauseOfDelay> map = new HashMap<>();
-        causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
+        causes.stream()
+                .filter(c -> c.cause().priority == CauseOfDelay.HIGH)
+                .forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
             throw new UnsupportedOperationException("This set should already have been merged properly: " + causes);
         }));
-        return mergeIntoMapAndReturn(other.causesStream(), map, maxPriority);
+        return mergeIntoMapAndReturn(other.causesStream().filter(c -> c.cause().priority == CauseOfDelay.HIGH), map);
     }
 
-    public static CausesOfDelay mergeIntoMapAndReturn(Stream<CauseOfDelay> causes, Map<String, CauseOfDelay> map, int maxPriority) {
-        // all priorities are equal
+    public static CausesOfDelay mergeIntoMapAndReturn(Stream<CauseOfDelay> causes, Map<String, CauseOfDelay> map) {
+        // all priorities are equal and high
         causes.forEach(c -> map.merge(c.withoutStatementIdentifier(), c, (c1, c2) -> {
             String i1 = c1.location().statementIdentifierOrNull();
             String i2 = c2.location().statementIdentifierOrNull();
@@ -86,7 +89,7 @@ class SimpleSet extends AbstractDelay {
         if (map.size() == 1) {
             return new SingleDelay(map.values().stream().findFirst().orElseThrow());
         }
-        return new SimpleSet(map.values().stream().toList(), maxPriority);
+        return new SimpleSet(map.values().stream().toList(), CauseOfDelay.HIGH);
     }
 
     @Override

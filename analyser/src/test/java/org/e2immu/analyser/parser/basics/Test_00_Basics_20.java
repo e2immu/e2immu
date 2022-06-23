@@ -215,11 +215,11 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     private void runTest(boolean expectNotNull, int warnings) throws IOException {
         testClass("Basics_20", 0, warnings, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(createVisitor(expectNotNull))
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
-          //      .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))
-          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(createVisitor(expectNotNull))
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
+                .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(expectNotNull)
                 .build());

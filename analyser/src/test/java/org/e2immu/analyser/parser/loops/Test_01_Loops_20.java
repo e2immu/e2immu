@@ -28,7 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_01_Loops_20 extends CommonTestRunner {
 
@@ -52,26 +53,34 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertFalse(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 0, PATH_SPLIT);
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertCurrentValue(d, 1, PATH_SPLIT);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     assertEquals("Type java.lang.String[]", d.currentValue().returnType().toString());
                 }
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
-                        //     assertCurrentValue(d, 1, CAUSES_OF_DELAY+"|not_null:prefix@Method_loadBytes_1", "instance type String");
+                        assertCurrentValue(d, 1, "nullable instance type String");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() == 0 ? "<f:out>" : "out";
-//                    assertEquals(expect, d.currentValue().toString());
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0
+                                ? "path.split(\"/\").length>=1?<f:out>:instance type PrintStream"
+                                : "instance type PrintStream";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                 }
             }
         };
         testClass("Loops_20", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

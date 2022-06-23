@@ -69,7 +69,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String expectLv = d.iteration() <= 1 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("set".equals(d.methodInfo().name)) {
@@ -83,8 +83,11 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "other".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:other>" :
-                                "nullable instance type Basics_21<T>/*@Identity*/";
+                        String expectValue = switch (d.iteration()) {
+                            case 0, 1 -> "<p:other>";
+                            case 2 -> "<mod:T>";
+                            default -> "nullable instance type Basics_21<T>/*@Identity*/";
+                        };
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
@@ -92,20 +95,23 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
 
-                        assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
-                                .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
-                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
+                        if (d.iteration() >= 3) {
+                            assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
+                                    .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
+                        }
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
                     } else {
                         assertEquals("0", d.statementId());
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<m:isSet>?<p:other>:nullable instance type Basics_21<T>/*@Identity*/";
+                            case 2 -> "null==`other.t`?nullable instance type Basics_21<T>/*@Identity*/:<mod:T>";
                             default -> "nullable instance type Basics_21<T>/*@Identity*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer().getPreviousOrInitial()
                                 .getProperty(CONTEXT_IMMUTABLE));
-                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
+                        assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
                         String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -168,11 +174,11 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-           //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

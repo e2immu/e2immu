@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
@@ -501,8 +502,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private AnalysisStatus delayContainer(CausesOfDelay causesOfDelay, String msg, DV backupValue, boolean allowBreak) {
         if (allowBreak) {
-            LOGGER.debug("Breaking @Container delay on field {} to {}, {}", fqn, backupValue, msg);
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, backupValue);
+            DV inconclusive = new Inconclusive(backupValue);
+            LOGGER.debug("Breaking @Container delay on field {} to {}, {}", fqn, inconclusive, msg);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, inconclusive);
             return DONE;
         }
         LOGGER.debug("Delaying @Container of field {}, {}", fqn, msg);

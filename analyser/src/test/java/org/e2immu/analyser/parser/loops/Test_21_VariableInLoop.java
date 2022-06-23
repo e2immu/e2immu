@@ -51,7 +51,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
 
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(expected, eval.getValue().toString());
-                        String expectMerge = d.iteration() == 0 ? "<simplification>" : "true";
+                        String expectMerge = d.iteration() == 0 ? "<vl:found>" : "true";
                         assertEquals(expectMerge, d.currentValue().toString()); // result of merge, should always be "true"
                     }
                     if ("1.0.0.0.0.0.0".equals(d.statementId())) {
@@ -72,8 +72,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
             }
         };
         testClass("VariableInLoop_0", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -90,9 +90,11 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null"
-                                : "((null/*{L sa:statically_assigned:0}*/.navigationData()).next.isPresent()||null==null/*{L sa:statically_assigned:0}*/)&&(null==null/*{L sa:statically_assigned:0}*/||null!=(null/*{L sa:statically_assigned:0}*/.navigationData()).next.get().orElse(null))?null:null/*{L sa:statically_assigned:0}*/";
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<null-check>&&(<null-check>||!<m:isPresent>)?<v:sa>:null";
+                            case 1 -> "(((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||<null-check>)&&(<null-check>||null!=((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null))?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                            default -> "([(sa$1.navigationData()).next.get().get(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent(),(sa$1.navigationData()).next.isPresent(),((null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null),(sa$1.navigationData()).next.get().orElse(null),firstStatementAnalyser,sa$1,instance type boolean])?null:null==sa$1?firstStatementAnalyser:(sa$1.navigationData()).next.isPresent()&&null!=(sa$1.navigationData()).next.get().orElse(null)?(sa$1.navigationData()).next.get().get():sa$1";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -103,7 +105,6 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             assertTrue(eval.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                         } else {
-
                             // should be CONTENT_NOT_NULL, but in competition with the null check
                             assertEquals(MultiLevel.NULLABLE_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                         }
@@ -133,7 +134,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         // nullable or content not null? delayed or not in iteration 0?
                         // either @NotNull1 or @Nullable; it is the expression of the return value
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("scope-59:18".equals(d.variableName())) {
@@ -173,8 +174,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         };
         // sa.navigationData(), x2
         testClass("VariableInLoop_1", 0, 2, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -274,8 +275,8 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
             }
         };
         testClass("VariableInLoop_3", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

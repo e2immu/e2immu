@@ -59,7 +59,6 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
-
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
                 }
@@ -67,12 +66,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectedValue = d.iteration() == 0 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
                         assertEquals(expectedValue, d.currentValue().toString());
-
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
@@ -80,7 +76,6 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "o2".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
-
                         String expect = "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expect, d.currentValue().toString(), d.statementId());
                         // mutable, because self type
@@ -89,14 +84,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectedValue = d.iteration() == 0 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
                         assertEquals(expectedValue, d.currentValue().toString());
-
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-
-
                         // links have not been established
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         // mutable, because self type
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -130,9 +121,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
 
         testClass("OutputBuilderSimplified_2", 0, 0, new DebugConfiguration.Builder()
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

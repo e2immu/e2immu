@@ -73,7 +73,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         String expected = switch (d.iteration()) {
                             case 0 -> "<f:s2>";
-                            case 1, 2, 3, 4 -> "<mod:Set<String>>";
+                            case 1, 2, 3 -> "<mod:Set<String>>";
                             default -> "instance type HashSet<String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -191,11 +191,11 @@ public class Test_16_Modification_20 extends CommonTestRunner {
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
-                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                 //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                 //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                 //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

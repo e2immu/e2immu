@@ -100,10 +100,10 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
         // IMPROVE the warning could go if we use companions with "contains"? (instead of the "true")
         testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-         //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-         //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
