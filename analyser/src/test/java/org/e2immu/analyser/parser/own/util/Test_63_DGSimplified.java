@@ -622,7 +622,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d.p(0), 39, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 39, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 48, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 17, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 48, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 // priority 4
                 assertEquals(d.iteration() >= 48, d.methodAnalysis().getSingleReturnValue().isDone());
                 if (d.iteration() >= 48) {

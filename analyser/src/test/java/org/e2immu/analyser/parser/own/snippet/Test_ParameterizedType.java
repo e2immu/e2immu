@@ -18,10 +18,9 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -32,9 +31,6 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -166,10 +162,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
         };
 
         testClass("ParameterizedType_0", 6, 2, new DebugConfiguration.Builder()
-           //     .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -202,25 +198,26 @@ public class Test_ParameterizedType extends CommonTestRunner {
             if ("from".equals(d.methodInfo().name)) {
                 if ("0.0.07".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)"
-                            : "'L'==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)";
+                            ? "<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)"
+                            : "'L'==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("0.0.11".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "(<v:firstChar>==<f:ARRAY_BRACKET>?1+<v:arrays>:<vl:arrays>)>=1?<s:Result>:<f:TYPE_PARAM_T>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?<null-check>?<new:Result>:<new:Result>:<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?<m:normalType>:<f:WILDCARD_STAR>==<m:charAt>?<new:Result>:<new:Result>";
-                        case 1 -> "('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?<new:Result>:'T'==('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<vl:firstChar>)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?<null-check>?<new:Result>:<new:Result>:([arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,firstCharPos$0.0.06,<f:ARRAY_BRACKET>,signature,<too complex>])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:<new:Result>";
-                        case 2 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?<new:Result>:'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,typeContext,signature,instance type boolean])?<new:Result>:<new:Result>:([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,signature,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:new Result(primitivePt,1,false)";
-                        default -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:instance type int):instance type int)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):'T'==('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char)?([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([arrays$0.0.06,firstChar$0.0.06,firstCharPos$0.0.06,signature,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
+                        case 0 -> "(<v:firstChar>==<f:ARRAY_BRACKET>?1+<v:arrays>:<s:int>)>=1?<s:Result>:<f:TYPE_PARAM_T>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?<m:charAt>:<v:firstChar>)?<null-check>?<new:Result>:<new:Result>:<f:CHAR_L>==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?<m:charAt>:<v:firstChar>)?<m:normalType>:<f:WILDCARD_STAR>==<m:charAt>?<new:Result>:<new:Result>";
+                        case 1 -> "('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,<f:ARRAY_BRACKET>,<f:MINUS_SUPER>,<f:PLUS_EXTENDS>,<m:charAt>,<too complex>])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,<f:ARRAY_BRACKET>,<f:MINUS_SUPER>,<f:PLUS_EXTENDS>,<too complex>,<m:charAt>,<too complex>])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:<new:Result>";
+                        case 2 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:new Result(primitivePt,1,false)";
+                        case 3 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
+                        default -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:from>"
-                            : "('['==('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(``scope-primitivePt:0`.typeInfo`,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):([signature,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.substring(0).indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(0).substring(1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.substring(0).indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.substring(0).charAt(0)?`WildCard.EXTENDS`:'-'==signature.substring(0).charAt(0)?`WildCard.SUPER`:`WildCard.NONE`),signature.substring(0).indexOf(';')+1,false):instance type boolean?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.substring(0).charAt(0)?new Result(`ParameterizedType.WILDCARD_PARAMETERIZED_TYPE`,1,false):new Result(switch('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):instance type char)?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
+                    String expected = d.iteration() <= 4 ? "<m:from>"
+                            : "ParameterizedType_2.from(typeContext,findType,signature.substring(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() <= 4, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -233,7 +230,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("fromXXX".equals(d.methodInfo().name)) { // FIXME from
+            if ("from".equals(d.methodInfo().name)) {
                 // in iteration 4, the method call in 0.0.07.0.0 should not cause problems in itself (@NM, parameters @NM)
                 // it uses the variables typeContext (P), findType (P), signature (P), arrays (LVR), wildCard (LVR), firstCharPos (LVR)
                 if (d.variable() instanceof ParameterInfo pi && "findType".equals(pi.name)) {
@@ -241,60 +238,61 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07".equals(d.statementId())) {
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         // is used for the first time in this method in 0.0.07.0.0
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("wildCard".equals(d.variableName())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<vl:wildCard>";
-                        case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
-                        case 2 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
+                        case 0, 1 -> "<vl:wildCard>";
+                        case 2, 3 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
                         default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                     };
                     if ("0.0.06".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals(expected, eval.getValue().toString());
-                        assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
-
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        if (d.iteration() > 0) {
+                            assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
+                        }
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         String expected2 = switch (d.iteration()) {
-                            case 0, 1, 2 -> "<vl:wildCard>";
+                            case 0, 1, 2, 3 -> "<vl:wildCard>";
+                            case 4 -> "<mod:WildCard>";
                             default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                         };
                         assertEquals(expected2, d.currentValue().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("0.0.07.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ParameterInfo pi && "typeContext".equals(pi.name)) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if (d.variable() instanceof ParameterInfo pi && "signature".equals(pi.name)) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("arrays".equals(d.variableName())) {
-                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("firstCharPos".equals(d.variableName())) {
-                        assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("primitivePt".equals(d.variableName())) {
                     if ("0.0.09".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<s:ParameterizedType>";
+                            case 0 -> "<s:Object>";
                             case 1 -> "<m:primitive>";
-                            default -> "switch('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):instance type char)?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:instance type int)):instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                            default -> "switch('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -327,12 +325,12 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String merge = switch (d.iteration()) {
                             case 0, 1 -> "<s:IterativeParsing>";
-                            case 2, 3, 4, 5, 6, 7, 8, 9, 10 -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
-                            default -> "'>'==signature.charAt(((([signature,instance type boolean])?1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?1+('['==instance type char?1+instance type int:0):0):0)>=1?new Result(new ParameterizedType(``scope-primitivePt:0`.typeInfo`,'['==instance type char?1+instance type int:0),('['==instance type char?1+instance type int:0)+1,false):instance type boolean?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.substring(0).indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(0).substring(1+('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0),signature.substring(0).indexOf(';')),false),'['==instance type char?1+instance type int:0,'+'==signature.substring(0).charAt(0)?`WildCard.EXTENDS`:'-'==signature.substring(0).charAt(0)?`WildCard.SUPER`:`WildCard.NONE`),signature.substring(0).indexOf(';')+1,false):instance type boolean?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.substring(0).charAt(0)?new Result(`ParameterizedType.WILDCARD_PARAMETERIZED_TYPE`,1,false):new Result(switch('['==('['==instance type char?signature.substring(0).charAt(1+instance type int):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0))?signature.substring(0).charAt(1+('['==instance type char?1+instance type int:'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?1:0)):'+'==signature.substring(0).charAt(0)||'-'==signature.substring(0).charAt(0)?signature.substring(0).charAt(1):signature.substring(0).charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
+                            case 2, 3, 4 -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
+                            default -> "'>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
                         };
                         assertEquals(merge, d.currentValue().toString());
-                        assertEquals(d.iteration() < 11, d.currentValue().isDelayed());
-                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertEquals(d.iteration() < 5, d.currentValue().isDelayed());
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("5.0.1".equals(d.statementId())) {
                         assertEquals(expectedIn5, d.currentValue().toString());
@@ -343,9 +341,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("6".equals(d.statementId())) {
-                        String expected = d.iteration() < 11 ? "<s:IterativeParsing>" : "instance type IterativeParsing";
+                        String expected = d.iteration() < 5 ? "<s:IterativeParsing>" : "instance type IterativeParsing";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 11, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -357,28 +355,28 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(3), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() <= 4 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/new IterativeParsing()";
+                String expected = d.iteration() <= 4 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/next";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 0, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(4), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(4), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(5), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("from".equals(d.methodInfo().name)) {
@@ -387,12 +385,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() <= 2 ? "<m:from>"
-                        : "/*inline from*/('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int):instance type int)>=1?new Result(new ParameterizedType(scope-primitivePt:0.typeInfo,'['==instance type char?1+instance type int:instance type int),('['==instance type char?1+instance type int:instance type int)+1,false):'T'==('['==('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char)?signature.charAt(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int)):instance type char)?(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,typeContext,signature,instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?1+('['==instance type char?1+instance type int:instance type int):instance type int),signature.indexOf(';')),false),'['==instance type char?1+instance type int:instance type int,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):(['['==instance type char?1+instance type int:instance type int,'['==instance type char?signature.charAt(1+instance type int):instance type char,'['==instance type char?1+instance type int:instance type int,signature,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(switch('['==('['==instance type char?signature.charAt(1+instance type int):instance type char)?signature.charAt(1+('['==instance type char?1+instance type int:instance type int)):instance type char){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
+                assertDv(d, 6, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() <= 4 ? "<m:from>" : "<undetermined return value>"; // too complex for inline
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("primitive".equals(d.methodInfo().name)) {
                 assertFalse(methodResolution.partOfCallCycle());
@@ -411,19 +410,18 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("Precondition_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) d.typeAnalysis();
-                assertEquals(1, builder.nonModifiedCountForMethodCallCycle.size());
-                Set<MethodInfo> methodsInCycle = builder.nonModifiedCountForMethodCallCycle.stream().map(Map.Entry::getKey).findFirst().orElseThrow();
-                assertEquals(3, methodsInCycle.size());
-                TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.stream().map(Map.Entry::getValue).findFirst().orElseThrow();
-                String expected = switch (d.iteration()) {
-                    case 0, 1, 2 -> "normalType";
-                    case 3 -> "from, normalType";
-                    default -> "from, iterativelyParseTypes, normalType";
-                };
-                assertEquals(expected, cycleInfo.nonModified.stream().map(MethodInfo::name).sorted().collect(Collectors.joining(", ")));
+            if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+            if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Result".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals("Type org.e2immu.analyser.parser.own.snippet.testexample.ParameterizedType_2.ParameterizedType",
+                        d.typeAnalysis().getTransparentTypes().toString());
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
 
@@ -431,11 +429,31 @@ public class Test_ParameterizedType extends CommonTestRunner {
         // the other 3 null pointer issues are valid
         testClass("ParameterizedType_2", 4, DONT_CARE,
                 new DebugConfiguration.Builder()
-                        //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
+    }
+
+    @Test
+    public void test_2_1() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("Result".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+        testClass("ParameterizedType_2", 2, DONT_CARE,
+                new DebugConfiguration.Builder()
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test

@@ -398,7 +398,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 2, 9,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, DONT_CARE,
                 new DebugConfiguration.Builder()
                    //     .addAfterMethodAnalyserVisitor(mavForFreezable)
                    //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

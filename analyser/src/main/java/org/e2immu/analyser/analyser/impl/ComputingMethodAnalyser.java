@@ -983,18 +983,21 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .reduce(DV.MAX_INT_DV, DV::min);
 
         if (minFields.isDelayed()) return minFields;
-        if (minFields == DV.MAX_INT_DV) return MultiLevel.INDEPENDENT_DV;
-
-        DV typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
-        if (typeHidden.isDelayed()) return typeHidden;
-        if (typeHidden.valueIsFalse() && minFields.le(LinkedVariables.DEPENDENT_DV)) {
-            return MultiLevel.DEPENDENT_DV;
+        if (minFields != DV.MAX_INT_DV) {
+            DV typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
+            if (typeHidden.isDelayed()) return typeHidden;
+            if (typeHidden.valueIsFalse() && minFields.le(LinkedVariables.DEPENDENT_DV)) {
+                return MultiLevel.DEPENDENT_DV;
+            }
         }
         // on the sliding scale now
         //combination of statically immutable (type) and dynamically immutable (value property)
         if (immutable.isDelayed()) return immutable;
         int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) return MultiLevel.INDEPENDENT_1_DV;
+        if (immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
+            if(minFields == DV.MAX_INT_DV) return MultiLevel.INDEPENDENT_DV;
+            return MultiLevel.INDEPENDENT_1_DV;
+        }
         return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 
