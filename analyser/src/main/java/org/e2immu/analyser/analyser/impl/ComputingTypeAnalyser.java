@@ -902,14 +902,24 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
         assert finalValue.isDone();
+        assert typeImmutable.isDone();
+        DV alignedWithImmutable = alignIndependentWithImmutable(typeImmutable, finalValue);
+        DV potentiallyInconclusive;
         if (inconclusive) {
-            finalValue = new Inconclusive(finalValue);
-            LOGGER.debug("Setting inconclusive INDEPENDENT value for type {}: {}", typeInfo, finalValue);
+            potentiallyInconclusive = new Inconclusive(alignedWithImmutable);
+            LOGGER.debug("Setting inconclusive INDEPENDENT value for type {}: {}", typeInfo, potentiallyInconclusive);
         } else {
-            LOGGER.debug("Set independence of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
+            potentiallyInconclusive = alignedWithImmutable;
+            LOGGER.debug("Set independence of type {} to {}", typeInfo.fullyQualifiedName, potentiallyInconclusive);
         }
-        typeAnalysis.setProperty(Property.INDEPENDENT, finalValue);
+        typeAnalysis.setProperty(Property.INDEPENDENT, potentiallyInconclusive);
         return DONE;
+    }
+
+    private static DV alignIndependentWithImmutable(DV immutable, DV independent) {
+        int level = MultiLevel.level(immutable);
+        if (level == 0) return independent;
+        return MultiLevel.independentCorrespondingToImmutableLevelDv(level);
     }
 
     private AnalysisStatus delayIndependent(CausesOfDelay causesOfDelay) {
