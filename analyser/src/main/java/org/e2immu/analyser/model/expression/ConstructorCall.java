@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -237,7 +236,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (property == Property.CONTAINER && context.getCurrentType().isMyself(returnType(), context.getAnalyserContext())) {
-            return MultiLevel.NOT_CONTAINER_DV; // ALWAYS, regardless of the actual value
+            return parameterizedType.arrays > 0 ? MultiLevel.CONTAINER_DV : MultiLevel.NOT_CONTAINER_DV;
+            // ALWAYS, regardless of the actual value
         }
         ParameterizedType pt;
         AnalyserContext analyserContext = context.getAnalyserContext();

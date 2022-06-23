@@ -220,7 +220,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
                         m.name.equals("of") &&
                         m.methodInspection.get().isStatic() &&
-                        m.methodInspection.get().getParameters().get(0).parameterizedType.arrays> 0)
+                        m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0)
                 .findFirst().orElseThrow();
         assertEquals("java.util.Set.of(E...)", methodInfo.fullyQualifiedName);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -230,6 +230,25 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+    }
+
+    @Test
+    public void testArraysStream() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Arrays.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
+
+        MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> "stream".equals(m.name))
+                .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0 &&
+                        m.methodInspection.get().getParameters().get(0).parameterizedType.isTypeParameter())
+                .findFirst().orElseThrow();
+        assertEquals("java.util.Arrays.stream(T[])", methodInfo.fullyQualifiedName);
+        ParameterAnalysis p0 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(0);
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        // because an array is always a container...
+        assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
     }
 
     @Test

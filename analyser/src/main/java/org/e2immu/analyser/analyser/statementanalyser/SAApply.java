@@ -449,6 +449,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 VariableInfo merge = vic.current();
                 String latestAssignment = merge.getAssignmentIds().getLatestAssignment();
                 if (latestAssignment != null && latestAssignment.startsWith(index())) {
+                    if (!vic.hasEvaluation()) {
+                        vic.ensureEvaluation(getLocation(), vi.getAssignmentIds(), vi.getReadId(), vi.getReadAtStatementTimes());
+                    }
                     return changeValueToInstanceInLoop(sharedState, variable, vic, changeData, null,
                             groupPropertyValues);
                 }
