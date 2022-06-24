@@ -381,7 +381,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("comparator".equals(methodName)) {
                 assertTrue(d.methodInfo().methodInspection.get().isStatic());
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 MethodResolution methodResolution = d.methodInfo().methodResolution.get();
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertEquals("", methodResolution.callCycleSorted());

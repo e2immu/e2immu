@@ -1188,7 +1188,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("find".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().havePropertiesFromSubAnalysers());
-                    assertEquals(5L, d.statementAnalysis().propertiesFromSubAnalysers().count());
+                    assertEquals(6L, d.statementAnalysis().propertiesFromSubAnalysers().count());
                     DV reduced = d.statementAnalysis().propertiesFromSubAnalysers()
                             .map(e -> e.getValue().get(Property.CONTEXT_MODIFIED))
                             .reduce(DV.MIN_INT_DV, DV::max);

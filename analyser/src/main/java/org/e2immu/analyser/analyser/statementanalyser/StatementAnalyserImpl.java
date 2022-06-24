@@ -28,7 +28,6 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -659,24 +658,24 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         if (vi.isRead()) {
                             builder.addVariableRead(variable);
                         }
+
+                        DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
+
+                        /*
+                         the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
+                         Only when the links have been established, can we be sure that modified will progress in a stable fashion.
+                         */
+
+                        DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
+                                ? modified
+                                : modified.causesOfDelay().merge(linksEstablished);
+                        builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
+                        if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
                         if (!(variable instanceof This)) {
-                            DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
-
-                    /*
-                     the variable can be P-- in iteration 0, with modified == FALSE, and PEM in iteration 1, with a delay.
-                     Only when the links have been established, can we be sure that modified will progress in a stable fashion.
-                     */
-
-                            DV combined = modified.isDelayed() || linksEstablished.isDone() || modified.valueIsTrue()
-                                    ? modified
-                                    : modified.causesOfDelay().merge(linksEstablished);
-                            builder.addContextProperty(variable, Property.CONTEXT_MODIFIED, combined); // also when delayed!!!
-                            if (combined.isDelayed()) causes.set(causes.get().merge(combined.causesOfDelay()));
-
                             DV notNull = vi.getProperty(Property.CONTEXT_NOT_NULL);
                             builder.addContextProperty(variable, Property.CONTEXT_NOT_NULL, notNull);
                             if (notNull.isDelayed()) causes.set(causes.get().merge(notNull.causesOfDelay()));
-                        } // else: context modified on this == modified_method
+                        }
                     }
                 });
                 VariableAccessReport variableAccessReport = builder.build();

@@ -325,7 +325,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -348,7 +348,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 if (d.iteration() == 3) {
                     assertEquals("cm@Parameter_end;cm@Parameter_separator;cm@Parameter_start",
@@ -357,15 +357,15 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals(d.iteration() <= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("$5".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$6".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 5, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -380,7 +380,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -522,7 +522,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else if (d.variable() instanceof ParameterInfo pi && "end".equals(pi.name)) {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof This) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 } else if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     fail("list does not occur without in a scope known to the top-level method");
                 } else if (d.variable() instanceof FieldReference fr && "NONE".equals(fr.fieldInfo.name)) {
@@ -550,7 +550,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("$2", d.methodInfo().typeInfo.simpleName);

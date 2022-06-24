@@ -60,9 +60,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0
-                            ? "accept={modified in context=true:1, not null in context=initial:node.dependsOn@Method_accept_0.0.0-C, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}"
-                            : "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}";
+                    String expected =
+                            d.iteration() >= 36
+                                    ? "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=false:0}"
+                                    : switch (d.iteration()) {
+                                case 0 -> "accept={modified in context=true:1, not null in context=initial:node.dependsOn@Method_accept_0.0.0-C, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=link@NOT_YET_SET}";
+                                case 1 -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=initial@Field_dependsOn;initial@Field_t}";
+                                default -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=assign_to_field@Parameter_dependsOn}";
+                            };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }
@@ -184,13 +189,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, 34, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:comparator>"
+                String expected = d.iteration() <= 33 ? "<m:comparator>"
                         : "/*inline comparator*//*inline compare*/(e1.getValue()).dependsOn$0.size()==(e2.getValue()).dependsOn$0.size()?null==backupComparator?0:backupComparator.compare(e1.getKey(),e2.getKey()):(e1.getValue()).dependsOn$0.size()-(e2.getValue()).dependsOn$0.size()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 34, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("copyRemove".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 36, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

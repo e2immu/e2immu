@@ -124,7 +124,7 @@ public class Test_52_Var extends CommonTestRunner {
                         } else fail();
                     } else fail("Srv instance of " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("Var_4", 0, 0, new DebugConfiguration.Builder()
