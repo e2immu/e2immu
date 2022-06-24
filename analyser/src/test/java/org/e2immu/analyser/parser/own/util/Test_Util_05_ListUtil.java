@@ -67,10 +67,10 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                         }
-                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("t".equals(d.variableName())) {
@@ -126,9 +126,9 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
         };
 
         testSupportAndUtilClasses(List.of(ListUtil.class), 0, 2, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

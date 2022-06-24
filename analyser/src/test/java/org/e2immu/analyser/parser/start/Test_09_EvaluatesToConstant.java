@@ -163,28 +163,32 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("(null==param?\"x\":param)+\"c\"", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<v:b>+\"c\"" : "(null==param?\"x\":param)+\"c\"";
+                    assertEquals(expected, d.currentValue().toString());
                     if (d.iteration() == 0) {
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linked = "b:-1,param:-1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     } else {
                         fail(); // unreachable, now that the condition is stable
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>" : "<return value>";
+                    String expected = d.iteration() == 0 ? "<c:boolean>?<v:b>+\"c\":<return value>" : "<return value>";
                     assertEquals(expected, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() == 0 ? "b:-1,param:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:contains>&&<c:boolean>?(null==param?\"x\":param)+\"c\":<return value>" : "<return value>";
+                    String expected = d.iteration() == 0
+                            ? "<m:contains>&&<c:boolean>?<v:b>+\"c\":<return value>" : "<return value>";
                     assertEquals(expected, d.currentValue().toString());
                     CausesOfDelay causesOfDelayOfLinkedVars = d.variableInfo().getLinkedVariables().causesOfDelay();
-                    assertTrue(causesOfDelayOfLinkedVars.isDone());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(d.iteration() > 0, causesOfDelayOfLinkedVars.isDone());
+                    String linked = d.iteration() == 0 ? "b:-1,param:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         }
@@ -203,7 +207,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 // read: someMethod's parameter a may cause modification or not-null, but not known yet
-                assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                String expected = d.iteration() == 0 ? "cm@Parameter_a;constructor-to-instance@Method_method3_0-E" : "";
+                assertEquals(expected, d.evaluationResult().causesOfDelay().toString());
             }
             if ("1".equals(d.statementId())) {
                 String expected = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
@@ -234,10 +239,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

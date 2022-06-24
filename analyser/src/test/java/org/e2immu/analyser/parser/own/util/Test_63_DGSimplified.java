@@ -310,7 +310,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 17 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -318,14 +318,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("reverse".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<m:addNode>" : "<no return value>";
+                    String expected = d.iteration() <= 17 ? "<m:addNode>" : "<no return value>";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
             }
         };
         testClass("DGSimplified_2", 1, 0, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -339,24 +339,24 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<null-check>";
-                        case 1, 2, 3, 4, 5, 6 -> "null!=<f:node.dependsOn>";
+                        case 1, 2, 3, 4, 5, 6, 7, 8 -> "null!=<f:node.dependsOn>";
                         default -> "null!=(nodeMap.get(t)).dependsOn";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:this.nodeMap@Method_reverse_0.0.0-C";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t";
-                        case 2, 3, 4, 5, 6 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        case 2, 3, 4, 5, 6, 7, 8 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("0.0.1.0.0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 6 ? "<m:contains>" : "set.contains(d)";
+                    String expected = d.iteration() <= 8 ? "<m:contains>" : "set.contains(d)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 1, 2, 3, 4, 5, 6 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        case 1, 2, 3, 4, 5, 6, 7, 8 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
@@ -379,11 +379,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String expectedEM = d.iteration() <= 6 ? "<f:dependsOn>" : "nullable instance type List<T>";
-                        assertEquals(expectedEM, eval.getValue().toString());
+                        String expectedE = d.iteration() <= 8 ? "<f:dependsOn>" : "nullable instance type List<T>";
+                        assertEquals(expectedE, eval.getValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals(expectedEM, d.currentValue().toString());
+                        String expectedM = switch (d.iteration()) {
+                            case 0 -> "<f:dependsOn>";
+                            case 1, 2, 3, 4, 5, 6, 7, 8 -> "null==nullable instance type List<T>?nullable instance type List<T>:<f:dependsOn>";
+                            default -> "nullable instance type List<T>";
+                        };
+                        assertEquals(expectedM, d.currentValue().toString());
                     }
                 }
             }
@@ -396,9 +401,9 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
         testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addEvaluationResultVisitor(evaluationResultVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

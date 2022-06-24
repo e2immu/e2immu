@@ -76,10 +76,11 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     case 1 -> "[DelayedEventual:final@Field_root]";
                     case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
                     case 3 -> "[DelayedEventual:initial@Field_data;initial@Field_map]";
+                    case 4 -> "[DelayedEventual:cm@Parameter_strings;link:strings@Method_goTo_0:M]";
                     default -> "@Only before: [frozen]";
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
-                if (d.iteration() >= 4) {
+                if (d.iteration() >= 5) {
                     Map.Entry<AnnotationExpression, Boolean> ae = d.methodAnalysis().findAnnotation(Only.class.getCanonicalName());
                     assertEquals("@Only(before=\"frozen\")", ae.getKey().toString());
                     assertTrue(ae.getValue());
@@ -89,8 +90,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
                 new DebugConfiguration.Builder()
-               //         .addTypeMapVisitor(typeMapVisitor)
-               //         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

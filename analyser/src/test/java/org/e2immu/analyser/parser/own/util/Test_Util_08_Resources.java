@@ -58,29 +58,23 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     String expected = d.iteration() == 0 ? "<m:getPath>" : "dirRelativeToBase.getPath()";
 
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    String delays = switch (d.iteration()) {
-                        case 0 -> "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E";
-                        default -> "";
-                    };
+                    String delays = d.iteration() == 0
+                            ? "initial:dirRelativeToBase@Method_recursivelyAddFiles_1.0.2-E"
+                            : "";
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("1.0.3.0.1".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "<m:isEmpty>?new String[](0):<m:split>";
-                        default -> "dirRelativeToBase.getPath().isEmpty()?new String[](0):(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
-                    };
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>?new String[](0):<m:split>"
+                            : "dirRelativeToBase.getPath().isEmpty()?new String[](0):(dirRelativeToBase.getPath().startsWith(\"/\")?dirRelativeToBase.getPath().substring(1):dirRelativeToBase.getPath()).split(\"/\")";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "<m:endsWith>&&0==<delayed array length>";
-                        default -> "file.getName().endsWith(\".annotated_api\")&&0==<delayed array length>";
-                        //FIXME          default -> "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
-                    };
+                    String expected = d.iteration() == 0 ? "<m:endsWith>&&0==<delayed array length>"
+                            : "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() <= BIG ? "<m:add>" : "instance type TrieNode<URL>";
+                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<T>";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }
@@ -98,20 +92,21 @@ public class Test_Util_08_Resources extends CommonTestRunner {
             if ("fqnToPath".equals(d.methodInfo().name)) {
                 if ("parts[i]".equals(d.variableName())) {
                     if ("1.0.4".equals(d.statementId())) {
-                        assertEquals("extension", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<p:extension>" : "extension";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
             if ("recursivelyAddFiles".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.3.0.2".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -123,13 +118,13 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= BIG ? "<m:getName>" : "file.getName()";
+                        String expected = d.iteration() == 0 ? "<m:getName>" : "file.getName()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("partsFromFile".equals(d.variableName())) {
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= BIG ? "<m:split>" : "file.getName().split(\"\\\\.\")";
+                        String expected = d.iteration() == 0 ? "<m:split>" : "file.getName().split(\"\\\\.\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -161,18 +156,18 @@ public class Test_Util_08_Resources extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addDirectoryFromFileSystem".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("recursivelyAddFiles".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
                 0, 12, new DebugConfiguration.Builder()
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                      //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());

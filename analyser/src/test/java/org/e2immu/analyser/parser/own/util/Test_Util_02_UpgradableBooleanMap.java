@@ -74,7 +74,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<mmc:upgradableBooleanMap>" : "instance type UpgradableBooleanMap<T>";
+                        String expected = d.iteration() <= 2 ? "<new:UpgradableBooleanMap<T>>" : "instance type UpgradableBooleanMap<T>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -98,7 +98,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         default -> "UpgradableBooleanMap::putAll";
                     };
                     assertEquals(expected, d.currentValue().toString());
-                    assertEquals("return combiner:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
 
@@ -122,7 +122,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -130,7 +130,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 assertEquals("accept,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                // must be TRUE, travels from accept in $4
             }
 
             // uses putAll as a method reference
@@ -150,7 +151,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
             // putAll
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, BIG, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -158,7 +159,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=cm:e@Method_accept_0-E;cm:this@Method_accept_0-E,this=cm:e@Method_accept_0-E;cm:this@Method_accept_0-E"
+                            ? "other={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={read=true:1}"
                             : "org.e2immu.analyser.util.UpgradableBooleanMap.putAll(org.e2immu.analyser.util.UpgradableBooleanMap<T>):0:other=false:0,this=true:1";
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
@@ -167,10 +168,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
                 0, 0, new DebugConfiguration.Builder()
-                        //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build());
     }
 
