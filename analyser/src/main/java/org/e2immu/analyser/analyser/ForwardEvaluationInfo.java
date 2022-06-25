@@ -93,17 +93,17 @@ public class ForwardEvaluationInfo {
         return doNotReevaluateVariableExpressions;
     }
 
-    public boolean isInCompanionExpression() {
-        return inCompanionExpression;
+    public boolean isNotInCompanionExpression() {
+        return !inCompanionExpression;
     }
 
     public Set<Variable> getEvaluating() {
         return evaluating;
     }
 
-    public static ForwardEvaluationInfo DEFAULT = new Builder().build();
-    public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new Builder().setAssignmentTarget().build();
-    public static ForwardEvaluationInfo NOT_NULL = new Builder()
+    public static final ForwardEvaluationInfo DEFAULT = new Builder().build();
+    public static final ForwardEvaluationInfo ASSIGNMENT_TARGET = new Builder().setAssignmentTarget().build();
+    public static final ForwardEvaluationInfo NOT_NULL = new Builder()
             .addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV).build();
 
     public boolean isEvaluatingFieldExpression() {
@@ -179,9 +179,8 @@ public class ForwardEvaluationInfo {
             return this;
         }
 
-        public Builder setCnnNullable() {
+        public void setCnnNullable() {
             addProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
-            return this;
         }
 
         public Builder notNullNotAssignment() {

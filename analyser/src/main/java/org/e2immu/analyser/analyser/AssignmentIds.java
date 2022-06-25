@@ -20,7 +20,7 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 public class AssignmentIds implements Comparable<AssignmentIds> {
-    public static AssignmentIds NOT_YET_ASSIGNED = new AssignmentIds();
+    public static final AssignmentIds NOT_YET_ASSIGNED = new AssignmentIds();
 
     private final TreeSet<String> ids;
 

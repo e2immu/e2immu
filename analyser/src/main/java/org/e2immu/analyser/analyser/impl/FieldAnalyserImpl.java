@@ -874,9 +874,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private DV immutableOfProxy(ValueAndPropertyProxy proxy) {
-        //   if (isMyOwnType(proxy.getValue().returnType())) {
-        //       return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
-        //   }
+        /* would it help to check for myOwnType?
+           if (isMyOwnType(proxy.getValue().returnType())) {
+               return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
+           }
+         */
         DV breakValue = proxy.getPropertyOrDefaultNull(IMMUTABLE_BREAK);
         if (breakValue != null && breakValue.isDone()) return breakValue;
         return proxy.getProperty(Property.IMMUTABLE);

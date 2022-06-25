@@ -146,7 +146,7 @@ public class ParameterizedTypePrinter {
                 .collect(OutputBuilder.joining(Symbol.DOT));
     }
 
-    static record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
+    record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
     }
 
     private static OutputBuilder singleType(InspectionProvider inspectionProvider,

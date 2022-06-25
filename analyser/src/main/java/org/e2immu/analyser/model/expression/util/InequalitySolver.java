@@ -113,7 +113,7 @@ public class InequalitySolver {
     public Boolean evaluate(Expression expression) {
         if (expression instanceof And and) {
             return and.getExpressions().stream().map(this::accept)
-                    .reduce(true, (v1, v2) -> v1 == null ? v2 : v2 == null ? v1 : v1 && v2);
+                    .reduce(true, (v1, v2) -> v2 == null ? v1 : v1 && v2);
         }
         return accept(expression);
     }

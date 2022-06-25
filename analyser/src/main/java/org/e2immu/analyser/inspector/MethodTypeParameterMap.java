@@ -147,20 +147,18 @@ public class MethodTypeParameterMap {
 
 
     public boolean isAssignableFrom(MethodTypeParameterMap other) {
-        if (!isSingleAbstractMethod() || !other.isSingleAbstractMethod()) throw new UnsupportedOperationException();
+        if (!isSingleAbstractMethod() || !other.isSingleAbstractMethod()) {
+            throw new UnsupportedOperationException();
+        }
         MethodInfo methodInfo = methodInspection.getMethodInfo();
         MethodInfo otherMethodInfo = other.methodInspection.getMethodInfo();
-        if (methodInfo.equals(otherMethodInfo)) return true;
-        if (methodInspection.getParameters().size() != other.methodInspection.getParameters().size())
-            return false;
-        /*
-        int i = 0;
-        for (ParameterInfo pi : methodInspection.getParameters()) {
-            ParameterInfo piOther = other.methodInspection.getParameters().get(i);
-            i++;
+        if (methodInfo.equals(otherMethodInfo)) {
+            return true;
         }
-        // TODO
-         */
+        if (methodInspection.getParameters().size() != other.methodInspection.getParameters().size()) {
+            return false;
+        }
+        // IMPROVE test parameter types
         return methodInspection.getReturnType().isVoidOrJavaLangVoid() ==
                 other.methodInspection.getReturnType().isVoidOrJavaLangVoid();
     }

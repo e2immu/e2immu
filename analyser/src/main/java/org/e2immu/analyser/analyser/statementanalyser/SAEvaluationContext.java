@@ -669,7 +669,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
                         valueProperties);
                 VariableExpression.Suffix suffix = vic.variableNature().suffix();
-                VariableExpression ve = new VariableExpression(bestValue.getIdentifier(), variable, suffix, null, null); // FIXME implement
+                // IMPROVE scopeValue, indexValue should maybe not be null; write test
+                VariableExpression ve = new VariableExpression(bestValue.getIdentifier(), variable, suffix,
+                        null, null);
                 translationMap.put(ve, newObject);
             } else {
                 Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
@@ -677,9 +679,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 translationMap.put(DelayedVariableExpression.forVariable(variable, getInitialStatementTime(), delays), delayed);
                 // we add this one as well because the evaluation result, which feeds the state, may have no delays while the actual SAApply does (because of value properties)
                 // see VariableScope_10
-                //if (variable.allowedToCreateVariableExpression()) { TODO implement
                 translationMap.put(new VariableExpression(variable), delayed);
-                //}
             }
         }
     }

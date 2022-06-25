@@ -43,15 +43,13 @@ public interface MethodAnalyser extends Analyser {
 
     boolean hasCode();
 
-    CausesOfDelay fromFieldToParametersStatus();
-
     @NotNull
     MethodAnalysis getMethodAnalysis();
 
     @NotNull
     MethodInfo getMethodInfo();
 
-    boolean isSAM();
+    boolean isNotSAM();
 
     @NotNull
     MethodInspection getMethodInspection();

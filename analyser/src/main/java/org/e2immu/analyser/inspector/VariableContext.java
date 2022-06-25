@@ -86,9 +86,7 @@ public class VariableContext {
     }
 
     public void addAll(List<LocalVariableReference> localVariableReferences) {
-        localVariableReferences.forEach(lvr -> {
-            localVars.put(lvr.variable.name(), lvr);
-        });
+        localVariableReferences.forEach(lvr -> localVars.put(lvr.variable.name(), lvr));
     }
 
     @Override

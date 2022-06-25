@@ -94,7 +94,7 @@ public class Block extends StatementWithStructure {
         if (statementAnalysis == null) {
             if (!structure.statements().isEmpty()) {
                 outputBuilder.add(structure.statements().stream()
-                        .filter(s -> !s.isSynthetic())
+                        .filter(Statement::isNotSynthetic)
                         .map(s -> s.output(qualification, null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
@@ -131,7 +131,7 @@ public class Block extends StatementWithStructure {
         LimitedStatementAnalysis sa = statementAnalysis;
         boolean notFirst = isNotFirst;
         while (sa != null) {
-            if (!sa.statement().isSynthetic()) {
+            if (sa.statement().isNotSynthetic()) {
                 if (sa.navigationReplacementIsSet()) {
                     if (!notFirst) notFirst = true;
                     else outputBuilder.add(guideGenerator.mid());

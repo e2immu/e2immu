@@ -135,13 +135,6 @@ public interface Analysis {
         throw new UnsupportedOperationException();
     }
 
-    /*
-    Has to return a (new) modifiable map for efficiency reasons
-     */
-    default Map<Property, Integer> getProperties(Set<Property> forwardPropertiesOnParameters) {
-        return new HashMap<>();
-    }
-
     enum AnalysisMode {
         /**
          * Properties are contracted.

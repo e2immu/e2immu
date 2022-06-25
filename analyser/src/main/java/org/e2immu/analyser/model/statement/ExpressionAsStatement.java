@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 
 public class ExpressionAsStatement extends StatementWithExpression {
 
-    private final boolean synthetic;
+    private final boolean notSynthetic;
 
     public ExpressionAsStatement(Identifier identifier, Expression expression) {
         this(identifier, expression, false);
@@ -35,12 +35,12 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     public ExpressionAsStatement(Identifier identifier, Expression expression, boolean synthetic) {
         super(identifier, createCodeOrganization(expression), expression);
-        this.synthetic = synthetic;
+        this.notSynthetic = !synthetic;
     }
 
     @Override
-    public boolean isSynthetic() {
-        return synthetic;
+    public boolean isNotSynthetic() {
+        return notSynthetic;
     }
 
     private static Structure createCodeOrganization(Expression expression) {

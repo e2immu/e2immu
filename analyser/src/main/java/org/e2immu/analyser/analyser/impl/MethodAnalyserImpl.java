@@ -23,7 +23,6 @@ import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -40,7 +39,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
-    public final boolean isSAM;
+    public final boolean isNotSAM; // SAM = single abstract method
     public final MethodAnalysisImpl.Builder methodAnalysis;
     public final List<? extends ParameterAnalyser> parameterAnalysers;
     public final List<ParameterAnalysis> parameterAnalyses;
@@ -65,7 +64,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         this.companionAnalysers = companionAnalysers;
         companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                 e -> e.getValue().companionAnalysis));
-        this.isSAM = isSAM;
+        this.isNotSAM = !isSAM;
     }
 
     @Override
@@ -89,8 +88,8 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     @Override
-    public boolean isSAM() {
-        return isSAM;
+    public boolean isNotSAM() {
+        return isNotSAM;
     }
 
     @Override
@@ -239,15 +238,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     @Override
     public void makeImmutable() {
         parameterAnalysers.forEach(Analyser::makeImmutable);
-    }
-
-    @Override
-    public CausesOfDelay fromFieldToParametersStatus() {
-        CausesOfDelay delay = parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
-                .map(pa -> pa.getParameterAnalysis().assignedToFieldDelays())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        LOGGER.debug("Field to parameter for {}: {}", methodInfo.fullyQualifiedName, delay);
-        return delay;
     }
 
     protected AnalysisStatus delayedSrv(ParameterizedType concreteReturnType,

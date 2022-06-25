@@ -188,7 +188,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().multiExpression(),
                     sharedState.localConditionManager().causesOfDelay());
         }
-        if(!statementAnalysis.flowData().isUnreachable()) {
+        if(!statementAnalysis.flowData().isUnreachable()) { // FIXME keep this check??
             statementAnalysis.stateData().setValueOfExpression(value);
         }
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);

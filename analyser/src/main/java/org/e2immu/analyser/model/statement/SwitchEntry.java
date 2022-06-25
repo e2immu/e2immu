@@ -164,7 +164,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
                 Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
             } else {
                 outputBuilder.add(structure.statements().stream()
-                        .filter(s -> !s.isSynthetic())
+                        .filter(Statement::isNotSynthetic)
                         .map(s -> s.output(qualification, null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }

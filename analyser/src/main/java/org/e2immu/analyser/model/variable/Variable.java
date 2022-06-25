@@ -113,4 +113,8 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
     }
+
+    default boolean hasDelayedComponents() {
+        return false;
+    }
 }

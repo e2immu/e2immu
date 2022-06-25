@@ -197,10 +197,4 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         }
         return null;
     }
-/*
-    default Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-        return methodAnalyserStream();
-    }
-
- */
 }

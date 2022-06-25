@@ -589,6 +589,7 @@ public class ComputeLinkedVariables {
      */
     public boolean writeCnnTravelsToFields(AnalyserContext analyserContext, boolean cnnTravelsToFields) {
         boolean change = true;
+        boolean progress = false;
         while (change) {
             change = false;
             for (Cluster cluster : clusters) {
@@ -604,12 +605,13 @@ public class ComputeLinkedVariables {
                         if (current == null) {
                             vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.TRUE_DV, Stage.EVALUATION);
                             change = true;
+                            progress = true;
                         }
                     }
                 }
             }
             // note: ignores the returnValueCluster
         }
-        return change;
+        return progress;
     }
 }

@@ -174,7 +174,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= BIG ? "<null-check>" : "false";
+                    String expected = d.iteration() == 0 ? "<null-check>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1-C" : "NEVER:0";

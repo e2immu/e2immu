@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
@@ -115,22 +114,23 @@ public class EvaluateParameters {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                 throw e;
             }
-            List<Variable> vars = parameterExpression.variables(true);
-            boolean self = vars.stream().anyMatch(v -> {
+            /* NOTE: there used to be a break based on the "self" computation
+             List<Variable> vars = parameterExpression.variables(true);
+             boolean self = vars.stream().anyMatch(v -> {
                 if (v instanceof FieldReference fr && fr.fieldInfo.owner == methodInfo.typeInfo) {
                     FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
                     return fieldAnalysis.getLinkedVariables().isDone() &&
                             fieldAnalysis.getLinkedVariables().contains(parameterInfo);
                 }
                 return false;
-            });
-            // FIXME REMOVED BREAK
-            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle;//|| self;
-            computeContextContainer(methodInfo, recursivePartOfCallSelf, map);
-            computeContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
+             });
+             */
+            //|| self;
+            computeContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
+            computeContextModified(methodInfo, recursiveOrPartOfCallCycle, map, scopeIsContainer);
 
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-            if (recursivePartOfCallSelf) {
+            if (recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
                 if (contextNotNull.gt(MultiLevel.NULLABLE_DV)) {
                     String msg;
@@ -160,7 +160,7 @@ public class EvaluateParameters {
         Expression afterModification;
         // we don't want delays when processing companion expressions, which are never modifying and cause
         // unnecessary stress to the shallow analyser
-        if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
+        if (!contextModified.valueIsFalse() && forwardEvaluationInfo.isNotInCompanionExpression()) {
             EvaluationResult er = potentiallyModifyConstructorCall(context, parameterInfo, parameterExpression,
                     parameterValue, contextModified);
             if (er != null) {

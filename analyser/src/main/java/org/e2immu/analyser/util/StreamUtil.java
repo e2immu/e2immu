@@ -29,7 +29,7 @@ public class StreamUtil {
     // https://stackoverflow.com/questions/32495069/how-to-short-circuit-a-reduce-operation-on-a-stream
 
     public static <T> T reduceWithCancel(Stream<T> s, T acc, BinaryOperator<T> op, Predicate<? super T> cancelPredicate) {
-        BoxConsumer<T> box = new BoxConsumer<T>();
+        BoxConsumer<T> box = new BoxConsumer<>();
         Spliterator<T> spliterator = s.spliterator();
 
         while (!cancelPredicate.test(acc) && spliterator.tryAdvance(box)) {

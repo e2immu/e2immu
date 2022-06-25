@@ -275,9 +275,8 @@ public class VariableInfoImpl implements VariableInfo {
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        // FIXME this second clause was added to prevent Test_Output_03_Formatter from writing a delayed after a real value...
-        // this is probably not the solution?
-        if (value.isDelayed() || variable instanceof FieldReference fr && fr.scope.isDelayed()) {
+        // The second clause was added to prevent Test_Output_03_Formatter from writing a delayed after a real value...
+        if (value.isDelayed() || variable.hasDelayedComponents()) {
             try {
                 this.value.setVariable(value);
                 return false;
@@ -310,13 +309,6 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         setProperty(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
-    }
-
-    public void ensureProperty(Property property, DV dv) {
-        DV inMap = properties.getOrDefaultNull(property);
-        if (inMap == null || inMap.isDelayed()) {
-            properties.put(property, dv);
-        }
     }
 
     /*

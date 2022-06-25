@@ -23,14 +23,14 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class TranslationCollectors<T> {
+public class TranslationCollectors {
     public static <T> Collector<T, List<T>, List<T>> toList(List<T> original) {
         return new Collector<>() {
             boolean changes;
 
             @Override
             public Supplier<List<T>> supplier() {
-                return () -> new ArrayList<T>(original.size());
+                return () -> new ArrayList<>(original.size());
             }
 
             @Override

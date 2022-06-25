@@ -153,11 +153,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     myConstructors.add(methodAnalyser);
                 } else {
                     myMethodAnalysers.add(methodAnalyser);
-                    if (!methodAnalyser.isSAM()) {
+                    if (methodAnalyser.isNotSAM()) {
                         myMethodAnalysersExcludingSAMs.add(methodAnalyser);
                     }
                 }
-                if (!methodAnalyser.isSAM()) {
+                if (methodAnalyser.isNotSAM()) {
                     myMethodAndConstructorAnalysersExcludingSAMs.add(methodAnalyser);
                 }
             }
@@ -382,7 +382,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
                     Set<ParameterizedType> explicitTypes = typeAnalysis.getExplicitTypes(analyserContext);
                     if (explicitTypes == null)
-                        return Stream.of(); // FIXME is this correct? if we cause a delay, will it cause cycles?
+                        return Stream.of(); // TODO is this correct? if we cause a delay, will it cause cycles?
                     return explicitTypes.stream();
                 })
                 .collect(Collectors.toUnmodifiableSet());
@@ -690,8 +690,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private HandlePrecondition handlePrecondition(MethodAnalyser methodAnalyser,
                                                   Precondition precondition,
                                                   int iteration) {
-        EvaluationResult context = EvaluationResult.from(new EvaluationContextImpl(iteration, false,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null));
+        EvaluationContextImpl evaluationContext = new EvaluationContextImpl(iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+        EvaluationResult context = EvaluationResult.from(evaluationContext);
         Filter filter = new Filter(context, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
@@ -1725,11 +1726,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
-        protected EvaluationContextImpl(int iteration,
-                                        boolean allowBreakDelay,
-                                        ConditionManager conditionManager,
-                                        EvaluationContext closure) {
-            super(closure == null ? 1 : closure.getDepth() + 1, iteration, allowBreakDelay, conditionManager, closure);
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            super(1, iteration, false, conditionManager, null);
         }
 
         @Override

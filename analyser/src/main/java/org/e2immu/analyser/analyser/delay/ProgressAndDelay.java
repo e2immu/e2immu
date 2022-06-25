@@ -20,7 +20,7 @@ import org.e2immu.analyser.analyser.Properties;
 
 // used for situations where progress can be true while causes is done.
 public record ProgressAndDelay(boolean progress, CausesOfDelay causes) {
-    public static ProgressAndDelay EMPTY = new ProgressAndDelay(false, CausesOfDelay.EMPTY);
+    public static final ProgressAndDelay EMPTY = new ProgressAndDelay(false, CausesOfDelay.EMPTY);
 
     public ProgressAndDelay combine(ProgressAndDelay other) {
         return new ProgressAndDelay(progress || other.progress, causes.merge(other.causes));

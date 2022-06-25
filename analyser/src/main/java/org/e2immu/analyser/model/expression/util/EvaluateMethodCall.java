@@ -133,7 +133,7 @@ public class EvaluateMethodCall {
          In companion expression mode, we work symbolically, and must leave this.contains("a") as an informational clause.
          Examples: BasicCompanionMethods_5 for the negative scenario; CyclicReferences_3 for the positive one
         */
-        if (modified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression() && methodInfo.returnType().isBoolean()) {
+        if (modified.valueIsFalse() && forwardEvaluationInfo.isNotInCompanionExpression() && methodInfo.returnType().isBoolean()) {
             Expression condition = context.evaluationContext().getConditionManager().condition();
             if (methodCall.equals(condition) || condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);

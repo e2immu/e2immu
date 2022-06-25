@@ -205,9 +205,6 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
         if (operator == primitives.equalsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
-            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
-                // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
-            }
             return Equals.equals(identifier, context, l, r, forwardEvaluationInfo);
         }
         if (operator == primitives.notEqualsOperatorObject()) {
@@ -232,9 +229,6 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
         if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
-            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
-                // TODO need more resolution throw new UnsupportedOperationException();
-            }
             return Negation.negate(context, Equals.equals(identifier, context, l, r, forwardEvaluationInfo));
         }
 

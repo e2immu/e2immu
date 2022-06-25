@@ -146,4 +146,9 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         CausesOfDelay c2 = indexExpression.causesOfDelay().merge(indexVariable == null ? CausesOfDelay.EMPTY : indexVariable.causesOfDelay());
         return c1.merge(c2);
     }
+
+    @Override
+    public boolean hasDelayedComponents() {
+        return arrayExpression.isDelayed() || indexExpression.isDelayed();
+    }
 }

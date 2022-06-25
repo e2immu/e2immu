@@ -33,7 +33,7 @@ public class DelayFactory {
         if (causes.size() == 1) return new SingleDelay(causes.stream().findFirst().orElseThrow());
         int maxPriority = causes.stream().mapToInt(c -> c.cause().priority).max().getAsInt();
         if (maxPriority == CauseOfDelay.LOW) return new SingleDelay(causes.stream().findFirst().orElseThrow());
-        return SimpleSet.mergeIntoMapAndReturn(causes.stream().filter(c -> c.cause().priority == maxPriority),
+        return HighPriorityDelays.mergeIntoMapAndReturn(causes.stream().filter(c -> c.cause().priority == maxPriority),
                 new HashMap<>());
     }
 

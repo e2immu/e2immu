@@ -250,4 +250,9 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public CausesOfDelay causesOfDelay() {
         return scope.causesOfDelay().merge(scopeVariable == null ? CausesOfDelay.EMPTY : scopeVariable.causesOfDelay());
     }
+
+    @Override
+    public boolean hasDelayedComponents() {
+        return scope.isDelayed();
+    }
 }
