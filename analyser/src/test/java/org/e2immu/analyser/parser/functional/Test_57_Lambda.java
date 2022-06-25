@@ -165,7 +165,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals("0", d.statementId());
-                        assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
+                        assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTEXT_CONTAINER);
                     } else if (fr.scope instanceof ConstructorCall) {
                         String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
@@ -329,13 +331,27 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        // FIXME this is a hack, see Modification_20/tryShortCut -- do we want to keep this?
+
         if (currentValue instanceof DelayedExpression de) {
-            de.shortCutVariables(context.getCurrentType(), scopeValue).forEach((v, expr) -> {
-                expr.variables(true).forEach(vv -> {
-                    builder.variableOccursInNotNullContext(vv, expr, de.causesOfDelay(), forwardEvaluationInfo);
-                });
-            });
+            // See WGSimplified_0: make sure we have delays on context properties linked to the result
+            CausesOfDelay marker = DelayFactory.createDelay(new VariableCause(variable, context.evaluationContext().getLocation(Stage.EVALUATION), CauseOfDelay.Cause.DELAYED_EXPRESSION));
+            CausesOfDelay causesOfDelay = de.causesOfDelay().merge(marker);
+            boolean haveMarker = de.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.DELAYED_EXPRESSION);
+            if (!haveMarker) {
+                for (Variable variable : de.variables(true)) {
+                    if (!this.variable.equals(variable) && context.evaluationContext().isPresent(variable)) {
+                        for (Property ctx : Property.CONTEXTS) {
+                            // we must delay, even if there's a value already
+                            builder.setProperty(variable, ctx, causesOfDelay);
+                        }
+                    }
+                }
+            }
+
+            // IMPORTANT: this is a hack, see Modification_20/tryShortCut -- do we want to keep this?
+            de.shortCutVariables(context.getCurrentType(), scopeValue).forEach((v, expr) ->
+                    expr.variables(true).forEach(vv ->
+                            builder.variableOccursInNotNullContext(vv, expr, de.causesOfDelay(), forwardEvaluationInfo)));
         }
         builder.variableOccursInNotNullContext(variable, currentValue, notNull, forwardEvaluationInfo);
 
@@ -428,11 +444,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        if(variable instanceof DependentVariable dv) {
+        if (variable instanceof DependentVariable dv) {
             return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
                     dv.arrayVariable(), LinkedVariables.DEPENDENT_DV);
         }
-        if(variable instanceof FieldReference fr && !fr.scopeIsThis() && fr.scopeVariable != null) {
+        if (variable instanceof FieldReference fr && !fr.scopeIsThis() && fr.scopeVariable != null) {
             return LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV,
                     fr.scopeVariable, LinkedVariables.DEPENDENT_DV);
         }

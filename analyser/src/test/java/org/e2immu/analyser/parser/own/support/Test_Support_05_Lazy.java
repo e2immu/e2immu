@@ -160,7 +160,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
             String expected = switch (d.iteration()) {
                 case 0 -> "constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
                 case 1 -> "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
-                case 2, 3, 4, 5, 6 -> "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
+                case 2, 3, 4, 5, 6 -> "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
                 default -> "null,nullable instance type T/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());

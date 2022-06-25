@@ -45,6 +45,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         CONTEXT_MODIFIED("cm", "Context modified not yet been determined", HIGH),
         CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         CONTEXT_NOT_NULL("cnn", ""),
+        DELAYED_EXPRESSION("de", "delayed expression to be substituted", HIGH),
         ECI("eci", "Explicit constructor invocation", HIGH),
         ECI_HELPER("eci_helper", "Explicit constructor invocation, helper"),
         EXT_IMM("ext_imm", "Variable's EXTERNAL_IMMUTABLE value not yet determined"),

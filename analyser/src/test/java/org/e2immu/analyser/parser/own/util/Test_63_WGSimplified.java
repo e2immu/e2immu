@@ -14,13 +14,19 @@
 
 package org.e2immu.analyser.parser.own.util;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.Stage;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -45,24 +51,106 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:t>" : "?? don't reach this yet";
+                        String expected = d.iteration() <= BIG ? "<p:t>" : "?? don't reach this yet";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if ("node".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertCurrentValue(d, 12, "nodeMap.get(t)");
+                    }
+                }
+                if ("currentDistanceToT".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "distanceToStartingPoint.get(t)";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("3.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, BIG, "");
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertCurrentValue(d, BIG, "");
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                    if ("3.0.0".equals(d.statementId())) {
+                        // eval
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        String linkedE = d.iteration() == 0
+                                ? "currentDistanceToT:-1,distanceToStartingPoint:-1,node:-1,t:-1,this.nodeMap:-1"
+                                : "node:-1,this.nodeMap:-1";
+                        assertEquals(linkedE, eval.getLinkedVariables().toString());
+
+                        // merge
+                        assertEquals("node", fr.scope.toString());
+                        String linked = d.iteration() == 0 ? "currentDistanceToT:-1,distanceToStartingPoint:-1,node:-1,t:-1,this.nodeMap:-1"
+                                : "node:-1,this.nodeMap:-1";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
-                    assertEquals("0", d.statementId());
-                    assertEquals("<m:get>", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<m:get>" : "nullable instance type T/*@Identity*/";
+                    assertEquals(expected, d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().hasEvaluation());
-                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
+                if ("currentDistanceToT".equals(d.variableName())) {
+                    String expected = d.iteration() == 0 ? "<m:get>" : "distanceToStartingPoint.get(t)";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+                if (d.variable() instanceof This thisVar && "$1".equals(thisVar.typeInfo.simpleName)) {
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof This thisVar && "WGSimplified_0".equals(thisVar.typeInfo.simpleName)) {
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String linked = d.iteration() == 0 ? "currentDistanceToT:-1,d:-1,distanceToN:-1,this.neutral:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
+                    assertEquals("node", fr.scope.toString());
+                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "node:-1,this.nodeMap:-1";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    // THIS will get no value because as of iteration 12, the block is not reachable
+                    // on the other hand, we keep the sub-type alive... FIXME this is not compatible!
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
+                if ("3.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "currentDistanceToT={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}, dependsOn={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, distanceToStartingPoint={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, neutral={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=not_null:5, read=true:1}, node={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, nodeMap={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, t={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, this={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}";
+                        default -> "currentDistanceToT={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, distanceToStartingPoint={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, neutral={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, node={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, nodeMap={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, t={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, this={modified in context=initial@Field_dependsOn;initial@Field_t, read=true:1}";
+                    };
+                    assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
+
+                    assertEquals(d.iteration() >= 12, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                }
+            }
+            if ("accept".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("0", d.statementId());
+                assertEquals(d.iteration() > BIG, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
         testClass("WGSimplified_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

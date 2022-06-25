@@ -118,7 +118,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     }
                     // then comes an assignment...
                     if ("1.0.3".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     // and therefore "1" remains nullable, 1st round
                     if ("1".equals(d.statementId())) {
@@ -185,7 +185,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("loadBytes".equals(d.methodInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals(2, d.evaluationResult().changeData().size());
+                    assertEquals(d.iteration() == 0 ? 4 : 2, d.evaluationResult().changeData().size());
                     String expected = d.iteration() == 0 ? "<m:get>" : "data.get(path.split(\"/\"))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChange("urls");

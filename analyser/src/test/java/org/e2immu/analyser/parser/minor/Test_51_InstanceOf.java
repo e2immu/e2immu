@@ -841,7 +841,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                             assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
                             assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                            assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                         // delays in clustering in iteration 2, otherwise we'd have CM
                         if ("0.0.1.0.5".equals(d.statementId())) {
