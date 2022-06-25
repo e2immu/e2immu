@@ -71,7 +71,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertCurrentValue(d, BIG, "");
+                        assertCurrentValue(d, 13, "distanceToStartingPoint.get(t)");
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
@@ -155,7 +155,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 assertEquals(d.iteration() > 12, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
-        testClass("WGSimplified_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("WGSimplified_0", 8, 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

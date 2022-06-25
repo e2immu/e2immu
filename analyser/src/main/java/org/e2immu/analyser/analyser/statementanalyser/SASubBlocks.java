@@ -290,7 +290,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         executions.get(0).startOfBlock.lastStatement().getStatementAnalysis().flowData().getTimeAfterSubBlocks();
             } else {
                 lastStatements = executions.stream()
-                        .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.getStatementAnalysis().flowData().isUnreachable())
+                        .filter(ex -> ex.startOfBlock != null)
                         .map(ex -> {
                             StatementAnalyser lastStatement = ex.startOfBlock.lastStatement();
                             StatementAnalysis lastAnalysis = lastStatement.getStatementAnalysis();

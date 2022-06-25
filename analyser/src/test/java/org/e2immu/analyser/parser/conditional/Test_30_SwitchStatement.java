@@ -88,7 +88,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             }
         };
 
-        testClass("SwitchStatement_2", 2, 1, new DebugConfiguration.Builder()
+        testClass("SwitchStatement_2", 2, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
