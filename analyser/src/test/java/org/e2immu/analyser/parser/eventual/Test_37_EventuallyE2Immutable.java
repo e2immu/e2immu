@@ -204,7 +204,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyInto".equals(d.methodInfo().name)) {
@@ -407,7 +407,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 String expectEventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
-                    case 1 -> "[DelayedEventual:initial:this.set@Method_stream_0-C]";
+                    case 1 -> "[DelayedEventual:final@Field_set]";
                     case 2 -> "[DelayedEventual:initial@Field_set]";
                     default -> "@Only after: [set]";
                 };
@@ -434,7 +434,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // E1 approved preconditions is empty: all fields explicitly final
                 assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
                 if (d.iteration() < 2) {
-                    String expected = d.iteration() == 0 ? "initial:this.set@Method_stream_0-C" : "initial@Field_set";
+                    String expected = d.iteration() == 0 ? "final@Field_set" : "initial@Field_set";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
                     // E2 approved preconditions must contain "set"
@@ -573,8 +573,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE2Immutable_9".equals(d.typeInfo().simpleName)) {
-                assertEquals(d.iteration() <= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
-                if (d.iteration() >= 3) {
+                assertEquals(d.iteration() < 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDelayed());
+                if (d.iteration() >= 2) {
                     // we expect "value" to be guarded by isFinal (ComputingTypeAnalyser.findFieldsGuardedByEventuallyImmutableFields)
                     String expected = "isFinal=!isFinal";
                     // E1 approved preconditions

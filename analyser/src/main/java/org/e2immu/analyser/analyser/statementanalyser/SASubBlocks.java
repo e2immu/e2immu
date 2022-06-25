@@ -89,8 +89,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             cmFromStatement = cm;
             statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPrecondition()));
         }
-        boolean progress = statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cmFromStatement);
-
+        boolean progress;
+        if (!statementAnalysis.flowData().isUnreachable()) {
+            progress = statementAnalysis.stateData().setLocalConditionManagerForNextStatement(cmFromStatement);
+        } else {
+            progress = false;
+        }
         if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData().copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
@@ -119,7 +123,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (translated != null) {
             LOGGER.debug("Escape with precondition {}", translated);
             Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-            boolean progress = statementAnalysis.stateData().setPrecondition(pc);
+            boolean progress = !statementAnalysis.flowData().isUnreachable() && statementAnalysis.stateData().setPrecondition(pc);
             CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
             return ProgressWrapper.of(progress, preconditionIsDelayed);
         }
@@ -240,29 +244,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         int blocksExecuted = 0;
         for (ExecutionOfBlock executionOfBlock : executions) {
             if (executionOfBlock.startOfBlock != null) {
-                if (!executionOfBlock.execution.equals(FlowData.NEVER)) {
-                    ForwardAnalysisInfo forward;
-                    if (statement() instanceof SwitchStatementOldStyle switchStatement) {
-                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
-                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                switchStatement.startingPointToLabels(sharedState.context(),
-                                        executionOfBlock.startOfBlock.getStatementAnalysis()),
-                                statementAnalysis.stateData().valueOfExpression.get(),
-                                statementAnalysis.stateData().valueOfExpression.get().causesOfDelay(),
-                                evaluationContext.allowBreakDelay());
-                    } else {
-                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
-                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                null, null, CausesOfDelay.EMPTY,
-                                evaluationContext.allowBreakDelay());
-                    }
-                    AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
-                            .analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                                    forward, evaluationContext.getClosure());
-                    sharedState.builder().add(result);
-                    analysisStatus = analysisStatus.combine(result.analysisStatus());
-                    blocksExecuted++;
-                } else {
+                if (executionOfBlock.execution.equals(FlowData.NEVER)) {
                     // ensure that the first statement is unreachable
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(Stage.MERGE),
@@ -271,6 +253,27 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     sharedState.builder().addMessages(executionOfBlock.startOfBlock.getStatementAnalysis().messageStream());
                     executionOfBlock.startOfBlock.makeUnreachable();
                 }
+                ForwardAnalysisInfo forward;
+                if (statement() instanceof SwitchStatementOldStyle switchStatement) {
+                    forward = new ForwardAnalysisInfo(executionOfBlock.execution,
+                            executionOfBlock.conditionManager, executionOfBlock.catchVariable,
+                            switchStatement.startingPointToLabels(sharedState.context(),
+                                    executionOfBlock.startOfBlock.getStatementAnalysis()),
+                            statementAnalysis.stateData().valueOfExpression.get(),
+                            statementAnalysis.stateData().valueOfExpression.get().causesOfDelay(),
+                            evaluationContext.allowBreakDelay());
+                } else {
+                    forward = new ForwardAnalysisInfo(executionOfBlock.execution,
+                            executionOfBlock.conditionManager, executionOfBlock.catchVariable,
+                            null, null, CausesOfDelay.EMPTY,
+                            evaluationContext.allowBreakDelay());
+                }
+                AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
+                        .analyseAllStatementsInBlock(evaluationContext.getIteration(),
+                                forward, evaluationContext.getClosure());
+                sharedState.builder().add(result);
+                analysisStatus = analysisStatus.combine(result.analysisStatus());
+                blocksExecuted++;
             }
         }
         boolean keepCurrentLocalConditionManager = true;
@@ -630,10 +633,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             DV execution = statementAnalysis.flowData().execution(newExecution);
 
-            ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
-                    sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
+            ConditionManager subCm = sharedState.localConditionManager()
+                    .newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),
                             conditionForSubStatement, conditionVariables);
-            Expression absoluteState = subCm == null ? null : subCm.absoluteState(sharedState.context());
+            Expression absoluteState = subCm.absoluteState(sharedState.context());
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,
@@ -654,10 +657,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         ConditionManager cm;
         Set<Variable> conditionVariables;
         if (firstBlockExecution.equals(FlowData.NEVER)) {
-            cm = null;
-            condition = null;
-            conditionVariables = null;
-            absoluteState = null;
+            BooleanConstant FALSE = new BooleanConstant(evaluationContext.getPrimitives(), false);
+            cm = new ConditionManager(FALSE, Set.of(), localConditionManager.state(), localConditionManager.stateVariables(), localConditionManager.precondition(), localConditionManager);
+            condition = FALSE;
+            conditionVariables = Set.of();
+            absoluteState = FALSE;
         } else {
             Primitives primitives = statementAnalysis.primitives();
             cm = conditionManagerForFirstBlock(localConditionManager, evaluationContext, primitives, value, valueIsDelayed);

@@ -81,7 +81,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("removeAsManyAsPossible".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String state = d.iteration() <= 1 ? "!<m:get>" : "!changed.get()";
+                    String state = d.iteration() == 0 ? "!<m:get>" : "!changed.get()";
                     assertEquals(state, d.state().toString());
                 }
             }
@@ -158,7 +158,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                         assertCurrentValue(d, 34, "changed$1.get()?instance type AtomicBoolean:new AtomicBoolean(true)");
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 33 ? "<vl:changed>" : "instance type AtomicBoolean";
@@ -185,8 +185,8 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
             if ("addNode".equals(d.methodInfo().name)) {
                 // ... or not, mm@Method_addNode
-                assertDv(d.p(0), 36, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d, 34, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {
                 String expected = d.iteration() <= 33 ? "<m:comparator>"
@@ -200,7 +200,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DGSimplified_0".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 35, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER); // TODO verify this
             }
         };
         // TODO improve on errors

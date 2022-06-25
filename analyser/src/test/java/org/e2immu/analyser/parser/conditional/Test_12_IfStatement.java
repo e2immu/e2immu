@@ -267,7 +267,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() == 0 ? "<m:method1>" : "null";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

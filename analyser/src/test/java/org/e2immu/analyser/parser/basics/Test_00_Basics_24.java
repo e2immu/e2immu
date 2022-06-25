@@ -111,7 +111,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     case 2, 3 -> "constructor-to-instance@Method_method_0-E;mom@Parameter_s";
                     default -> "condition@Method_method_2:M";
                 };
-                assertDv(d, delay, 6, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, delay, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 String linked = d.iteration() <= 3 ? "a:-1,pos:-1,s:-1,this.map:-1,x:-1" : "s:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
@@ -120,7 +120,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
             if ("X".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 String delay = d.iteration() == 0 ? "cm@Parameter_s;mom@Parameter_s" : "mom@Parameter_s";
-                assertDv(d.p(0), delay, 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), delay, 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

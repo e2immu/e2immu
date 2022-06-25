@@ -65,9 +65,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index())) {
-                String expected = d.iteration() == 0 ? "<c:boolean>&&<m:contains>" : "false";
-                assertEquals(expected, d.absoluteState().toString());
+                String expected = d.iteration() == 0 ? "<c:boolean>" : "false";
+                assertEquals(expected, d.localConditionManager().condition().toString());
                 assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().flowData().isUnreachable());
+                assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.UNREACHABLE_STATEMENT));
+                mustSeeIteration(d, 1);
             }
         }
 
@@ -146,7 +149,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
                 assertNotEquals("1", d.statementId());
@@ -169,8 +172,6 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                         String linked = "b:-1,param:-1";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    } else {
-                        fail(); // unreachable, now that the condition is stable
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {

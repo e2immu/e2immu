@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -81,9 +82,6 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     if ("1.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
-                    if ("1.0.1.1.1".equals(d.statementId())) {
-                        assertTrue(d.iteration() < 2);
-                    }
                     if ("1.0.2".equals(d.statementId())) {
                         String linked = d.iteration() <= 1 ? "node.map:-1,node:0,s:-1,this.root:-1" : "node:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -92,24 +90,30 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                 }
                 if ("node".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
-                    if ("1.0.1.1.1".equals(d.statementId())) {
-                        assertTrue(d.iteration() < 2);
-                    }
+
                     if ("1.0.2".equals(d.statementId())) {
                         String linked = d.iteration() <= 1 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1" : "newTrieNode:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
-        testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("1.0.1.1.1".equals(d.statementId())) {
+                    assertEquals(d.iteration() >= 2, d.statementAnalysis().flowData().isUnreachable());
+                }
+            }
+        };
+        testClass("NotNull_3", 7, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)
                 .build());

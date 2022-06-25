@@ -180,7 +180,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 assertEquals(range, d.statementAnalysis().rangeData().getRange().toString());
 
                 String expected = switch (d.iteration()) {
-                    case 0 -> "var_missing:j@Method_method_2.0.1-C";
+                    case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
                     case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
                     default -> "";
                 };
@@ -296,7 +296,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "{}" : "{xes=assigned:1}";
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(expected, p0.getAssignedToField().toString());
-                assertEquals(d.iteration() >= 6, p0.assignedToFieldDelays().isDone());
+                assertEquals(d.iteration() >= 5, p0.assignedToFieldDelays().isDone());
                 assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }

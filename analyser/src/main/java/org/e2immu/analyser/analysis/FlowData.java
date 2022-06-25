@@ -79,7 +79,10 @@ public class FlowData {
     }
 
     public void makeUnreachable() {
-        setGuaranteedToBeReachedInMethod(FlowData.NEVER);
+        if(!guaranteedToBeReachedInMethod.isSet()) {
+            // can happen in sub-analysers that the value has been set already
+            setGuaranteedToBeReachedInMethod(FlowData.NEVER);
+        }
         if(!guaranteedToBeReachedInCurrentBlock.isSet()) {
             guaranteedToBeReachedInCurrentBlock.set(FlowData.NEVER);
         }
@@ -202,6 +205,10 @@ public class FlowData {
 
     public void setGuaranteedToBeReachedInCurrentBlock(DV executionInBlock) {
         if (executionInBlock.isDone()) {
+            if(guaranteedToBeReachedInCurrentBlock.isSet() && FlowData.NEVER.equals(guaranteedToBeReachedInCurrentBlock.get())) {
+                // we'll try to overwrite, because we continue, but that cannot change the value!
+                return;
+            }
             if ((!guaranteedToBeReachedInCurrentBlock.isSet() || !guaranteedToBeReachedInCurrentBlock.get().equals(executionInBlock))) {
                 try {
                     guaranteedToBeReachedInCurrentBlock.set(executionInBlock);
@@ -218,6 +225,10 @@ public class FlowData {
 
     public void setGuaranteedToBeReachedInMethod(DV executionInMethod) {
         if (executionInMethod.isDone()) {
+            if(guaranteedToBeReachedInMethod.isSet() && FlowData.NEVER.equals(guaranteedToBeReachedInMethod.get())) {
+                // we'll try to overwrite, because we continue, but that cannot change the value!
+                return;
+            }
             if (!guaranteedToBeReachedInMethod.isSet() || !guaranteedToBeReachedInMethod.get().equals(executionInMethod)) {
                 try {
                     guaranteedToBeReachedInMethod.set(executionInMethod);
@@ -426,8 +437,13 @@ public class FlowData {
     }
 
     private void setInterruptsFlow(Map<InterruptsFlow, DV> map) {
-        if (!interruptsFlow.isSet() || !interruptsFlow.get().equals(map)) {
-            interruptsFlow.set(map);
+        if (!isUnreachable() && (!interruptsFlow.isSet() || !interruptsFlow.get().equals(map))) {
+            try {
+                interruptsFlow.set(map);
+            } catch(IllegalStateException ise) {
+                LOGGER.error("Already set");
+                throw ise;
+            }
         }
     }
 

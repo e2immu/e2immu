@@ -220,7 +220,7 @@ public class Test_17_Container extends CommonTestRunner {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if ("0".equals(d.statementId())) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

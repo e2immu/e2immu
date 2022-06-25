@@ -197,7 +197,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // called from primary type analyser
     @Override
     public AnalyserResult analyse(Analyser.SharedState sharedState) {
-        assert !isUnreachable();
         int iteration = sharedState.iteration();
 
         LOGGER.info("Analysing method {} it {}", methodInfo.fullyQualifiedName(), iteration);

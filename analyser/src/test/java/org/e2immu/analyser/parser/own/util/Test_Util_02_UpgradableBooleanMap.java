@@ -105,7 +105,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof This) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -128,7 +128,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
@@ -137,7 +137,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("accept,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
                 // ModifiedMethod must be TRUE, CM travels from accept in $4
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             // uses putAll as a method reference
@@ -157,7 +157,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
             // putAll
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -165,7 +165,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "other={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={modified in context=constructor-to-instance@Method_accept_0-E;initial:this.map@Method_put_0-C;link@NOT_YET_SET, read=true:1}"
+                            ? "other={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}"
                             : "other={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}";
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }

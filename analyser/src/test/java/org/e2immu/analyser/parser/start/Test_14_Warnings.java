@@ -269,8 +269,10 @@ public class Test_14_Warnings extends CommonTestRunner {
             if ("testDeadCode".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                 }
                 if ("1.0.0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().flowData().isUnreachable());
                     assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                 }
             }

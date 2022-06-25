@@ -51,14 +51,14 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= BIG ? "<p:t>" : "?? don't reach this yet";
+                        String expected = d.iteration() <= 12 ? "<p:t>" : "nullable instance type T/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("node".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertCurrentValue(d, 12, "nodeMap.get(t)");
+                        assertCurrentValue(d, 13, "nodeMap.get(t)");
                     }
                 }
                 if ("currentDistanceToT".equals(d.variableName())) {
@@ -67,7 +67,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, BIG, "");
+                        assertCurrentValue(d, 13, "distanceToStartingPoint.get(t)");
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3".equals(d.statementId())) {
@@ -80,16 +80,19 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         // eval
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linkedE = d.iteration() == 0
-                                ? "currentDistanceToT:-1,distanceToStartingPoint:-1,node:-1,t:-1,this.nodeMap:-1"
-                                : "node:-1,this.nodeMap:-1";
-                        assertEquals(linkedE, eval.getLinkedVariables().toString());
+                        if (d.iteration() <= 12) {
+                            assertTrue(eval.getLinkedVariables().isDelayed());
+                        } else {
+                            assertEquals("node:2,this.nodeMap:3", eval.getLinkedVariables().toString());
+                        }
 
                         // merge
                         assertEquals("node", fr.scope.toString());
-                        String linked = d.iteration() == 0 ? "currentDistanceToT:-1,distanceToStartingPoint:-1,node:-1,t:-1,this.nodeMap:-1"
-                                : "node:-1,this.nodeMap:-1";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        if (d.iteration() <= 12) {
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
+                        } else {
+                            assertEquals("node:2,this.nodeMap:3", d.variableInfo().getLinkedVariables().toString());
+                        }
                     }
                 }
             }
@@ -123,10 +126,11 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
                     assertEquals("node", fr.scope.toString());
-                    String linked = d.iteration() == 0 ? "NOT_YET_SET" : "node:-1,this.nodeMap:-1";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    // THIS will get no value because as of iteration 12, the block is not reachable
-                    // on the other hand, we keep the sub-type alive... FIXME this is not compatible!
+                    if (d.iteration() <= 12) {
+                        assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
+                    } else {
+                        assertEquals("node:2,this.nodeMap:3", d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -135,17 +139,20 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 if ("3.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "currentDistanceToT={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}, dependsOn={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, distanceToStartingPoint={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, neutral={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=not_null:5, read=true:1}, node={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, nodeMap={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, t={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, this={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}";
-                        default -> "currentDistanceToT={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, distanceToStartingPoint={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, neutral={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, node={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, nodeMap={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, t={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, this={modified in context=initial@Field_dependsOn;initial@Field_t, read=true:1}";
+                        case 1 -> "currentDistanceToT={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, distanceToStartingPoint={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, neutral={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, node={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, nodeMap={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, t={modified in context=initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, this={modified in context=initial@Field_dependsOn;initial@Field_t, read=true:1}";
+                        case 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "currentDistanceToT={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, distanceToStartingPoint={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, neutral={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5, read=true:1}, node={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, nodeMap={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=nullable:1}, t={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, not null in context=not_null:5}, this={modified in context=de:node@Method_recursivelyComputeLinks_3-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;initial@Field_dependsOn;initial@Field_t, read=true:1}";
+                        default -> "currentDistanceToT={modified in context=false:0, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=false:0, not null in context=nullable:1}, distanceToStartingPoint={modified in context=false:0, not null in context=not_null:5}, neutral={modified in context=false:0, not null in context=not_null:5, read=true:1}, node={modified in context=false:0, not null in context=nullable:1}, nodeMap={modified in context=false:0, not null in context=nullable:1}, t={modified in context=false:0, not null in context=not_null:5}, this={modified in context=false:0, read=true:1}";
                     };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
 
-                    assertEquals(d.iteration() >= 12, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                    assertEquals(d.iteration() >= 13, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                    assertEquals(d.iteration() >= 13, d.statementAnalysis().flowData().isUnreachable());
                 }
             }
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 assertEquals("0", d.statementId());
-                assertEquals(d.iteration() > BIG, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 12, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
         testClass("WGSimplified_0", 2, 0, new DebugConfiguration.Builder()

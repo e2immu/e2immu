@@ -86,8 +86,7 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
-                    assertEquals("s.equals(\"c\")", d.condition().toString());
-                    assertEquals("false", d.absoluteState().toString());
+                    assertEquals("false", d.localConditionManager().condition().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("s.equals(\"a\")||s.equals(\"b\")", d.condition().toString());

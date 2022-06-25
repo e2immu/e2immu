@@ -188,8 +188,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     sharedState.localConditionManager().multiExpression(),
                     sharedState.localConditionManager().causesOfDelay());
         }
-        statementAnalysis.stateData().setValueOfExpression(value);
-
+        if(!statementAnalysis.flowData().isUnreachable()) {
+            statementAnalysis.stateData().setValueOfExpression(value);
+        }
         ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(stateForLoop);
         return endResult.toAnalysisStatus();
     }
@@ -460,7 +461,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                         firstStatement.statement().getIdentifier()),
                                 Message.Label.UNREACHABLE_STATEMENT);
                         // let's add it to us, rather than to this unreachable statement
-                        statementAnalysis.ensure(msg);
+                        firstStatement.ensure(msg);
                     }
                     // guaranteed to be reached in block is always "ALWAYS" because it is the first statement
                     setExecutionOfSubBlock(firstStatement, isTrue ? FlowData.ALWAYS : FlowData.NEVER);
@@ -473,7 +474,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                             firstStatement.index() + INITIAL,
                                             firstStatement.statement().getIdentifier()),
                                     Message.Label.UNREACHABLE_STATEMENT);
-                            statementAnalysis.ensure(msg);
+                            firstStatement.ensure(msg);
                         }
                         setExecutionOfSubBlock(firstStatement, isTrue ? FlowData.NEVER : FlowData.ALWAYS);
                     });

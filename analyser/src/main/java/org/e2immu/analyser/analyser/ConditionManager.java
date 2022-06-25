@@ -179,21 +179,21 @@ public record ConditionManager(Expression condition,
         return absoluteState(evaluationContext, false);
     }
 
-    private Expression absoluteState(EvaluationResult evaluationContext, boolean doingNullCheck) {
+    private Expression absoluteState(EvaluationResult context, boolean doingNullCheck) {
         Expression[] expressions;
         int complexity;
         if (parent == null) {
             expressions = new Expression[]{state};
             complexity = state.getComplexity();
         } else {
-            Expression parentAbsolute = parent.absoluteState(evaluationContext, doingNullCheck);
+            Expression parentAbsolute = parent.absoluteState(context, doingNullCheck);
             expressions = new Expression[]{condition, state, parentAbsolute};
             complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
         }
         if (complexity > LIMIT_ON_COMPLEXITY) {
-            return Instance.forTooComplex(getIdentifier(), evaluationContext.getPrimitives().booleanParameterizedType());
+            return Instance.forTooComplex(getIdentifier(), context.getPrimitives().booleanParameterizedType());
         }
-        return And.and(evaluationContext, doingNullCheck, expressions);
+        return And.and(context, doingNullCheck, expressions);
     }
 
     public Identifier getIdentifier() {

@@ -42,9 +42,16 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
             MethodInfo get = map.findUniqueMethod("get", 1);
             assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         };
-
+        FieldAnalyserVisitor fieldAnalyserVisitor = d-> {
+            if ("value".equals(d.fieldInfo().name)) {
+                assertEquals("Container", d.fieldInfo().owner.simpleName);
+                assertEquals("value:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+        };
         testClass("Project_0", 2, 7, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

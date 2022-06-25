@@ -86,10 +86,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo p && "e".equals(p.name)) {
-                    String expect =switch( d.iteration()) {
-                        case 0, 1 -> "<mod:V>";
-                        case 2 -> "<mod:K>";
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "<mod:V>";
+                        case 1, 2 -> "<mod:K>";
                         default -> "nullable instance type Entry<K,V>/*@Identity*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
@@ -97,7 +98,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
-                    if("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<mod:K>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "this:-1" : "";

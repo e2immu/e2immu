@@ -57,7 +57,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
-        Objects.requireNonNull(v);
+        assert v != null;
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
         }

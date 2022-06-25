@@ -72,7 +72,7 @@ public class Test_01_Loops_3 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals(0, d.iteration(), "statement should be unreachable after iteration 0");
+                    assertTrue(d.statementAnalysis().flowData().isUnreachable());
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement() instanceof ForEachStatement forEachStatement) {

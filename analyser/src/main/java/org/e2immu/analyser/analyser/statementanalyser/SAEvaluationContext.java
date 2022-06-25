@@ -104,6 +104,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // part 1 of the work: all evaluations will get to read the new value
         // part 2 is at the start of SAApply, where the value will be assigned
         if (base) {
+            assert conditionManager != null;
             Expression absoluteState = conditionManager.absoluteState(EvaluationResult.from(this));
             if (absoluteState.isDone()) {
                 List<LhsRhs> equalities = LhsRhs.extractEqualities(absoluteState);

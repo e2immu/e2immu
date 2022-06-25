@@ -63,13 +63,14 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             assertEquals(expected, d.currentValue().toString());
                             String linked = d.iteration() <= 4 ? "newTrieNode:-1,node:-1,s:-1,this.root:-1" : "";
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                            assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             assertDv(d, 5, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                         if ("1.0.1.1.0".equals(d.statementId())) {
-                            assertEquals("<f:map>", d.currentValue().toString());
-                            assertEquals("newTrieNode:-1,node:-1,s:-1,this.root:-1",
-                                    d.variableInfo().getLinkedVariables().toString());
+                            String expected = d.iteration() <= 2 ? "<f:map>" : "null";
+                            assertEquals(expected, d.currentValue().toString());
+                            String linked = d.iteration() <= 2 ? "newTrieNode:-1,node:-1,s:-1,this.root:-1" : "";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                 }
@@ -89,8 +90,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if ("1.0.1.1.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "initial:node@Method_add_1.0.1-C";
-                        default -> "wait_for_modification:node@Method_add_1-E";
-                        //    default -> fail("Not supposed to reach iteration 7"); // because field analyser does not go beyond subtype
+                        case 1, 2 -> "initial@Field_root";
+                        default -> "NEVER:0";
                     };
                     assertEquals(expected, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
@@ -204,7 +205,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT! branch 0.1 is blocked, and map is never modified
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.1.1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
@@ -218,7 +219,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("newTrieNode".equals(d.variableName())) {
                     if ("0.1.0".equals(d.statementId())) {
-                        assertEquals("<m:get>", d.currentValue().toString());
+                        String expected = d.iteration() <= 2 ? "<m:get>" : "null.get(s)";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -230,7 +232,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String flowData = switch (d.iteration()) {
                         case 0 -> "initial:this.root@Method_add_0-C";
                         case 1, 2 -> "initial@Field_root";
-                        default -> "FlowData.ALWAYS";
+                        default -> "NEVER:0";
                     };
                     assertEquals(flowData, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
@@ -254,7 +256,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
                 String expected = d.iteration() <= 2 ? "<m:add>" : "/*inline add*/root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 3) {
@@ -264,7 +266,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
             if ("addSynchronized".equals(d.methodInfo().name)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 

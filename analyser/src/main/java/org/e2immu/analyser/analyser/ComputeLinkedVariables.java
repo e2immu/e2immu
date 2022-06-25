@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -292,19 +291,6 @@ public class ComputeLinkedVariables {
     }
 
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
-        return write(property, propertyValues, CausesOfDelay.EMPTY);
-    }
-
-    public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues, CausesOfDelay extraDelay) {
-        try {
-            return writeProperty(property, propertyValues, extraDelay);
-        } catch (IllegalStateException ise) {
-            LOGGER.error("Clusters assigned are: {}", clusters);
-            throw ise;
-        }
-    }
-
-    private ProgressAndDelay writeProperty(Property property, Map<Variable, DV> propertyValues, CausesOfDelay extraDelay) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
         boolean broken = false;
@@ -355,16 +341,7 @@ public class ComputeLinkedVariables {
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(DV.FALSE_DV, DV::max);
 
-            // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
-            // currently only for CM; example: TrieSimplified_0, _1_2, _1_2bis
-            if (extraDelay.isDelayed()) {
-                assert property == Property.CONTEXT_MODIFIED;
-                boolean self = extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
-                if (!self) {
-                    CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
-                    summary = extraDelay.merge(conditionDelayMarker);
-                }
-            }
+
             // See Modification_19 and _20, one which must have the delays (19) and the other which must have the break (20)
             // does not interfere with the next situation, as than one requires a done cluster
             if (Property.CONTEXT_MODIFIED == property && cluster.delays.isDelayed()) {
@@ -440,7 +417,7 @@ public class ComputeLinkedVariables {
                     } else if (current.isDelayed()) {
                         try {
                             DV inMap = propertyValues.get(variable);
-                            if (property.bestDv.equals(inMap) && extraDelay.isDone()) {
+                            if (property.bestDv.equals(inMap)) {
                                 // whatever happens, this value cannot get better (e.g., TRUE in CM)
                                 vic.setProperty(property, property.bestDv, stage);
                                 progress = true;

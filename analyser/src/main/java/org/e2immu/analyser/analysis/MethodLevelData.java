@@ -152,7 +152,9 @@ public class MethodLevelData {
     }
 
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
-        assert linksHaveBeenEstablished.isVariable();
+        if(linksHaveBeenEstablished.isFinal()) {
+            return DONE;
+        }
 
         CausesOfDelay delayed = sharedState.statementAnalysis.variableStream()
                 .filter(vi -> !(vi.variable() instanceof This))

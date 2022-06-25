@@ -95,12 +95,10 @@ public class Test_45_Project extends CommonTestRunner {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("2.0.1.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:result>" : "new HashMap<>()";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertCurrentValue(d,4, "new HashMap<>()");
                     }
                     if ("2.0.1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3 ? "<vl:result>" : "new HashMap<>()";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertCurrentValue(d,4, "new HashMap<>()");
                     }
 
                 }
@@ -142,10 +140,10 @@ public class Test_45_Project extends CommonTestRunner {
 
         testClass("Project_0", 2, 19, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+            //    .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -163,7 +161,7 @@ public class Test_45_Project extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     assert "prev".equals(fr.scope.toString());
-                    assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -176,10 +174,10 @@ public class Test_45_Project extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("container".equals(fr.scope.toString())) {
                         if ("2.0.1.0.1.0.0".equals(d.statementId())) {
-                            assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         }
                     } else if ("scope-container:2.0.1".equals(fr.scope.toString())) {
-                        assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     } else fail("Have " + fr.scope);
                 }
             }
@@ -187,25 +185,25 @@ public class Test_45_Project extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "previousRead".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 36, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "value".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 33, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 32, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 33, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 32, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
             }
@@ -215,7 +213,7 @@ public class Test_45_Project extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         if ("0".equals(d.statementId())) {
                             // as a result of breaking a delay
-                            assertDv(d, 33, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 32, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                 }
@@ -223,42 +221,42 @@ public class Test_45_Project extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                assertDv(d, 35, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 25, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 34, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("updated".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
                 String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1" : "";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("value".equals(d.fieldInfo().name)) {
                 assertEquals("Container", d.fieldInfo().owner.simpleName);
                 assertEquals("value:0", d.fieldAnalysis().getLinkedVariables().toString());
-                assertDv(d, 22, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD); // no Annotated API, see _AAPI -> false
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertDv(d.p(0), 23, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 23, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                assertDv(d.p(1), 33, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 33, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 32, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 32, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertDv(d, 36, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 36 ? "<m:set>"
+                assertDv(d, 35, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 35 ? "<m:set>"
                         : "/*inline set*/null==kvStore.get(key)?null:(kvStore.get(key)).value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, 32, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 33 ? "<m:get>"
+                assertDv(d, 11, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 32 ? "<m:get>"
                         : "/*inline get*/null==kvStore.get(key)?null:container.value";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

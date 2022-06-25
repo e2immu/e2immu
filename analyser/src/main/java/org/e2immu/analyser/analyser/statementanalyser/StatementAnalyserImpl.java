@@ -224,13 +224,12 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             StatementAnalyser previousStatement = previousAndFirst.previous;
             StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives(), true);
-            ForwardAnalysisInfo forwardAnalysisInfo = forwardAnalysisInfoIn;
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new SAEvaluationContext(statementAnalysis,
                         myMethodAnalyser, this, analyserContext,
-                        localAnalysers, iteration, forwardAnalysisInfo.conditionManager(), closure,
-                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.allowBreakDelay());
+                        localAnalysers, iteration, forwardAnalysisInfoIn.conditionManager(), closure,
+                        delaySubsequentStatementBecauseOfECI, forwardAnalysisInfoIn.allowBreakDelay());
                 if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
@@ -240,10 +239,10 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
-                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
+                switchCondition = forwardAnalysisInfoIn.conditionInSwitchStatement(context, previousStatement, switchCondition,
                         statementAnalyser.statementAnalysis);
                 Set<Variable> switchConditionVariables = switchCondition.variables(true).stream().collect(Collectors.toUnmodifiableSet());
-                ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
+                ForwardAnalysisInfo statementInfo = forwardAnalysisInfoIn.otherConditionManager(forwardAnalysisInfoIn.conditionManager()
                         .withCondition(context, switchCondition, switchConditionVariables));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
@@ -254,14 +253,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 previousStatement = statementAnalyser;
 
                 statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
-
-                if (result.analysisStatus().isProgress() && forwardAnalysisInfo.allowBreakDelay()) {
-                    // LOGGER.debug("**** Removing allow break delay for subsequent statements ****");
-                    // uncomment the following statement if you want to break only delays at one statement,
-                    // instead of in the whole method
-                    // Expressions_0 will suffer a lot of you do that (currently at 50+ iterations)
-                    //forwardAnalysisInfo = forwardAnalysisInfo.removeAllowBreakDelay();
-                }
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {

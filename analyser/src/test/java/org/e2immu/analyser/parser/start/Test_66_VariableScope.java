@@ -81,14 +81,12 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else if ("1.0.2.0.0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<v:j>+<m:nextInt>";
-                            case 1 -> "j$1.0.2+<m:nextInt>";
                             default -> "instance type int+j$1.0.2";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
-                            case 1 -> "instance type int<=9&&instance type int>=0?j$1.0.2+<m:nextInt>:0";
                             default -> "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         };
                         assertEquals(expect, d.currentValue().toString());
@@ -100,14 +98,13 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.3".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
-                            case 1 -> "instance type int<=9&&instance type int>=0?j$1.0.2+<m:nextInt>:0";
                             default -> "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
-                        String expect = d.iteration() <= 1
+                        String expect = d.iteration() == 0
                                 ? "<loopIsNotEmptyCondition>?<oos:j>+<m:nextInt>:0"
                                 : "instance type int<=9&&instance type int>=0?instance type int+(instance type int<=9&&instance type int>=0?instance type int+instance type int:0):0";
                         assertEquals(expect, d.currentValue().toString());
@@ -402,7 +399,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "types".equals(fr.fieldInfo.name)) {
                     if ("1.0.2".equals(d.statementId())) {
-                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.2.0.0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -835,8 +832,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // eval
                         String expected = switch (d.iteration()) {
                             case 0 -> "<v:vn>/*(VariableDefinedOutsideLoop)*/";
-                            case 1, 2 -> "<vp:vn:cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
-                            case 3, 4, 5, 6 -> "<vp:vn:break_mom_delay@Parameter_previousVariableNature;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
+                            case 1, 2 -> "<vp:vn:cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_index;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
+                            case 3, 4, 5, 6 -> "<vp:vn:break_mom_delay@Parameter_previousVariableNature;cm@Parameter_index;cm@Parameter_previousVariableNature;cm@Parameter_statementIndex;initial:vn@Method_removeInSubBlockMerge_1-C;mom@Parameter_index;mom@Parameter_previousVariableNature;mom@Parameter_statementIndex>/*(VariableDefinedOutsideLoop)*/";
                             default -> "vn$1/*(VariableDefinedOutsideLoop)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());

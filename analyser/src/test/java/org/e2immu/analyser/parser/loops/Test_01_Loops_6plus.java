@@ -269,7 +269,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() <= 1 ? "<vl:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() == 0 ? "<vl:result>" : "instance type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
@@ -286,13 +286,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("5".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1
+                        String expectValue = d.iteration() == 0
                                 ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>"
                                 : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -333,8 +333,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                    assertEquals("[i]", // and not RES!
-                            ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.toImmutableSet().toString());
+                    assertEquals("i,res1", // res1 is here since we keep on parsing the unreachable block
+                            ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.stream()
+                                    .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().flowData().isUnreachable());
                 }
             }
         };
@@ -629,14 +633,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0 -> "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
-                            case 1, 2 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
-
-                            default -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
-                        };
+                        String expected = d.iteration() == 0
+                                ? "<loopIsNotEmptyCondition>?<vl:result>:new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/"
+                                : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        if (d.iteration() > 2) {
+                        if (d.iteration() > 0) {
                             assertEquals("[kvStore]", d.currentValue()
                                     .variables(true).stream().map(Variable::toString)
                                     .sorted().toList().toString());

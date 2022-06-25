@@ -66,12 +66,11 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     assertEquals(absolute, d.conditionManagerForNextStatement().absoluteState(d.context()).toString());
                 }
                 if ("4.0.1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:isEmpty>" : "List.of().isEmpty()";
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>" : "true";// "List.of().isEmpty()";
                     assertEquals(expected, d.condition().toString());
                     String reached = switch (d.iteration()) {
                         case 0 -> "initial:from.typeInfo@Method_targetIsATypeParameter_3-C;initial:from@Method_targetIsATypeParameter_3-E;initial:target.typeParameter@Method_targetIsATypeParameter_0-C";
-                        case 1 -> "CONDITIONALLY:1"; // should be a delay
-                        default -> "never reaches this point";
+                        default -> "NEVER:0"; // should be a delay
                     };
                     assertEquals(reached, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
@@ -175,7 +174,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<null-check>" : "false";
+                    String expected = d.iteration() <= BIG ? "<null-check>" : "false";
                     assertEquals(expected, d.state().toString());
                     DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     String delay = d.iteration() == 0 ? "initial_flow_value@Method_targetIsATypeParameter_1-C" : "NEVER:0";
@@ -247,13 +246,14 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 }
                 if ("wildCard".equals(d.variableName())) {
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<vl:wildCard>";
+                        case 0 -> "<vl:wildCard>";
+                        case 1 -> "'+'==signature.charAt(0)?<vp:EXTENDS:container@Enum_WildCard>:'-'==signature.charAt(0)?<vp:SUPER:container@Enum_WildCard>:<vp:NONE:container@Enum_WildCard>";
                         case 2, 3 -> "'+'==signature.charAt(0)?<vp:EXTENDS:cm@Parameter_name>:'-'==signature.charAt(0)?<vp:SUPER:cm@Parameter_name>:<vp:NONE:cm@Parameter_name>";
                         default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                     };
                     if ("0.0.06".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -281,7 +281,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("arrays".equals(d.variableName())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("firstCharPos".equals(d.variableName())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -371,7 +371,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 3, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);

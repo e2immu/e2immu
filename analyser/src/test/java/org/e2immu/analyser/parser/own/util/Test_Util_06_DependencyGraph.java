@@ -44,7 +44,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     MethodAnalyserVisitor mavForFreezable = d -> {
         if ("ensureNotFrozen".equals(d.methodInfo().name)) {
-            assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
             String pc = d.iteration() == 0
                     ? "Precondition[expression=<precondition>, causes=[]]"
@@ -58,7 +58,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             assertEquals(expected, d.methodAnalysis().getEventual().toString());
         }
         if ("ensureFrozen".equals(d.methodInfo().name)) {
-            assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             assertEquals("<no return value>", d.methodAnalysis().getSingleReturnValue().toString());
             String pc = d.iteration() == 0
                     ? "Precondition[expression=<precondition>, causes=[]]"
@@ -390,7 +390,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
         };
         testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, DONT_CARE,
                 new DebugConfiguration.Builder()
-                 //       .addAfterMethodAnalyserVisitor(mavForFreezable)
+                        .addAfterMethodAnalyserVisitor(mavForFreezable)
                  //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                  //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                   //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -402,7 +402,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, DONT_CARE,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, 9,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .build(),
