@@ -37,14 +37,6 @@ public class CommaExpression extends BaseExpression implements Expression {
         this.expressions = expressions;
     }
 
-    public static Expression comma(EvaluationResult context, List<Expression> input) {
-        List<Expression> expressions = input.stream().filter(e -> !e.isConstant()).toList();
-        if (expressions.size() == 0) return new BooleanConstant(context.getPrimitives(), true);
-        if (expressions.size() == 1) return expressions.get(0);
-        if (expressions.stream().anyMatch(Expression::isEmpty)) throw new UnsupportedOperationException();
-        return new CommaExpression(List.copyOf(expressions));
-    }
-
     @Override
     public OutputBuilder output(Qualification qualification) {
         return expressions.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA));
@@ -121,11 +113,7 @@ public class CommaExpression extends BaseExpression implements Expression {
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         return new CommaExpression(expressions.stream().map(e -> e.isDelayed() ? e.mergeDelays(causesOfDelay) : e).toList());
     }
-
-    public List<Expression> expressions() {
-        return expressions;
-    }
-
+    
     @Override
     public String toString() {
         return expressions.toString();

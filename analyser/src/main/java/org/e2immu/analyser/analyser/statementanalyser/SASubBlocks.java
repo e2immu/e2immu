@@ -81,11 +81,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             cmFromStatement = cm; // the change in condition manager comes from the surrounding block
             statusFromStatement = statusFromLocalCm.combine(statusFromThrows);
         } else {
-            // FIXME this should also be implemented on the haveSubBlocks side
-            //Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
-            //if (!fieldsWithBreakDelay.isEmpty()) {
-            //    cm = cm.removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
-            //}
+            /* IMPROVE this should also be implemented on the haveSubBlocks side
+            Set<FieldInfo> fieldsWithBreakDelay = statementAnalysis.fieldsWithBreakInitDelay();
+            if (!fieldsWithBreakDelay.isEmpty()) {
+                cm = cm.removeDelaysOn(statementAnalysis.primitives(), fieldsWithBreakDelay);
+            }
+            */
             cmFromStatement = cm;
             statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPrecondition()));
         }

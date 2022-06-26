@@ -421,10 +421,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return inspectionProvider.getTypeInspection(this).typeNature() == TypeNature.INTERFACE;
     }
 
-    public boolean isEventual() {
-        return typeAnalysis.get().isEventual();
-    }
-
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() == parameters)

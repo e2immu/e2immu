@@ -44,11 +44,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return this;
     }
 
-    static String fullyQualifiedName(Set<Variable> dependencies) {
-        if (dependencies == null) return "";
-        return dependencies.stream().map(Variable::fullyQualifiedName).collect(Collectors.joining("; "));
-    }
-
     @NotNull
     ParameterizedType parameterizedType();
 

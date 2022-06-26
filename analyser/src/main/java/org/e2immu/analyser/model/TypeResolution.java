@@ -75,10 +75,6 @@ public record TypeResolution(SortedType sortedType,
                     hasOneKnownGeneratedImplementation() ? Objects.requireNonNull(implementingType) : null);
         }
 
-        public SortedType getSortedType() {
-            return sortedType;
-        }
-
         public boolean hasOneKnownGeneratedImplementation() {
             return countImplementations == 1 && countGeneratedImplementations == 1;
         }

@@ -813,7 +813,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         if (!viInitial.valueIsSet()) {
             LinkedVariables lv1 = viInitial.getLinkedVariables();
-            LinkedVariables lv = lv1.isEmpty() ? vic.initialLinkedVariables(): lv1;
+            LinkedVariables lv = lv1.isEmpty() ? vic.initialLinkedVariables() : lv1;
             vic.setValue(initialValue, lv, map, INITIAL);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
@@ -1335,13 +1335,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
                     return new ConditionAndVariableInfo(e2.condition(), e2.absoluteState(),
                             vic2.current(), e2.alwaysEscapes(), e2.alwaysEscapesOrReturns(),
-                            vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
-                            e2.lastStatement().getStatementAnalysis().index(),
-                            index,
+                            e2.firstStatementIndexForOldStyleSwitch(),
                             e2.lastStatement().getStatementAnalysis(),
-                            e2.executionOfLastStatement,
-                            variable,
-                            evaluationContext);
+                            e2.executionOfLastStatement);
                 })
                 .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
     }

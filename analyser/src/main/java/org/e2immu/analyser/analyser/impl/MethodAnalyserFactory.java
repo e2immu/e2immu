@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.ParameterAnalyser;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -97,7 +96,7 @@ public class MethodAnalyserFactory {
             }
             return Analysis.AnalysisMode.CONTRACTED;
         }
-        if(methodInspection.getMethodBody().isEmpty()) return Analysis.AnalysisMode.CONTRACTED;
+        if (methodInspection.getMethodBody().isEmpty()) return Analysis.AnalysisMode.CONTRACTED;
 
         return allowComputed ? Analysis.AnalysisMode.COMPUTED : Analysis.AnalysisMode.CONTRACTED;
     }
@@ -109,9 +108,9 @@ public class MethodAnalyserFactory {
             TypeAnalysis typeAnalysis) {
         Map<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new HashMap<>();
         for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
-            companionAnalysersBuilder.put(entry.getKey(),
-                    new CompanionAnalyser(analyserContext, typeAnalysis, entry.getKey(), entry.getValue(),
-                            methodInfo, AnnotationParameters.DEFAULT));
+            CompanionAnalyser ca = new CompanionAnalyser(analyserContext, typeAnalysis, entry.getKey(),
+                    entry.getValue(), methodInfo);
+            companionAnalysersBuilder.put(entry.getKey(), ca);
         }
         return Map.copyOf(companionAnalysersBuilder);
     }

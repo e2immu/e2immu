@@ -91,12 +91,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
-    public Set<String> imports() {
-        if (typeInfo.isNotJavaLang()) return Set.of(typeInfo.fullyQualifiedName);
-        return Set.of();
-    }
-
-    @Override
     public int[] extractIntArray(String fieldName) {
         for (Expression expression : expressions) {
             if (expression instanceof MemberValuePair mvp) {

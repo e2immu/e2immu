@@ -61,7 +61,7 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
                             indexOnlyIfEscapeInSubBlock(firstSubBlock);
                     Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
                             ve.variable() : null;
-                    VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
+                    VariableNature variableNature = new VariableNature.Pattern(scope, scopeVariable);
                     statementAnalysis.createVariable(evaluationContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableNature);
                 });

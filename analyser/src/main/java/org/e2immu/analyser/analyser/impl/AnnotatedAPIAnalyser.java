@@ -482,8 +482,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             LOGGER.debug("Starting companion analyser for {}", cmn);
 
                             CompanionAnalyser companionAnalyser = new CompanionAnalyser(this,
-                                    getTypeAnalysis(methodInfo.typeInfo), cmn, e.getValue(),
-                                    methodInfo, AnnotationParameters.CONTRACT);
+                                    getTypeAnalysis(methodInfo.typeInfo), cmn, e.getValue(), methodInfo);
                             AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
                             if (analysisStatus.isDone()) {
                                 CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();

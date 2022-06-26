@@ -27,20 +27,11 @@ import java.util.function.Function;
 public class CheckIndependent {
 
     public static Message checkLevel(WithInspectionAndAnalysis info,
-                                     Class<?> annotation,
-                                     AnnotationExpression annotationExpression,
-                                     Analysis analysis) {
-        return checkLevel(Property.INDEPENDENT, info, annotation,
-                annotationExpression, analysis);
-    }
-
-    static Message checkLevel(Property property,
-                              WithInspectionAndAnalysis info,
                               Class<?> annotation,
                               AnnotationExpression annotationExpression,
                               Analysis analysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
-        String levelString = levelString(analysis, property);
+        String levelString = levelString(analysis, Property.INDEPENDENT);
 
         return CheckLinks.checkAnnotationWithValue(analysis,
                 annotation.getName(),

@@ -132,6 +132,7 @@ class HighPriorityDelays extends AbstractDelay {
 
     @Override
     public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return DelayFactory.createDelay(causesStream().map(c -> c.translate(inspectionProvider, translationMap)).collect(Collectors.toUnmodifiableSet()));
+        return DelayFactory.createDelay(causesStream().map(c -> c.translate(translationMap))
+                .collect(Collectors.toUnmodifiableSet()));
     }
 }

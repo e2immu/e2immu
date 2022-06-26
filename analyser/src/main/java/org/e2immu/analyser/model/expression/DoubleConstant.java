@@ -98,13 +98,4 @@ public final class DoubleConstant extends BaseExpression implements ConstantExpr
     public boolean isNumeric() {
         return true;
     }
-
-    public Primitives primitives() {
-        return primitives;
-    }
-
-    public double constant() {
-        return constant;
-    }
-
 }

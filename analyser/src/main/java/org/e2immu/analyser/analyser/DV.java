@@ -105,11 +105,6 @@ public interface DV extends WeightedGraph.Weight {
         return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause && predicate.test(c));
     }
 
-    default boolean containsCausesOfDelay(Set<CauseOfDelay.Cause> causes, Predicate<CauseOfDelay> predicate) {
-        assert causes.stream().allMatch(DV::isHighPriority);
-        return causesOfDelay().causesStream().anyMatch(c -> causes.contains(c.cause()) && predicate.test(c));
-    }
-
     default Optional<VariableCause> findVariableCause(CauseOfDelay.Cause cause, Predicate<VariableCause> predicate) {
         assert isHighPriority(cause);
         return causesOfDelay().causesStream().filter(c -> c.cause() == cause && c instanceof VariableCause vc && predicate.test(vc))

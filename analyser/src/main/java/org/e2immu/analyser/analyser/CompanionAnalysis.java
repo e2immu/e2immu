@@ -25,9 +25,6 @@ public interface CompanionAnalysis {
     @NotNull
     MethodInfo getCompanion();
 
-    @NotNull
-    AnnotationParameters getAnnotationType();
-
     /**
      * @return the value that represents the companion.
      */

@@ -141,20 +141,6 @@ public class ParameterizedType {
         return result;
     }
 
-    // from one type context into another one
-    public ParameterizedType copy(TypeContext localTypeContext) {
-        TypeInfo newTypeInfo;
-        if (typeInfo == null || typeInfo.isPrimitiveExcludingVoid()) {
-            newTypeInfo = typeInfo;
-        } else {
-            newTypeInfo = Objects.requireNonNull(localTypeContext.typeMap.get(typeInfo.fullyQualifiedName),
-                    "Cannot find " + typeInfo.fullyQualifiedName + " in typeStore");
-        }
-        List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
-        TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.getName(), true);
-        return new ParameterizedType(newTypeInfo, arrays, wildCard, newParameters, newTypeParameter);
-    }
-
     public ParameterizedType copyWithOneFewerArrays() {
         if (arrays == 0) {
             throw new UnsupportedOperationException();

@@ -27,14 +27,9 @@ public record ConditionAndVariableInfo(Expression condition,
                                        VariableInfo variableInfo,
                                        boolean alwaysEscapes,
                                        boolean alwaysEscapesOrReturns,
-                                       VariableNature variableNature,
                                        String firstStatementIndexForOldStyleSwitch,
-                                       String indexOfLastStatement,
-                                       String indexOfCurrentStatement,
                                        StatementAnalysis lastStatement,
-                                       DV executionOfLastStatement,
-                                       Variable myself,
-                                       EvaluationContext evaluationContext) {
+                                       DV executionOfLastStatement) {
 
     public Expression value() {
         return variableInfo.getValue();

@@ -106,7 +106,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>(analyserProgram);
-        builder.add("mark first iteration", AnalyserProgram.Step.ITERATION_0, this::markFirstIteration);
+        builder.add("mark first iteration", AnalyserProgram.Step.ITERATION_0, sharedState -> markFirstIteration());
         assert firstStatementAnalyser != null;
 
         // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
@@ -161,7 +161,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return "CMA " + methodInfo.fullyQualifiedName;
     }
 
-    private AnalysisStatus markFirstIteration(SharedState sharedState) {
+    private AnalysisStatus markFirstIteration() {
         methodAnalysis.markFirstIteration();
         return DONE;
     }

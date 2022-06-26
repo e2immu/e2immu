@@ -74,12 +74,10 @@ public record AnalyserPropertyComputer(
         LOGGER.debug("Resulting map is " + properties);
 
         List<Project> enabledChildProjects = project.getChildProjects().values().stream()
-                .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
-                .collect(Collectors.toList());
+                .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject()).toList();
 
         List<Project> skippedChildProjects = project.getChildProjects().values().stream()
-                .filter(p -> p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
-                .collect(Collectors.toList());
+                .filter(p -> p.getExtensions().getByType(AnalyserExtension.class).isSkipProject()).toList();
 
         if (!skippedChildProjects.isEmpty()) {
             LOGGER.debug("Skipping collecting Analyser properties on: " +

@@ -79,7 +79,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
                     .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
                     .add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
-                    .add("followExtImm", this::followExternalImmutable)
+                    .add("followExtImm", sharedState -> followExternalImmutable())
                     .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
@@ -469,7 +469,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return DONE;
     }
 
-    private AnalysisStatus followExternalImmutable(SharedState sharedState) {
+    private AnalysisStatus followExternalImmutable() {
         DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
         if (extImm.isDone()) {
             return DONE;

@@ -34,8 +34,6 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         BREAK_INIT_DELAY_IN_MERGE("bid_merge", "Break init delay in merge", HIGH),
         BREAK_MOM_DELAY("break_mom_delay", "break a content modified - mom delay", HIGH),
         CANDIDATE_NULL_PTR("candidate_null_ptr", ""),
-        CNN_PARENT("context_not_null_parent", "Context not null for parent"),
-        CNN_TRAVELS_TO_PC("cnn_travels_to_pc", "Context not null travels to precondition, does not result in warning"),
         CONDITION("condition", "condition in inline merge"),
         CONSTANT("constant", ""),
         CONSTRUCTOR_TO_INSTANCE("constructor-to-instance", "", HIGH),
@@ -43,7 +41,6 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         CONTEXT_CONTAINER("c_cont", "context-container property not yet determined"),
         CONTEXT_IMMUTABLE("c_imm", "context immutable"),
         CONTEXT_MODIFIED("cm", "Context modified not yet been determined", HIGH),
-        CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         CONTEXT_NOT_NULL("cnn", ""),
         DELAYED_EXPRESSION("de", "delayed expression to be substituted", HIGH),
         ECI("eci", "Explicit constructor invocation", HIGH),
@@ -61,14 +58,12 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         IDENTITY("identity", ""),
         IGNORE_MODIFICATIONS("ignore_mods", ""),
         IMMUTABLE_BEFORE_CONTRACTED("immutable_before_contracted", ""),
-        IMMUTABLE("immutable_type", "Type's IMMUTABLE status has not yet been determined"),
         IN_NN_CONTEXT("in_nn_context", ""),
         INITIAL_FLOW_VALUE("initial_flow_value", "Flow not yet initialized"),
         INITIAL_RANGE("initial_range", "Range not yet set"),
         INITIAL_TIME("initial_time", "Initial time not yet set"),
         INITIAL_VALUE("initial", "Not yet initialized", HIGH),
         LINKING("link", "Delay in linking", HIGH),
-        LOCAL_PT_ANALYSERS("local_pt_analysers", "Local primary type analysers not yet present"),
         LOCAL_VARS_ASSIGNED("local_vars", "Local variables assigned in this loop not yet determined"),
         MIN_INT("min_int", "Minimum integer; should only appear locally need .reduce()"),
         MODIFIED_METHOD("mm", "The method's modification status has not yet been determined"),
@@ -80,7 +75,6 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),
         PARTIAL_IMM("partial_imm", "partial immutable: immutable without taking parent/enclosing into account"),
-        PROP_MOD("prop_mod", ""),
         READ("read", "must be there for property READ, but cannot be delayed"),
         REMAP_PARAMETER("remap_param", "Remapping a parameter for the companion analyser is not yet possible"),
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),
@@ -89,7 +83,6 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         SINGLETON("singleton", ""),
         STATE_DELAYED("state", "variable cannot get value because state is delayed", HIGH),
         TEMP_MM("temp_mm", "Temporary modified method"),
-        TO_IMPLEMENT("to_implement", "Temporary; needs implementation"),
         TYPE_ANALYSIS("type_analysis", "Type analysis missing", HIGH),
         UNREACHABLE("unreachable", "No data due to unreachable code - used as a precaution"),
         UTILITY_CLASS("utility_class", ""),
@@ -102,21 +95,19 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         WAIT_FOR_ASSIGNMENT("wait_for_assignment", "Wait to see if variable is assigned or not"),
         WAIT_FOR_MODIFICATION("wait_for_modification", "Wait to see if variable is modified or not", HIGH);
 
-        public final String msg;
-
         public final String label;
         public final int priority;
+
         Cause(String label, String msg) {
             this(label, msg, LOW);
         }
 
         Cause(String label, String msg, int priority) {
-            this.msg = msg;
             this.label = label;
             this.priority = priority;
         }
-
     }
+
     @NotNull
     Cause cause();
 
@@ -127,5 +118,5 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
     @NotNull
     Location location();
 
-    CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
+    CauseOfDelay translate(TranslationMap translationMap);
 }

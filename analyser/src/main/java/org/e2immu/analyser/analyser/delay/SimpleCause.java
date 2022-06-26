@@ -82,7 +82,7 @@ public class SimpleCause implements CauseOfDelay {
     }
 
     @Override
-    public CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
+    public CauseOfDelay translate(TranslationMap translationMap) {
         return this;
     }
 }

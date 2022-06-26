@@ -57,7 +57,7 @@ public class JavaUtilStream {
         Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) { return null; }
 
         @NotNull1
-        <T> Collector<T, ?, Set<T>> toSet() { return null; };
+        <T> Collector<T, ?, Set<T>> toSet() { return null; }
 
         @NotNull1
         <T> Collector<T, ?, List<T>> toList() { return null; }

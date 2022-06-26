@@ -108,7 +108,7 @@ public class SingleDelay extends AbstractDelay {
 
     @Override
     public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        CauseOfDelay translated = cause.translate(inspectionProvider, translationMap);
+        CauseOfDelay translated = cause.translate(translationMap);
         if(translated != cause) return new SingleDelay(translated);
         return this;
     }

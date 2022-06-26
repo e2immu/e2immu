@@ -52,13 +52,12 @@ public class CompanionAnalyser {
                              TypeAnalysis typeAnalysis,
                              CompanionMethodName companionMethodName,
                              MethodInfo companionMethod,
-                             MethodInfo mainMethod,
-                             AnnotationParameters annotationParameters) {
+                             MethodInfo mainMethod) {
         this.analyserContext = analyserContext;
         this.companionMethod = companionMethod;
         this.companionMethodName = companionMethodName;
         this.mainMethod = mainMethod;
-        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationParameters, companionMethod);
+        companionAnalysis = new CompanionAnalysisImpl.Builder(companionMethod);
         this.typeAnalysis = typeAnalysis;
     }
 

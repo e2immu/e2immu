@@ -34,9 +34,6 @@ public interface AnnotationExpression {
     @NotNull1
     List<MemberValuePair> expressions();
 
-    @NotNull1
-    Set<String> imports();
-
     <T> T extract(String fieldName, T defaultValue);
 
     int[] extractIntArray(String parameters);

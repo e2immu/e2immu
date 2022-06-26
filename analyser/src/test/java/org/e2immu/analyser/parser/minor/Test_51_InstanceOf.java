@@ -228,7 +228,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if ("1".equals(d.statementId()) && "number".equals(d.variableName())) {
                     assertEquals("in/*(Number)*/", d.currentValue().toString());
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
-                        assertFalse(pattern.isPositive());
                         assertEquals("", pattern.parentBlockIndex());
                         assertEquals("1", pattern.scope());
                     }
@@ -247,7 +246,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
-                        assertFalse(pattern.isPositive());
                         assertEquals("1", pattern.parentBlockIndex());
                         assertEquals("1.1.0", pattern.scope());
                     }

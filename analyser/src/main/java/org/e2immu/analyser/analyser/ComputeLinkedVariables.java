@@ -80,7 +80,6 @@ public class ComputeLinkedVariables {
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
-                                   BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph weightedGraph,
                                    List<Cluster> clusters,
                                    Cluster returnValueCluster,
@@ -158,7 +157,7 @@ public class ComputeLinkedVariables {
         if (evaluationContext.delayStatementBecauseOfECI()) {
             delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.clusters,
+        return new ComputeLinkedVariables(statementAnalysis, stage, weightedGraph, cr.clusters,
                 cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), linkingNotYetSet);
     }
 

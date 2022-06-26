@@ -363,14 +363,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return causesOfDelay;
     }
 
-    public String msg() {
-        return msg;
-    }
-
-    public ParameterizedType parameterizedType() {
-        return parameterizedType;
-    }
-
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
         return new DelayedExpression(identifier, msg, parameterizedType, original, this.causesOfDelay.merge(causesOfDelay),

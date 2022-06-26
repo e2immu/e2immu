@@ -123,10 +123,6 @@ public class Properties implements Comparable<Properties> {
         return new Properties(Map.copyOf(map));
     }
 
-    public static Collector<Property, Properties, Properties> collect(Function<Property, DV> mapper) {
-        return collect(mapper, false);
-    }
-
     public static Collector<Property, Properties, Properties> collect(Function<Property, DV> mapper, boolean writable) {
         return new Collector<>() {
             @Override
@@ -188,10 +184,6 @@ public class Properties implements Comparable<Properties> {
         Map<Property, DV> merged = new HashMap<>(map);
         valueProperties.stream().forEach(e -> merged.merge(e.getKey(), e.getValue(), DV::min));
         return of(merged);
-    }
-
-    public Properties copy() {
-        return Properties.of(map);
     }
 
     @Override
