@@ -34,8 +34,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class TestAnalyseCode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestAnalyseCode.class);
+public class TestAnalyseMain {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestAnalyseMain.class);
 
     @Test
     public void test() throws IOException {
