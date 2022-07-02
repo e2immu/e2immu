@@ -114,7 +114,7 @@ public class MyClassVisitor extends ClassVisitor {
             typeInspectionBuilder = typeContext.typeMap.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
             currentType = typeInspectionBuilder.typeInfo();
         } else {
-            TypeInspection typeInspection = typeContext.typeMap.getTypeInspection(currentType);
+            TypeInspection typeInspection = typeContext.typeMap.getTypeInspectionDoNotTrigger(currentType);
             if (typeInspection != null) {
                 if (typeInspection.getInspectionState().ge(FINISHED_BYTECODE)) {
                     LOGGER.debug("Inspection of " + fqName + " has been set already");

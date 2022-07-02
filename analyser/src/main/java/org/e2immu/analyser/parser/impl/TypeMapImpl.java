@@ -370,7 +370,7 @@ public class TypeMapImpl implements TypeMap {
                 return null;
             }
             if (typeInspection.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) {
-                typeInspection.setInspectionState(STARTING_BYTECODE);
+                // inspection state will be set to START_BYTECODE_INSPECTION when the class visitor starts
                 inspectWithByteCodeInspector(typeInfo);
                 if (typeInspection.getInspectionState().lt(FINISHED_BYTECODE)) {
                     // trying to avoid cycles... we'll try again later
@@ -416,6 +416,11 @@ public class TypeMapImpl implements TypeMap {
 
         public Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes() {
             return typeInspections.entrySet().stream();
+        }
+
+        @Override
+        public TypeInspection getTypeInspectionDoNotTrigger(TypeInfo typeInfo) {
+            return typeInspections.get(typeInfo);
         }
 
         @Override
