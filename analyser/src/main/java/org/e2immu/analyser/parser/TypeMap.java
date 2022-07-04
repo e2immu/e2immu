@@ -96,5 +96,7 @@ public interface TypeMap extends InspectionProvider {
 
         @NotNull
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
+
+        TypeInspection getTypeInspectionDoNotTrigger(TypeInfo currentType);
     }
 }

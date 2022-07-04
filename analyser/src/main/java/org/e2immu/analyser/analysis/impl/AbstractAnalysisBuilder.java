@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -37,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 abstract class AbstractAnalysisBuilder implements Analysis {
@@ -146,15 +146,19 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
                 isType, isInterface, eventualFieldNames, betterThanFormal);
+        MemberValuePair inconclusive = immutable.isInconclusive() || container.isInconclusive() ?
+                new MemberValuePair("inconclusive", new BooleanConstant(primitives, true)) : null;
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
-            List<MemberValuePair> list;
+            Stream<MemberValuePair> stream;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
-                list = List.of();
+                stream = inconclusive != null ? Stream.of(inconclusive) : Stream.of();
             } else {
-                list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
-                        ConstantExpression.create(primitives, e.getValue()))).collect(Collectors.toList());
+                Stream<MemberValuePair> s1 = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
+                        ConstantExpression.create(primitives, e.getValue())));
+                stream = inconclusive != null ? Stream.concat(s1, Stream.of(inconclusive)) : s1;
             }
-            AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()), list);
+            AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()),
+                    stream.toList());
             annotations.put(expression, true);
         }
     }
@@ -170,18 +174,36 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             return; // no annotation needed, @Immutable series will be there
         }
         if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-            return; // default value
-        }
-        if (independent.equals(MultiLevel.INDEPENDENT_DV)) {
-            expression = e2.independent;
+            if (independent.isInconclusive()) {
+                expression = potentiallyInconclusive(e2.dependent, independent);
+            } else {
+                return; // default value
+            }
+        } else if (independent.equals(MultiLevel.INDEPENDENT_DV)) {
+            expression = potentiallyInconclusive(e2.independent, independent);
         } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-            expression = e2.independent1;
+            expression = potentiallyInconclusive(e2.independent1, independent);
         } else {
             int level = MultiLevel.level(independent) + 1;
-            expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(),
-                    List.of(new MemberValuePair("level", new IntConstant(primitives, level))));
+            MemberValuePair mvp = new MemberValuePair("level", new IntConstant(primitives, level));
+            if (independent.isInconclusive()) {
+                MemberValuePair mvp2 = new MemberValuePair("inconclusive",
+                        new BooleanConstant(primitives, true));
+                expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(), List.of(mvp, mvp2));
+            } else {
+                expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(), List.of(mvp));
+            }
         }
         annotations.put(expression, true);
+    }
+
+    private AnnotationExpression potentiallyInconclusive(AnnotationExpression ae, DV dv) {
+        if (dv.isInconclusive()) {
+            return new AnnotationExpressionImpl(ae.typeInfo(),
+                    List.of(new MemberValuePair("inconclusive",
+                            new BooleanConstant(primitives, true))));
+        }
+        return ae;
     }
 
     /**

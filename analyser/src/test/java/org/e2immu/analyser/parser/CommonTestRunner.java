@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
