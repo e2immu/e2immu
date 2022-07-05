@@ -14,18 +14,66 @@
 
 package org.e2immu.analyser.program.own;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.util.Trie;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAnalyseTest {
 
     @Test
     public void test() throws IOException {
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo trie = typeMap.get(Trie.class);
+            assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+
+            TypeInfo trieNode = trie.typeInspection.get().subTypes().stream()
+                    .filter(st -> "TrieNode".equals(st.simpleName)).findFirst().orElseThrow();
+            assertEquals(MultiLevel.MUTABLE_DV, trieNode.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("TestTypeMapImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("testFromTrie".equals(d.methodInfo().name)) {
+                    if ("orgE2ImmuParser".equals(d.variableName())) {
+                        if ("01".equals(d.statementId()) || "02".equals(d.statementId())) {
+                            assertEquals("{\"org\",\"e2immu\",\"Parser\"}", d.currentValue().toString());
+                        }
+                        if ("03".equals(d.statementId())) { // 03 is a non-modifying method call
+                            assertEquals("{\"org\",\"e2immu\",\"Parser\"}", d.currentValue().toString());
+                        }
+                    }
+                    if ("parser".equals(d.variableName())) {
+                        if ("02".equals(d.statementId())) {
+                            assertEquals("new TypeInfo(\"org.e2immu\",\"Parser\")", d.currentValue().toString());
+                        }
+                        if ("03".equals(d.statementId())) { // 03 is a non-modifying method call
+                            assertEquals("new TypeInfo(\"org.e2immu\",\"Parser\")", d.currentValue().toString());
+                        }
+                    }
+                    if ("trie".equals(d.variableName())) {
+                        if ("03".equals(d.statementId())) {
+                            assertEquals("instance type Trie<TypeInfo>", d.currentValue().toString());
+                        }
+                        if ("04".equals(d.statementId())) {
+                            assertEquals("instance type Trie<TypeInfo>", d.currentValue().toString());
+                        }
+                    }
+                }
+            }
+        };
 
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
@@ -42,7 +90,7 @@ public class TestAnalyseTest {
                 .addClassPath("build/libs/analyser-0.5.0.jar")
                 // we have to avoid doing normal parsing of annotated-api files such as the files in
                 // org.e2immu.analyser.shallow.testexample, e.g. JavaUtil_0
-                .addRestrictSourceToPackages("org.e2immu.analyser.parser")
+                .addRestrictSourceToPackages("org.e2immu.analyser.parser.")
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()
@@ -50,7 +98,10 @@ public class TestAnalyseTest {
                 .setAnalyserProgram(AnalyserProgram.from(AnalyserProgram.Step.ALL))
                 .build();
 
-        DebugConfiguration debugConfiguration = new DebugConfiguration.Builder().build();
+        DebugConfiguration debugConfiguration = new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .build();
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
         // want to see them as AnnotatedAPI

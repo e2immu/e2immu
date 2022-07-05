@@ -120,36 +120,34 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         methodAnalysers = new LinkedHashMap<>(); // we keep the order!
         for (TypeInfo typeInfo : sorted) {
-            if (typeInfo.isPublic()) {
-                TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
-                        primitives, typeInfo, null);
-                typeAnalyses.put(typeInfo, typeAnalysis);
-                AtomicBoolean hasFinalizers = new AtomicBoolean();
-                typeInfo.typeInspection.get()
-                        .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                        .filter(methodInfo -> methodInfo.methodInspection.get().isPublic())
-                        .forEach(methodInfo -> {
-                            try {
-                                if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                    analyseIsFact(methodInfo);
-                                } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                    analyseIsKnown(methodInfo);
-                                } else {
-                                    MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
-                                    MethodInspection methodInspection = methodInfo.methodInspection.get();
-                                    if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
-                                    methodAnalyser.initialize();
-                                    methodAnalysers.put(methodInfo, methodAnalyser);
-                                }
-                            } catch (RuntimeException rte) {
-                                LOGGER.error("Caught runtime exception shallowly analysing method {}",
-                                        methodInfo.fullyQualifiedName);
-                                throw rte;
+            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
+                    primitives, typeInfo, null);
+            typeAnalyses.put(typeInfo, typeAnalysis);
+            AtomicBoolean hasFinalizers = new AtomicBoolean();
+            typeInfo.typeInspection.get()
+                    .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                    .filter(methodInfo -> methodInfo.methodInspection.get().isPublic())
+                    .forEach(methodInfo -> {
+                        try {
+                            if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                analyseIsFact(methodInfo);
+                            } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                analyseIsKnown(methodInfo);
+                            } else {
+                                MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
+                                MethodInspection methodInspection = methodInfo.methodInspection.get();
+                                if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
+                                methodAnalyser.initialize();
+                                methodAnalysers.put(methodInfo, methodAnalyser);
                             }
-                        });
-                if (hasFinalizers.get()) {
-                    typeAnalysis.setProperty(Property.FINALIZER, DV.TRUE_DV);
-                }
+                        } catch (RuntimeException rte) {
+                            LOGGER.error("Caught runtime exception shallowly analysing method {}",
+                                    methodInfo.fullyQualifiedName);
+                            throw rte;
+                        }
+                    });
+            if (hasFinalizers.get()) {
+                typeAnalysis.setProperty(Property.FINALIZER, DV.TRUE_DV);
             }
         }
     }

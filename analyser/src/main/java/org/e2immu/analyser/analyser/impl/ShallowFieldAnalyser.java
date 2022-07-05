@@ -86,7 +86,7 @@ public class ShallowFieldAnalyser {
                     }
                 }
             }
-            fieldAnalysisBuilder.setProperty(Property.CONTAINER, typeIsContainer);
+            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_CONTAINER, typeIsContainer);
         } else {
             typeIsContainer = fieldAnalysisBuilder.properties.getOrDefaultNull(Property.CONTAINER);
         }
@@ -106,7 +106,7 @@ public class ShallowFieldAnalyser {
         if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().unwrapIfConstant();
-            if (initialiser .isConstant()) {
+            if (initialiser.isConstant()) {
                 value = initialiser;
             } else {
                 value = Instance.forField(fieldInfo, initialiser.returnType(), properties);

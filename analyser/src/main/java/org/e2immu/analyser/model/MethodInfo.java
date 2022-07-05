@@ -420,7 +420,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 result = new HashMap<>();
             } else {
                 result = local.keySet().stream().collect(Collectors.toMap(k -> k,
-                        k -> methodAnalysis.getCompanionAnalyses().get(k)));
+                        k -> Objects.requireNonNull(methodAnalysis.getCompanionAnalyses().get(k),
+                                "No companion analyser corresponding to " + k + " found")));
             }
         }
         // NOTE: there is no order in the overrides() set. Therefore, we need to check using typeResolution

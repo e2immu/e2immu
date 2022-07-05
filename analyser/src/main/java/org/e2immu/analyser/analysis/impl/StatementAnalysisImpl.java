@@ -2534,7 +2534,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 }
                 if (acceptArrayValue) {
                     if (dv.indexVariable() instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.ScopeVariable) {
-                        throw new UnsupportedOperationException("NYI, evaluate");
+                        // IMPROVE not really sure, need to dive into this subject again
+                        return dv.indexExpression().equals(indexValue);
                     }
                     if (dv.indexVariable() == null) {
                         return dv.indexExpression().equals(indexValue);

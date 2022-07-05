@@ -112,7 +112,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } else {
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
         }
-        // here is a good breakpoint location (all other statements) -->
+        // here is a good breakpoint location, e.g. "4.0.1".equals(index())
         EvaluationResult result = toEvaluate.evaluate(context, forwardEvaluationInfo);
 
         if (statementAnalysis.statement() instanceof ReturnStatement) {

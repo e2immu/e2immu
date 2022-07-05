@@ -102,6 +102,8 @@ public interface FieldAnalysis extends Analysis {
 
     default Expression getValueForStatementAnalyser(FieldReference fieldReference, int statementTime) {
         Expression value = getValue();
+        // IMPORTANT: do not return Instance object here (i.e. do not add "|| value.isInstanceOf(Instance.class)")
+        // because the instance does not have the eventual information that the field analyser holds.
         if (value.isDelayed() || value.isConstant()) return value;
 
         Properties properties = getValueProperties();
