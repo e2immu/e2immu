@@ -49,4 +49,11 @@ public interface CompanionAnalysis {
      * @return a list of parameters, never null.
      */
     List<Expression> getParameterValues();
+
+    /**
+     * Delays are centralized
+     *
+     * @return the reason why the companion analysis has not yet taken place
+     */
+    CausesOfDelay causesOfDelay();
 }

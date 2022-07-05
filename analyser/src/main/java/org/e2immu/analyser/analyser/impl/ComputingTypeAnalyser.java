@@ -252,8 +252,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (!typeAnalysis.aspects.isSet(aspect)) {
                     typeAnalysis.aspects.put(aspect, mainMethod);
                 } else {
-                    throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " +
-                            mainMethod.fullyQualifiedName());
+                    MethodInfo inMap = typeAnalysis.aspects.get(aspect);
+                    if(!inMap.equals(mainMethod)) {
+                        throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " +
+                                mainMethod.fullyQualifiedName());
+                    }
                 }
             }
             LOGGER.debug("Found aspects {} in {}, {}", typeAnalysis.aspects.stream().map(Map.Entry::getKey).collect(Collectors.joining(",")),

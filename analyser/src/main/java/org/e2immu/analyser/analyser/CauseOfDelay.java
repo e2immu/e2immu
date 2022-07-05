@@ -79,6 +79,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         NO_PRECONDITION_INFO("no precondition info", "no precondition information (yet)", HIGH),
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),
+        NOT_YET_EXECUTED("not_yet_executed", "Companion analyser has not been executed yet"),
         PARTIAL_IMM("partial_imm", "partial immutable: immutable without taking parent/enclosing into account"),
         PROP_MOD("prop_mod", ""),
         READ("read", "must be there for property READ, but cannot be delayed"),
@@ -106,6 +107,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
 
         public final String label;
         public final int priority;
+
         Cause(String label, String msg) {
             this(label, msg, LOW);
         }
@@ -117,6 +119,7 @@ public interface CauseOfDelay extends Comparable<CauseOfDelay> {
         }
 
     }
+
     @NotNull
     Cause cause();
 

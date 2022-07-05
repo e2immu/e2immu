@@ -66,20 +66,25 @@ public class CompanionAnalyser {
         try {
             if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
                 if (iteration == 0) {
-                    return mainMethod.typeInfo.delay(CauseOfDelay.Cause.ASPECT);
+                    CausesOfDelay delay = mainMethod.typeInfo.delay(CauseOfDelay.Cause.ASPECT);
+                    companionAnalysis.setCausesOfDelay(delay);
+                    return delay;
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
             if (CompanionMethodName.NO_CODE.contains(companionMethodName.action())) {
                 // there is no code, and the type analyser deals with it
                 companionAnalysis.value.set(EmptyExpression.EMPTY_EXPRESSION);
+                companionAnalysis.setCausesOfDelay(CausesOfDelay.EMPTY);
                 return DONE;
             }
             DV modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(Property.MODIFIED_METHOD);
             if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
-                return modifyingMainMethod.causesOfDelay();
+                CausesOfDelay delay = modifyingMainMethod.causesOfDelay();
+                companionAnalysis.setCausesOfDelay(delay);
+                return delay;
             }
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod.valueIsTrue());
 
@@ -91,11 +96,14 @@ public class CompanionAnalyser {
             EvaluationResult context = EvaluationResult.from(evaluationContext);
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(context, forward);
             if (evaluationResult.value().isDelayed()) {
-                return companionMethod.delay(CauseOfDelay.Cause.VALUE);
+                CausesOfDelay delay = companionMethod.delay(CauseOfDelay.Cause.VALUE);
+                companionAnalysis.setCausesOfDelay(delay);
+                return delay;
             }
             companionAnalysis.value.set(evaluationResult.value());
 
             LOGGER.debug("Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
+            companionAnalysis.setCausesOfDelay(CausesOfDelay.EMPTY);
             return DONE;
         } catch (RuntimeException e) {
             LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());

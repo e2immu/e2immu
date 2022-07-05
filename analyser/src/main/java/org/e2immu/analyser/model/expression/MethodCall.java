@@ -634,7 +634,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean inLoop = iveValue instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
 
         Expression newState = computeNewState(context, methodInfo, objectValue, parameterValues);
-        if(newState.isDelayed()) {
+        if (newState.isDelayed()) {
             return new ModReturn(null, delayMarker.merge(newState.causesOfDelay()));
         }
         Expression modifiedInstance;
@@ -753,6 +753,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // modifying method, without instructions on how to change the state... we simply clear it!
             newState.set(TRUE);
         } else {
+
             cMap.keySet().stream()
                     .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
                     .sorted()
@@ -771,10 +772,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                         CompanionMethodName companionMethodName,
                                         CompanionAnalysis companionAnalysis) {
         assert companionAnalysis != null;
+        if (companionAnalysis.causesOfDelay().isDelayed()) {
+            newState.set(DelayedExpression.forDelayedCompanionAnalysis(methodInfo.getIdentifier(),
+                    companionMethodName.composeMethodName(), context.getPrimitives().booleanParameterizedType(),
+                    new BooleanConstant(context.getPrimitives(), true),
+                    companionAnalysis.causesOfDelay()));
+            LOGGER.debug("Delaying companionMethod {}, not yet analysed", companionMethodName);
+            return;
+        }
         MethodInfo aspectMethod;
         if (companionMethodName.aspect() != null) {
-            aspectMethod = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
-            assert aspectMethod != null : "Expect aspect method to be known";
+            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
+            aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
+            assert aspectMethod != null : "Expect aspect method in " + companionMethodName +
+                    " to be known to " + methodInfo.typeInfo.fullyQualifiedName;
         } else {
             aspectMethod = null;
         }

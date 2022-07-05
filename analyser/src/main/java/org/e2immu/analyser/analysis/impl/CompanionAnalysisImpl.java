@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
@@ -41,6 +43,11 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         this.annotationType = annotationType;
         this.preAspectVariableValue = preAspectVariableValue;
         this.parameterValues = parameterValues;
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return CausesOfDelay.EMPTY;
     }
 
     @Override
@@ -74,15 +81,26 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         public final SetOnce<Map<String, Expression>> remapParameters = new SetOnce<>();
         public final SetOnce<Expression> preAspectVariableValue = new SetOnce<>();
         public final SetOnce<List<Expression>> parameterValues = new SetOnce<>();
+        private CausesOfDelay causesOfDelay;
 
         public Builder(AnnotationParameters annotationType, MethodInfo companion) {
             this.annotationType = annotationType;
             this.companion = Objects.requireNonNull(companion);
+            causesOfDelay = companion.delay(CauseOfDelay.Cause.NOT_YET_EXECUTED);
         }
 
         public CompanionAnalysis build() {
             return new CompanionAnalysisImpl(companion, annotationType, value.get(), getPreAspectVariableValue(),
                     List.copyOf(parameterValues.getOrDefault(List.of())));
+        }
+
+        @Override
+        public CausesOfDelay causesOfDelay() {
+            return causesOfDelay;
+        }
+
+        public void setCausesOfDelay(CausesOfDelay causes) {
+            this.causesOfDelay = causes;
         }
 
         @Override

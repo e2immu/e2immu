@@ -256,6 +256,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(identifier, "<cc-exp:" + typeName + ">", parameterizedType, original, causes);
     }
 
+    public static Expression forDelayedCompanionAnalysis(Identifier identifier,
+                                                         String name,
+                                                         ParameterizedType parameterizedType,
+                                                         Expression original,
+                                                         CausesOfDelay causes) {
+        return new DelayedExpression(identifier, "<companion:" + name + ">", parameterizedType, original, causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

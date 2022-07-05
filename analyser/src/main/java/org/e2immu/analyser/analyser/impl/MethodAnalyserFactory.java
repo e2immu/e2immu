@@ -66,6 +66,13 @@ public class MethodAnalyserFactory {
                         analyserContext.getPrimitives(), analyserContext, analyserContext, methodInfo, parameterAnalyses);
                 Map<CompanionMethodName, CompanionAnalyser> companionAnalysers = createCompanionAnalysers(methodInfo,
                         analyserContext, typeAnalysis);
+                companionAnalysers.forEach((cmn, ca) -> {
+                    methodAnalysis.companionAnalyses.put(cmn, ca.companionAnalysis);
+                    if(cmn.aspect() != null && cmn.action()== CompanionMethodName.Action.ASPECT
+                            && !typeAnalysis.getAspects().containsKey(cmn.aspect())) {
+                        typeAnalysis.setAspect(cmn.aspect(), methodInfo);
+                    }
+                });
                 yield new ComputingMethodAnalyser(methodInfo, typeAnalysis,
                         methodAnalysis, parameterAnalysers, parameterAnalyses, companionAnalysers, isSAM, analyserContext);
             }

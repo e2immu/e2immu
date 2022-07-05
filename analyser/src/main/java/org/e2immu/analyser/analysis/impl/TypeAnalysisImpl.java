@@ -253,6 +253,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
+        public void setAspect(String aspect, MethodInfo mainMethod) {
+            aspects.put(aspect, mainMethod);
+        }
+
+        @Override
         public TypeInfo getTypeInfo() {
             return typeInfo;
         }
