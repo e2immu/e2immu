@@ -83,15 +83,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 1, 2, 3, 4 -> "null==<f:node.map>";
                         default -> "true";
                     };
-                    assertEquals(expected, d.statementAnalysis().stateData()
-                            .valueOfExpression.get().toString());
+                    assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expected = switch (d.iteration()) {
-                        case 0 -> "initial:node@Method_add_1.0.1-C";
-                        default -> "wait_for_modification:node@Method_add_1-E";
-                        //    default -> fail("Not supposed to reach iteration 7"); // because field analyser does not go beyond subtype
-                    };
+                    String expected = d.iteration() == 0 ? "initial:node@Method_add_1.0.1-C"
+                            : "wait_for_modification:node@Method_add_1-E";
+                    // remains delayed, becomes unreachable
                     assertEquals(expected, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }
             }

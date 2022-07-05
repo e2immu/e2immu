@@ -14,10 +14,6 @@
 
 package org.e2immu.analyser.parser.own.util.testexample;
 
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -47,11 +43,9 @@ public class WGSimplified_0<T extends Comparable<? super T>, W extends WGSimplif
         neutral = weightType.neutral();
     }
 
-    @Modified
     private final Map<T, Node<T, W>> nodeMap = new TreeMap<>();
 
-    @NotModified
-    private void recursivelyComputeLinks(@NotNull T t, @NotNull Map<T, W> distanceToStartingPoint) {
+    private void recursivelyComputeLinks(T t, Map<T, W> distanceToStartingPoint) {
         Objects.requireNonNull(t);
         Node<T, W> node = nodeMap.get(t);
         W currentDistanceToT = distanceToStartingPoint.get(t);

@@ -79,7 +79,11 @@ public class FlowData {
     }
 
     public void makeUnreachable() {
-        setGuaranteedToBeReachedInMethod(FlowData.NEVER);
+        if(!guaranteedToBeReachedInMethod.isSet()) {
+            // reason for the condition: we may arrive here via stmt -> primary type ana -> method -> stmt
+            // see e.g. WGSimplified_0
+            guaranteedToBeReachedInMethod.set(FlowData.NEVER);
+        }
         if(!guaranteedToBeReachedInCurrentBlock.isSet()) {
             guaranteedToBeReachedInCurrentBlock.set(FlowData.NEVER);
         }

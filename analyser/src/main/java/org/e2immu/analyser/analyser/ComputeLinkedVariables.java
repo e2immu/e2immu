@@ -68,6 +68,7 @@ public class ComputeLinkedVariables {
     private final WeightedGraph weightedGraph;
     private final boolean allowBreakDelay;
     private final Set<Variable> linkingNotYetSet;
+    private final boolean oneBranchHasBecomeUnreachable;
 
     private record Cluster(Set<Variable> variables, CausesOfDelay delays) {
         @Override
@@ -87,6 +88,7 @@ public class ComputeLinkedVariables {
                                    Cluster returnValueCluster,
                                    Variable returnVariable,
                                    boolean allowBreakDelay,
+                                   boolean oneBranchHasBecomeUnreachable,
                                    Set<Variable> linkingNotYetSet) {
         this.clusters = clusters;
         this.returnValueCluster = returnValueCluster;
@@ -96,11 +98,13 @@ public class ComputeLinkedVariables {
         this.weightedGraph = weightedGraph;
         this.allowBreakDelay = allowBreakDelay;
         this.linkingNotYetSet = linkingNotYetSet;
+        this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 Stage stage,
                                                 boolean staticallyAssigned,
+                                                boolean oneBranchHasBecomeUnreachable,
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
@@ -140,7 +144,7 @@ public class ComputeLinkedVariables {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null && !ignore.test(vic, variable)) {
                     VariableInfo vi1 = vic.getPreviousOrInitial();
-                    LinkedVariables curated =   add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
+                    LinkedVariables curated = add(statementAnalysis, stage, staticallyAssigned, ignore, reassigned, externalLinkedVariables,
                             evaluationContext, weightedGraph, delaysInClustering, vi1, variable);
                     if (curated == LinkedVariables.NOT_YET_SET) {
                         linkingNotYetSet.add(variable);
@@ -160,7 +164,8 @@ public class ComputeLinkedVariables {
             delaysInClustering.add(new SimpleCause(evaluationContext.getLocation(stage), CauseOfDelay.Cause.ECI_HELPER));
         }
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.clusters,
-                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), linkingNotYetSet);
+                cr.returnValueCluster, cr.rv, evaluationContext.allowBreakDelay(), oneBranchHasBecomeUnreachable,
+                linkingNotYetSet);
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -358,8 +363,8 @@ public class ComputeLinkedVariables {
             // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
             // currently only for CM; example: TrieSimplified_0, _1_2, _1_2bis
             if (extraDelay.isDelayed()) {
-                assert property == Property.CONTEXT_MODIFIED;
-                boolean self = extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
+                boolean self = property == Property.CONTEXT_MODIFIED
+                        && extraDelay.containsCauseOfDelay(CauseOfDelay.Cause.WAIT_FOR_MODIFICATION);
                 if (!self) {
                     CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
                     summary = extraDelay.merge(conditionDelayMarker);
@@ -419,6 +424,10 @@ public class ComputeLinkedVariables {
                     if (override != null) {
                         newValue = override;
                         complain = false;
+                    } else if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
+                            || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
+                        newValue = newValue1;
+                        complain = false;
                     } else {
                         newValue = newValue1;
                         complain = clusterComplain;
@@ -457,10 +466,16 @@ public class ComputeLinkedVariables {
                             throw ise;
                         }
 
-                    } else if (complain && newValue.isDone() && !newValue.equals(current)) {
-                        LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
-                        LOGGER.error("Property {}, current {}, new {}", property, current, newValue);
-                        throw new UnsupportedOperationException("Overwriting value");
+                    } else if (newValue.isDone() && !newValue.equals(current)) {
+                        if (complain) {
+                            LOGGER.error("Variable {} in cluster {}", variable, cluster.variables);
+                            LOGGER.error("Property {}, current {}, new {}", property, current, newValue);
+                            throw new UnsupportedOperationException("Overwriting value");
+                        }
+                        if (oneBranchHasBecomeUnreachable) {
+                            LOGGER.debug("Not overwriting property {} of variable {}, (at least) one branch has become unreachable",
+                                    property, variable);
+                        }
                     }
                 }
             }

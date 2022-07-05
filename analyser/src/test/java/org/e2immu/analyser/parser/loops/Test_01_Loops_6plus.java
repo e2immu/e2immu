@@ -591,7 +591,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            assertFalse(d.evaluationContext().allowBreakDelay());
+            //assertFalse(d.evaluationContext().allowBreakDelay());
             if ("map".equals(d.fieldInfo().name)) {
                 // whatever happens, this remains nullable! map can have been null, setMap does not have to be called, and
                 // neither does method

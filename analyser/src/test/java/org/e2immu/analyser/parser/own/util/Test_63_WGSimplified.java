@@ -40,6 +40,9 @@ public class Test_63_WGSimplified extends CommonTestRunner {
         super(true);
     }
 
+    /*
+    Example where a whole block, including a lambda, becomes unreachable.
+     */
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -51,9 +54,8 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= BIG ? "<p:t>" : "?? don't reach this yet";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, BIG, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertEquals("<p:t>", d.currentValue().toString());
+                        assertTrue(d.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                     }
                 }
                 if ("node".equals(d.variableName())) {
@@ -68,10 +70,13 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                     }
                     if ("3.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, BIG, "");
+                        // IMPORTANT: CNN has to wait until we have a flow value for 3 to travel from 3.0.0 to 3
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertCurrentValue(d, BIG, "");
+                        assertCurrentValue(d, 12, "distanceToStartingPoint.get(t)");
+                        // this is the value that we cannot avoid: it cannot become NULLABLE because CNN works on the STATICALLY_ASSIGNED
+                        // linking and does not wait until there are values!!
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
@@ -126,7 +131,6 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "node:-1,this.nodeMap:-1";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     // THIS will get no value because as of iteration 12, the block is not reachable
-                    // on the other hand, we keep the sub-type alive... FIXME this is not compatible!
                 }
             }
         };
@@ -148,7 +152,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 assertEquals(d.iteration() > BIG, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
-        testClass("WGSimplified_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("WGSimplified_0", 6, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());

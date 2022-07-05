@@ -1388,13 +1388,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         // we include -E in touched, see Basics_8 (j, k in statement 4)
         Set<Variable> touched = touchedStream(linkedVariablesMap, newlyCreatedScopeVariables, prepareMerge);
+        boolean oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable();
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                true,
+                true, oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
         ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(this, MERGE,
-                false,
+                false, oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
@@ -1463,6 +1464,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
                 .addProgress(progress);
+    }
+
+    /*
+    actually: at least one branch, this is possible in switch statements. Generally, it'll be the one of the two arms
+    in an "if-else" construct, or the single branch of an "if".
+     */
+    private boolean oneBranchHasBecomeUnreachable() {
+        if(navigationData.hasSubBlocks()) {
+            return navigationData.blocks.get().stream()
+                    .anyMatch(optSa -> optSa.isPresent() && optSa.get().flowData().isUnreachable());
+        }
+        return false;
     }
 
     private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<LocalVariableReference> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {

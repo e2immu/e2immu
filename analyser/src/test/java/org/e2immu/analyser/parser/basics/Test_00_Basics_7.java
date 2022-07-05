@@ -100,10 +100,20 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof This) {
                     assertDv(d, 3, MUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 }
 

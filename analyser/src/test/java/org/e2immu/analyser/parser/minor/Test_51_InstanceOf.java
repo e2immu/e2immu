@@ -1203,6 +1203,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            assertFalse(d.evaluationContext().allowBreakDelay());
             if ("en".equals(d.fieldInfo().name) && "Negation".equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals("en", d.fieldAnalysis().getValue().toString());
             }
@@ -1258,11 +1259,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_16", 0, 7, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+          //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+          //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
