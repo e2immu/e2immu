@@ -42,6 +42,10 @@ public final class Instance extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
     private final Properties valueProperties;
 
+    public static Expression forArrayAccess(Identifier identifier, ParameterizedType parameterizedType,
+                                            Properties properties) {
+        return new Instance(identifier, parameterizedType, properties);
+    }
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
         return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);

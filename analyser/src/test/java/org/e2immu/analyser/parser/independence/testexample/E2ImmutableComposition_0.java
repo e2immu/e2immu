@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.independence.testexample;
 
 import org.e2immu.annotation.*;
 

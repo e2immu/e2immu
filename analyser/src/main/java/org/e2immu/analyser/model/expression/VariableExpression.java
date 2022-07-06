@@ -287,8 +287,11 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if (indexResult != null) builder.compose(indexResult);
 
         Variable source;
-        if (variable instanceof DependentVariable) {
-            if (scopeResult.value() instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
+        if (variable instanceof DependentVariable dv) {
+            assert scopeResult != null;
+            assert indexResult != null;
+            Expression computedScope = scopeResult.value();
+            if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
                 int intIndex = in.getNumber().intValue();
                 if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
@@ -296,10 +299,25 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 }
                 return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
             }
-            assert scopeResult != null;
-            assert indexResult != null;
+            if (dv.arrayVariable() instanceof LocalVariableReference lvr
+                    && lvr.variableNature() instanceof VariableNature.ScopeVariable
+                    && !(computedScope.isInstanceOf(IsVariableExpression.class))
+                    && !forwardEvaluationInfo.isAssignmentTarget()) {
+                // methodCall()[index] as a value rather than the target of an assignment
+                Properties properties = context.evaluationContext().getAnalyserContext().defaultValueProperties(dv.parameterizedType);
+                CausesOfDelay delays = properties.delays();
+                Expression replacement;
+                if (delays.isDelayed()) {
+                    replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
+                            new VariableExpression(dv), delays);
+                } else {
+                    replacement = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                }
+                return builder.setExpression(replacement).build();
+            }
+
             source = context.evaluationContext().searchInEquivalenceGroupForLatestAssignment((DependentVariable) variable,
-                    scopeResult.value(), indexResult.value(), forwardEvaluationInfo);
+                    computedScope, indexResult.value(), forwardEvaluationInfo);
         } else {
             source = variable;
         } // TODO implement this "source" choice for field reference scope as well

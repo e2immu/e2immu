@@ -126,7 +126,11 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 6 ? "<dv:av-36:17[i]>==this" : "(Enum_1.values())[i]==this";
+                    String expectValue = switch (d.iteration()) {
+                        case 0, 1, 2, 3, 4, 5 -> "this==<array-access:Enum_1>";
+                        case 6 -> "<simplification>";
+                        default -> "nullable instance type Enum_1==this";
+                    };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -186,15 +190,19 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 6
-                                ? "<dv:av-36:17[i]>==this?<v:i>:<return value>"
-                                : "(Enum_1.values())[i]==this?i:<return value>";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4, 5 -> "this==<array-access:Enum_1>?<v:i>:<return value>";
+                            case 6 -> "<simplification>?<v:i>:<return value>";
+                            default -> "nullable instance type Enum_1==this?i:<return value>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 6
-                                ? "<loopIsNotEmptyCondition>&&<oos:av-36:17[i]>==this?<oos:i>:<return value>"
-                                : "instance type int<=2&&instance type int>=0&&nullable instance type Enum_1==this?instance type int:<return value>";
+                        String expected = switch (d.iteration()) {
+                            case 0, 1, 2, 3, 4, 5 -> "<loopIsNotEmptyCondition>&&this==<array-access:Enum_1>?<oos:i>:<return value>";
+                            case 6 -> "<loopIsNotEmptyCondition>&&<simplification>?<oos:i>:<return value>";
+                            default -> "instance type int<=2&&instance type int>=0&&nullable instance type Enum_1==this?instance type int:<return value>";
+                        };
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
