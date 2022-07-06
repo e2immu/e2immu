@@ -185,6 +185,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             tmp.add(typeAnalyser != null ? typeAnalyser.getTypeAnalysis() : parentClass.typeInfo.typeAnalysis.get());
         }
         parentAndOrEnclosingTypeAnalysis = List.copyOf(tmp);
+
+        // running this here saves an iteration, especially since the inclusion of currentType
+        // in AnalysisProvider.defaultImmutable(...)
+        analyseTransparentTypes();
     }
 
     @Override

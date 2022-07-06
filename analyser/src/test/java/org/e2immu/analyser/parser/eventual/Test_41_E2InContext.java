@@ -125,7 +125,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEventually".equals(d.methodInfo().name)) {
                 assertDv(d, 4, MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("set".equals(d.methodInfo().name)) {
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

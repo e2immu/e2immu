@@ -69,7 +69,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
                 if("0".equals(d.statementId())) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if("0.0.0".equals(d.statementId())) {
                     assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -78,7 +78,7 @@ public class Test_16_Modification extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV,Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV,Property.MODIFIED_METHOD);
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
@@ -148,7 +148,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_15".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
@@ -158,10 +158,10 @@ public class Test_16_Modification extends CommonTestRunner {
                 } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
                     assertEquals("1", d.statementId());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else if (d.variable() instanceof This) {
                     assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 } else {
                     fail("?" + d.variableName());
                 }
@@ -170,7 +170,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_15".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()
@@ -200,7 +200,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
-        testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
+        testClass("Modification_16_M", 2, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

@@ -153,11 +153,7 @@ public class Test_25_FieldReference extends CommonTestRunner {
                     if ("2.0.0.0.0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                         // assigned the null constant, yet we have no idea about its value properties
-                        String aNull = switch (d.iteration()) {
-                            case 0 -> "<vp::container@Record_DV>";
-                            case 1 -> "<vp::initial@Field_v>";
-                            default -> "null";
-                        };
+                        String aNull = d.iteration() == 0 ? "<vp::container@Record_DV>" : "null";
                         assertEquals(aNull, d.currentValue().toString());
                     }
                 }

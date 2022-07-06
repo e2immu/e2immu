@@ -18,12 +18,10 @@ package org.e2immu.analyser.parser.independence;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -56,6 +54,15 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
+            if ("visit".equals(d.methodInfo().name) && "ImmutableArrayOfTransparentOnes".equals(clazz)) {
+                if ("one".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<vl:one>" : "nullable instance type One<Integer>";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -83,11 +90,19 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
+                assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.One",
+                        d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+
         testClass("E2ImmutableComposition_0", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

@@ -50,7 +50,6 @@ public interface ParameterAnalysis extends Analysis {
                                     ParameterInfo parameterInfo,
                                     Property property) {
 
-
         // some absolutely trivial cases
         boolean varArgs = parameterInfo.parameterInspection.get().isVarArgs();
         DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property, varArgs);
@@ -102,7 +101,8 @@ public interface ParameterAnalysis extends Analysis {
                 if (external.equals(property.bestDv)) return external;
                 DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
                 if (context.equals(property.bestDv)) return context;
-                DV formalImmutable = analysisProvider.defaultImmutable(parameterInfo.parameterizedType, true);
+                DV formalImmutable = analysisProvider.defaultImmutable(parameterInfo.parameterizedType,
+                        true, parameterInfo.getTypeInfo());
                 return formalImmutable.max(external.max(context));
             }
 

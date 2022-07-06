@@ -98,6 +98,11 @@ public class ExplicitTypes {
                 }
             }
 
+            MethodReference mr;
+            if((mr = element.asInstanceOf(MethodReference.class)) != null && mr.methodInfo.isConstructor) {
+                add(mr.scope.returnType(), UsedAs.CONSTRUCTOR_CALL);
+            }
+
             // x = new Y() -> the type of x cannot be replaced by an unbound type parameter
             if (element instanceof Assignment assignment && assignment.value.isInstanceOf(Instance.class)) {
                 add(assignment.target.returnType(), UsedAs.ASSIGN_TO_NEW_OBJECT);

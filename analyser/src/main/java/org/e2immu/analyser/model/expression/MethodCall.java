@@ -718,7 +718,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (createInstanceBasedOn != null) {
             ParameterizedType returnType = createInstanceBasedOn.returnType();
             Properties valueProperties = context.getAnalyserContext().defaultValueProperties(returnType,
-                    MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV, context.getCurrentType());
             CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
                 if (context.evaluationContext().isMyself(returnType)) {
@@ -1024,7 +1024,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
             // formal can be a @NotNull contracted annotation on the method; we cannot dismiss it
             // problem is that it may have to be computed, which introduces an unresolved delay in the case of cyclic calls.
-            DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
+            DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType,
+                    context.getCurrentType());
             boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             if (internalCycle) return fromConcrete.maxIgnoreDelay(adjusted).max(property.falseDv);
             return fromConcrete.max(adjusted);
@@ -1070,7 +1071,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
             It can still upgrade to ERImmutable when the K and V become ER themselves
              */
-            return analyserContext.defaultImmutable(returnType(), true, formal);
+            return analyserContext.defaultImmutable(returnType(), true, formal, context.getCurrentType());
         }
         return formal;
     }
@@ -1088,7 +1089,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
             } else {
                 DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .map(pt -> context.getAnalyserContext().defaultImmutable(pt, true))
+                        .map(pt -> context.getAnalyserContext().defaultImmutable(pt, true, context.getCurrentType()))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 minParams = minParams.min(hiddenImmutable);
             }

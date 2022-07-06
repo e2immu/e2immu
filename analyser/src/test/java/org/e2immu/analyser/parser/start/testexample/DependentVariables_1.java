@@ -44,7 +44,7 @@ public class DependentVariables_1 {
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 
-        @Independent1
+        @E2Container // X transparent in XS
         @Nullable
         public X getX(int index) {
             return xs[index];

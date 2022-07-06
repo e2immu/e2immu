@@ -627,7 +627,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             Variable variable = variableInfo.variable();
             if (variable instanceof This) {
                 DV immutable = evaluationContext.getAnalyserContext()
-                        .defaultImmutable(variable.parameterizedType(), false);
+                        .defaultImmutable(variable.parameterizedType(), false, getCurrentType());
                 vic.setProperty(EXTERNAL_IMMUTABLE, immutable, true, INITIAL);
             }
             if (vic.isInitial() && variable instanceof FieldReference fieldReference) {
@@ -650,6 +650,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         initializeLocalOrDependentVariable(vic, dv, context);
                     }
                 });
+    }
+
+    private TypeInfo getCurrentType() {
+        return methodAnalysis.getMethodInfo().typeInfo;
     }
 
     /* explicitly copy local variables from above or previous (they cannot be created on demand)
@@ -746,7 +750,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         assert variable instanceof ParameterInfo;
         DV currentImmutable = vi.getProperty(IMMUTABLE);
         if (currentImmutable.isDelayed()) {
-            DV formalImmutable = analyserContext.defaultImmutable(variable.parameterizedType(), false);
+            DV formalImmutable = analyserContext.defaultImmutable(variable.parameterizedType(), false,
+                    getCurrentType());
             vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
         }
         // update @Independent
@@ -1636,7 +1641,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // an assignment may be difficult.
         // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true,
+                getCurrentType());
         valueProperties.replaceDelaysByMinimalValue();
         Identifier identifier = Identifier.forVariableOutOfScope(variable, index);
         Instance instance = Instance.forLoopVariable(identifier, variable, valueProperties);
@@ -1713,7 +1719,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         if (context.evaluationContext().isMyself(arrayBaseType))
             return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
-        DV immutable = context.getAnalyserContext().defaultImmutable(arrayBaseType, false);
+        // IMPORTANT: currentType == null, we've done the hidden content check already
+        DV immutable = context.getAnalyserContext().defaultImmutable(arrayBaseType, false, null);
         if (immutable.isDelayed()) {
             return immutable;
         }
@@ -1756,7 +1763,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (Property ext : Property.EXTERNALS) {
             if (ext != EXTERNAL_IMMUTABLE) properties.put(ext, ext.valueWhenAbsent());
         }
-        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType, false);
+        // no hidden content check for this
+        DV currentImmutable = evaluationContext.getAnalyserContext().defaultImmutable(thisVar.typeAsParameterizedType,
+                false, null);
         properties.put(EXTERNAL_IMMUTABLE, currentImmutable);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, properties);
@@ -1827,7 +1836,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 immutable = DelayFactory.createDelay(location(INITIAL), CauseOfDelay.Cause.INITIAL_VALUE);
             } else {
                 ParameterizedType pt = initializerValue.returnType();
-                immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false);
+                immutable = evaluationContext.getAnalyserContext().defaultImmutable(pt, false,
+                        getCurrentType());
             }
         } else {
             immutable = MUTABLE_DV; // not relevant to this computation, like System.out
@@ -1854,7 +1864,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         properties.put(EXTERNAL_IGNORE_MODIFICATIONS, EXTERNAL_IGNORE_MODIFICATIONS.valueWhenAbsent());
 
-        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false);
+        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false,
+                getCurrentType());
         DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
                 .replaceDelayBy(MUTABLE_DV.maxIgnoreDelay(formallyImmutable));
 
@@ -2180,7 +2191,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false);
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false,
+                getCurrentType());
         return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
     }
 

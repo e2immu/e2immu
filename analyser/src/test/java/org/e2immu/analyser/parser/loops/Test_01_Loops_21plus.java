@@ -91,7 +91,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         String expected = d.iteration() <= 3
-                                ? "<v:array[i]>/*{DL array:initial@Class_Loops_21}*/"
+                                ? "<array-access:String[]>"
                                 : "instance type String[]";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
@@ -117,7 +117,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         String linkDelays = switch (d.iteration()) {
-                            case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C;initial@Class_Loops_21";
+                            case 0 -> "initial:array@Method_method_2.0.1.0.2-C;initial:i@Method_method_2.0.1-C;initial:inner@Method_method_2.0.1.0.1-C;initial:j@Method_method_2.0.1-E;initial:outer@Method_method_2.0.1.0.0-C";
                             case 1, 2, 3 -> "wait_for_modification:array@Method_method_2.0.1-E";
                             default -> "";
                         };
@@ -210,8 +210,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         DV override = d.variableInfoContainer().propertyOverrides().getOrDefaultNull(CONTEXT_MODIFIED);
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
-                        String linked = d.iteration() == 0 ? "array[i]:-1" : "";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         String expected = d.iteration() <= 3 ? "<vl:array>" : "instance type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
@@ -263,23 +262,23 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xes".equals(fr.fieldInfo.name)) {
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("x".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<vl:x>" : "instance type X";
+                        String expected = d.iteration() <= 3 ? "<vl:x>" : "instance type X";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 4 ? "this.xes:-1" : "this.xes:4";
+                        String linked = d.iteration() <= 3 ? "this.xes:-1" : "this.xes:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -288,7 +287,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
             if ("xes".equals(d.fieldInfo().name)) {
                 assertEquals("xesIn:0", d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("xesIn", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -296,9 +295,9 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "{}" : "{xes=assigned:1}";
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(expected, p0.getAssignedToField().toString());
-                assertEquals(d.iteration() >= 6, p0.assignedToFieldDelays().isDone());
-                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 5, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertEquals(d.iteration() >= 5, p0.assignedToFieldDelays().isDone());
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
         testClass("Loops_23", 0, 0, new DebugConfiguration.Builder()
@@ -321,19 +320,19 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(CONTEXT_NOT_NULL));
 
                         // merge:
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // as the sourceOfLoop of entry
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals(d.iteration() <= 3, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
+                        assertEquals(d.iteration() <= 2, eval.getProperty(CONTEXT_NOT_NULL).isDelayed());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
             }

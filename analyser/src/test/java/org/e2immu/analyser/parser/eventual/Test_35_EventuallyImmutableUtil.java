@@ -125,7 +125,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectEvImm = d.iteration() < 2 ? "[]" : "[value]";
+                String expectEvImm = d.iteration() == 0 ? "[]" : "[value]";
                 assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
@@ -192,10 +192,10 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 }
             }
             if ("isTReady".equals(d.methodInfo().name)) {
-                String expectT = d.iteration() <= 2 ? "<m:isTReady>" : "/*inline isTReady*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
+                String expectT = d.iteration() <= 1 ? "<m:isTReady>" : "/*inline isTReady*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expectT, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                if (d.iteration() >= 3) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                if (d.iteration() >= 2) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         // IMPROVE should have been: "bool, string, this"
                         assertEquals("", inlinedMethod.variablesOfExpressionSorted());
@@ -204,17 +204,17 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
 
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 3 ? "<m:isReady1>"
+                String expected1 = d.iteration() <= 2 ? "<m:isReady1>"
                         : "/*inline isReady1*/`t.s1.bool`.isSet()&&`t.s2.bool`.isSet()&&`t.s1.string`.isSet()&&`t.s2.string`.isSet()";
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             if ("isReady2".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() <= 3 ? "<m:isReady2>"
+                String expected2 = d.iteration() <= 2 ? "<m:isReady2>"
                         : "/*inline isReady2*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
         testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()
@@ -281,11 +281,11 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 // there are no preconditions
-                String expect = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                String expect = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
                 // but eventual will pick up the restrictions in EXT_IMM/CTX_IMM
-                if (d.iteration() >= 3) {
+                if (d.iteration() >= 2) {
                     assertEquals("@Only before: [eventuallyFinal]", d.methodAnalysis().getEventual().toString());
                 } else {
                     assertTrue(d.methodAnalysis().getEventual().causesOfDelay().isDelayed());
@@ -293,11 +293,11 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
             if ("done".equals(d.methodInfo().name)) {
                 // there are no preconditions
-                String expect = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                String expect = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
                 // but eventual will pick up the restrictions in EXT_IMM/CTX_IMM
-                if (d.iteration() >= 3) {
+                if (d.iteration() >= 2) {
                     assertEquals("@Mark: [eventuallyFinal]", d.methodAnalysis().getEventual().toString());
                 } else {
                     assertTrue(d.methodAnalysis().getEventual().causesOfDelay().isDelayed());
@@ -313,7 +313,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             assertEquals(MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV, concrete);
 
             DV formally = d.evaluationContext().getAnalyserContext().defaultImmutable(initializerValue.returnType(),
-                    false);
+                    false, null);
             assertEquals(MultiLevel.EVENTUALLY_RECURSIVELY_IMMUTABLE_DV, formally);
 
             assertEquals("instance type EventuallyFinal<String>", d.fieldAnalysis().getValue().toString());
@@ -321,7 +321,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_12".equals(d.typeInfo().simpleName)) {
-                String expected = d.iteration() <= 1 ? "[]" : "[eventuallyFinal]";
+                String expected = d.iteration() == 0 ? "[]" : "[eventuallyFinal]";
                 assertEquals(expected, d.typeAnalysis().getEventuallyImmutableFields().toString());
             }
         };

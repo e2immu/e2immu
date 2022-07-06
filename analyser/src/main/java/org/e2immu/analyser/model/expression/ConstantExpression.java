@@ -61,6 +61,7 @@ public interface ConstantExpression<T> extends Expression {
             case TEMP_MODIFIED_METHOD:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
+            case IMMUTABLE_BREAK:
                 return property.falseDv;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;

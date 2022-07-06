@@ -397,7 +397,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         } else if (context.evaluationContext().isMyself(parameterizedType)) {
             valueProperties = context.evaluationContext().valuePropertiesOfFormalType(parameterizedType);
         } else {
-            valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+            valueProperties = analyserContext.defaultValueProperties(parameterizedType, context.getCurrentType());
         }
         CausesOfDelay merged = valueProperties.delays()
                 .merge(variable.causesOfDelay())

@@ -402,30 +402,26 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<precondition>" : "!set.isEmpty()";
+                String expected = d.iteration() == 0 ? "<precondition>" : "!set.isEmpty()";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 String expectEventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_EventuallyE2Immutable_6]";
                     case 1 -> "[DelayedEventual:initial:this.set@Method_stream_0-C]";
-                    case 2 -> "[DelayedEventual:initial@Field_set]";
                     default -> "@Only after: [set]";
                 };
                 assertEquals(expectEventual, eventual.toString());
             }
             if ("initialize".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<precondition>" : "set.isEmpty()";
+                String expected = d.iteration() == 0 ? "<precondition>" : "set.isEmpty()";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
-                } else {
-                    assertEquals(DV.FALSE_DV, d.fieldAnalysis().isTransparentType());
-                }
+                assertFalse(d.fieldAnalysis().isTransparentType().isDelayed());
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().isTransparentType());
             }
         };
 
@@ -433,8 +429,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("EventuallyE2Immutable_6".equals(d.typeInfo().simpleName)) {
                 // E1 approved preconditions is empty: all fields explicitly final
                 assertTrue(d.typeAnalysis().getApprovedPreconditions(false).isEmpty());
-                if (d.iteration() < 2) {
-                    String expected = d.iteration() == 0 ? "initial:this.set@Method_stream_0-C" : "initial@Field_set";
+                if (d.iteration() == 0) {
+                    String expected = "initial:this.set@Method_stream_0-C";
                     assertEquals(expected, d.typeAnalysis().approvedPreconditionsStatus(true).toString());
                 } else {
                     // E2 approved preconditions must contain "set"
@@ -490,11 +486,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<precondition>" : "set.size()>=1";
+                String expect = d.iteration() == 0 ? "<precondition>" : "set.size()>=1";
                 assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
             if ("initialize".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<precondition>" : "set.size()<=0";
+                String expect = d.iteration() == 0 ? "<precondition>" : "set.size()<=0";
                 assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };
@@ -538,12 +534,12 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<precondition>" : "0!=set.size()";
+                String expected = d.iteration() == 0 ? "<precondition>" : "0!=set.size()";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
 
             }
             if ("initialize".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<precondition>" : "0==set.size()";
+                String expected = d.iteration() == 0 ? "<precondition>" : "0==set.size()";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
             }
         };

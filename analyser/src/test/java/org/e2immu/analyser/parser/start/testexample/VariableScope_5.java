@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.start.testexample;
 
 
+import org.e2immu.annotation.NotModified;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,12 +27,14 @@ import java.util.stream.Collectors;
 
 public class VariableScope_5 {
 
+    // note: @FunctionalInterface implicit!
     interface TypeInfo {
         String packageName();
     }
 
+    // note: @FunctionalInterface implicit!
     interface Qualification {
-        boolean addTypeReturnImport(TypeInfo typeInfo);
+        boolean addTypeReturnImport(@NotModified TypeInfo typeInfo);
     }
 
     record QualificationImpl() implements Qualification {

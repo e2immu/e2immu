@@ -125,7 +125,8 @@ public final class Instance extends BaseExpression implements Expression {
 
         // we need to go the base type of the array
 
-        Properties properties = context.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement);
+        Properties properties = context.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement,
+                context.getCurrentType());
         CausesOfDelay delays = properties.delays();
         if (delays.isDelayed()) {
             return DelayedExpression.forArrayAccessValue(identifier, variable.parameterizedType(),

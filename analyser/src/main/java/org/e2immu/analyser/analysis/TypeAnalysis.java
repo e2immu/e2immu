@@ -169,7 +169,7 @@ public interface TypeAnalysis extends Analysis {
     default DV isPartOfHiddenContent(ParameterizedType type) {
         CausesOfDelay status = hiddenContentTypeStatus();
         if (status.isDone()) {
-            return DV.fromBoolDv(getTransparentTypes().contains(type));
+            return DV.fromBoolDv(getTransparentTypes().contains(type.withoutTypeParameters()));
         }
         return status;
     }
@@ -179,5 +179,7 @@ public interface TypeAnalysis extends Analysis {
 
     boolean approvedPreconditionsIsNotEmpty(boolean e2);
 
-   default void setAspect(String aspect, MethodInfo mainMethod) { throw new UnsupportedOperationException(); }
+    default void setAspect(String aspect, MethodInfo mainMethod) {
+        throw new UnsupportedOperationException();
+    }
 }

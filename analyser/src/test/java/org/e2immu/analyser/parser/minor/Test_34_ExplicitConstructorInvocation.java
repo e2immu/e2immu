@@ -314,7 +314,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<s:Expression>";
                         case 1 -> "<vp:E1:container@Record_UnknownExpression>";
-                        case 2 -> "<vp:E1:cm@Parameter_condition;initial@Field_v>";
+                        case 2 -> "<vp:E1:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
                         default -> "UnknownExpression.E1";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -325,7 +325,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<dv:UnknownExpression.E2>";
                         case 1 -> "<vp:E2:container@Record_UnknownExpression>";
-                        case 2 -> "<vp:E2:cm@Parameter_condition;initial@Field_v>";
+                        case 2 -> "<vp:E2:break_imm_delay@Method_merge;cm@Parameter_condition;initial:this.v@Method_merge_0-C;srv@Method_merge>";
                         default -> "UnknownExpression.E2";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -469,13 +469,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
             if ("getIdentifier".equals(d.methodInfo().name)) {
                 if ("ElementImpl".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    // transparent!
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Identifier".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if("ElementImpl".equals(d.typeInfo().simpleName)) {
+                assertEquals("Type org.e2immu.analyser.parser.minor.testexample.ExplicitConstructorInvocation_11.Identifier",
+                        d.typeAnalysis().getTransparentTypes().toString());
             }
         };
         testClass("ExplicitConstructorInvocation_11", 0, 1, new DebugConfiguration.Builder()
@@ -497,17 +502,18 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_12() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
                 String delay = switch (d.iteration()) {
                     case 0, 1 -> "cm@Parameter_identifier3;mom@Parameter_identifier3";
+                    case 2 -> "mom@Parameter_identifier3";
                     default -> "cm@Parameter_identifier3";
                 };
                 assertDv(d.p(0), delay, 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X4_BitwiseAnd".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), "cm@Parameter_identifier4", 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
+                assertDv(d.p(0), "cm@Parameter_identifier4", 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //2
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
@@ -515,13 +521,13 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("X1_ElementImpl".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X5_BaseExpression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X3_BinaryOperator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X4_BitwiseAnd".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -554,10 +560,10 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("X5_BaseExpression".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //3
             }
             if ("X3_BinaryOperator".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //4
             }
             if ("X1_ElementImpl".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE); //1
@@ -565,13 +571,13 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("X1_ElementImpl".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X5_BaseExpression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("X3_BinaryOperator".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_12_1", 0, 0, new DebugConfiguration.Builder()
@@ -622,7 +628,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     public void test_14() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ExplicitConstructorInvocation_14".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ExplicitConstructorInvocation_14", 0, 0, new DebugConfiguration.Builder()

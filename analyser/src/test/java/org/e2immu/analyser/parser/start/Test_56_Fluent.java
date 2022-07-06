@@ -115,7 +115,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("equals".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "another".equals(p.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -125,7 +125,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("equalTo".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "another2".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -133,7 +133,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("equals".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyOf".equals(d.methodInfo().name)) {
@@ -181,11 +181,9 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) {
-                    assertTrue(d.typeAnalysis().hiddenContentTypeStatus().isDelayed());
-                } else {
-                    assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-                }
+
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
             if ("IFluent_0".equals(d.typeInfo().simpleName)) {

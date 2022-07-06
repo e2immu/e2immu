@@ -250,7 +250,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
-                String pcEventual = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
+                String pcEventual = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(pcEventual, d.methodAnalysis().getPreconditionForEventual().toString());
             }
@@ -406,11 +406,9 @@ public class Test_26_Enum extends CommonTestRunner {
     @Test
     public void test4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            assertEquals(d.iteration() == 4, d.evaluationResult().evaluationContext().allowBreakDelay());
-
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "1==<m:getCnt>" : "true";
+                    String expected = d.iteration() <= 1 ? "1==<m:getCnt>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -451,16 +449,16 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // the result of the hard-coded method call valueOf
-                    String expect = d.iteration() <= 1 ? "<valueOf:Enum_5>" : "instance type Enum_5";
+                    String expect = d.iteration() == 0 ? "<valueOf:Enum_5>" : "instance type Enum_5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             // shallow analyser
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() <= 1, d.methodAnalysis().getProperty(Property.IMMUTABLE).isDelayed());
+                assertEquals(d.iteration() == 0, d.methodAnalysis().getProperty(Property.IMMUTABLE).isDelayed());
             }
         };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()

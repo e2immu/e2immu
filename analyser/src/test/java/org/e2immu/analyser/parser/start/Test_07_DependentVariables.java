@@ -151,13 +151,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
                     String expected = switch (d.iteration()) {
-                        case 0, 1 -> "<v:xs[index]>/*{DL xs:initial@Class_XS}*/";
+                        case 0, 1 -> "<array-access:X>/*{L xs:independent1:3}*/";
                         default -> "nullable instance type X/*{L xs:independent1:3}*/";
                     };
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "this.xs:-1";
+                        case 0 -> "this.xs:-1";
                         default -> "this.xs:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -202,7 +202,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() == 0 ? "p:-1" : "p:3";
+                String expectLinked = d.iteration() == 0 ? "p:-1" : "p:3,xs[index]:3";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
@@ -379,10 +379,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals("12", d.currentValue().toString());
                 } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_4.method(int):0:a]".equals(d.variableName())) {
                     assertEquals("3", d.statementId());
-                    String expected = d.iteration() == 0
-                            ? "<v:array[a]>/*{DL array:initial@Class_DependentVariables_4}*/"
-                            : "instance type int";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("instance type int", d.currentValue().toString());
                 } else if (!(d.variable() instanceof This)) {
                     fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
                 }

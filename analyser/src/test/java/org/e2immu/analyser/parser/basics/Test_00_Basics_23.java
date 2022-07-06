@@ -42,23 +42,23 @@ public class Test_00_Basics_23 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<f:a.i>==<f:c.i>" : "true";
+                    String expected = d.iteration() == 0 ? "<f:a.i>==<f:c.i>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
             if ("method0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<f:(k<3?a:b).i>" : "(k<=2?new A(1):new A(2)).i";
+                    String expected = d.iteration() == 0 ? "<f:(k<3?a:b).i>" : "(k<=2?new A(1):new A(2)).i";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("3.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "1==<f:(k<3?a:b).i>" : "1==(k<=2?new A(1):new A(2)).i"; // TODO should be "true"
+                    String expected = d.iteration() == 0 ? "1==<f:(k<3?a:b).i>" : "1==(k<=2?new A(1):new A(2)).i"; // TODO should be "true"
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
             if ("method1".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "<f:b.i>==<f:c.i>" : "true";
+                    String expected = d.iteration() == 0 ? "<f:b.i>==<f:c.i>" : "true";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -73,12 +73,12 @@ public class Test_00_Basics_23 extends CommonTestRunner {
             if ("method0".equals(d.methodInfo().name)) {
                 if (d.variableInfoContainer().variableNature() instanceof VariableNature.ScopeVariable) {
                     assertTrue(d.variableName().startsWith("scope-"));
-                    String expected = d.iteration() <= 1 ? "k<=2?<new:A>:<new:A>" : "k<=2?new A(1):new A(2)";
+                    String expected = d.iteration() == 0 ? "k<=2?<new:A>:<new:A>" : "k<=2?new A(1):new A(2)";
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if (fr.scopeVariable instanceof LocalVariableReference lvr) {
-                        String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
                         if ("a".equals(lvr.simpleName())) {
                             assertEquals(expected, d.currentValue().toString());
                         } else if ("b".equals(lvr.simpleName())) {
@@ -89,13 +89,13 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                     } else fail();
                 }
                 if ("j".equals(d.variableName())) {
-                    String expected = d.iteration() <= 1 ? "<f:(k<3?a:b).i>" : "(k<=2?new A(1):new A(2)).i";
+                    String expected = d.iteration() == 0 ? "<f:(k<3?a:b).i>" : "(k<=2?new A(1):new A(2)).i";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }
             if ("method1".equals(d.methodInfo().name)) {
                 if ("a".equals(d.variableName())) {
-                    String expected = d.iteration() <= 1 ? "<new:A>" : "new A(1)";
+                    String expected = d.iteration() == 0 ? "<new:A>" : "new A(1)";
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
@@ -109,7 +109,7 @@ public class Test_00_Basics_23 extends CommonTestRunner {
                 }
                 if ("b".equals(d.variableName())) {
                     if ("3.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "k<=2?<new:A>:<new:A>" : "k<=2?new A(1):new A(2)";
+                        String expected = d.iteration() == 0 ? "k<=2?<new:A>:<new:A>" : "k<=2?new A(1):new A(2)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

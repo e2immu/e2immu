@@ -92,7 +92,7 @@ public class ShallowFieldAnalyser {
         }
 
         DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
-        DV formallyImmutable = analysisProvider.defaultImmutable(fieldInfo.type, false);
+        DV formallyImmutable = analysisProvider.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
         DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
         DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         DV formallyIndependent = analysisProvider.defaultIndependent(fieldInfo.type);

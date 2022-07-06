@@ -248,10 +248,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> notNullValue();
-            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt);
-            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext);
+            case IDENTITY, IGNORE_MODIFICATIONS -> analyserContext.defaultValueProperty(property, pt, null);
+            case IMMUTABLE, IMMUTABLE_BREAK -> immutableValue(pt, analyserContext, context.getCurrentType());
             case CONTAINER -> analyserContext.defaultContainer(pt);
-            case INDEPENDENT -> independentValue(pt, analyserContext);
+            case INDEPENDENT -> independentValue(pt, analyserContext, context.getCurrentType());
             case CONTEXT_MODIFIED -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("ConstructorCall has no value for " + property);
         };
@@ -263,20 +263,20 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV;
     }
 
-    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext) {
+    private DV independentValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
         if (anonymousClass != null) {
-            DV immutable = immutableValue(pt, analyserContext);
+            DV immutable = immutableValue(pt, analyserContext, currentType);
             if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(MultiLevel.level(immutable));
             }
             if (immutable.isDelayed()) return immutable;
             return MultiLevel.DEPENDENT_DV;
         }
-        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt);
+        return analyserContext.defaultValueProperty(Property.INDEPENDENT, pt, currentType);
     }
 
-    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext) {
-        DV dv = analyserContext.defaultImmutable(pt, false);
+    private DV immutableValue(ParameterizedType pt, AnalyserContext analyserContext, TypeInfo currentType) {
+        DV dv = analyserContext.defaultImmutable(pt, false, currentType);
         if (dv.isDone() && MultiLevel.effective(dv) == MultiLevel.Effective.EVENTUAL) {
             return MultiLevel.beforeImmutableDv(MultiLevel.level(dv));
         }

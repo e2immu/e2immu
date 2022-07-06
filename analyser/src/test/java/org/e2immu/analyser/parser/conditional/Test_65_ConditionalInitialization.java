@@ -45,14 +45,11 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
             if ("ConditionalInitialization_0".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<vp:Set<String>:initial@Class_ConditionalInitialization_0>"
-                                : "Set.of(\"a\",\"b\")";
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expect = switch (d.iteration()) {
-                            case 0 -> "<m:isEmpty>?<vp:Set<String>:initial@Class_ConditionalInitialization_0>:<f:set>";
+                            case 0 -> "<m:isEmpty>?Set.of(\"a\",\"b\"):<f:set>";
                             case 1 -> "<wrapped:set>";// result of breaking init delay
                             default -> "(instance type Set<String>).isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
                         };
@@ -102,13 +99,11 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
             if ("ConditionalInitialization_1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vp:Set<String>:initial@Class_ConditionalInitialization_1>"
-                                : "Set.of(\"a\",\"b\")";
-                        assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "b?<vp:Set<String>:initial@Class_ConditionalInitialization_1>:<f:set>"
+                        String expected = d.iteration() == 0 ? "b?Set.of(\"a\",\"b\"):<f:set>"
                                 : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -136,7 +131,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0
-                        ? "constructor-to-instance@Method_ConditionalInitialization_1_0.1.0-E;initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Class_ConditionalInitialization_1;initial@Field_set;values:this.set@Field_set"
+                        ? "constructor-to-instance@Method_ConditionalInitialization_1_0.1.0-E;initial:System.out@Method_ConditionalInitialization_1_0.1.0-C;initial:this.set@Method_ConditionalInitialization_1_0.1.0-C;initial@Field_set;values:this.set@Field_set"
                         : "b?Set.of(\"a\",\"b\"):new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,c?setParam:null,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().valuesDelayed().isDelayed());

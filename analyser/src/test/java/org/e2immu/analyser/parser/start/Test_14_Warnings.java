@@ -58,7 +58,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 Message message = d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE);
                 assertNotNull(message);
                 assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
-                assertDv(d, 2, AnalysisStatus.DONE, d.result().analysisStatus());
+                assertDv(d, 1, AnalysisStatus.DONE, d.result().analysisStatus());
             }
         };
 
@@ -309,26 +309,24 @@ public class Test_14_Warnings extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    String expected = d.iteration() == 0
-                            ? "<vp:Set<String>:initial@Class_Warnings_4>" : "Set.copyOf(input)";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertEquals("Set.copyOf(input)", d.currentValue().toString());
                     assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
                     // because immutableOfHiddenContent = @ERContainer
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     // we wait because of hidden content
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name) && d.iteration() > 3) {
-                assertNotNull(d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED));
+            if ("add".equals(d.methodInfo().name)) {
+                assertEquals(d.iteration() > 0, null != d.haveError(Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 

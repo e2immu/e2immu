@@ -61,7 +61,7 @@ public class Test_36_Cast extends CommonTestRunner {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
                         () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {

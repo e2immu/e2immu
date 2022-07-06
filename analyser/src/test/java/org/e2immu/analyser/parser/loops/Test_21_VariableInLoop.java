@@ -145,7 +145,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:navigationData>";
                             // value is already sa.navigationData(), but VPs of NavigationData are not there yet
-                            case 1 -> "<vp:NavigationData:cm@Parameter_next;initial@Field_next;mom@Parameter_next>";
+                            case 1 -> "<vp:NavigationData:cm@Parameter_next;mom@Parameter_next>";
                             default -> "sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -157,7 +157,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<m:navigationData>:<not yet assigned>";
-                            case 1 -> "null==sa$1?<not yet assigned>:<vp:NavigationData:cm@Parameter_next;initial@Field_next;mom@Parameter_next>";
+                            case 1 -> "null==sa$1?<not yet assigned>:<vp:NavigationData:cm@Parameter_next;mom@Parameter_next>";
                             default -> "null==sa$1?<not yet assigned>:sa$1.navigationData()";
                         };
                         assertEquals(expected, d.currentValue().toString());

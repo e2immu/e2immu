@@ -133,13 +133,13 @@ public class Test_16_Modification_12 extends CommonTestRunner {
             }
             if ("ChildClass".equals(typeInfo.simpleName)) {
                 assertEquals("Modification_12", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
                 assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {
                 assertEquals("org.e2immu.analyser.parser.failing.testexample", typeInfo.packageNameOrEnclosingType.getLeft());

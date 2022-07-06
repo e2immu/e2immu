@@ -345,7 +345,8 @@ public class Assignment extends BaseExpression implements Expression {
             return DelayedVariableExpression.forVariable(variableTarget,
                     context.evaluationContext().getInitialStatementTime(), causes);
         }
-        Properties valueProperties = context.getAnalyserContext().defaultValueProperties(target.returnType());
+        Properties valueProperties = context.getAnalyserContext().defaultValueProperties(target.returnType(),
+                context.getCurrentType());
         return Instance.forVariableInLoopDefinedOutside(identifier, target.returnType(), valueProperties);
     }
 
@@ -436,7 +437,7 @@ public class Assignment extends BaseExpression implements Expression {
                 // note: this one will overwrite the value of the scope, even if it is currently delayed
                 ParameterizedType returnType = fieldReference.scopeVariable.parameterizedType();
                 Properties valueProperties = context.getAnalyserContext().defaultValueProperties(returnType,
-                        MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                        MultiLevel.EFFECTIVELY_NOT_NULL_DV, context.getCurrentType());
                 CausesOfDelay causesOfDelay = valueProperties.delays();
                 Expression instance;
                 if (causesOfDelay.isDelayed()) {

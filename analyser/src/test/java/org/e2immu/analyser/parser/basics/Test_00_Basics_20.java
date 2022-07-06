@@ -192,7 +192,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getListC1".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
     }

@@ -620,7 +620,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
                 // note that we cannot use IMM, because 'this' will have 'mutable', always level 0
                 DV formal = evaluationContext.getAnalyserContext().defaultImmutable(variable.parameterizedType(),
-                        true);
+                        true, evaluationContext.getCurrentType());
                 if (formal.isDelayed()) {
                     // we're in a self situation (formal not yet known, but imm is mutable)... waiting
                     setProperty(variable, Property.CONTEXT_IMMUTABLE, formal);

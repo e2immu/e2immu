@@ -187,11 +187,12 @@ public interface AnalysisProvider {
         return baseValue;
     }
 
-    default DV immutableOfHiddenContent(ParameterizedType parameterizedType, boolean returnValueOfMethod) {
+    default DV immutableOfHiddenContent(ParameterizedType parameterizedType, boolean returnValueOfMethod,
+                                        TypeInfo currentType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
             ParameterizedType withoutArrays = parameterizedType.copyWithoutArrays();
-            return defaultImmutable(withoutArrays, returnValueOfMethod);
+            return defaultImmutable(withoutArrays, returnValueOfMethod, currentType);
         }
         if (bestType == null) {
             return returnValueOfMethod ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
@@ -205,12 +206,12 @@ public interface AnalysisProvider {
             return bestType.delay(CauseOfDelay.Cause.HIDDEN_CONTENT);
         }
         return hiddenContentTypes.types().stream()
-                .map(pt -> defaultImmutable(pt, returnValueOfMethod))
+                .map(pt -> defaultImmutable(pt, returnValueOfMethod, currentType))
                 .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
     }
 
-    default DV defaultImmutable(ParameterizedType parameterizedType, boolean unboundIsMutable) {
-        return defaultImmutable(parameterizedType, unboundIsMutable, MultiLevel.NOT_INVOLVED_DV);
+    default DV defaultImmutable(ParameterizedType parameterizedType, boolean unboundIsMutable, TypeInfo currentType) {
+        return defaultImmutable(parameterizedType, unboundIsMutable, MultiLevel.NOT_INVOLVED_DV, currentType);
     }
 
     /*
@@ -218,7 +219,8 @@ public interface AnalysisProvider {
     Once a type is E2IMMUTABLE, we have to look at the immutability of the hidden content, to potentially upgrade
     to a higher version. See e.g., E2Immutable_11,12
      */
-    default DV defaultImmutable(ParameterizedType parameterizedType, boolean unboundIsMutable, DV dynamicValue) {
+
+    default DV defaultImmutable(ParameterizedType parameterizedType, boolean unboundIsMutable, DV dynamicValue, TypeInfo currentType) {
         assert dynamicValue.isDone();
         if (parameterizedType.arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
@@ -227,6 +229,16 @@ public interface AnalysisProvider {
         if (bestType == null) {
             // unbound type parameter, null constant
             return dynamicValue.max(unboundIsMutable ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
+        }
+        if (currentType != null) {
+            TypeAnalysis typeAnalysisOfCurrentType = getTypeAnalysis(currentType);
+            DV partOfHiddenContent = typeAnalysisOfCurrentType.isPartOfHiddenContent(parameterizedType);
+            if (partOfHiddenContent.valueIsTrue()) {
+                return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+            }
+            if (partOfHiddenContent.isDelayed()) {
+                return partOfHiddenContent;
+            }
         }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -245,7 +257,7 @@ public interface AnalysisProvider {
             }
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameterizedType.parameters.stream()
-                        .map(pt -> defaultImmutable(pt, true))
+                        .map(pt -> defaultImmutable(pt, true, currentType))
                         .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
@@ -280,9 +292,9 @@ public interface AnalysisProvider {
         return bestType.delay(CauseOfDelay.Cause.TYPE_ANALYSIS);
     }
 
-    default DV defaultValueProperty(Property property, ParameterizedType formalType) {
+    default DV defaultValueProperty(Property property, ParameterizedType formalType, TypeInfo currentType) {
         return switch (property) {
-            case IMMUTABLE -> defaultImmutable(formalType, false);
+            case IMMUTABLE -> defaultImmutable(formalType, false, currentType);
             case INDEPENDENT -> defaultIndependent(formalType);
             case IDENTITY, IGNORE_MODIFICATIONS -> property.falseDv;
             case CONTAINER -> defaultContainer(formalType);
@@ -291,22 +303,28 @@ public interface AnalysisProvider {
         };
     }
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType) {
-        return defaultValueProperties(parameterizedType, false);
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, TypeInfo currentType) {
+        return defaultValueProperties(parameterizedType, false, currentType);
     }
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable) {
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable,
+                                              TypeInfo currentType) {
         return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Properties.collect(p -> defaultValueProperty(p, parameterizedType), writable));
+                .collect(Properties.collect(p -> defaultValueProperty(p, parameterizedType, currentType), writable));
     }
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
-        return defaultValueProperties(parameterizedType, valueForNotNullExpression, false);
+    default Properties defaultValueProperties(ParameterizedType parameterizedType,
+                                              DV valueForNotNullExpression,
+                                              TypeInfo currentType) {
+        return defaultValueProperties(parameterizedType, valueForNotNullExpression, false, currentType);
     }
 
-    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression, boolean writable) {
+    default Properties defaultValueProperties(ParameterizedType parameterizedType,
+                                              DV valueForNotNullExpression,
+                                              boolean writable,
+                                              TypeInfo currentType) {
         return EvaluationContext.VALUE_PROPERTIES.stream()
                 .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression :
-                        defaultValueProperty(p, parameterizedType), writable));
+                        defaultValueProperty(p, parameterizedType, currentType), writable));
     }
 }

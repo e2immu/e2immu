@@ -65,7 +65,7 @@ public class E2ImmutableComposition_0 {
          *                 is an abstract type in the package {@link java.util.function}.
          */
         @NotModified
-        void visit(Consumer<T> consumer);
+        void visit(@Independent1 Consumer<T> consumer);
 
         @Constant("false")
         @Override
@@ -170,7 +170,7 @@ public class E2ImmutableComposition_0 {
      * <p>
      * Fields: {@link Constant}
      */
-    @E2Container
+    @ERContainer
     static final class ConstantOne implements NonEmptyImmutableList<Integer> {
         @Constant("3")
         public static final int VALUE = 3;

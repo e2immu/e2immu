@@ -68,7 +68,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     ParameterizedType stringPt = d.variable().parameterizedType();
                     assertEquals("Type java.lang.String", stringPt.toString());
                     assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                            d.context().getAnalyserContext().defaultImmutable(stringPt, true));
+                            d.context().getAnalyserContext().defaultImmutable(stringPt, true, null));
 
                     String expect = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expect, d.currentValue().toString());

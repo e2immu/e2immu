@@ -302,7 +302,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         Identifier identifier = statement().getIdentifier();
         for (Variable variable : variables) {
             if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) {
-                Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(variable.parameterizedType());
+                Properties properties = evaluationContext.getAnalyserContext()
+                        .defaultValueProperties(variable.parameterizedType(), evaluationContext.getCurrentType());
                 ExpandedVariable ev = new ExpandedVariable(identifier, variable, properties);
                 builder.addVariableExpression(variable, ev);
                 builder.put(new VariableExpression(variable), ev);

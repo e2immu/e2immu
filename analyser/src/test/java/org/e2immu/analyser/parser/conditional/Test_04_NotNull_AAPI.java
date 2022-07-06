@@ -43,20 +43,20 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("isStrictPrefix".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<m:goTo>"
+                        String expected = d.iteration() <= 1 ? "<m:goTo>"
                                 : "-1-(instance type int)+prefix.length>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:-1-(instance type int)+prefix.length>=0?``node`.map`.get(nullable instance type String):`root`";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:goTo>"
+                String expected = d.iteration() <= 1 ? "<m:goTo>"
                         : "/*inline goTo*/-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
         testClass("NotNull_3", 0, 0, new DebugConfiguration.Builder()
@@ -76,23 +76,23 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("newTrieNode".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.1.1".equals(d.statementId())) {
                         assertTrue(d.iteration() < 2);
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "node.map:-1,node:0,s:-1,this.root:-1" : "node:0";
+                        String linked = d.iteration() == 0 ? "node.map:-1,node:0,s:-1,this.root:-1" : "node:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("node".equals(d.variableName())) {
                     if ("1.0.1".equals(d.statementId())) {
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -101,9 +101,9 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertTrue(d.iteration() < 2);
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1" : "newTrieNode:0";
+                        String linked = d.iteration() == 0 ? "newTrieNode:0,node.map:-1,s:-1,this.root:-1" : "newTrieNode:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -121,7 +121,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() <= 2 ? "<null-check>?null:<f:node.data>" : "null";
+                    String expected = d.iteration() <= 1 ? "<null-check>?null:<f:node.data>" : "null";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeByToString("node");
                     DV cnn = cd.getProperty(Property.CONTEXT_NOT_NULL);
@@ -133,18 +133,18 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<m:goTo>" : "upToPosition>=strings.length?null:`root`";
+                        String expected = d.iteration() <= 1 ? "<m:goTo>" : "upToPosition>=strings.length?null:`root`";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
             if ("isStrictPrefix".equals(d.methodInfo().name)) {
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<m:goTo>" : "null";
+                        String expected = d.iteration() <= 1 ? "<m:goTo>" : "null";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -154,22 +154,22 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expected = d.iteration() <= 2
+                    String expected = d.iteration() <= 1
                             ? "upToPosition>=strings.length?null:<f:root>"
                             : "upToPosition>=strings.length?null:root";
                     assertEquals(expected, d.currentValue().toString());
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     // the contribution of "root" travels to the return variable
                     // it'll be used only
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 2 ? "<m:goTo>" : "/*inline goTo*/upToPosition>=strings.length?null:root";
+                String expected = d.iteration() <= 1 ? "<m:goTo>" : "/*inline goTo*/upToPosition>=strings.length?null:root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 

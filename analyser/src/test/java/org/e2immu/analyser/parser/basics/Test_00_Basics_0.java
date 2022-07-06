@@ -122,7 +122,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_0".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {

@@ -277,7 +277,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return DV.TRUE_DV;
             DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return DV.TRUE_DV;
-            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false);
+            DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false,
+                    getCurrentType());
             return DV.fromBoolDv(MultiLevel.isAtLeastEffectivelyE2Immutable(formal));
         }
         DV valueProperty = getProperty(value, IMMUTABLE, true, false);
@@ -658,7 +659,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             Properties valueProperties;
             if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
                     || bestValue.isDelayed()) {
-                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
+                valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType(), getCurrentType());
             } else {
                 valueProperties = getValueProperties(bestValue);
             }

@@ -61,19 +61,19 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("getSet".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertDv(d, 14, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                    String expectValue = d.iteration() <= 13 ? "<f:set>" : "instance type Set<String>";
+                    assertDv(d, 13, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                    String expectValue = d.iteration() <= 12 ? "<f:set>" : "instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 14, "set");
-                    assertDv(d, 14, MultiLevel.MUTABLE_DV, IMMUTABLE);
+                    assertCurrentValue(d, 13, "set");
+                    assertDv(d, 13, MultiLevel.MUTABLE_DV, IMMUTABLE);
                 }
             }
 
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 13 ? "<f:set>"
+                    String expectValue = d.iteration() <= 12 ? "<f:set>"
                             : "instance type Set<String>/*this.contains(string)&&this.size()>=1*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -91,8 +91,8 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 14, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        String expected = d.iteration() <= 15 ? "c:-1" : "c:2";
+                        assertDv(d, 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        String expected = d.iteration() <= 14 ? "c:-1" : "c:2";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -101,14 +101,14 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 16, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 15, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
-                        String expectLinked = d.iteration() <= 15 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
+                        String expectLinked = d.iteration() <= 14 ? "c.set:-1,this.s2:-1" : "c.set:2,this.s2:2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 15 ? "<m:addAll>" : "instance type boolean";
+                    String expectValue = d.iteration() <= 14 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -124,7 +124,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
             if ("Modification_11".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertCurrentValue(d, 14, "set2");
+                        assertCurrentValue(d, 13, "set2");
                     }
                 }
             }
@@ -139,7 +139,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 16,
+                    assertEquals(d.iteration() >= 15,
                             d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
@@ -151,17 +151,17 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 assertEquals("setC:1", d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().toString());
                 // the field analyser sees addAll being used on set in the method addAllOnC
-                assertDv(d, 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 12, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertDv(d, DV.TRUE_DV, MODIFIED_OUTSIDE_METHOD);
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, 15, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 14, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 14, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 13, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_PARAMETER);
                 assertDv(d.p(0), 1, DV.TRUE_DV, MODIFIED_VARIABLE);
             }
             if ("addAll".equals(d.methodInfo().name)) {

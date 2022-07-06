@@ -337,7 +337,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("typeInfo.packageName()", d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<v:packageName>" : "typeInfo.packageName()";
+                        String expected = d.iteration() == 0 ? "<v:packageName>" : "typeInfo.packageName()";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -355,7 +355,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:myPackage>" : "nullable instance type String";
+                        String expected = d.iteration() == 0 ? "<p:myPackage>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -391,7 +391,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<s:PerPackage>";
-                            case 1 -> "<m:computeIfAbsent>";
                             default -> "instance type PerPackage";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -420,6 +419,12 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertEquals(d.iteration() >= 3, d.methodAnalysis().getLastStatement().variableStream()
                         .peek(vi -> LOGGER.warn("CM of {}: {}", vi.variable(), vi.getProperty(Property.CONTEXT_MODIFIED)))
                         .allMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).isDone()));
+            }
+            if ("addTypeReturnImport".equals(d.methodInfo().name) && "Qualification".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d.p(0), MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE); // FIXME?
+            }
+            if ("addTypeReturnImport".equals(d.methodInfo().name) && "QualificationImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d.p(0), 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // FIXME?
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

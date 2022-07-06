@@ -90,7 +90,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             if ("string".equals(d.fieldInfo().name)) {
                 assertEquals("string", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 

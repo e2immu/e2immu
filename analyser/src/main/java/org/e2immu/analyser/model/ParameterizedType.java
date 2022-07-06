@@ -893,4 +893,9 @@ public class ParameterizedType {
     public boolean isInt() {
         return arrays == 0 && typeInfo != null && typeInfo.isInt();
     }
+
+    public ParameterizedType withoutTypeParameters() {
+        if(parameters.isEmpty()) return this;
+        return new ParameterizedType(typeInfo, arrays, wildCard, List.of(), typeParameter);
+    }
 }
