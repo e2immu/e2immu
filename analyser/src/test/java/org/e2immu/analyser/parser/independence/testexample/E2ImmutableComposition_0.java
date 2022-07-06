@@ -89,7 +89,7 @@ public class E2ImmutableComposition_0 {
         T first();
 
         @Modified
-        void setFirst(T t);
+        void setFirst(@NotModified T t);
     }
 
     /**
@@ -102,6 +102,7 @@ public class E2ImmutableComposition_0 {
     @Container
     static class One<T> implements NonEmptyList<T> {
         @Variable
+        @NotModified
         private T t;
 
         @Override
@@ -110,7 +111,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void setFirst(T t) {
+        public void setFirst(@NotModified T t) {
             this.t = t;
         }
 
@@ -119,6 +120,7 @@ public class E2ImmutableComposition_0 {
             return 1;
         }
 
+        @NotModified
         @Override
         public void visit(@Independent1 Consumer<T> consumer) {
             consumer.accept(t);
@@ -586,7 +588,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Constant("\"a\"") // no error, the constant is @Independent
+        @Constant("a") // no error, the constant is @Independent
         public String first() {
             return strings[0];
         }

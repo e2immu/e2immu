@@ -162,7 +162,7 @@ public class DGSimplified_0<T> extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull @NotModified T t, @NotNull Collection<T> dependsOn, boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {

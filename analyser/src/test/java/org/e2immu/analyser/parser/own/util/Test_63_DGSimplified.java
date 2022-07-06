@@ -61,12 +61,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("copyRemove".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     String expected =
-                            d.iteration() >= 36
+                            d.iteration() >= 34 && d.iteration() < 36
+                                    ? "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=assign_to_field@Parameter_dependsOn}"
+                                    : d.iteration() >= 36
                                     ? "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=false:0}"
                                     : switch (d.iteration()) {
-                                case 0 -> "accept={modified in context=true:1, not null in context=initial:node.dependsOn@Method_accept_0.0.0-C, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=link@NOT_YET_SET}";
-                                case 1 -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=initial@Field_dependsOn;initial@Field_t}";
-                                default -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=assign_to_field@Parameter_dependsOn}";
+                                case 0 -> "accept={modified in context=true:1, not null in context=initial:node.dependsOn@Method_accept_0.0.0-C, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=cm@Parameter_dependsOn;cm@Parameter_t;link@NOT_YET_SET;mom@Parameter_dependsOn;mom@Parameter_t}";
+                                case 1 -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=initial@Field_dependsOn;initial@Field_t;mom@Parameter_dependsOn;mom@Parameter_t}";
+                                default -> "accept={modified in context=true:1, not null in context=content_not_null:13, read=true:1}, copy={modified in context=true:1, not null in context=not_null:5, read=true:1}, nodeMap={modified in context=true:1, not null in context=not_null:5, read=true:1}, this={modified in context=mom@Parameter_dependsOn}";
                             };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
@@ -184,8 +186,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("addNode".equals(d.methodInfo().name)) {
-                // ... or not, mm@Method_addNode
-                assertDv(d.p(0), 36, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 assertDv(d, 34, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("comparator".equals(d.methodInfo().name)) {
@@ -351,7 +352,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String delays = switch (d.iteration()) {
                         case 0 -> "initial:this.nodeMap@Method_reverse_0.0.0-C";
                         case 1 -> "initial@Field_dependsOn;initial@Field_t";
-                        case 2, 3, 4, 5, 6, 7, 8, 9-> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
+                        case 2, 3, 4, 5, 6, 7, 8, 9 -> "initial:this.nodeMap@Method_reverse_0.0.0-C;initial@Field_dependsOn;initial@Field_t";
                         default -> "";
                     };
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());

@@ -966,18 +966,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         linkedVariables = vii.getLinkedVariables();
                     }
                     CausesOfDelay causesOfDelay = expression.causesOfDelay();
-                    VariableExpression ve;
-                    if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
-                            && ve.variable() instanceof LocalVariableReference) {
-                        throw new UnsupportedOperationException("Method " + methodInfo.fullyQualifiedName + ": " +
-                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
-                    }
+                    Expression expressionWithoutLocalVars = replaceLocalVariablesByInstance(expression, properties);
+
                     ValueAndPropertyProxy.Origin origin = methodInfo.inConstruction()
                             ? ValueAndPropertyProxy.Origin.CONSTRUCTION : ValueAndPropertyProxy.Origin.METHOD;
                     ValueAndPropertyProxy proxy;
 
                     boolean viIsDelayed;
-                    if (expression instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
+                    if (expressionWithoutLocalVars instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
                             methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.isDefaultScope && !fr.isStatic) {
                         // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
                         // as well as ExplicitConstructorInvocation_4
@@ -990,7 +986,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             LOGGER.debug("Break init delay needs resolving for field {} in method {}", fieldInfo.name,
                                     methodInfo.name);
                         }
-                        proxy = new ValueAndPropertyProxy.ProxyData(expression, properties, linkedVariables, origin);
+                        proxy = new ValueAndPropertyProxy.ProxyData(expressionWithoutLocalVars, properties, linkedVariables, origin);
                         viIsDelayed = causesOfDelay.isDelayed();
 
                         values.add(proxy);
@@ -1001,7 +997,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         added = true;
                         if (viIsDelayed) {
                             LOGGER.debug("Delay consistent value for field {} because of {} in {}",
-                                    fqn, expression, methodInfo.fullyQualifiedName);
+                                    fqn, expressionWithoutLocalVars, methodInfo.fullyQualifiedName);
                             delays = delays.merge(causesOfDelay); //DELAY EXIT POINT
                         }
                     }
@@ -1012,6 +1008,16 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         return new OccursAndDelay(occurs, occurrenceCountForError, delays);
+    }
+
+    private Expression replaceLocalVariablesByInstance(Expression expression, Properties properties) {
+        if (expression.isDelayed()) return expression;
+        VariableExpression ve;
+        if (expression.collect(VariableExpression.class).stream().anyMatch(e -> e.variable() instanceof LocalVariableReference)) {
+            // contains an instance somewhere... not returning
+            return Instance.forField(fieldInfo, fieldInfo.type, properties);
+        }
+        return expression;
     }
 
     private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<ValueAndPropertyProxy> values) {
@@ -1389,7 +1395,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream()).
                         collect(Collectors.toUnmodifiableSet());
                 LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
-                if(lv.isEmpty()) lv = LinkedVariables.NOT_YET_SET;
+                if (lv.isEmpty()) lv = LinkedVariables.NOT_YET_SET;
                 fieldAnalysis.setLinkedVariables(lv);
                 return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
             }

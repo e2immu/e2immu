@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
@@ -57,13 +56,13 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
 
-        DV scopeIsContainer = scopeObject == null || recursiveOrPartOfCallCycle ? MultiLevel.NOT_CONTAINER_DV
-                : context.evaluationContext().getProperty(scopeObject, Property.CONTAINER, true, true);
+        DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
+        DV scopeIsIndependent = scopeIsIndependent(context, recursiveOrPartOfCallCycle, scopeObject);
 
         for (Expression parameterExpression : parameterExpressions) {
             minCnnOverParameters = oneParameterReturnCnn(context, forwardEvaluationInfo,
                     methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
-                    scopeIsContainer);
+                    scopeIsContainer, scopeIsIndependent);
             i++;
         }
 
@@ -81,6 +80,18 @@ public class EvaluateParameters {
         return new Pair<>(builder, parameterValues);
     }
 
+    private static DV scopeIsContainer(EvaluationResult context, boolean recursiveOrPartOfCallCycle, Expression scopeObject) {
+        if (scopeObject == null || recursiveOrPartOfCallCycle) return MultiLevel.NOT_CONTAINER_DV;
+        return context.evaluationContext().getProperty(scopeObject, Property.CONTAINER, true, true);
+    }
+
+    private static DV scopeIsIndependent(EvaluationResult context, boolean recursiveOrPartOfCallCycle, Expression scopeObject) {
+        if (scopeObject != null && !recursiveOrPartOfCallCycle && scopeObject.returnType().isFunctionalInterface()) {
+            return context.getProperty(scopeObject, Property.INDEPENDENT);
+        }
+        return MultiLevel.DEPENDENT_DV; // inactive
+    }
+
     private static DV oneParameterReturnCnn(EvaluationResult context,
                                             ForwardEvaluationInfo forwardEvaluationInfo,
                                             MethodInfo methodInfo,
@@ -89,7 +100,8 @@ public class EvaluateParameters {
                                             int position,
                                             EvaluationResult.Builder builder,
                                             Expression parameterExpression,
-                                            DV scopeIsContainer) {
+                                            DV scopeIsContainer,
+                                            DV scopeIsIndependent) {
         Expression parameterValue;
         EvaluationResult parameterResult;
         DV contextNotNull;
@@ -115,22 +127,11 @@ public class EvaluateParameters {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                 throw e;
             }
-            List<Variable> vars = parameterExpression.variables(true);
-            boolean self = vars.stream().anyMatch(v -> {
-                if (v instanceof FieldReference fr && fr.fieldInfo.owner == methodInfo.typeInfo) {
-                    FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                    return fieldAnalysis.getLinkedVariables().isDone() &&
-                            fieldAnalysis.getLinkedVariables().contains(parameterInfo);
-                }
-                return false;
-            });
-            // FIXME REMOVED BREAK
-            boolean recursivePartOfCallSelf = recursiveOrPartOfCallCycle;//|| self;
-            computeContextContainer(methodInfo, recursivePartOfCallSelf, map);
-            computeContextModified(methodInfo, recursivePartOfCallSelf, map, scopeIsContainer);
+            computeContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
+            computeContextModified(methodInfo, recursiveOrPartOfCallCycle, map, scopeIsContainer);
 
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
-            if (recursivePartOfCallSelf) {
+            if (recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
                 if (contextNotNull.gt(MultiLevel.NULLABLE_DV)) {
                     String msg;
@@ -142,6 +143,25 @@ public class EvaluateParameters {
                     builder.raiseError(parameterExpression.getIdentifier(), Message.Label.CALL_CYCLE_NOT_NULL,
                             msg);
                 }
+            }
+
+            if (scopeIsIndependent.gt(MultiLevel.DEPENDENT_DV)) {
+                // we don't know yet whether there'll be modification or not, it will depend on the @Immutable value
+                Expression tempParameterResult = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT).getExpression();
+                DV immutable = context.getProperty(tempParameterResult, Property.IMMUTABLE);
+                if (immutable.isDelayed()) {
+                    DV cm = map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+                    map.put(Property.CONTEXT_MODIFIED, immutable.max(cm)); // merge with current delays, if any
+                } else {
+                    int immutableLevel = MultiLevel.level(immutable); // @E2Immutable = level 1
+                    int independentLevel = MultiLevel.level(scopeIsIndependent); // @Independent1 = 0
+                    if (immutableLevel > independentLevel) {
+                        map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+                    }
+                }
+            } else if (scopeIsIndependent.isDelayed()) {
+                DV cm = map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+                map.put(Property.CONTEXT_MODIFIED, scopeIsIndependent.max(cm)); // merge with current delays, if any
             }
 
             ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().setNotAssignmentTarget()
@@ -175,6 +195,21 @@ public class EvaluateParameters {
         assert afterModification != null;
         parameterValues.add(afterModification);
         return contextNotNull;
+    }
+
+    private static DV correctContextModifiedFunctionalInterface(EvaluationResult context,
+                                                                Expression parameterValue,
+                                                                DV scopeIsIndependent,
+                                                                Map<Property, DV> map) {
+        if (scopeIsIndependent.isDelayed()) return scopeIsIndependent; // we'll have to wait
+        if (scopeIsIndependent.gt(MultiLevel.DEPENDENT_DV)) {
+            DV immutable = context.getProperty(parameterValue, Property.IMMUTABLE);
+            if (immutable.isDelayed()) return immutable;
+            int immutableLevel = MultiLevel.level(immutable); // @E2Immutable = level 1
+            int independentLevel = MultiLevel.level(scopeIsIndependent); // @Independent1 = 0
+            if (immutableLevel > independentLevel) return DV.FALSE_DV;
+        }
+        return map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
     }
 
     /*
@@ -272,8 +307,8 @@ public class EvaluateParameters {
             if (variable == theVariable) {
                 lv = lvExpression;
             } else {
-               LinkedVariables computed = context.evaluationContext().linkedVariables(variable);
-               lv = computed == null ? LinkedVariables.NOT_YET_SET: computed;
+                LinkedVariables computed = context.evaluationContext().linkedVariables(variable);
+                lv = computed == null ? LinkedVariables.NOT_YET_SET : computed;
             }
             builder.modifyingMethodAccess(variable, delayed, lv, true);
             return true;
@@ -285,7 +320,7 @@ public class EvaluateParameters {
         // IMPROVE the restriction on "static" feels a little ad-hoc
         // it fixes AnalysisProvider_0, _1
         if (variable instanceof FieldReference fr) {
-            if(fr.fieldInfo.isStatic()) {
+            if (fr.fieldInfo.isStatic()) {
                 return false;
             }
             return fr.scope.variables(true).stream()

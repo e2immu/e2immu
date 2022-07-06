@@ -217,7 +217,7 @@ public class Test_45_Project extends CommonTestRunner {
                         assertNotNull(fr.scopeVariable);
                         if ("0".equals(d.statementId())) {
                             // as a result of breaking a delay
-                            assertDv(d, 33, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 33, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                 }
