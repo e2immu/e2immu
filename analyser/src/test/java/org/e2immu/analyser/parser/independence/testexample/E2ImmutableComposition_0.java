@@ -67,7 +67,7 @@ public class E2ImmutableComposition_0 {
         @NotModified
         void visit(Consumer<T> consumer);
 
-        @Constant
+        @Constant("false")
         @Override
         default boolean isEmpty() {
             return false;
@@ -170,16 +170,16 @@ public class E2ImmutableComposition_0 {
      */
     @E2Container
     static final class ConstantOne implements NonEmptyImmutableList<Integer> {
-        @Constant
+        @Constant("3")
         public static final int VALUE = 3;
 
-        @Constant
+        @Constant("3")
         @Override
         public Integer first() {
             return VALUE;
         }
 
-        @Constant
+        @Constant("1")
         @Override
         public int size() {
             return 1;
@@ -586,7 +586,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Constant // no error, the constant is @Independent
+        @Constant("\"a\"") // no error, the constant is @Independent
         public String first() {
             return strings[0];
         }

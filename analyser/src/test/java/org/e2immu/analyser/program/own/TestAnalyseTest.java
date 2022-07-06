@@ -75,6 +75,7 @@ public class TestAnalyseTest {
             }
         };
 
+        String p = "org.e2immu.analyser.parser";
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/test/java")
@@ -90,7 +91,7 @@ public class TestAnalyseTest {
                 .addClassPath("build/libs/analyser-0.5.0.jar")
                 // we have to avoid doing normal parsing of annotated-api files such as the files in
                 // org.e2immu.analyser.shallow.testexample, e.g. JavaUtil_0
-                .addRestrictSourceToPackages("org.e2immu.analyser.parser.")
+                .addRestrictSourceToPackages(p, p+".functional.")
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()

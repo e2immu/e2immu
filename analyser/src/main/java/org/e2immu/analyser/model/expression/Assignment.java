@@ -455,7 +455,7 @@ public class Assignment extends BaseExpression implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         } else if(at instanceof DependentVariable dv) {
             if(dv.arrayVariable() != null) {
-                builder.markContextModified(at.variable(), DV.TRUE_DV);
+                builder.markContextModified(dv.arrayVariable(), DV.TRUE_DV);
 
                 // recurse!
                 markModified(builder, context, dv.arrayVariable());

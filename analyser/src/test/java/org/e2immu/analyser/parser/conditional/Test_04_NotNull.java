@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -159,5 +160,40 @@ public class Test_04_NotNull extends CommonTestRunner {
     public void test_4_1() throws IOException {
         testClass("NotNull_4_1", 2, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
+
+    @Test
+    public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("reInitialize".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof DependentVariable dv
+                        && dv.arrayVariable() instanceof FieldReference fr
+                        && "strings".equals(fr.fieldInfo.name)) {
+                    if ("1.0.0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<s:String>" : "s";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("s".equals(d.variableName())) {
+                    if ("1.0.0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("iv-44:25".equals(d.variableName())) {
+                    // the index variable acting for the i++ expression
+                    if ("1.0.0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:i>" : "i$1.0.0";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("NotNull_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 }
