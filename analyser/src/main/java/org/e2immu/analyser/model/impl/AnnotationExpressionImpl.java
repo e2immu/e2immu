@@ -138,7 +138,16 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         // it is always possible that the return type is an array, but only one value is present...
         ParameterizedType returnType = returnType(fieldName);
         if (expression instanceof ArrayInitializer arrayInitializer) {
-            Object[] array = createArray(returnType, arrayInitializer.multiExpression.expressions().length);
+            int length = arrayInitializer.multiExpression.expressions().length;
+            if (returnType.typeInfo != null && "int".equals(returnType.typeInfo.fullyQualifiedName)) {
+                int[] array = new int[length];
+                int i = 0;
+                for (Expression element : arrayInitializer.multiExpression.expressions()) {
+                    array[i++] = (int) returnValueOfNonArrayExpression(arrayInitializer.returnType(), element);
+                }
+                return array;
+            }
+            Object[] array = createArray(returnType, length);
             int i = 0;
             for (Expression element : arrayInitializer.multiExpression.expressions()) {
                 array[i++] = returnValueOfNonArrayExpression(arrayInitializer.returnType(), element);

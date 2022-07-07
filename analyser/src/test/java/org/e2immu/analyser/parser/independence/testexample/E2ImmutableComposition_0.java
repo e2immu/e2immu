@@ -253,13 +253,13 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Independent1
+        @E2Container
         public One<Integer> first() {
             return ones[0];
         }
 
         @NotModified
-        @Independent1
+        @E2Container
         public One<Integer> get(int index) {
             return ones[index];
         }

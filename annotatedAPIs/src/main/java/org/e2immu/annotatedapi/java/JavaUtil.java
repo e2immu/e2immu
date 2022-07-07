@@ -440,7 +440,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         @E2Container
         @Independent1
-        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3,  @NotNull H e4);
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3, @NotNull H e4);
 
         @NotNull1
         @E2Container
@@ -666,6 +666,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         <T> List<T> asList(T... ts);
+
+        <T> void setAll(@NotNull T[] array, @NotNull @Independent1(parameters = {0}) IntFunction<? extends T> generator);
     }
 
     @UtilityClass

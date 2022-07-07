@@ -124,4 +124,6 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     ParameterInfo getParameterInfo();
+
+    default LinkedVariables getLinksToOtherParameters() { return LinkedVariables.EMPTY; }
 }

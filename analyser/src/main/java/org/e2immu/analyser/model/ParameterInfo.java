@@ -59,6 +59,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
+        assert !"this".equals(name); // to protect against bugs in bytecode reader
         this.index = index;
         this.owner = Objects.requireNonNull(owner);
         this.fullyQualifiedName = owner.fullyQualifiedName() + ":" + index + ":" + name;

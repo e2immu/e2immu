@@ -174,6 +174,11 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+
+        ParameterInfo pi0 = compareTo.methodInspection.get().getParameters().get(0);
+        // IMPORTANT: the parameter info is copied from the Annotated API, where we've called it "t" rather than "o" in the JDK
+        assertEquals("t", pi0.name);
+        assertEquals(0, pi0.index);
     }
 
     @Test
@@ -201,6 +206,9 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
+        ParameterInfo pi0 = methodInfo.methodInspection.get().getParameters().get(0);
+        assertEquals("action", pi0.name);
+        assertEquals(0, pi0.index);
     }
 
     @Test
@@ -256,6 +264,10 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = method.parameterAnalysis(0);
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+
+        ParameterInfo pi0 = method.methodInspection.get().getParameters().get(0);
+        assertEquals("i", pi0.name);
+        assertEquals(0, pi0.index);
     }
 
     @Test

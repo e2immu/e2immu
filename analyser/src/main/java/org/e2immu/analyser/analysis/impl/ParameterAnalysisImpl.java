@@ -18,25 +18,35 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalysisImpl.class);
 
     private final ParameterInfo parameterInfo;
     public final Map<FieldInfo, DV> assignedToField;
+    private final LinkedVariables linksToOtherParameters;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
-                                  Map<FieldInfo, DV> assignedToField) {
+                                  Map<FieldInfo, DV> assignedToField,
+                                  LinkedVariables linksToOtherParameters) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
+        this.linksToOtherParameters = linksToOtherParameters;
     }
 
     @Override
@@ -54,12 +64,18 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         return parameterInfo.newLocation();
     }
 
+    @Override
+    public LinkedVariables getLinksToOtherParameters() {
+        return linksToOtherParameters;
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
         private final SetOnceMap<FieldInfo, DV> assignedToField = new SetOnceMap<>();
         private final EventuallyFinal<CausesOfDelay> causesOfAssignedToFieldDelays = new EventuallyFinal<>();
         public final Location location;
         private final AnalysisProvider analysisProvider;
+        private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -113,9 +129,31 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
+        protected void writeLinkParameters(DV linkLevel, int[] linkParameters) {
+            assert linkLevel.isDone();
+            Map<Variable, DV> map = new HashMap<>();
+            List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
+            for (int parameterIndex : linkParameters) {
+                if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
+                    LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
+                } else if (parameterIndex == parameterInfo.index) {
+                    LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
+                } else {
+                    ParameterInfo pi = parameters.get(parameterIndex);
+                    map.put(pi, linkLevel);
+                }
+            }
+            LinkedVariables lv = LinkedVariables.of(map);
+            if (!linksToParameters.isSet() || !linksToParameters.get().equals(lv)) {
+                linksToParameters.set(lv);
+            }
+        }
+
+        @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
-                    annotationChecks.toImmutableMap(), getAssignedToField());
+                    annotationChecks.toImmutableMap(), getAssignedToField(),
+                    linksToParameters.getOrDefault(LinkedVariables.EMPTY));
         }
 
         public void transferPropertiesToAnnotations(AnalyserContext analysisProvider,

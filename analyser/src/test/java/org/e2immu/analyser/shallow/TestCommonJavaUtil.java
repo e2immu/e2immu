@@ -20,10 +20,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.junit.jupiter.api.Test;
 
@@ -249,6 +246,22 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         // because an array is always a container...
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+    }
+
+    @Test
+    public void testArraysSetAll() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Arrays.class);
+        MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> "setAll".equals(m.name))
+                .filter(m -> "IntFunction".equals(m.methodInspection.get().getParameters().get(1).parameterizedType.typeInfo.simpleName))
+                .findFirst().orElseThrow();
+        assertEquals("java.util.Arrays.setAll(T[],java.util.function.IntFunction<? extends T>)", methodInfo.fullyQualifiedName);
+        ParameterAnalysis p1 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(1);
+        assertEquals("array:3", p1.getLinksToOtherParameters().toString());
+
+        ParameterInfo pi1 = methodInfo.methodInspection.get().getParameters().get(1);
+        assertEquals("generator", pi1.name);
+        assertEquals(1, pi1.index);
     }
 
     @Test

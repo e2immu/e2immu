@@ -40,7 +40,6 @@ public class MyMethodVisitor extends MethodVisitor {
     private final int numberOfParameters;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final MethodItem methodItem;
-    private int countLocalVars;
     private final boolean[] hasNameFromLocalVar;
     private final boolean lastParameterIsVarargs;
 
@@ -79,9 +78,13 @@ public class MyMethodVisitor extends MethodVisitor {
         return new MyAnnotationVisitor<>(typeContext, descriptor, parameterInspectionBuilders[parameter]);
     }
 
+    /*
+    index order seems to be: this params localVars
+     */
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        int i = countLocalVars - (methodInspectionBuilder.isStatic() ? 0 : 1);
+        int base = methodInspectionBuilder.isStatic() ? 0 : 1; // get rid of "this" if non-static
+        int i = index - base;
         if (i >= 0 && i < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(i);
             ParameterInspection.Builder pib = parameterInspectionBuilders[i];
@@ -92,7 +95,6 @@ public class MyMethodVisitor extends MethodVisitor {
             }
             hasNameFromLocalVar[i] = true;
         }
-        countLocalVars++;
     }
 
     @Override
