@@ -200,7 +200,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
-        testClass("Modification_16_M", 2, 0, new DebugConfiguration.Builder()
+        testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

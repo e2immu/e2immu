@@ -302,7 +302,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD_ALT_TEMP);
 
-                String expected = "/*inline apply*/e.variables().stream()";
+                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/e.variables().stream()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("variables".equals(d.methodInfo().name)) {

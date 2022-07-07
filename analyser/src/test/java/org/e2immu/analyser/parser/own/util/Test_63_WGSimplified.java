@@ -60,7 +60,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 }
                 if ("node".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertCurrentValue(d, 11, "nodeMap.get(t)");
+                        assertCurrentValue(d, 12, "nodeMap.get(t)");
                     }
                 }
                 if ("currentDistanceToT".equals(d.variableName())) {
@@ -74,7 +74,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertCurrentValue(d, 11, "distanceToStartingPoint.get(t)");
+                        assertCurrentValue(d, 12, "distanceToStartingPoint.get(t)");
                         // this is the value that we cannot avoid: it cannot become NULLABLE because CNN works on the STATICALLY_ASSIGNED
                         // linking and does not wait until there are values!!
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -143,7 +143,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                     };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
 
-                    assertEquals(d.iteration() >= 11, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                    assertEquals(d.iteration() >= BIG, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
                 }
             }
             if ("accept".equals(d.methodInfo().name)) {

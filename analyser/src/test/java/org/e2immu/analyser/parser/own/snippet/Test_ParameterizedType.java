@@ -401,13 +401,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("TypeContext", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
@@ -440,7 +440,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 15, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 15, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -515,8 +515,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(3), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("find".equals(d.methodInfo().name)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
