@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_Util_04_SetUtil extends CommonTestRunner {
 
@@ -36,14 +37,14 @@ public class Test_Util_04_SetUtil extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("immutableUnion".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.status().isDelayed());
-                    assertEquals(d.iteration() <= 1, d.externalStatus().isDelayed());
+                    assertFalse(d.status().isDelayed());
+                    assertEquals(d.iteration() == 0, d.externalStatus().isDelayed());
                 }
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetUtil".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(SetUtil.class), 0, 0, new DebugConfiguration.Builder()

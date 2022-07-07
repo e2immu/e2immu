@@ -68,7 +68,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectedValue, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
@@ -87,7 +87,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         // links have not been established
-                        assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                         // mutable, because self type
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -102,7 +102,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -112,7 +112,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 for (ParameterAnalysis param : d.parameterAnalyses()) {
                     // no direct link with a parameter which has to be/will be dynamically immutable
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, param.getProperty(Property.EXTERNAL_IMMUTABLE));
-                    assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("isEmpty".equals(d.methodInfo().name)) {
@@ -465,13 +465,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_11() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_11".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -593,8 +593,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_12".equals(d.typeInfo().simpleName)) {
-                assertEquals(d.iteration() >= 2, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);

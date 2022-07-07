@@ -470,14 +470,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             return immutable.causesOfDelay();
         }
         if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
-
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-            if (typeAnalysis != null) {
-                return typeAnalysis.getProperty(Property.INDEPENDENT);
-            }
-            analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
-                    Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
-            return MultiLevel.DEPENDENT_DV;
+            int level = MultiLevel.level(immutable);
+            return MultiLevel.independentCorrespondingToImmutableLevelDv(level);
         }
         return MultiLevel.DEPENDENT_DV;
     }

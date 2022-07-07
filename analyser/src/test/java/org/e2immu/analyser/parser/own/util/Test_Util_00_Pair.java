@@ -39,26 +39,18 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("k".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
-                } else {
-                    assertTrue(d.fieldAnalysis().isTransparentType().isDone());
-                    assertEquals("k", d.fieldAnalysis().getValue().toString());
-                    if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
-                        assertTrue(ve.variable() instanceof ParameterInfo pi && "k".equals(pi.name));
-                    } else fail();
-                }
+                assertTrue(d.fieldAnalysis().isTransparentType().isDone());
+                assertEquals("k", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
+                    assertTrue(ve.variable() instanceof ParameterInfo pi && "k".equals(pi.name));
+                } else fail();
             }
             if ("v".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
-                } else {
-                    assertTrue(d.fieldAnalysis().isTransparentType().isDone());
-                    assertEquals("v", d.fieldAnalysis().getValue().toString());
-                    if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
-                        assertTrue(ve.variable() instanceof ParameterInfo pi && "v".equals(pi.name));
-                    } else fail();
-                }
+                assertTrue(d.fieldAnalysis().isTransparentType().isDone());
+                assertEquals("v", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
+                    assertTrue(ve.variable() instanceof ParameterInfo pi && "v".equals(pi.name));
+                } else fail();
             }
         };
 

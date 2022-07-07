@@ -62,12 +62,12 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(1), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
 
                 String pc = "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
-                String pce = d.iteration() <= 2 ? "Precondition[expression=<precondition>, causes=[]]"
+                String pce = d.iteration() <= 1 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
 
@@ -75,12 +75,11 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
                     case 1 -> "[DelayedEventual:final@Field_root]";
                     case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
-                    case 3 -> "[DelayedEventual:initial@Field_data;initial@Field_map]";
-                    case 4 -> "[DelayedEventual:cm@Parameter_strings;link:strings@Method_goTo_0:M]";
+                    case 3 -> "[DelayedEventual:cm@Parameter_strings;link:strings@Method_goTo_0:M]";
                     default -> "@Only before: [frozen]";
                 };
                 assertEquals(eventual, d.methodAnalysis().getEventual().toString());
-                if (d.iteration() >= 5) {
+                if (d.iteration() >= 4) {
                     Map.Entry<AnnotationExpression, Boolean> ae = d.methodAnalysis().findAnnotation(Only.class.getCanonicalName());
                     assertEquals("@Only(before=\"frozen\")", ae.getKey().toString());
                     assertTrue(ae.getValue());

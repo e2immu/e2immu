@@ -420,9 +420,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         .peek(vi -> LOGGER.warn("CM of {}: {}", vi.variable(), vi.getProperty(Property.CONTEXT_MODIFIED)))
                         .allMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).isDone()));
             }
+            // interface
             if ("addTypeReturnImport".equals(d.methodInfo().name) && "Qualification".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d.p(0), MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE); // FIXME?
+                assertDv(d.p(0), MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // FIXME?
             }
+            // implementation
             if ("addTypeReturnImport".equals(d.methodInfo().name) && "QualificationImpl".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE); // FIXME?
             }
@@ -435,6 +437,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
             if ("Qualification".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("TypeInfo".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
@@ -916,40 +923,38 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
+                        String expected = d.iteration() == 0 ? "s.length()==<f:x.i>?<f:x.i>:<return value>"
                                 : "s.length()==x.i?s.length():<return value>";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "x.i:0,x:-1,xs:-1" : "x.i:0";
+                        String linked = d.iteration() == 0 ? "x.i:0,x:-1,xs:-1" : "x.i:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
+                        String expected = d.iteration() == 0
                                 ? "xs.isEmpty()||s.length()!=<dv:scope-x:0.i>?<return value>:<dv:scope-x:0.i>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?<return value>:s.length()";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "scope-x:0.i:0,xs:-1" : "scope-x:0.i:0";
+                        String linked = d.iteration() == 0 ? "scope-x:0.i:0,xs:-1" : "scope-x:0.i:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
+                        String expected = d.iteration() == 0
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<dv:scope-x:0.i>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0";
-                        assertEquals(linked,
-                                d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1" : "scope-x:0.i:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
                     if ("x".equals(fr.scope.toString())) {
                         if ("0.0.0.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() <= 1 ? "<f:i>" : "instance type int";
+                            String expected = d.iteration() == 0 ? "<f:i>" : "instance type int";
                             assertEquals(expected, d.currentValue().toString());
                         }
                         if ("0.0.0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:i>";
-                                case 1 -> "s.length()==instance type int?<f:i>:instance type int";
                                 default -> "instance type int";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -963,7 +968,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             String expected = switch (d.iteration()) {
                                 case 0 -> "<f:i>";
-                                case 1 -> "xs.isEmpty()||s.length()!=instance type int?instance type int:<f:i>";
                                 default -> "instance type int";
                             };
                             assertEquals(expected, d.currentValue().toString());
@@ -975,7 +979,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1
+                    String expected = d.iteration() == 0
                             ? "CM{state=xs.isEmpty()||s.length()!=<dv:scope-x:0.i>;parent=CM{}}"
                             : "CM{state=xs.isEmpty()||s.length()!=scope-x:0.i;parent=CM{}}";
                     assertEquals(expected, d.statementAnalysis().stateData().getConditionManagerForNextStatement().toString());

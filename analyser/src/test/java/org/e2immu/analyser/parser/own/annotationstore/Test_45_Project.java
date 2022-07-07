@@ -301,7 +301,7 @@ public class Test_45_Project extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<null-check>?<new:Container>:<m:get>";
-                            case 1 -> "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;initial@Field_value;mom@Parameter_value>";
+                            case 1 -> "<null-check>?<new:Container>:<vp:Container:cm@Parameter_value;mom@Parameter_value>";
                             default -> "null==kvStore.get(key)?new Container(value):kvStore.get(key)";
                         };
                         assertEquals(expected, d.currentValue().toString());

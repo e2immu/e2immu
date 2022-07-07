@@ -298,8 +298,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DV".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
@@ -407,7 +407,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     String expected = d.iteration() <= 16 ? "<m:a>"
                             : "this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() <= 17 ? "pt:-1,this:-1" : "this:3";
+                    String linked = d.iteration() <= 17 ? "pt:-1,this:-1" : "this:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -530,8 +530,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("DV".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

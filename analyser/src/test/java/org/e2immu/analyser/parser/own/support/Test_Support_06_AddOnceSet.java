@@ -67,9 +67,9 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expected = d.iteration() <= 1 ? "<precondition>" : "!frozen";
+                String expected = d.iteration() == 0 ? "<precondition>" : "!frozen";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().expression().toString());
-                assertEquals(d.iteration() <= 2, d.methodAnalysis().eventualStatus().isDelayed());
+                assertEquals(d.iteration() <= 1, d.methodAnalysis().eventualStatus().isDelayed());
             }
             if ("ensureNotFrozen".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<precondition>" : "!frozen";

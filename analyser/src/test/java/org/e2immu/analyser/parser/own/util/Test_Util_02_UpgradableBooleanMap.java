@@ -50,7 +50,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.Map.Entry<T,java.lang.Boolean>, Type param T, Type param T, Type param T, Type param T, Type param T, Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
                 assertDv(d, 9, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }

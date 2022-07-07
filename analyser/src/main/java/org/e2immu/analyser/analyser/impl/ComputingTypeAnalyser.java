@@ -257,7 +257,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     typeAnalysis.aspects.put(aspect, mainMethod);
                 } else {
                     MethodInfo inMap = typeAnalysis.aspects.get(aspect);
-                    if(!inMap.equals(mainMethod)) {
+                    if (!inMap.equals(mainMethod)) {
                         throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " +
                                 mainMethod.fullyQualifiedName());
                     }
@@ -427,7 +427,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
         typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
-        typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
+        if (typeInfo.isInterface()) {
+            typeAnalysis.setTransparentTypes(SetOfTypes.EMPTY);
+        } else {
+            typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
+        }
         LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);
         return DONE;
     }

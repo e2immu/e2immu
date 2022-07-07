@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.ParameterAnalyser;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -72,7 +74,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     public void check() {
-        if(isUnreachable()) return;
+        if (isUnreachable()) return;
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {
             LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());
@@ -108,12 +110,25 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             CONTAINER, INDEPENDENT, IMMUTABLE);
 
     private void checkWorseThanParent() {
+        DV parameterTypeIsHidden = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo())
+                .isPartOfHiddenContent(parameterInfo.parameterizedType);
         for (Property property : CHECK_WORSE_THAN_PARENT) {
             DV valueFromOverrides = computeValueFromOverrides(property);
             DV value = parameterAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
-                boolean complain = property == Property.MODIFIED_VARIABLE
-                        ? value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
+                boolean complain;
+                if (property == Property.MODIFIED_VARIABLE) {
+                    complain = value.gt(valueFromOverrides);
+                } else {
+                    if ((property == INDEPENDENT || property == IMMUTABLE) && parameterTypeIsHidden.valueIsTrue()) {
+                        /* see e.g. parameter of type FormattingOptions in TypeName.length(): type is @ERContainer,
+                        but because it is transparent in TypeName, it becomes @E2Container
+                         */
+                        complain = false;
+                    } else {
+                        complain = value.lt(valueFromOverrides);
+                    }
+                }
                 if (complain) {
                     String msg;
                     if (property == INDEPENDENT) {
