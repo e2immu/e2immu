@@ -210,7 +210,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         FieldAnalysis fieldAnalysis = out.fieldAnalysis.get();
         assertEquals(MultiLevel.IGNORE_MODS_DV, fieldAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
-        assertEquals(MultiLevel.CONTAINER_DV, fieldAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, fieldAnalysis.getProperty(Property.EXTERNAL_CONTAINER));
         Expression value = fieldAnalysis.getValue();
         assertTrue(value.isDone());
         assertEquals("instance type PrintStream/*@IgnoreMods*/", value.toString());
