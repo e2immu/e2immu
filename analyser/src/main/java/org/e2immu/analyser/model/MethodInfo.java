@@ -27,7 +27,9 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 
@@ -306,29 +308,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     /*
      The one method dealing with the parameters={} parameter in @Independent1, @Dependent on parameters
      */
-    public Map<Integer, Map<Integer, DV>> crossLinks(InspectionProvider inspectionProvider) {
-        List<ParameterInfo> parameters = inspectionProvider.getMethodInspection(this).getParameters();
-        if (parameters.size() == 0) return Map.of();
-        Map<Integer, Map<Integer, DV>> map = new HashMap<>();
-        for (ParameterInfo parameterInfo : parameters) {
-            ParameterInspection pi = parameterInfo.parameterInspection.get();
-            Optional<AnnotationExpression> opt = pi.getAnnotations().stream()
-                    .filter(a -> Independent1.class.getCanonicalName().equals(a.typeInfo().fullyQualifiedName) ||
-                            Dependent.class.getCanonicalName().equals(a.typeInfo().fullyQualifiedName))
-                    .findFirst();
-            if (opt.isPresent()) {
-                AnnotationExpression ae = opt.get();
-                int[] refs = ae.extractIntArray("parameters");
-                if (refs.length > 0) {
-                    DV value = ae.typeInfo().simpleName.equals("Dependent") ? LinkedVariables.DEPENDENT_DV : LinkedVariables.INDEPENDENT1_DV;
-                    for (int r : refs) {
-                        Map<Integer, DV> subMap = map.computeIfAbsent(parameterInfo.index, i -> new HashMap<>());
-                        subMap.put(r, value);
-                    }
-                }
-            }
-        }
-        return map;
+    public Map<ParameterInfo, LinkedVariables> crossLinks(AnalyserContext analyserContext) {
+        return analyserContext.getMethodInspection(this).getParameters().stream()
+                .map(analyserContext::getParameterAnalysis)
+                .filter(pa -> !pa.getLinksToOtherParameters().isEmpty())
+                .collect(Collectors.toUnmodifiableMap(ParameterAnalysis::getParameterInfo,
+                        ParameterAnalysis::getLinksToOtherParameters));
     }
 
     @Override

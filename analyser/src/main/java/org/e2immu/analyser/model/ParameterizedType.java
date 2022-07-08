@@ -156,15 +156,18 @@ public class ParameterizedType {
     }
 
     public ParameterizedType copyWithOneFewerArrays() {
-        if (arrays == 0) {
-            throw new UnsupportedOperationException();
-        }
+        if (arrays == 0) return this;
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
     }
 
     public ParameterizedType copyWithoutArrays() {
-        if (arrays == 0) throw new UnsupportedOperationException();
+        if (arrays == 0) return this;
         return new ParameterizedType(this.typeInfo, 0, wildCard, parameters, typeParameter);
+    }
+
+    public ParameterizedType erased() {
+        if(arrays == 0 && wildCard == WildCard.NONE) return this;
+        return new ParameterizedType(this.typeInfo, 0, WildCard.NONE, List.of(), typeParameter);
     }
 
     public ParameterizedType copyWithFewerArrays(int arrays) {
@@ -714,10 +717,10 @@ public class ParameterizedType {
         if (isType() && typeInfo.isVoid() || other.isType() && other.typeInfo.isVoid()) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
-        if(isTypeParameter() && !other.isTypeParameter()) return other;
-        if(other.isTypeParameter() && !isTypeParameter()) return this;
-        if(isBoxedExcludingVoid() && other.isPrimitiveExcludingVoid()) return other;
-        if(other.isBoxedExcludingVoid() && isPrimitiveExcludingVoid()) return this;
+        if (isTypeParameter() && !other.isTypeParameter()) return other;
+        if (other.isTypeParameter() && !isTypeParameter()) return this;
+        if (isBoxedExcludingVoid() && other.isPrimitiveExcludingVoid()) return other;
+        if (other.isBoxedExcludingVoid() && isPrimitiveExcludingVoid()) return this;
 
         if (isAssignableFrom(inspectionProvider, other)) {
             return other;
@@ -895,7 +898,7 @@ public class ParameterizedType {
     }
 
     public ParameterizedType withoutTypeParameters() {
-        if(parameters.isEmpty()) return this;
+        if (parameters.isEmpty()) return this;
         return new ParameterizedType(typeInfo, arrays, wildCard, List.of(), typeParameter);
     }
 }

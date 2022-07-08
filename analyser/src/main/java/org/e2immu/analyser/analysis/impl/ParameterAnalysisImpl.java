@@ -209,6 +209,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public boolean assignedToFieldIsFrozen() {
             return assignedToField.isFrozen();
         }
+
+        @Override
+        public LinkedVariables getLinksToOtherParameters() {
+            return linksToParameters.getOrDefault(LinkedVariables.EMPTY);
+        }
     }
 
 }

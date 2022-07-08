@@ -188,7 +188,7 @@ public class TestLinkingExpression {
         MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
 
 
-        assertEquals("{0={1=independent1:3}}", addAll.crossLinks(InspectionProvider.DEFAULT).toString());
+        assertEquals("{0={1=independent1:3}}", addAll.crossLinks(context.getAnalyserContext()).toString());
 
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));

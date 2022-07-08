@@ -203,6 +203,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return variables.containsKey(variable);
     }
 
+    public Stream<Map.Entry<Variable, DV>> stream() {
+        return variables.entrySet().stream();
+    }
+
     public LinkedVariables minimum(DV minimum) {
         if (this == NOT_YET_SET) return NOT_YET_SET;
         return of(variables.entrySet().stream()

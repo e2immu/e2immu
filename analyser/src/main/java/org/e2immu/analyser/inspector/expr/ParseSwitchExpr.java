@@ -156,7 +156,7 @@ public class ParseSwitchExpr {
 
         List<Lambda.OutputVariant> outputVariants = List.of(Lambda.OutputVariant.EMPTY);
         return new Lambda(Identifier.from(switchExpr), inspectionProvider,
-                functionalType, anonymousType.asParameterizedType(inspectionProvider), outputVariants);
+                functionalType, anonymousType.asParameterizedType(inspectionProvider), returnTypeIn, outputVariants);
     }
 
     private static Block constructMethodBody(ExpressionContext newExpressionContext,

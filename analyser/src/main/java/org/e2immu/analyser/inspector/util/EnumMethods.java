@@ -180,8 +180,10 @@ public class EnumMethods {
         var implementationMethod = predicateBuilder.getMethodInfo()
                 .typeInfo.asParameterizedType(typeContext);
         var lambda = new Lambda(Identifier.generate("enum lambda"),
-                typeContext, functionalInterfaceType, implementationMethod, List.of(Lambda.OutputVariant.EMPTY));
-
+                typeContext, functionalInterfaceType,
+                implementationMethod,
+                typeContext.getPrimitives().booleanParameterizedType(),  // return type of the lambda
+                List.of(Lambda.OutputVariant.EMPTY));
         var stream = typeContext.getFullyQualified(Stream.class);
         var filter = stream.findUniqueMethod(typeContext, "filter", 1);
         var callFilter = new MethodCall(Identifier.generate("enum call filter"), false, callStream, filter,

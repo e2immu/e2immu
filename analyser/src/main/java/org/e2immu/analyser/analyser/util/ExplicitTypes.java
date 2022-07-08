@@ -92,6 +92,7 @@ public class ExplicitTypes {
             ConstructorCall constructorCall;
             if ((constructorCall = element.asInstanceOf(ConstructorCall.class)) != null) {
                 add(constructorCall.parameterizedType(), UsedAs.CONSTRUCTOR_CALL);
+                add(constructorCall.parameterizedType().erased(), UsedAs.CONSTRUCTOR_CALL);
                 if (constructorCall.constructor() != null) { // can be null, anonymous implementation of interface
                     addTypesFromParameters(constructorCall.constructor(), constructorCall.parameterExpressions(),
                             UsedAs.CONSTRUCTOR_CALL);

@@ -33,6 +33,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class Lambda extends BaseExpression implements Expression {
+
     public enum OutputVariant {
         TYPED, // (@Modified X x, Y y) -> ...
         VAR,   // (var x, @NotNull var y) -> ...
@@ -63,8 +64,12 @@ public class Lambda extends BaseExpression implements Expression {
     public final Block block;
     private final List<ParameterInfo> parameters;
     private final List<OutputVariant> parameterOutputVariants;
+    // IntFunction<? extends T>
     public final ParameterizedType abstractFunctionalType;
+    // ownerTypeOfTheMethodWhereTheLambdaIsDefined.$1
     public final ParameterizedType implementation;
+    // String (concrete for the T in the IntFunction)
+    public final ParameterizedType concreteReturnType;
 
     /**
      * @param abstractFunctionalType e.g. java.util.Supplier
@@ -74,6 +79,7 @@ public class Lambda extends BaseExpression implements Expression {
                   InspectionProvider inspectionProvider,
                   ParameterizedType abstractFunctionalType,
                   ParameterizedType implementation,
+                  ParameterizedType concreteReturnType,
                   List<OutputVariant> outputVariants) {
         super(identifier);
         methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
@@ -85,6 +91,7 @@ public class Lambda extends BaseExpression implements Expression {
         this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
         assert implementsFunctionalInterface(inspectionProvider, implementation);
         this.implementation = Objects.requireNonNull(implementation);
+        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
         this.parameterOutputVariants = outputVariants;
         assert outputVariants.size() == parameters.size();
     }
@@ -215,7 +222,7 @@ public class Lambda extends BaseExpression implements Expression {
             boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
-            if(firstInCycle) {
+            if (firstInCycle) {
                 result = makeInstance(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             } else {
                 result = withLocalAnalyser(parameterizedType, methodAnalysis);
@@ -285,4 +292,8 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     // TODO should we add the parameters to variables() ??
+
+    public ParameterizedType concreteReturnType() {
+        return concreteReturnType;
+    }
 }

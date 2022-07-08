@@ -195,7 +195,8 @@ public class ParseLambdaExpr {
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
 
         return new Lambda(Identifier.from(lambdaExpr), inspectionProvider,
-                functionalType, anonymousType.asParameterizedType(inspectionProvider), outputVariants);
+                functionalType, anonymousType.asParameterizedType(inspectionProvider), returnTypeOfLambda,
+                outputVariants);
     }
 
     private record Evaluation(Block block, ParameterizedType inferredReturnType) {

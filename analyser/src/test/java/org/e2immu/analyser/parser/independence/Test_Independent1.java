@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class Test_Independent1 extends CommonTestRunner {
                             d.currentValue().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // not transferred to parameter
                 }
-                if(d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED); // because context is @Independent1 FIXME implement!
                 }
@@ -78,4 +79,99 @@ public class Test_Independent1 extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_1() throws IOException {
+        testClass("Independent1_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Independent1_2".equals(d.typeInfo().simpleName)) {
+                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_2_1() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Independent1_2_1".equals(d.typeInfo().simpleName)) {
+                // String is not transparent (new String[])
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_2_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_2_2() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Independent1_2_2".equals(d.typeInfo().simpleName)) {
+                // String is not transparent (new String[])
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_2_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("Independent1_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3_1() throws IOException {
+        testClass("Independent1_3_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("Independent1_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_4_1() throws IOException {
+        testClass("Independent1_4_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
+                // we're using One[].clone() to avoid making One explicit
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_6() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
+                // new One[size] makes One explicit
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
 }
