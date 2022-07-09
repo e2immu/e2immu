@@ -57,9 +57,9 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name) && "ImmutableArrayOfTransparentOnes".equals(clazz)) {
                 if ("one".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "<vl:one>" : "nullable instance type One<Integer>";
+                        String expected = d.iteration() <= 3 ? "<vl:one>" : "nullable instance type One<Integer>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }

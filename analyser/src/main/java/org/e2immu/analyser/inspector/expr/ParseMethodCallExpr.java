@@ -98,7 +98,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection,
                     Identifier.from(methodCallExpr), typeContext, expressionContext);
-            ParameterizedType returnType = candidate.returnType(typeContext.getPrimitives());
+            ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType());
             LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
             return new MethodCall(Identifier.from(methodCallExpr),
@@ -148,10 +148,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                      Map<NamedType, ParameterizedType> mapExpansion,
                      MethodTypeParameterMap method) {
 
-        ParameterizedType returnType(Primitives primitives) {
+        ParameterizedType returnType(InspectionProvider inspectionProvider, TypeInfo primaryType) {
+            Primitives primitives = inspectionProvider.getPrimitives();
             return mapExpansion.isEmpty()
                     ? method.getConcreteReturnType(primitives)
-                    : method.expand(mapExpansion).getConcreteReturnType(primitives);
+                    : method.expand(inspectionProvider, primaryType, mapExpansion).getConcreteReturnType(primitives);
         }
     }
 
@@ -194,7 +195,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
         List<Expression> newParameterExpressions = reEvaluateErasedExpression(expressionContext, expressions,
                 returnType, extra, errorInfo, filterResult.evaluatedExpressions, method);
-        Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions, returnType);
+        Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions,
+                returnType, expressionContext.primaryType());
         return new Candidate(newParameterExpressions, mapExpansion, method);
     }
 
@@ -206,7 +208,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private Map<NamedType, ParameterizedType> computeMapExpansion(MethodTypeParameterMap method,
                                                                   List<Expression> newParameterExpressions,
-                                                                  ParameterizedType forwardedReturnType) {
+                                                                  ParameterizedType forwardedReturnType,
+                                                                  TypeInfo primaryType) {
         Map<NamedType, ParameterizedType> mapExpansion = new HashMap<>();
         // fill in the map expansion, deal with variable arguments!
         int i = 0;
@@ -253,7 +256,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         ParameterizedType formalReturnType = method.methodInspection.getReturnType();
         if (formalReturnType.isTypeParameter() && forwardedReturnType != null) {
             mapExpansion.merge(formalReturnType.typeParameter, forwardedReturnType,
-                    (ptOld, ptNew) -> ptOld.mostSpecific(typeContext, ptNew));
+                    (ptOld, ptNew) -> ptOld.mostSpecific(typeContext, primaryType, ptNew));
         }
 
         return mapExpansion;

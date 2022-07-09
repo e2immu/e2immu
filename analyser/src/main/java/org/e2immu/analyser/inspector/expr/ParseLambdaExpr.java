@@ -101,7 +101,8 @@ public class ParseLambdaExpr {
                                    LambdaExpr lambdaExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
         InspectionProvider inspectionProvider = expressionContext.typeContext();
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(inspectionProvider);
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(inspectionProvider,
+                expressionContext.primaryType());
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
                 : "No SAM at " + lambdaExpr.getBegin()
                 + "; forward is " + forwardReturnTypeInfo.type().detailedString(inspectionProvider)
@@ -195,7 +196,7 @@ public class ParseLambdaExpr {
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
 
         return new Lambda(Identifier.from(lambdaExpr), inspectionProvider,
-                functionalType, anonymousType.asParameterizedType(inspectionProvider), returnTypeOfLambda,
+                functionalType, anonymousType.asParameterizedType(inspectionProvider), evaluation.inferredReturnType,
                 outputVariants);
     }
 
@@ -229,7 +230,7 @@ public class ParseLambdaExpr {
         }
         // not an expression, so we must have a block...
         Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-        return new Evaluation(block, block.mostSpecificReturnType(inspectionProvider));
+        return new Evaluation(block, block.mostSpecificReturnType(inspectionProvider, newExpressionContext.primaryType()));
     }
 
 
@@ -249,7 +250,7 @@ public class ParseLambdaExpr {
                                                 ParameterizedType returnType) {
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);
         MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.methodInspection.getMethodInfo());
-        ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder,
+        ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder, builder.owner().primaryType(),
                 methodInspectionOfSAMsMethod.getReturnType());
         builder.setReturnType(Objects.requireNonNull(bestReturnType));
         builder.setInspectedBlock(block);

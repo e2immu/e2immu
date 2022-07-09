@@ -496,20 +496,47 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             DV level = e.getValue();
-
-            Expression expression = parameterExpressions.get(pi.index);
-            tryLinkBetweenParameters(builder, context, target, targetIsVarArgs, level, expression, parameterValues,
-                    linkedVariables);
-
-            Expression value = parameterValues.get(pi.index);
-            tryLinkBetweenParameters(builder, context, target, targetIsVarArgs, level, value, parameterValues,
-                    linkedVariables);
+            Expression targetExpression = parameterExpressions.get(target.index);
+            Expression targetValue = parameterValues.get(target.index);
+            Variable targetVariable = bestTargetVariable(targetExpression, targetValue);
+            if (targetVariable != null) {
+                Expression expression = bestExpression(parameterExpressions.get(pi.index), parameterValues.get(pi.index));
+                tryLinkBetweenParameters(builder, context, targetVariable, target.index, targetIsVarArgs, level, expression,
+                        parameterValues, linkedVariables);
+            }
         }));
+    }
+
+    /*
+     in order of importance:
+
+     InlinedMethod priority over Lambda
+     */
+
+    private Expression bestExpression(Expression raw, Expression evaluated) {
+        if (evaluated.isInstanceOf(IsVariableExpression.class)) return evaluated;
+        if (evaluated.isInstanceOf(InlinedMethod.class)) return evaluated;
+        MethodReference mr = evaluated.asInstanceOf(MethodReference.class);
+        if (mr != null && mr.scope.isInstanceOf(IsVariableExpression.class)) return evaluated;
+        return raw;
+    }
+
+    private Variable bestTargetVariable(Expression targetExpression, Expression targetValue) {
+        IsVariableExpression ive = targetValue.asInstanceOf(IsVariableExpression.class);
+        if (ive != null) {
+            return ive.variable();
+        }
+        IsVariableExpression ive2 = targetExpression.asInstanceOf(IsVariableExpression.class);
+        if (ive2 != null) {
+            return ive2.variable();
+        }
+        return null;
     }
 
     private void tryLinkBetweenParameters(EvaluationResult.Builder builder,
                                           EvaluationResult context,
-                                          ParameterInfo target,
+                                          Variable target,
+                                          int targetIndex,
                                           boolean targetIsVarArgs,
                                           DV level,
                                           Expression expression,
@@ -520,8 +547,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // Independent1_2
             ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
                     vSource.variable().parameterizedType());
-            linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, vSource, typeOfHiddenContent,
-                    parameterValues, linkedVariables);
+            linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, vSource,
+                    typeOfHiddenContent, parameterValues, linkedVariables);
         }
         MethodReference methodReference = expression.asInstanceOf(MethodReference.class);
         if (methodReference != null) {
@@ -530,24 +557,43 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (mrSource != null) {
                 ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
                         mrSource.variable().parameterizedType());
-                linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, mrSource,
+                linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, level, mrSource,
                         typeOfHiddenContent, parameterValues, linkedVariables);
             }
         }
-        Lambda lambda = expression.asInstanceOf(Lambda.class);
-        if (lambda != null) {
+        InlinedMethod inlinedMethod = expression.asInstanceOf(InlinedMethod.class);
+        if (inlinedMethod != null) {
             // Independent1_4 TODO written to fit exactly this situation, needs expanding
             // we decide between the first argument of the lambda and the return type
             // first, the return type TODO
+            ParameterizedType typeOfHiddenContent = inlinedMethod.returnType().erased();
+            ParameterizedType typeOfTarget = target.parameterizedType().erased();
+            if (typeOfHiddenContent.equals(typeOfTarget)) {
+                Expression srv = context.getAnalyserContext().getMethodAnalysis(inlinedMethod.methodInfo()).getSingleReturnValue();
+                List<Variable> vars = srv.variables(true);
+                for (Variable v : vars) {
+                    if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
+                        DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
+                        linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, l,
+                                new VariableExpression(v), typeOfHiddenContent, parameterValues, linkedVariables);
+                    }
+                }
+            }
+        }
+        // we must have both lambda and inline: lambda to provide the correct delays in LV, and inline to provide the
+        // final value. Code is very similar
+        Lambda lambda = expression.asInstanceOf(Lambda.class);
+        if (lambda != null) {
             ParameterizedType typeOfHiddenContent = lambda.concreteReturnType().erased();
-            if (typeOfHiddenContent.equals(target.parameterizedType.erased())) {
+            ParameterizedType typeOfTarget = target.parameterizedType().erased();
+            if (typeOfHiddenContent.equals(typeOfTarget)) {
                 Expression srv = context.getAnalyserContext().getMethodAnalysis(lambda.methodInfo).getSingleReturnValue();
                 List<Variable> vars = srv.variables(true);
                 for (Variable v : vars) {
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
                         DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
-                        linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, l, new VariableExpression(v),
-                                typeOfHiddenContent, parameterValues, linkedVariables);
+                        linksBetweenParametersVarArgs(builder, context, targetIndex, targetIsVarArgs, l,
+                                new VariableExpression(v), typeOfHiddenContent, parameterValues, linkedVariables);
                     }
                 }
             }
@@ -572,7 +618,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private void linksBetweenParametersVarArgs(EvaluationResult.Builder builder,
                                                EvaluationResult context,
-                                               ParameterInfo target,
+                                               int targetIndex,
                                                boolean targetIsVarArgs,
                                                DV level,
                                                IsVariableExpression vSource,
@@ -586,9 +632,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
                 : level;
         if (!LinkedVariables.NO_LINKING_DV.equals(correctedLevel)) {
-            linksBetweenParameters(builder, vSource, target.index, level, parameterValues, linkedVariables);
+            linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
             if (targetIsVarArgs) {
-                for (int i = target.index + 1; i < parameterExpressions.size(); i++) {
+                for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
                     linksBetweenParameters(builder, vSource, i, level, parameterValues, linkedVariables);
                 }
             }

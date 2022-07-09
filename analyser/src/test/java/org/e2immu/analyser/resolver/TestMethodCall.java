@@ -268,4 +268,16 @@ public class TestMethodCall extends CommonTest {
         };
         inspectAndResolve(MethodCall_27.class, methods, 2);
     }
+
+    @Test
+    public void test_28() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_28.class);
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.resolver.testexample.MethodCall_28.ImmutableArrayOfHasSize");
+        MethodInfo constructor = typeInfo.findConstructor(2);
+        Block block = constructor.methodInspection.get().getMethodBody();
+        MethodCall setAll = (MethodCall) ((ExpressionAsStatement) block.structure.getStatements().get(1)).expression;
+        Lambda lambda = (Lambda) setAll.parameterExpressions.get(1);
+        assertEquals("Type org.e2immu.analyser.resolver.testexample.MethodCall_28.HasSize",
+                lambda.concreteReturnType.toString());
+    }
 }

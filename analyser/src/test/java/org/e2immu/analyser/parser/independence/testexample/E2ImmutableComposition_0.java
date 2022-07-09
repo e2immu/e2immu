@@ -321,14 +321,14 @@ public class E2ImmutableComposition_0 {
      * <p>
      * Note that we still have to use a generator to obtain sensible values for the {@link Marker} objects.
      * <p>
-     * Field composition: Modifiable data containing inaccessible data
+     * Field composition: Modifiable data containing inaccessible data.
      */
-    @E2Container
+    @ERContainer
     static class ImmutableArrayOfMarker implements NonEmptyImmutableList<Marker> {
 
         private final Marker[] markers;
 
-        public ImmutableArrayOfMarker(int size, @Independent1 Supplier<Marker> generator) {
+        public ImmutableArrayOfMarker(int size, @Independent Supplier<Marker> generator) {
             markers = new Marker[size];
             Arrays.setAll(markers, i -> generator.get());
         }
@@ -381,7 +381,6 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Independent
         public HasSize first() {
             return elements[0];
         }

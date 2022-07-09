@@ -36,7 +36,8 @@ public class ParseMethodReferenceExpr {
                                    MethodReferenceExpr methodReferenceExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
         TypeContext typeContext = expressionContext.typeContext();
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext);
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext,
+                expressionContext.primaryType());
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
 
         LOGGER.debug("Start parsing method reference {}", methodReferenceExpr);

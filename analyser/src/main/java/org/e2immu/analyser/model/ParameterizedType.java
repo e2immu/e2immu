@@ -166,7 +166,7 @@ public class ParameterizedType {
     }
 
     public ParameterizedType erased() {
-        if(arrays == 0 && wildCard == WildCard.NONE) return this;
+        if (arrays == 0 && wildCard == WildCard.NONE && parameters.isEmpty()) return this;
         return new ParameterizedType(this.typeInfo, 0, WildCard.NONE, List.of(), typeParameter);
     }
 
@@ -713,12 +713,22 @@ public class ParameterizedType {
         return primitives.boxed(typeInfo);
     }
 
-    public ParameterizedType mostSpecific(InspectionProvider inspectionProvider, ParameterizedType other) {
+    public ParameterizedType mostSpecific(InspectionProvider inspectionProvider,
+                                          TypeInfo primaryType,
+                                          ParameterizedType other) {
         if (isType() && typeInfo.isVoid() || other.isType() && other.typeInfo.isVoid()) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
-        if (isTypeParameter() && !other.isTypeParameter()) return other;
+        if (isTypeParameter()) {
+            if (other.isTypeParameter()) {
+                // a type parameter in the primary type has priority over another one
+                if (primaryType.equals(other.typeParameter.primaryType())) return other;
+                return this;
+            }
+            return other;
+        }
         if (other.isTypeParameter() && !isTypeParameter()) return this;
+
         if (isBoxedExcludingVoid() && other.isPrimitiveExcludingVoid()) return other;
         if (other.isBoxedExcludingVoid() && isPrimitiveExcludingVoid()) return this;
 

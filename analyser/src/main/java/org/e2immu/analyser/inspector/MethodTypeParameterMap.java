@@ -79,9 +79,11 @@ public class MethodTypeParameterMap {
         return parameterizedType.applyTranslation(primitives, concreteTypes);
     }
 
-    public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
+    public MethodTypeParameterMap expand(InspectionProvider inspectionProvider,
+                                         TypeInfo primaryType,
+                                         Map<NamedType, ParameterizedType> mapExpansion) {
         Map<NamedType, ParameterizedType> join = new HashMap<>(concreteTypes);
-        join.putAll(mapExpansion);
+        mapExpansion.forEach((k, v)-> join.merge(k, v, (v1, v2)-> v1.mostSpecific(inspectionProvider, primaryType, v2)));
         return new MethodTypeParameterMap(methodInspection, Map.copyOf(join));
     }
 

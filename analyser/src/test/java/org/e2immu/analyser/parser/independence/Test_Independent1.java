@@ -87,10 +87,10 @@ public class Test_Independent1 extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if("Independent1_1".equals(d.methodInfo().name)) {
-                if(d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+            if ("Independent1_1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    if("1".equals(d.statementId())) {
+                    if ("1".equals(d.statementId())) {
                         assertEquals("ts:3", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -170,17 +170,17 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<p:consumer>"
+                        String expected = d.iteration() <= 2 ? "<p:consumer>"
                                 : "nullable instance type Consumer<One<Integer>>/*@Identity*//*@IgnoreMods*/";
                         assertEquals(expected,
                                 d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
+                        String linked = d.iteration() <= 2 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("one".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
+                        String linked = d.iteration() <= 2 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -188,22 +188,22 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("generator.get()", d.currentValue().toString());
+                    assertCurrentValue(d, 2, "generator.get()");
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("first".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("ImmutableArrayOfTransparentOnes", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                assertEquals("/*inline apply*/generator.get()",
-                        d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/generator.get()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>>):1:generator]", vars.toString());
             }
@@ -233,7 +233,8 @@ public class Test_Independent1 extends CommonTestRunner {
             }
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                assertEquals("/*inline apply*/generator.get()",
+                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/generator.get()";
+                assertEquals(expected,
                         d.methodAnalysis().getSingleReturnValue().toString());
                 List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
                 assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_6.ImmutableArrayOfOnes.ImmutableArrayOfOnes(int,java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_6.One<T>>):1:generator]", vars.toString());

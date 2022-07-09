@@ -57,4 +57,8 @@ public interface TypeParameter extends NamedType {
     boolean isMethodTypeParameter();
 
     Boolean isAnnotatedWithIndependent();
+
+    default TypeInfo primaryType() {
+        return getOwner().isLeft() ? getOwner().getLeft().primaryType() : getOwner().getRight().primaryType();
+    }
 }

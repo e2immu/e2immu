@@ -209,7 +209,7 @@ public class Block extends StatementWithStructure {
         }
     }
 
-    public ParameterizedType mostSpecificReturnType(InspectionProvider inspectionProvider) {
+    public ParameterizedType mostSpecificReturnType(InspectionProvider inspectionProvider, TypeInfo primaryType) {
         AtomicReference<ParameterizedType> mostSpecific = new AtomicReference<>();
         Primitives primitives = inspectionProvider.getPrimitives();
         visit(statement -> {
@@ -222,7 +222,8 @@ public class Block extends StatementWithStructure {
                     }
                 } else {
                     ParameterizedType returnType = returnStatement.expression.returnType();
-                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(inspectionProvider, returnType));
+                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get()
+                            .mostSpecific(inspectionProvider, primaryType, returnType));
                 }
             }
         });
