@@ -39,8 +39,8 @@ public class DependentVariables_1 {
     static class XS {
         private final X[] xs;
 
-        public XS(@Independent1 X[] p) {
-            this.xs = new X[p.length];
+        public XS(@Independent1 X[] p, X[] source) {
+            this.xs = source.clone();
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 

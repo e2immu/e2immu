@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Independent1_5 {
+    @E2Container
     record One<T>(T t) {}
 
     @E2Container
@@ -30,20 +31,18 @@ public class Independent1_5 {
 
         public ImmutableArrayOfTransparentOnes(One<Integer>[] ones, @Independent1 Supplier<One<Integer>> generator) {
             this.ones = ones.clone();
-            Arrays.setAll(ones, i -> generator.get());
+            Arrays.setAll(this.ones, i -> generator.get());
         }
 
         public int size() {
             return ones.length;
         }
 
-        @E2Container
         public One<Integer> first() {
             return ones[0];
         }
 
         @NotModified
-        @E2Container
         public One<Integer> get(int index) {
             return ones[index];
         }

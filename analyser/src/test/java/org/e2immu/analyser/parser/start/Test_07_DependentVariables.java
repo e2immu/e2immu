@@ -128,7 +128,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type X[]";
+                    String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type Object";
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
@@ -173,7 +173,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new X[](p.length)", d.currentValue().toString());
+                        assertEquals("source.clone()", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "p:-1" : "p:3";
@@ -205,7 +205,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 String expectLinked = d.iteration() == 0 ? "p:-1" : "p:3,xs[index]:3";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
-                assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
+                assertEquals("source.clone()", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
             if ("i".equals(d.fieldInfo().name)) {

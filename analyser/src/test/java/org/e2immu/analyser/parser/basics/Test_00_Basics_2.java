@@ -98,7 +98,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertTrue(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     // cannot be content linked to string, because string is recursively immutable
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() == 0 ? "this.string:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     assertEquals(STRING_FIELD, d.variableName());
@@ -110,7 +111,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertFalse(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
             if ("setString".equals(d.methodInfo().name)) {
@@ -166,7 +167,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 }
                 if ("add".equals(d.methodInfo().name)) {
                     assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                    assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                    assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
                 }
             }
         };

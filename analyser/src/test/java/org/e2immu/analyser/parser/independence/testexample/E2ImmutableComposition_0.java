@@ -241,9 +241,8 @@ public class E2ImmutableComposition_0 {
 
         private final One<Integer>[] ones;
 
-        @SuppressWarnings("unchecked")
-        public ImmutableArrayOfTransparentOnes(int size, @Independent1 Supplier<One<Integer>> generator) {
-            ones = new One[size];
+        public ImmutableArrayOfTransparentOnes(One<Integer>[] source, @Independent1 Supplier<One<Integer>> generator) {
+            ones = source.clone(); // to keep One transparent
             Arrays.setAll(ones, i -> generator.get());
         }
 
@@ -350,7 +349,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void visit(@Independent1 Consumer<Marker> consumer) {
+        public void visit(@Independent Consumer<Marker> consumer) {
             for (Marker marker : markers) consumer.accept(marker);
         }
     }

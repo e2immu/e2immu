@@ -305,6 +305,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
+
+        // see Independent1_5, functional interface as parameter has @IgnoreModification
+        DV correctedModified;
+        if(!modified.valueIsFalse()) {
+            DV ignoreMod = context.evaluationContext().getProperty(objectValue, Property.IGNORE_MODIFICATIONS, true, true);
+            if(MultiLevel.IGNORE_MODS_DV.equals(ignoreMod)) {
+                correctedModified = DV.FALSE_DV;
+            } else if(modified.valueIsTrue() && ignoreMod.isDelayed()) {
+                correctedModified = ignoreMod; // delay
+            } else {
+                correctedModified = modified;
+            }
+        } else correctedModified = modified;
+
         // see DGSimplified_4, backupComparator. the functional interface's CNN cannot be upgraded to content not null,
         // because it is nullable
         boolean allowUpgradeCnnOfScope = objectValue instanceof IsVariableExpression ive &&
@@ -327,17 +341,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(),
                     LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
-        LinkedVariables linked1Scope = firstInCallCycle ? LinkedVariables.EMPTY : linked1VariablesScope(context);
+        LinkedVariables linked1Scope = firstInCallCycle ? LinkedVariables.EMPTY :
+                ConstructorCall.linkedVariablesFromParameters(context,
+                        context.getAnalyserContext().getMethodInspection(methodInfo), parameterValues);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
             DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
         }));
 
-        linksBetweenParameters(builder, context, concreteMethod);
+        linksBetweenParameters(builder, context, concreteMethod, parameterValues);
 
         // increment the time, irrespective of NO_VALUE
         if (!firstInCallCycle) {
-            EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, builder, modified);
+            EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, builder, correctedModified);
             if (delayedMethod != null) return delayedMethod;
         }
 
@@ -346,13 +362,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
+        CausesOfDelay delays1 = correctedModified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay());
 
 
         Expression modifiedInstance;
         ModReturn modReturn = checkCompanionMethodsModifying(identifier, builder, context,
-                concreteMethod, object, objectValue, parameterValues, this, modified);
+                concreteMethod, object, objectValue, parameterValues, this, correctedModified);
         if (modReturn != null) {
             // mod delayed or true
             if (modReturn.expression != null) {
@@ -376,7 +392,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 : delays1.merge(modifiedInstance.causesOfDelay());
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
-                .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
+                .methodValue(correctedModified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
                         parameterValues, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
         builder.compose(mv);
 
@@ -466,14 +482,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     /*
     not computed, only contracted!
      */
-    public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationResult context, MethodInfo concreteMethod) {
+    public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationResult context, MethodInfo concreteMethod,
+                                       List<Expression> parameterValues) {
         // key is dependent on values, but only if all of them are variable expressions
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             DV level = e.getValue();
-            Expression expression = parameterExpressions.get(pi.index);
+            Expression expression = parameterValues.get(pi.index);
 
             IsVariableExpression vSource = expression.asInstanceOf(IsVariableExpression.class);
             if (vSource != null) {
@@ -516,7 +533,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // TODO this is HORRIBLY ad-hoc
     private ParameterizedType findHiddenContentType(AnalyserContext analyserContext, ParameterizedType type) {
         if (type.isFunctionalInterface(analyserContext)) {
-            return type.findSingleAbstractMethodOfInterface(analyserContext).getConcreteReturnType(analyserContext.getPrimitives());
+            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(analyserContext)
+                    .getConcreteReturnType(analyserContext.getPrimitives());
+            return findHiddenContentType(analyserContext, returnType);
         }
         if (type.typeParameter != null) {
             return type.copyWithOneFewerArrays();
@@ -524,6 +543,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (type.parameters.size() == 1) {
             return type.parameters.get(0);
         }
+        // FIXME use  analysisProvider.immutableOfHiddenContent
         return type;
     }
 

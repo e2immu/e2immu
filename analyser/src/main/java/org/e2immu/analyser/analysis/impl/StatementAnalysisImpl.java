@@ -1597,7 +1597,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                 int statementTime,
                                                 VariableNature variableNature) {
         String fqn = variable.fullyQualifiedName();
-        assert evaluationContext.getIteration() == 0 : "Cannot make new variables in iteration " + evaluationContext.getIteration() + ": " + fqn;
+        assert evaluationContext.getIteration() == 0
+                : "Cannot make new variables in iteration " + evaluationContext.getIteration() + ": " + fqn;
         if (variables.isSet(fqn)) {
             throw new UnsupportedOperationException("Already exists: " +
                     fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
@@ -2191,7 +2192,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false,
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, true,
                 getCurrentType());
         return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
     }

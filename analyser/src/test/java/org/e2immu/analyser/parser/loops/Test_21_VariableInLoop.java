@@ -266,9 +266,10 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.2".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<c:boolean>" : "null!=s";
+                    String expected = d.iteration() == 0 ? "!<c:boolean>" : "null!=supplier.get()";
                     assertEquals(expected, d.state().toString());
-                    assertEquals("[s]", d.state().variables(true).toString());
+                    String stateVars = "[org.e2immu.analyser.parser.loops.testexample.VariableInLoop_3.method(java.util.Set<java.lang.String>,java.util.function.Supplier<java.lang.String>):1:supplier]";
+                    assertEquals(stateVars, d.state().variables(true).toString());
                     String flow = d.iteration() == 0 ? "initial_flow_value@Method_method_2.0.2-C" : "CONDITIONALLY:1";
                     assertEquals(flow, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
                 }

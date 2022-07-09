@@ -189,6 +189,15 @@ public interface AnalysisProvider {
 
     default DV immutableOfHiddenContent(ParameterizedType parameterizedType, boolean returnValueOfMethod,
                                         TypeInfo currentType) {
+        // FIXME ? include and move to AnalyserContext
+        /*
+         if (type.isFunctionalInterface(analyserContext)) {
+            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(analyserContext)
+                    .getConcreteReturnType(analyserContext.getPrimitives());
+            return findHiddenContentType(analyserContext, returnType);
+        }
+
+         */
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
             ParameterizedType withoutArrays = parameterizedType.copyWithoutArrays();
@@ -197,6 +206,17 @@ public interface AnalysisProvider {
         if (bestType == null) {
             return returnValueOfMethod ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
         }
+
+        // the type itself
+        TypeAnalysis currentTA = getTypeAnalysis(currentType);
+        DV partOfHiddenContent = currentTA.isPartOfHiddenContent(parameterizedType);
+        if (partOfHiddenContent.isDelayed()) {
+            return partOfHiddenContent;
+        }
+        if (partOfHiddenContent.valueIsTrue()) {
+            return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+        }
+        // look inside the type
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
@@ -234,7 +254,7 @@ public interface AnalysisProvider {
             TypeAnalysis typeAnalysisOfCurrentType = getTypeAnalysis(currentType);
             DV partOfHiddenContent = typeAnalysisOfCurrentType.isPartOfHiddenContent(parameterizedType);
             if (partOfHiddenContent.valueIsTrue()) {
-                return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
+                return unboundIsMutable ? MultiLevel.MUTABLE_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
             }
             if (partOfHiddenContent.isDelayed()) {
                 return partOfHiddenContent;

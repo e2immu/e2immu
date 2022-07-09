@@ -32,15 +32,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
     @Test
+    public void testConsumer() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+    }
+
+    @Test
     public void testConsumerAccept() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("accept", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        // void method -> independent
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE)); // could be MUTABLE
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(Property.INDEPENDENT));
     }
 
     @Test

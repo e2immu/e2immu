@@ -214,13 +214,19 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
             ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+            DV formalType = evaluationContext.getAnalyserContext().defaultIndependent(parameterInfo.parameterizedType);
             DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-            LinkedVariables sub = value.linkedVariables(evaluationContext);
-            if (independentOnParameter.isDelayed()) {
-                result = result.mergeDelay(sub, independentOnParameter);
-            } else if (independentOnParameter.ge(MultiLevel.DEPENDENT_DV) &&
-                    independentOnParameter.lt(MultiLevel.INDEPENDENT_DV)) {
-                result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(independentOnParameter));
+            DV independentOnValue = evaluationContext.getProperty(value, Property.INDEPENDENT);
+            if (!independentOnParameter.equals(MultiLevel.INDEPENDENT_DV)
+                    && !independentOnValue.equals(MultiLevel.INDEPENDENT_DV)
+                    && !formalType.equals(MultiLevel.INDEPENDENT_DV)) {
+                DV max = independentOnParameter.max(independentOnValue).max(formalType);
+                LinkedVariables sub = value.linkedVariables(evaluationContext);
+                if (max.isDelayed()) {
+                    result = result.mergeDelay(sub, max);
+                } else if (max.ge(MultiLevel.DEPENDENT_DV) && max.lt(MultiLevel.INDEPENDENT_DV)) {
+                    result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(max));
+                }
             }
             i++;
         }

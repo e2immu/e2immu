@@ -126,7 +126,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             AtomicBoolean hasFinalizers = new AtomicBoolean();
             typeInfo.typeInspection.get()
                     .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                    .filter(methodInfo -> methodInfo.methodInspection.get().isPublic())
+                    .filter(methodInfo -> methodInfo.methodInspection.get().isPublic()
+                            // the Object.clone() method is protected, but has to be accessible because it can be called on arrays
+                            // see Independent1_5
+                            || methodInfo.typeInfo.isJavaLangObject())
                     .forEach(methodInfo -> {
                         try {
                             if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {

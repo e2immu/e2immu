@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
@@ -203,12 +202,12 @@ public class TestLinkingExpression {
         VariableExpression vj = new VariableExpression(j);
 
         // Collections.addAll(v, i, j)
+        List<Expression> parameterValues = List.of(ve, vi, vj);
         MethodCall methodCall = new MethodCall(Identifier.constant("addAll"),
-                new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll,
-                List.of(ve, vi, vj));
+                new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo);
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues);
         // v links @Independent1 to i and j
         assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());

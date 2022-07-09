@@ -542,7 +542,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("d".equals(d.variableName())) {
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "dependsOn:-1" : "dependsOn:4";
+                        String expected = d.iteration() == 0 ? "dependsOn:-1" : "dependsOn:3";
                         assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

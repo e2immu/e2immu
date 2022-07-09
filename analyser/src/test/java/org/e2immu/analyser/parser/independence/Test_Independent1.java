@@ -22,6 +22,8 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -30,6 +32,7 @@ import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,8 +49,10 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("visit".equals(d.methodInfo().name)) {
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
-                    assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                    assertEquals("nullable instance type Consumer<T>/*@Identity*//*@IgnoreMods*/",
+                    assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                    String expected = d.iteration() == 0 ? "<p:consumer>"
+                            : "nullable instance type Consumer<T>/*@Identity*//*@IgnoreMods*/";
+                    assertEquals(expected,
                             d.currentValue().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // not transferred to parameter
                 }
@@ -150,13 +155,59 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<p:consumer>"
+                                : "nullable instance type Consumer<One<Integer>>/*@Identity*//*@IgnoreMods*/";
+                        assertEquals(expected,
+                                d.currentValue().toString());
+                        String linked = d.iteration() == 0 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("one".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("generator.get()", d.currentValue().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("first".equals(d.methodInfo().name)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                assertEquals("ImmutableArrayOfTransparentOnes", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("/*inline apply*/generator.get()",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
+                assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_5.ImmutableArrayOfTransparentOnes.ImmutableArrayOfTransparentOnes(org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>[],java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_5.One<java.lang.Integer>>):1:generator]", vars.toString());
+            }
+        };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
                 // we're using One[].clone() to avoid making One explicit
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                // calling methods in java.lang.Object do not make an object explicit
+                assertEquals("Type org.e2immu.analyser.parser.independence.testexample.Independent1_5.One",
+                        d.typeAnalysis().getTransparentTypes().toString());
             }
         };
         testClass("Independent1_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
@@ -164,13 +215,41 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                assertEquals("ImmutableArrayOfOnes", d.methodInfo().typeInfo.simpleName);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("apply".equals(d.methodInfo().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.simpleName);
+                assertEquals("/*inline apply*/generator.get()",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                List<Variable> vars = d.methodAnalysis().getSingleReturnValue().variables(true);
+                assertEquals("[org.e2immu.analyser.parser.independence.testexample.Independent1_6.ImmutableArrayOfOnes.ImmutableArrayOfOnes(int,java.util.function.Supplier<org.e2immu.analyser.parser.independence.testexample.Independent1_6.One<T>>):1:generator]", vars.toString());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
+                // new One[size] makes One explicit, however, T remains transparent
+                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_6_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
-        testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
+        testClass("Independent1_6_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }

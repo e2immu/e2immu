@@ -69,7 +69,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
                 assertFalse(d.variableInfo().isAssigned());
-                assertDv(d, 7, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d, 9, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -82,7 +82,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 4, 5, 6 -> "<null-check>?<m:requireNonNull>:<f*:t>";
                         case 7 -> "<wrapped:t>";
                         case 8 -> "null==<vp:t:link@Field_t>?<s:T>:<f:t>";
-                        default -> "t$1-E$0";
+                        default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(value, d.currentValue().toString());
                     assertEquals(d.iteration() >= 9, d.currentValue().isDone());
@@ -90,8 +90,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof FieldReference t && "supplier".equals(t.fieldInfo.name)) {
-                assertCurrentValue(d, 7, "instance type Supplier<T>/*@IgnoreMods*/");
-                assertDv(d, 7, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertCurrentValue(d, 9, "instance type Supplier<T>/*@IgnoreMods*/");
+                assertDv(d, 9, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
@@ -110,7 +110,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                         case 0, 1, 2, 3, 4, 5, 6 -> "<m:requireNonNull>";
                         case 7 -> "<wrapped:t>";
                         case 8 -> "<s:T>";
-                        default -> "nullable instance type T/*@NotNull*/";
+                        default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 9, DV.FALSE_DV, Property.IDENTITY);
@@ -119,7 +119,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                     String expect = switch (d.iteration()) {
                         case 0, 1, 2, 3, 4, 5, 6 -> "<m:requireNonNull>";
                         case 7, 8 -> "<wrapped:t>";
-                        default -> "nullable instance type T/*@NotNull*/";
+                        default -> "supplier.get()/*@NotNull*/";
                     };
                     assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 9, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
@@ -161,7 +161,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 case 0 -> "constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
                 case 1 -> "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
                 case 2, 3, 4, 5, 6 -> "break_init_delay:this.t@Method_get_0.0.0-C;constructor-to-instance@Method_get_1-E;de:this.t@Method_get_2-E;ext_not_null@Field_supplier;initial:this.supplier@Method_get_1-C;initial:this.t@Method_get_0.0.0-C;values:this.t@Field_t";
-                default -> "null,nullable instance type T/*@NotNull*/";
+                default -> "null,supplier.get()/*@NotNull*/";
             };
             assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             assertEquals(d.iteration() > 6, d.fieldAnalysis().valuesDelayed().isDone());

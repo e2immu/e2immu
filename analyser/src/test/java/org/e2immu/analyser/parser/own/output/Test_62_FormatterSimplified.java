@@ -63,7 +63,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("forward".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("nullable instance type Boolean",
+                    assertEquals("writer.apply(new ForwardInfo(start,9,null,false))",
                             d.evaluationResult().getExpression().toString());
                     assertEquals("Type java.lang.Boolean", d.evaluationResult().getExpression().returnType().toString());
                 }

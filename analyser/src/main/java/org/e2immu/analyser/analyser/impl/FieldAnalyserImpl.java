@@ -1701,6 +1701,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         @Override
+        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
+            return getProperty(variable, property);
+        }
+
+        @Override
         public DV getProperty(Expression value,
                               Property property,
                               boolean duringEvaluation,

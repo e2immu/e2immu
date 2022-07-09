@@ -125,7 +125,8 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("8.0.4.1.0.1.0.0.06".equals(d.statementId())) {
-                String expected = d.iteration() <= 1 ? "!<m:apply>" : "!nullable instance type Boolean";
+                String expected = d.iteration() <= 1 ? "!<m:apply>"
+                        : "!writer.apply(new ForwardInfo(pos,chars,stringToWrite,split,null,outputElement instanceof Symbol))";
                 assertEquals(expected, d.state().toString());
             }
         };
