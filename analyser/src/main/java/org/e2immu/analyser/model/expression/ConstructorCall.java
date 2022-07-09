@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -36,10 +37,7 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -190,14 +188,33 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public LinkedVariables linkedVariables(EvaluationResult context) {
         // instance, no constructor parameter expressions
         if (constructor == null) return LinkedVariables.EMPTY;
-
-        return linkedVariablesFromParameters(context, constructor.methodInspection.get(),
+        List<LinkedVariables> linkedVariables = computeLinkedVariablesOfParameters(context, parameterExpressions,
+                // FIXME!!!
                 parameterExpressions);
+        return linkedVariablesFromParameters(context, constructor.methodInspection.get(),
+                parameterExpressions, linkedVariables);
+    }
+
+    public static List<LinkedVariables> computeLinkedVariablesOfParameters(EvaluationResult context,
+                                                                           List<Expression> parameterExpressions,
+                                                                           List<Expression> parameterValues) {
+        assert parameterExpressions.size() == parameterValues.size();
+        int i = 0;
+        List<LinkedVariables> result = new ArrayList<>(parameterExpressions.size());
+        for (Expression expression : parameterExpressions) {
+            LinkedVariables lvExpression = expression.linkedVariables(context);
+            Expression value = parameterValues.get(i++);
+            LinkedVariables lvValue = value.linkedVariables(context);
+            LinkedVariables merged = lvExpression.merge(lvValue);
+            result.add(merged);
+        }
+        return result;
     }
 
     static LinkedVariables linkedVariablesFromParameters(EvaluationResult evaluationContext,
                                                          MethodInspection methodInspection,
-                                                         List<Expression> parameterExpressions) {
+                                                         List<Expression> parameterExpressions,
+                                                         List<LinkedVariables> linkedVariables) {
         // quick shortcut
         if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
@@ -221,7 +238,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                     && !independentOnValue.equals(MultiLevel.INDEPENDENT_DV)
                     && !formalType.equals(MultiLevel.INDEPENDENT_DV)) {
                 DV max = independentOnParameter.max(independentOnValue).max(formalType);
-                LinkedVariables sub = value.linkedVariables(evaluationContext);
+                LinkedVariables sub = linkedVariables.get(i);
                 if (max.isDelayed()) {
                     result = result.mergeDelay(sub, max);
                 } else if (max.ge(MultiLevel.DEPENDENT_DV) && max.lt(MultiLevel.INDEPENDENT_DV)) {

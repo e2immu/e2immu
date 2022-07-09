@@ -86,7 +86,18 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if("Independent1_1".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    if("1".equals(d.statementId())) {
+                        assertEquals("ts:3", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         testClass("Independent1_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

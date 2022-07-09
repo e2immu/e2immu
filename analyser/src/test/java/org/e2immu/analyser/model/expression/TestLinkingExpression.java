@@ -30,10 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -207,7 +204,10 @@ public class TestLinkingExpression {
                 new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues);
+        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+                List.of(LinkedVariables.of(Map.of(i, LinkedVariables.INDEPENDENT1_DV, j, LinkedVariables.INDEPENDENT1_DV)),
+                        LinkedVariables.of(Map.of(v, LinkedVariables.INDEPENDENT1_DV)),
+                        LinkedVariables.of(Map.of(v, LinkedVariables.INDEPENDENT1_DV))));
         // v links @Independent1 to i and j
         assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());

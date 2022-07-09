@@ -882,7 +882,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                                     : "data:3,node.data:2,node:2,this.root:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
-                                case 0 -> "initial:node@Method_add_1.0.1.1.0-C";
+                                case 0 -> "initial:data@Method_add_2-E;initial:node@Method_add_1.0.1.1.0-C;initial:s@Method_add_1.0.1.1.0-E";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());
@@ -894,7 +894,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                                     : "data:3,node.data:2,node:2,this.root:2";
                             assertEquals(linkedVars, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
-                                case 0 -> "initial:node@Method_add_1.0.1.1.0-C";
+                                case 0 -> "initial:data@Method_add_2-E;initial:node@Method_add_1.0.1.1.0-C;initial:s@Method_add_1.0.1.1.0-E";
                                 default -> "";
                             };
                             assertEquals(expected, d.variableInfo().getLinkedVariables().causesOfDelay().toString());

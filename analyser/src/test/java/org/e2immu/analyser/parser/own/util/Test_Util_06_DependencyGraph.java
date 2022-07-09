@@ -388,7 +388,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                 assertEquals("compare", methodResolution.methodsOfOwnClassReachedSorted());
             }
         };
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 5, DONT_CARE,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, DONT_CARE,
                 new DebugConfiguration.Builder()
                  //       .addAfterMethodAnalyserVisitor(mavForFreezable)
                  //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -402,7 +402,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 6, DONT_CARE,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 7, DONT_CARE,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(mavForFreezable)
                         .build(),

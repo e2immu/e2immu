@@ -126,7 +126,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // I is independent, so no link to "link"
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String lvs = d.iteration() <= 1 ? "i:-1" : "";
+                        assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
                         assertDv(d, 2, MultiLevel.CONTAINER_DV, CONTAINER);
@@ -138,7 +139,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "list:-1";
+                        case 0, 1 -> "i:-1,list:-1";
                         default -> "list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -149,7 +150,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     String expectLv = switch (d.iteration()) {
-                        case 0, 1 -> "ci:-1,list:-1";
+                        case 0, 1 -> "ci:-1,i:-1,list:-1";
                         default -> "ci:3,list:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

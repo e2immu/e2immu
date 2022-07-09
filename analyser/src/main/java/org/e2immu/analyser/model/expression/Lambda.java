@@ -192,6 +192,12 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
+    public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+        // gets called by the computation of links between parameters in MethodCall
+        return property.falseDv; // maybe some values could be improved, but not relevant a t m
+    }
+
+    @Override
     public String toString() {
         return minimalOutput();
     }

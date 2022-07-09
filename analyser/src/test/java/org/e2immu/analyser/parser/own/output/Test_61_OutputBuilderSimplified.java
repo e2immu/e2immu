@@ -306,9 +306,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // modifying method, so the lambda becomes an instance
-                    String expect = d.iteration() <= 3 ? "<m:apply>" : "instance type $5";
+                    String expect = d.iteration() <= 2 ? "<m:apply>" : "instance type $5";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("accumulator".equals(d.methodInfo().name)) {
@@ -395,10 +395,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.NOT_INVOLVED_DV, p1.getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("combiner".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:combiner>" : "instance type $5";
+                String expected = d.iteration() <= 2 ? "<m:combiner>" : "instance type $5";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
@@ -570,7 +570,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         : "bb.list.isEmpty()?aa:aa.list.isEmpty()?bb:nullable instance type OutputBuilderSimplified_12/*@Identity*//*{L aa:statically_assigned:0}*//*@NotNull*/";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                assertDv(d.p(0), 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 3, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("apply".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
