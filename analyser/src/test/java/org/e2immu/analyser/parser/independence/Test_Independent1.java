@@ -64,7 +64,7 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("visit".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
                 // implicitly present:
                 assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE); // because of @IgnoreModifications
@@ -163,13 +163,13 @@ public class Test_Independent1 extends CommonTestRunner {
                                 : "nullable instance type Consumer<One<Integer>>/*@Identity*//*@IgnoreMods*/";
                         assertEquals(expected,
                                 d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
+                        String linked = d.iteration() <= 1 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("one".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
+                        String linked = d.iteration() <= 1 ? "consumer:-1,this.ones:-1" : "consumer:3,this.ones:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

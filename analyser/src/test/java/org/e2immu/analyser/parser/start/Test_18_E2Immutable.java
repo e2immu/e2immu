@@ -244,13 +244,17 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
             if ("mingle".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
-                    assertEquals("input4:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() == 0 ? "input4:0,this.strings4:-1" : "input4:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "input4".equals(pi.name) && "0".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    String linked = d.iteration() == 0 ? "this.strings4:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo.name) && "0".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertTrue(fr.scopeIsThis());
+                    String linked = d.iteration() == 0 ? "input4:-1" : "";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -275,7 +279,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
 
                 // parameter input4
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
             }
 
             if ("getStrings4".equals(d.methodInfo().name)) {
@@ -503,7 +507,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
-                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "this.map:3";
+                String expectLinked = d.iteration() == 0 ? "this.map:-1" : "";
                 assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
             }
         };

@@ -103,13 +103,13 @@ public class Test_04_Assert extends CommonTestRunner {
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
-                        String linked = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,this:0";
+                        String linked = d.iteration() <= 1 ? "merge:0,other:-1,this:0" : "merge:0,other:2,this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("merge".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "other:2,this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
@@ -118,7 +118,7 @@ public class Test_04_Assert extends CommonTestRunner {
                             default -> "this";
                         };
                         assertEquals(value, d.currentValue().toString());
-                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "this:0";
+                        String linked = d.iteration() <= 1 ? "other:-1,this:0" : "other:2,this:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

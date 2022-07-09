@@ -63,7 +63,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // via statical assignments
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String expected = d.iteration() == 0 ? "<f:set4>"
                                 : "instance type Set<String>/*this.contains(v)&&this.size()>=1*/";
                         assertEquals(expected, d.currentValue().toString());
@@ -84,8 +84,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         String expect = d.iteration() == 0 ? "<f:set4>" : "set4";
                         assertEquals(expect, d.currentValue().toString());
-                        String linked = d.iteration() == 0 ? "this.set4:0,v:-1" : "this.set4:0";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.set4:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -105,7 +104,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set4")) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
 
                 assertEquals("in4", d.fieldAnalysis().getValue().toString());
@@ -118,7 +117,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Modification_4".equals(name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add4".equals(name)) {
                 FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);

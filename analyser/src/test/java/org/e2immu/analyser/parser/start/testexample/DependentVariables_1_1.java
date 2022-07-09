@@ -14,37 +14,23 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.Nullable;
 
-// tests LinkedVariables on ArrayAccess; X is transparent in XS
-// so XS becomes an E2Container
+// small variant on 1
 
-public class DependentVariables_1 {
-
-    @Container
-    @Independent
-    static class X {
-        private int i;
-
-        public void setI(int i) {
-            this.i = i;
-        }
-
-        public int getI() {
-            return i;
-        }
-    }
+public class DependentVariables_1_1 {
 
     @E2Container
-    static class XS {
+    static class XS<X> {
         private final X[] xs;
 
-        public XS(@Independent X[] p, X[] source) {
+        public XS(@Independent1 X[] p, X[] source) {
             this.xs = source.clone();
             System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 
-        @E2Container // X transparent in XS
         @Nullable
         public X getX(int index) {
             return xs[index];

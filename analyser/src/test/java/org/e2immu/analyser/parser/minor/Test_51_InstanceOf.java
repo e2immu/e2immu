@@ -848,7 +848,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         if ("0.0.1.0.5".equals(d.statementId())) {
                             String expectLv = d.iteration() <= 6
                                     ? "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1"
-                                    : "";
+                                    : "sum:2,this.expression:2";
                             assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -864,7 +864,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = d.iteration() <= 6
                                 ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,v:-1,x:-1"
-                                : "sum:1";
+                                : "evaluationContext:2,sum:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0".equals(d.statementId()) || "2".equals(d.statementId())) {

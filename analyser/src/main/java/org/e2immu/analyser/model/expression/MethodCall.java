@@ -490,44 +490,61 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             DV level = e.getValue();
-            Expression expression = parameterValues.get(pi.index);
 
-            IsVariableExpression vSource = expression.asInstanceOf(IsVariableExpression.class);
-            if (vSource != null) {
-                // Independent1_2
+            Expression expression = parameterValues.get(pi.index);
+            tryCrosslink(builder, context, target, targetIsVarArgs, level, expression, parameterValues);
+/*
+            // see DependentVariables_1_1, after this.xs = source.clone(), the LHS is in paramExpressions, the RHS in paramValues
+            Expression expression2 = parameterExpressions.get(pi.index);
+            tryCrosslink(builder, context, target, targetIsVarArgs, level, expression2);
+ */
+        }));
+    }
+
+    private void tryCrosslink(EvaluationResult.Builder builder,
+                              EvaluationResult context,
+                              ParameterInfo target,
+                              boolean targetIsVarArgs,
+                              DV level,
+                              Expression expression,
+                              List<Expression> parameterValues) {
+        IsVariableExpression vSource = expression.asInstanceOf(IsVariableExpression.class);
+        if (vSource != null) {
+            // Independent1_2
+            ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
+                    vSource.variable().parameterizedType());
+            linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, vSource, typeOfHiddenContent,
+                    parameterValues);
+        }
+        MethodReference methodReference = expression.asInstanceOf(MethodReference.class);
+        if (methodReference != null) {
+            // Independent1_3
+            IsVariableExpression mrSource = methodReference.scope.asInstanceOf(IsVariableExpression.class);
+            if (mrSource != null) {
                 ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
-                        vSource.variable().parameterizedType());
-                linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, vSource, typeOfHiddenContent);
+                        mrSource.variable().parameterizedType());
+                linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, mrSource,
+                        typeOfHiddenContent, parameterValues);
             }
-            MethodReference methodReference = expression.asInstanceOf(MethodReference.class);
-            if (methodReference != null) {
-                // Independent1_3
-                IsVariableExpression mrSource = methodReference.scope.asInstanceOf(IsVariableExpression.class);
-                if (mrSource != null) {
-                    ParameterizedType typeOfHiddenContent = findHiddenContentType(context.getAnalyserContext(),
-                            mrSource.variable().parameterizedType());
-                    linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, level, mrSource, typeOfHiddenContent);
-                }
-            }
-            Lambda lambda = expression.asInstanceOf(Lambda.class);
-            if (lambda != null) {
-                // Independent1_4 TODO written to fit exactly this situation, needs expanding
-                // we decide between the first argument of the lambda and the return type
-                // first, the return type TODO
-                ParameterizedType typeOfHiddenContent = lambda.concreteReturnType().erased();
-                if (typeOfHiddenContent.equals(target.parameterizedType.erased())) {
-                    Expression srv = context.getAnalyserContext().getMethodAnalysis(lambda.methodInfo).getSingleReturnValue();
-                    List<Variable> vars = srv.variables(true);
-                    for (Variable v : vars) {
-                        if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
-                            DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
-                            linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, l, new VariableExpression(v),
-                                    typeOfHiddenContent);
-                        }
+        }
+        Lambda lambda = expression.asInstanceOf(Lambda.class);
+        if (lambda != null) {
+            // Independent1_4 TODO written to fit exactly this situation, needs expanding
+            // we decide between the first argument of the lambda and the return type
+            // first, the return type TODO
+            ParameterizedType typeOfHiddenContent = lambda.concreteReturnType().erased();
+            if (typeOfHiddenContent.equals(target.parameterizedType.erased())) {
+                Expression srv = context.getAnalyserContext().getMethodAnalysis(lambda.methodInfo).getSingleReturnValue();
+                List<Variable> vars = srv.variables(true);
+                for (Variable v : vars) {
+                    if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
+                        DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
+                        linksBetweenParametersVarArgs(builder, context, target, targetIsVarArgs, l, new VariableExpression(v),
+                                typeOfHiddenContent, parameterValues);
                     }
                 }
             }
-        }));
+        }
     }
 
     // TODO this is HORRIBLY ad-hoc
@@ -553,17 +570,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                boolean targetIsVarArgs,
                                                DV level,
                                                IsVariableExpression vSource,
-                                               ParameterizedType typeOfHiddenContent) {
+                                               ParameterizedType typeOfHiddenContent,
+                                               List<Expression> parameterValues) {
         DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent,
                 true, context.getCurrentType());
         DV correctedLevel = LinkedVariables.INDEPENDENT1_DV.equals(level) && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
                 : level;
         if (!LinkedVariables.NO_LINKING_DV.equals(correctedLevel)) {
-            linksBetweenParameters(builder, context, vSource, target.index, level);
+            linksBetweenParameters(builder, context, vSource, target.index, level, parameterValues);
             if (targetIsVarArgs) {
                 for (int i = target.index + 1; i < parameterExpressions.size(); i++) {
-                    linksBetweenParameters(builder, context, vSource, i, level);
+                    linksBetweenParameters(builder, context, vSource, i, level, parameterValues);
                 }
             }
         }
@@ -573,8 +591,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                         EvaluationResult context,
                                         IsVariableExpression source,
                                         int targetIndex,
-                                        DV level) {
-        Expression expression = parameterExpressions.get(targetIndex);
+                                        DV level,
+                                        List<Expression> parameterValues) {
+        Expression expression = parameterValues.get(targetIndex);
         LinkedVariables targetLinks = expression.linkedVariables(context);
         CausesOfDelay delays = expression.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->

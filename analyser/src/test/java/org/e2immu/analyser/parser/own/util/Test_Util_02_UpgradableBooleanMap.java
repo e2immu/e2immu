@@ -164,9 +164,11 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("putAll".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0
-                            ? "other={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={modified in context=constructor-to-instance@Method_accept_0-E;initial:this.map@Method_put_0-C;link@NOT_YET_SET, read=true:1}"
-                            : "other={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}";
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "other={modified in context=link@NOT_YET_SET, not null in context=nullable:1}, this={modified in context=constructor-to-instance@Method_accept_0-E;initial:b@Method_put_0-E;initial:t@Method_put_0-E;initial:this.map@Method_put_0-C;link@NOT_YET_SET, read=true:1}";
+                        case 1 -> "other={modified in context=link:t@Method_put_0:M, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}";
+                        default -> "other={modified in context=false:0, not null in context=nullable:1}, this={modified in context=true:1, read=true:1}";
+                    };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
                 }
             }

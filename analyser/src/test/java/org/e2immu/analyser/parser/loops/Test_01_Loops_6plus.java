@@ -669,7 +669,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String linkedM = d.iteration() == 0 ? "result:-1" : "";
+                        assertEquals(linkedM, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

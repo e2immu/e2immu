@@ -86,7 +86,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String linked = d.iteration() <= 2 ? "a:-1,pos:-1,x.s:-1,x:-1" : "";
+                        String linked = d.iteration() <= 2 ? "a:-1,pos:-1,x.s:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -111,7 +111,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     default -> "condition@Method_method_2:M";
                 };
                 assertDv(d, delay, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                String linked = d.iteration() <= 2 ? "a:-1,pos:-1,s:-1,this.map:-1,x:-1" : "s:0";
+                String linked = d.iteration() <= 2 ? "a:-1,pos:-1,s:-1,this.map:-1" : "s:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };

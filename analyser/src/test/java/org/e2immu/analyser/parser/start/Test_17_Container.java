@@ -259,13 +259,11 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() == 0 ? "set3:-1,this.s:-1" : "";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "set3:-1,this.s:-1" : "";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("set3".equals(d.variableName())) {
@@ -274,12 +272,10 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        String expectLv = d.iteration() == 0 ? "s3:-1,this.s:0" : "this.s:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "s3:-1,this.s:0" : "this.s:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 // this one tests the linking mechanism from the field into the local copy
@@ -289,14 +285,12 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals("set3:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0" : "set3:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertEquals("set3:0", d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         // NO s3!
-                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0" : "set3:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("set3:0", d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -362,7 +356,8 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    assertEquals("modified2:0", d.variableInfo().getLinkedVariables().toString());
+                    String linked = d.iteration() == 0 ? "modified2:0,this.s:-1" : "modified2:0";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -375,10 +370,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("m2".equals(d.methodInfo().name)) {
-                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("crossModify".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

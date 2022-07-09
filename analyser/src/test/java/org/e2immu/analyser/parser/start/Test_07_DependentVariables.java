@@ -156,10 +156,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     };
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
-                    String expectLv = switch (d.iteration()) {
-                        case 0 -> "this.xs:-1";
-                        default -> "this.xs:3";
-                    };
+                    String expectLv = d.iteration() == 0 ? "this.xs:-1" : "this.xs:3";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
@@ -220,6 +217,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_1_1() throws IOException {
+        testClass("DependentVariables_1_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
