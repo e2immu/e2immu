@@ -270,7 +270,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                         Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                                 statementAnalysis.primitives(),
                                 new VariableExpression(fr),
-                                end, null, null, false, false, null);
+                                end, null, null, false, false, null, null);
                         assignments.add(assignment);
                         assigned = true;
                     }
@@ -281,7 +281,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     Assignment assignment = new Assignment(Identifier.generate("assignment eci"),
                             statementAnalysis.primitives(),
                             new VariableExpression(fr),
-                            end, null, null, false, false, null);
+                            end, null, null, false, false, null, null);
                     assignments.add(assignment);
                 }
             }

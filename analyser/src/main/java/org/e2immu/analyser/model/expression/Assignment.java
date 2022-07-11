@@ -52,6 +52,7 @@ public class Assignment extends BaseExpression implements Expression {
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
     public final boolean hackForUpdatersInForLoop;
+    private final EvaluationResult evaluationOfValue;
 
     // used for assignments with Explicit Constructor Invocation, which cannot happen in the first iteration
     // see SAInitializersAndUpdaters
@@ -71,6 +72,7 @@ public class Assignment extends BaseExpression implements Expression {
                        MethodInfo binaryOperator,
                        boolean hackForUpdatersInForLoop,
                        boolean allowStaticallyAssigned,
+                       EvaluationResult evaluationOfValue,
                        Set<Variable> directAssignmentVariables) {
         super(identifier);
         this.primitives = primitives;
@@ -84,28 +86,36 @@ public class Assignment extends BaseExpression implements Expression {
         this.hackForUpdatersInForLoop = hackForUpdatersInForLoop;
         this.allowStaticallyAssigned = allowStaticallyAssigned;
         this.directAssignmentVariables = directAssignmentVariables;
+        this.evaluationOfValue = evaluationOfValue;
     }
 
     // see explanation below (makeHackInstance); called in SAInitializersAndUpdaters
     public Expression cloneWithHackForLoop() {
         return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true,
-                allowStaticallyAssigned, directAssignmentVariables);
+                allowStaticallyAssigned, evaluationOfValue, directAssignmentVariables);
     }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
         this(Identifier.joined("new assignment", List.of(target.getIdentifier(), value.getIdentifier())), primitives,
-                target, value, null, null, true, true, null);
+                target, value, null, null, true,
+                true, null, null);
     }
 
     // used in SAEvaluationOfMainExpression, for assignments to the return variable
-    public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value, Set<Variable> directAssignmentVariables) {
+    public Assignment(Primitives primitives,
+                      @NotNull Expression target,
+                      @NotNull Expression value,
+                      EvaluationResult evaluationOfValue,
+                      Set<Variable> directAssignmentVariables) {
         this(Identifier.joined("new assignment", List.of(target.getIdentifier(), value.getIdentifier())), primitives,
-                target, value, null, null, true, true, directAssignmentVariables);
+                target, value, null, null, true,
+                true, evaluationOfValue, directAssignmentVariables);
     }
 
     public Assignment(Identifier identifier, Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(identifier, primitives, target, value, null, null, true, true, null);
+        this(identifier, primitives, target, value, null, null,
+                true, true, null, null);
     }
 
     public Assignment(Identifier identifier,
@@ -116,6 +126,7 @@ public class Assignment extends BaseExpression implements Expression {
                       Boolean prefixPrimitiveOperator,
                       boolean complainAboutAssignmentOutsideType,
                       boolean allowStaticallyAssigned,
+                      EvaluationResult evaluationOfValue,
                       Set<Variable> directAssignmentVariables) {
         super(identifier);
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
@@ -136,6 +147,7 @@ public class Assignment extends BaseExpression implements Expression {
         hackForUpdatersInForLoop = false;
         this.allowStaticallyAssigned = allowStaticallyAssigned;
         this.directAssignmentVariables = directAssignmentVariables;
+        this.evaluationOfValue = evaluationOfValue;
     }
 
     @Override
@@ -171,7 +183,8 @@ public class Assignment extends BaseExpression implements Expression {
 
         return new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,
-                complainAboutAssignmentOutsideType, allowStaticallyAssigned, directAssignmentVariables);
+                complainAboutAssignmentOutsideType, allowStaticallyAssigned,
+                evaluationOfValue, directAssignmentVariables);
     }
 
     @Override
@@ -247,7 +260,8 @@ public class Assignment extends BaseExpression implements Expression {
         if (value.isDelayed()) {
             return new Assignment(identifier, primitives, target, value.mergeDelays(causesOfDelay),
                     assignmentOperator, prefixPrimitiveOperator, complainAboutAssignmentOutsideType, variableTarget,
-                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned, directAssignmentVariables);
+                    binaryOperator, hackForUpdatersInForLoop, allowStaticallyAssigned,
+                    evaluationOfValue, directAssignmentVariables);
         }
         return this;
     }
@@ -287,7 +301,12 @@ public class Assignment extends BaseExpression implements Expression {
         }
         ForwardEvaluationInfo fwd = fwdBuilder.build();
 
-        EvaluationResult valueResult = value.evaluate(context, fwd);
+        EvaluationResult valueResult;
+        if(evaluationOfValue != null) {
+            valueResult = evaluationOfValue;
+        } else {
+            valueResult = value.evaluate(context, fwd);
+        }
 
         EvaluationResult targetResult = target.evaluate(context, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
@@ -454,8 +473,8 @@ public class Assignment extends BaseExpression implements Expression {
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
-        } else if(at instanceof DependentVariable dv) {
-            if(dv.arrayVariable() != null) {
+        } else if (at instanceof DependentVariable dv) {
+            if (dv.arrayVariable() != null) {
                 builder.markContextModified(dv.arrayVariable(), DV.TRUE_DV);
 
                 // recurse!

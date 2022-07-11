@@ -284,6 +284,9 @@ public class Test_Expressions extends CommonTestRunner {
                 String expected = d.iteration() < 76 ? "<m:accept1>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
+            if("test".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("<m:test>", d.methodAnalysis().getSingleReturnValue().toString());
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

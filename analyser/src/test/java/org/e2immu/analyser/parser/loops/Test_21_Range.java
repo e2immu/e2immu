@@ -168,7 +168,7 @@ public class Test_21_Range extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("method3");
-                    String expected = d.iteration() == 0 ? "<v:i>" : "12";///*{L i:statically_assigned:0}*/";
+                    String expected = d.iteration() == 0 ? "<v:i>" : "12/*{L i:statically_assigned:0}*/";
                     assertEquals(expected, cd.value().toString());
                 }
             }

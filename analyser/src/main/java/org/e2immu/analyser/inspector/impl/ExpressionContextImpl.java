@@ -566,7 +566,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
                     return new Assignment(identifier, typeContext.getPrimitives(),
                             exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix,
-                            true, true, null);
+                            true, true, null, null);
                 }
                 return new UnaryOperator(identifier, operator, exp, UnaryOperator.precedence(unaryExpr.getOperator()));
             }
@@ -676,7 +676,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
                     return new Assignment(identifier, typeContext.getPrimitives(), target, value, primitiveOperator,
-                            null, true, true, null);
+                            null, true, true, null, null);
                 }
                 return new Assignment(identifier, typeContext.getPrimitives(), target, value);
             }

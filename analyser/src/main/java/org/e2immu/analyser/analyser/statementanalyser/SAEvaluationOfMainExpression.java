@@ -368,12 +368,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
         Set<Variable> directAssignmentVariables;
+        EvaluationResult hasAlreadyBeenEvaluated;
         if (currentReturnValue instanceof UnknownExpression) {
             // simplest situation
             toEvaluate = expression;
             updatedContext = context;
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
             directAssignmentVariables = null;
+            hasAlreadyBeenEvaluated = result;
         } else {
             /*
             The reason we compute the directAssignmentVariables from the previous LV rather than from the current
@@ -392,9 +394,11 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             updatedContext = context.withNewEvaluationContext(newEc);
             forwardEvaluationInfo = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
                     .doNotComplainInlineConditional().setIgnoreValueFromState().build();
+            hasAlreadyBeenEvaluated = null;
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
-                new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate, directAssignmentVariables);
+                new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate, hasAlreadyBeenEvaluated,
+                directAssignmentVariables);
         EvaluationResult evaluatedAssignment = assignment.evaluate(updatedContext, forwardEvaluationInfo);
         return new EvaluationResult.Builder(context)
                 .compose(result)
