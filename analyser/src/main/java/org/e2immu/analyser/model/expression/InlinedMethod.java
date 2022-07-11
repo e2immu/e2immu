@@ -281,7 +281,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
         InspectionProvider inspectionProvider = evaluationResult.getAnalyserContext();
         if (variable instanceof ParameterInfo parameterInfo) {
             if (parameterInfo.getMethod() == methodInfo) {
-                return parameterReplacement(parameters, inspectionProvider, parameterInfo);
+                Expression parameterReplacement = parameterReplacement(parameters, inspectionProvider, parameterInfo);
+                if(parameterReplacement.isInstanceOf(InlinedMethod.class)) {
+                    // see e.g., Lookahead.lookAhead, blocking "writer" from being expanded
+                    return expandedVariable(evaluationResult, parameterInfo.identifier, DV.TRUE_DV, variable);
+                }
+                return parameterReplacement;
             }
             // we can get here because of the recursive call when expanding ConstructorCalls
             // see Modification_11

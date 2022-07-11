@@ -97,8 +97,12 @@ public class MultiExpressions extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationResult context,
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
+        // we drop all not-null information!!! everything is mingled
+        // the warning for inline conditional we must keep.
+        ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder()
+                .copyNotComplainInlineConditional(forwardEvaluationInfo).build();
         for (Expression expression : multiExpression.expressions()) {
-            EvaluationResult result = expression.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+            EvaluationResult result = expression.evaluate(context, fwd);
             builder.compose(result);
         }
         return builder.build();

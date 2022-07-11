@@ -298,6 +298,11 @@ public class ForwardEvaluationInfo {
             noSwitchingToConcreteMethod = true;
             return this;
         }
+
+        public Builder copyNotComplainInlineConditional(ForwardEvaluationInfo forwardEvaluationInfo) {
+            doNotComplainInlineConditional = forwardEvaluationInfo.doNotComplainInlineConditional;
+            return this;
+        }
     }
 
     private static Set<MethodInfo> topOfOverloadingHierarchy(MethodInfo methodInfo) {

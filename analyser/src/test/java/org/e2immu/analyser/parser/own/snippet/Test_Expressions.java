@@ -326,7 +326,7 @@ public class Test_Expressions extends CommonTestRunner {
         };
 
 
-        testClass("Expressions_0", 2, 17,
+        testClass("Expressions_0", 2, 16,
                 new DebugConfiguration.Builder()
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)

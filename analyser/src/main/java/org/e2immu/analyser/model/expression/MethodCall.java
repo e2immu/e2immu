@@ -390,9 +390,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = null;
         }
 
-
-        CausesOfDelay delays2 = modifiedInstance == null ? delays1
-                : delays1.merge(modifiedInstance.causesOfDelay());
+        CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
                 .methodValue(correctedModified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,

@@ -147,7 +147,9 @@ public class EvaluateParameters {
 
             if (scopeIsIndependent.gt(MultiLevel.DEPENDENT_DV)) {
                 // we don't know yet whether there'll be modification or not, it will depend on the @Immutable value
-                Expression tempParameterResult = parameterExpression.evaluate(context, ForwardEvaluationInfo.DEFAULT).getExpression();
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder()
+                        .copyNotComplainInlineConditional(forwardEvaluationInfo).build();
+                Expression tempParameterResult = parameterExpression.evaluate(context, fwd).getExpression();
                 DV immutable = context.getProperty(tempParameterResult, Property.IMMUTABLE);
                 if (immutable.isDelayed()) {
                     DV cm = map.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
