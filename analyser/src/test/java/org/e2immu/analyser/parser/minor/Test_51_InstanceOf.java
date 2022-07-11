@@ -734,7 +734,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = d.iteration() <= 6
-                                ? "b:-1,d:-1,evaluationContext:-1,lessThan:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1"
+                                ? "b:-1,d:-1,evaluationContext:-1,lessThan:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1"
                                 : "scope-ne1:0.0.1.0.4.expression:3,scope-ne1:0.0.1.0.4:3,v:3,x:3";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -802,7 +802,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = d.iteration() <= 6
-                                ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:0"
+                                ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:0"
                                 : "scope-ne1:0.0.1.0.4.expression:0,scope-ne1:0.0.1.0.4:2,v:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -847,7 +847,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         // delays in clustering in iteration 2, otherwise we'd have CM
                         if ("0.0.1.0.5".equals(d.statementId())) {
                             String expectLv = d.iteration() <= 6
-                                    ? "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,v:-1,x:-1"
+                                    ? "b:-1,d:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this.expression:-1,this:-1,v:-1,x:-1"
                                     : "sum:2,this.expression:2";
                             assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -863,7 +863,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name) && fr.scopeIsThis()) {
                     if ("0.0.1.0.5".equals(d.statementId())) {
                         String expectLv = d.iteration() <= 6
-                                ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,v:-1,x:-1"
+                                ? "b:-1,d:-1,evaluationContext:-1,scope-ne1:0.0.1.0.4.expression:-1,scope-ne1:0.0.1.0.4:-1,sum:-1,this:-1,v:-1,x:-1"
                                 : "evaluationContext:2,sum:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }

@@ -81,7 +81,7 @@ public class EvaluateMethodCall {
         }
 
         if (earlierDelays.isDelayed()) {
-            return delay(builder, methodInfo, concreteReturnType, earlierDelays,
+            return delay(builder, methodInfo, concreteReturnType, objectValue, earlierDelays,
                     context.evaluationContext().allowBreakDelay());
         }
         if (methodInfo.noReturnValue()) {
@@ -193,7 +193,7 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        EvaluationResult identity = computeIdentity(concreteReturnType, methodAnalysis, parameters, builder);
+        EvaluationResult identity = computeIdentity(concreteReturnType, methodAnalysis, objectValue, parameters, builder);
         if (identity != null) {
             return identity;
         }
@@ -215,7 +215,7 @@ public class EvaluateMethodCall {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv.isDelayed()) {
                 LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, srv.causesOfDelay(),
+                return delay(builder, methodInfo, concreteReturnType, objectValue, srv.causesOfDelay(),
                         context.evaluationContext().allowBreakDelay());
             }
             InlinedMethod iv;
@@ -246,7 +246,8 @@ public class EvaluateMethodCall {
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull, context.getCurrentType());
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
-                return delay(builder, methodInfo, concreteReturnType, delays, context.evaluationContext().allowBreakDelay());
+                return delay(builder, methodInfo, concreteReturnType, objectValue, delays,
+                        context.evaluationContext().allowBreakDelay());
             }
             methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
         }
@@ -267,6 +268,7 @@ public class EvaluateMethodCall {
     private EvaluationResult delay(EvaluationResult.Builder builder,
                                    MethodInfo methodInfo,
                                    ParameterizedType concreteReturnType,
+                                   Expression objectValue,
                                    CausesOfDelay causesOfDelay,
                                    boolean allowBreakDelay) {
         Map<Variable, DV> cnnMap = builder.cnnMap();
@@ -294,6 +296,18 @@ public class EvaluateMethodCall {
             } else {
                 EvaluationResult deResult = delay.evaluate(context, ForwardEvaluationInfo.DEFAULT);
                 builder.compose(deResult);
+            }
+            IsVariableExpression ive;
+            if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof FieldReference fr) {
+                Variable thisVar = fr.thisInScope();
+                if (thisVar != null) {
+                    /*
+                    this link delay is needed to cover for the linkedVariables() in ExpandedVariable. Fields
+                    are the only types of variables that end up in ExpandedVariable expressions--parameters generally
+                    are expanded
+                    */
+                    builder.link(ive.variable(), thisVar, finalDelays);
+                }
             }
         } // else: cannot be expanded, so this extra delay is not necessary
         return builder.setExpression(delay).build();
@@ -347,7 +361,7 @@ public class EvaluateMethodCall {
             if (modifying.isDelayed()) {
                 LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, modifying.causesOfDelay(),
+                return delay(builder, methodInfo, concreteReturnType, objectValue, modifying.causesOfDelay(),
                         context.evaluationContext().allowBreakDelay());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
@@ -519,7 +533,7 @@ public class EvaluateMethodCall {
                                            EvaluationResult.Builder builder) {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, fluent.causesOfDelay(),
+            return delay(builder, methodInfo, concreteReturnType, scope, fluent.causesOfDelay(),
                     context.evaluationContext().allowBreakDelay());
         }
         if (!fluent.valueIsTrue()) return null;
@@ -539,11 +553,12 @@ public class EvaluateMethodCall {
 
     private EvaluationResult computeIdentity(ParameterizedType concreteReturnType,
                                              MethodAnalysis methodAnalysis,
+                                             Expression objectValue,
                                              List<Expression> parameters,
                                              EvaluationResult.Builder builder) {
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return delay(builder, methodInfo, concreteReturnType, identity.causesOfDelay(),
+            return delay(builder, methodInfo, concreteReturnType, objectValue, identity.causesOfDelay(),
                     context.evaluationContext().allowBreakDelay());
         }
         if (!identity.valueIsTrue()) return null;

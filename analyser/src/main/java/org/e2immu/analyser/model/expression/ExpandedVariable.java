@@ -107,7 +107,7 @@ public class ExpandedVariable extends BaseExpression {
         if ((ic = v.asInstanceOf(InlineConditional.class)) != null) {
             e = ic.condition;
         } else e = v;
-        if(e instanceof ExpandedVariable ev) {
+        if (e instanceof ExpandedVariable ev) {
             return variable.compareTo(ev.variable);
         }
         throw new UnsupportedOperationException();
@@ -136,9 +136,13 @@ public class ExpandedVariable extends BaseExpression {
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        //if(variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
-        //    return LinkedVariables.of(fr.thisInScope(), LinkedVariables.DEPENDENT_DV);
-        //}
+        /*
+        this linking has to be countered by a delay on the method call that can generate this ExpandedVariable as
+        a substitution. See EvaluateMethodCall.delay
+         */
+        if (variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
+            return LinkedVariables.of(fr.thisInScope(), LinkedVariables.DEPENDENT_DV);
+        }
         return LinkedVariables.EMPTY;
     }
 }

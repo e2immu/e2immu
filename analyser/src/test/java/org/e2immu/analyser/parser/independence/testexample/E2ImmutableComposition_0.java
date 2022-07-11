@@ -513,7 +513,6 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Independent
         public HasSize first() {
             return one.first()[0];
         }

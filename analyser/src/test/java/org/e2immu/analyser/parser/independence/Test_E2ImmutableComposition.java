@@ -71,7 +71,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                     // dependent, rather than independent1: modifications are possible!
                     String linked = d.iteration() == 0 ? "this.elements:-1" : "this.elements:2";
-                    // FIXME assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
@@ -79,11 +79,11 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
                     assertEquals(expected, d.currentValue().toString());
-                    //FIXME    assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                    //    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                    // should also be linked to a field!!
-                    String linked = d.iteration() <= 3 ? "this.one:-1" : "one.t:1";
-                    //assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                    // the expanded variable is linked to "this", delays are provided by EvaluateMethodCall.delay
+                    String linked = d.iteration() <= 3 ? "this.one:-1,this:-1" : "this:2";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("size".equals(d.methodInfo().name) && "EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
@@ -126,7 +126,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
-                // FIXME            assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("first".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
@@ -134,7 +134,7 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
                 String expected = d.iteration() <= 3 ? "<m:getElements>" : "/*inline getElements*/`one.t`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                // FIXME assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
@@ -145,7 +145,12 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
         };
 
-        testClass("E2ImmutableComposition_0", 0, 0, new DebugConfiguration.Builder()
+        /*
+         All the warnings are complaints about one.first() getting used without checks.
+         We leave it this way (rather than adding @NotNull on the interface) because
+         parsing EncapsulatedImmutableArrayOfHasSize.size(), in Arrays.stream(...), tests InlinedMethod.expandedVariable
+         */
+        testClass("E2ImmutableComposition_0", 0, 8, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

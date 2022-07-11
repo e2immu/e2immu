@@ -204,17 +204,17 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
 
             if ("isReady1".equals(d.methodInfo().name)) {
-                String expected1 = d.iteration() <= 2 ? "<m:isReady1>"
+                String expected1 = d.iteration() <= 3 ? "<m:isReady1>"
                         : "/*inline isReady1*/`t.s1.bool`.isSet()&&`t.s2.bool`.isSet()&&`t.s1.string`.isSet()&&`t.s2.string`.isSet()";
                 assertEquals(expected1, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
 
             if ("isReady2".equals(d.methodInfo().name)) {
-                String expected2 = d.iteration() <= 2 ? "<m:isReady2>"
+                String expected2 = d.iteration() <= 3 ? "<m:isReady2>"
                         : "/*inline isReady2*/`s1.bool`.isSet()&&`s2.bool`.isSet()&&`s1.string`.isSet()&&`s2.string`.isSet()";
                 assertEquals(expected2, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
         testClass("EventuallyImmutableUtil_5", 0, 0, new DebugConfiguration.Builder()

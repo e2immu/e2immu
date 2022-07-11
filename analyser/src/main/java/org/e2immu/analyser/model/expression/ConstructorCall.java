@@ -254,6 +254,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (independentOnParameter.equals(INDEPENDENT_DV) || independentOnValue.equals(INDEPENDENT_DV)) {
             return INDEPENDENT_DV;
         }
+        if(parameterInfo.parameterizedType.isUnboundTypeParameter() && independentOnParameter.isDone()) {
+            /*
+             Example situation: E2ImmutableComposition_0.ExposedArrayOfHasSize: the type parameter of the method's parameter
+             is a placeholder for the value. In other situations, e.g. Collection<T> formal type vs List<String>, max() is
+             better.
+             */
+            return independentOnValue;
+        }
         return independentOnParameter.max(independentOnValue);
     }
 
