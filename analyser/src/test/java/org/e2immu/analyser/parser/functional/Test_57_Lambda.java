@@ -138,7 +138,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "f:-1,x.k:-1,x:-1" : "";
+                        String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

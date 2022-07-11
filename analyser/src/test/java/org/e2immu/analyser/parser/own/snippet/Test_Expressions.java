@@ -284,8 +284,10 @@ public class Test_Expressions extends CommonTestRunner {
                 String expected = d.iteration() < 76 ? "<m:accept1>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
-            if("test".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals("<m:test>", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("test".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expected = d.iteration() == 0 ? "<m:test>"
+                        : "/*inline test*/e instanceof Equals&&e/*(Equals)*/.lhs instanceof ConstantExpression<?>&&!(e/*(Equals)*/.lhs instanceof NullConstant)&&null!=e&&null!=e/*(Equals)*/.lhs";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

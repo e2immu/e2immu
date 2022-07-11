@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -301,5 +302,16 @@ public class Lambda extends BaseExpression implements Expression {
 
     public ParameterizedType concreteReturnType() {
         return concreteReturnType;
+    }
+
+    @Override
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        /*
+        do not return the variables of this block (goes via general method, subElements...)
+        e.g. Expressions_0.extractEquals, pattern variable eq comes out of the Lambda into the enclosing method
+
+        wait until the Lambda has become an InlinedMethod if you want access to the variables (see e.g. E2ImmutableComposition_0)
+         */
+        return List.of();
     }
 }
