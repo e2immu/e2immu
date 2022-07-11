@@ -215,8 +215,22 @@ public class FieldReference extends VariableWithConcreteReturnType {
         return parameterizedType().typesReferenced(explicit);
     }
 
+    // this.x
     public boolean scopeIsThis() {
         return !isStatic && isDefaultScope;
+    }
+
+    // this.x.y as well!
+    public boolean scopeIsRecursivelyThis() {
+        if (scopeIsThis()) return true;
+        if (scopeVariable instanceof FieldReference fr) return fr.scopeIsRecursivelyThis();
+        return false;
+    }
+
+    public Variable thisInScope() {
+        if (scopeVariable instanceof This) return scopeVariable;
+        if (scopeVariable instanceof FieldReference fr) return fr.thisInScope();
+        return null;
     }
 
     /*

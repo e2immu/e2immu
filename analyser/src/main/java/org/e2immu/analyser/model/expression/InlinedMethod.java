@@ -398,7 +398,23 @@ public class InlinedMethod extends BaseExpression implements Expression {
         Properties valueProperties;
         if (variable instanceof FieldReference fr) {
             FieldAnalysis fieldAnalysis = context.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-            valueProperties = fieldAnalysis.getValueProperties();
+             /*
+             parameterizedType = HasSize[], field type = type parameter T
+             taking all the value properties from the field will not be good.
+             See e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize
+             */
+            if (fr.fieldInfo.type.equals(parameterizedType)) {
+                valueProperties = fieldAnalysis.getValueProperties();
+            } else {
+                valueProperties = Properties.of(Map.of(
+                        Property.NOT_NULL_EXPRESSION, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL),
+                        Property.IGNORE_MODIFICATIONS, fieldAnalysis.getProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS),
+                        Property.IDENTITY, DV.FALSE_DV,
+                        Property.IMMUTABLE, analyserContext.defaultImmutable(parameterizedType, false, context.getCurrentType()),
+                        Property.INDEPENDENT, analyserContext.defaultIndependent(parameterizedType),
+                        Property.CONTAINER, analyserContext.defaultContainer(parameterizedType)
+                ));
+            }
         } else if (context.evaluationContext().isMyself(parameterizedType)) {
             valueProperties = context.evaluationContext().valuePropertiesOfFormalType(parameterizedType);
         } else {

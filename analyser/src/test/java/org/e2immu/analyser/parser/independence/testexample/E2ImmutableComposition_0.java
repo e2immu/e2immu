@@ -426,18 +426,23 @@ public class E2ImmutableComposition_0 {
         }
 
         @NotModified
-        @Dependent
+        @Independent(absent = true)
+        @Independent1(absent = true)
         public HasSize[] getElements() {
             return elements;
         }
 
+        /*
+         visitArray and getElements are identical wrt independence: external modifications
+         to the array are possible
+         */
         @Modified
-        public void visitArray(@Dependent Consumer<HasSize[]> consumer) {
+        public void visitArray(@Independent(absent = true) @Independent1(absent = true) Consumer<HasSize[]> consumer) {
             consumer.accept(elements);
         }
 
         @Override
-        public void visit(Consumer<HasSize> consumer) {
+        public void visit(@Independent Consumer<HasSize> consumer) {
             for (HasSize element : elements) consumer.accept(element);
         }
     }
@@ -455,7 +460,7 @@ public class E2ImmutableComposition_0 {
 
         private final ImmutableOne<HasSize[]> one;
 
-        public EncapsulatedExposedArrayOfHasSize(int size, Supplier<HasSize> generator) {
+        public EncapsulatedExposedArrayOfHasSize(int size, @Independent Supplier<HasSize> generator) {
             HasSize[] elements = new HasSize[size];
             Arrays.setAll(elements, i -> generator.get());
             one = new ImmutableOne<>(elements);
@@ -472,7 +477,6 @@ public class E2ImmutableComposition_0 {
         }
 
         @NotModified
-        @Dependent
         public HasSize[] getElements() {
             return one.first();
         }
@@ -548,18 +552,23 @@ public class E2ImmutableComposition_0 {
 
         @Override
         public int size() {
-            return Arrays.stream(one.first()).mapToInt(HasSize::size).sum();
+            HasSize[] first = one.first();
+            assert first != null;
+            return Arrays.stream(first).mapToInt(HasSize::size).sum();
         }
 
         @Override
-        @Independent
         public HasSize first() {
-            return one.first()[0];
+            HasSize[] first = one.first();
+            assert first != null;
+            return first[0];
         }
 
         @NotModified
         public HasSize get(int index) {
-            return one.first()[index];
+            HasSize[] first = one.first();
+            assert first != null;
+            return first[index];
         }
 
         @Override

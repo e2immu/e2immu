@@ -74,7 +74,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<T>";
+                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<URL>";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }

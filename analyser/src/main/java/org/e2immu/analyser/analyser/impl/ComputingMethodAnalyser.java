@@ -978,7 +978,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
         if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
         DV minFields = linkedVariables.variables().entrySet().stream()
-                .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
+                .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
+                        || e.getKey() instanceof This)
                 .map(Map.Entry::getValue)
                 .reduce(DV.MAX_INT_DV, DV::min);
 

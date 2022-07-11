@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -131,5 +132,13 @@ public class ExpandedVariable extends BaseExpression {
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
         return List.of(); // explicitly present here to help remember it should not return its variable!
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationResult context) {
+        //if(variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
+        //    return LinkedVariables.of(fr.thisInScope(), LinkedVariables.DEPENDENT_DV);
+        //}
+        return LinkedVariables.EMPTY;
     }
 }

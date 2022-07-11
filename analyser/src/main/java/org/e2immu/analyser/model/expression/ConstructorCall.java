@@ -41,6 +41,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.MultiLevel.INDEPENDENT_DV;
+
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
 
@@ -230,24 +232,29 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
-            ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-            DV formalType = evaluationContext.getAnalyserContext().defaultIndependent(parameterInfo.parameterizedType);
-            DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-            DV independentOnValue = evaluationContext.getProperty(value, Property.INDEPENDENT);
-            if (!independentOnParameter.equals(MultiLevel.INDEPENDENT_DV)
-                    && !independentOnValue.equals(MultiLevel.INDEPENDENT_DV)
-                    && !formalType.equals(MultiLevel.INDEPENDENT_DV)) {
-                DV max = independentOnParameter.max(independentOnValue).max(formalType);
-                LinkedVariables sub = linkedVariables.get(i);
-                if (max.isDelayed()) {
-                    result = result.mergeDelay(sub, max);
-                } else if (max.ge(MultiLevel.DEPENDENT_DV) && max.lt(MultiLevel.INDEPENDENT_DV)) {
-                    result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(max));
-                }
+            DV independent = computeIndependentFromComponents(evaluationContext, value, parameterInfo);
+            LinkedVariables sub = linkedVariables.get(i);
+            if (independent.isDelayed()) {
+                result = result.mergeDelay(sub, independent);
+            } else if (independent.ge(MultiLevel.DEPENDENT_DV) && independent.lt(INDEPENDENT_DV)) {
+                result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(independent));
             }
+
             i++;
         }
         return result.minimum(LinkedVariables.ASSIGNED_DV);
+    }
+
+    private static DV computeIndependentFromComponents(EvaluationResult evaluationContext,
+                                                       Expression value,
+                                                       ParameterInfo parameterInfo) {
+        ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+        DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
+        DV independentOnValue = evaluationContext.getProperty(value, Property.INDEPENDENT);
+        if (independentOnParameter.equals(INDEPENDENT_DV) || independentOnValue.equals(INDEPENDENT_DV)) {
+            return INDEPENDENT_DV;
+        }
+        return independentOnParameter.max(independentOnValue);
     }
 
     @Override

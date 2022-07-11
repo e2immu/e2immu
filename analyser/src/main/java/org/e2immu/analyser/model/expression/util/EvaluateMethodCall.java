@@ -74,7 +74,8 @@ public class EvaluateMethodCall {
         ParameterizedType concreteReturnType;
         if (methodAnalysis.isComputed() && methodInfo.hasReturnValue()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
-            concreteReturnType = srv.returnType();
+            concreteReturnType = srv.returnType().mostSpecific(context.getAnalyserContext(),
+                    context.getCurrentType().primaryType(), concreteReturnTypeIn);
         } else {
             concreteReturnType = concreteReturnTypeIn;
         }

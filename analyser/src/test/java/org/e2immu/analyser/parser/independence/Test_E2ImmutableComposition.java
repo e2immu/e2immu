@@ -19,7 +19,9 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_E2ImmutableComposition extends CommonTestRunner {
 
@@ -63,6 +66,40 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                     }
                 }
             }
+            if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    // dependent, rather than independent1: modifications are possible!
+                    String linked = d.iteration() == 0 ? "this.elements:-1" : "this.elements:2";
+                    // FIXME assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ReturnVariable) {
+                    String expected = d.iteration() <= 3 ? "<m:first>" : "`one.t`";
+                    assertEquals(expected, d.currentValue().toString());
+                    //FIXME    assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    //    assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                    // should also be linked to a field!!
+                    String linked = d.iteration() <= 3 ? "this.one:-1" : "one.t:1";
+                    //assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("size".equals(d.methodInfo().name) && "EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
+                if (d.variable() instanceof FieldReference fr && "one".equals(fr.fieldInfo.name)) {
+                    assertTrue(fr.scopeIsThis());
+                    assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.ImmutableOne<org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.HasSize[]>",
+                            fr.parameterizedType.toString());
+                }
+                if ("first".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.HasSize[]",
+                                d.variableInfo().variable().parameterizedType().toString());
+                        assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -87,6 +124,17 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
             }
             if ("setFirst".equals(d.methodInfo().name) && "One".equals(clazz)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("visitArray".equals(d.methodInfo().name) && "ExposedArrayOfHasSize".equals(clazz)) {
+                // FIXME            assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("first".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("getElements".equals(d.methodInfo().name) && "EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
+                String expected = d.iteration() <= 3 ? "<m:getElements>" : "/*inline getElements*/`one.t`";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                // FIXME assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

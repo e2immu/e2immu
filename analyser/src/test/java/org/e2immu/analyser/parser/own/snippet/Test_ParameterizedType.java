@@ -117,7 +117,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 if ("fromTypeBounds".equals(d.variableName())) {
                     assertNotEquals("4", d.statementId(), "Variable should not exist here!");
                     if ("4.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:List<E>>" : "List.of()";// FIXME companion state data?
+                        String expected = d.iteration() == 0 ? "<s:List<ParameterizedType>>" : "List.of()";// FIXME companion state data?
                         assertEquals(expected, d.currentValue().toString());
                     }
                     // Note: the variable may exist in "5", as part of the evaluation of the return variable
@@ -125,7 +125,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         if ("4.0.4".equals(d.statementId())) {
                             assertEquals("4", lv.parentBlockIndex);
                             String expected = d.iteration() == 0
-                                    ? "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<E>>" : "List.of()";
+                                    ? "<loopIsNotEmptyCondition>?<vl:fromTypeBounds>:<s:List<ParameterizedType>>" : "List.of()";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
@@ -284,7 +284,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 if ("primitivePt".equals(d.variableName())) {
                     if ("0.0.09".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<s:Object>";
+                            case 0 -> "<s:ParameterizedType>";
                             case 1 -> "<m:primitive>";
                             default -> "switch('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
                         };

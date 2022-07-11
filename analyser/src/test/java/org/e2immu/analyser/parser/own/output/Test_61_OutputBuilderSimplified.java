@@ -240,7 +240,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 0 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<v:result>";
                             case 1 -> "<vp:NONE:container@Class_Space>==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
                             default -> "Space.NONE==start?new OutputBuilderSimplified_7():instance type OutputBuilderSimplified_7";
                         };
@@ -249,7 +249,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<mmc:result>";
+                            case 0, 1 -> "<f:NONE>==start?new OutputBuilderSimplified_7():<v:result>";
                             default -> "instance type OutputBuilderSimplified_7";
                         };
                         assertEquals(expected, d.currentValue().toString());
