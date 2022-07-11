@@ -247,27 +247,30 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     parameterAnalysis.setProperty(INDEPENDENT, delay);
                     return delay;
                 }
-
-                List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
-                        .map(e -> (FieldReference) e.getKey()).toList();
+                Map<FieldReference, DV> fields = vi.getLinkedVariables().variables().entrySet().stream()
+                        .filter(e -> e.getKey() instanceof FieldReference)
+                        .collect(Collectors.toUnmodifiableMap(e -> (FieldReference) e.getKey(), Map.Entry::getValue));
                 if (!fields.isEmpty()) {
-                    // so we know the parameter is content linked to some fields
-                    // now the value of independence (from 1 to infinity) is determined by the size of the
-                    // hidden content component inside the field
-
+                    /* so we know the parameter is (content) linked to some fields
+                       either it is dependent, or the value of independence (from 1 to infinity) is determined by the size of the
+                       hidden content component inside the field
+                     */
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-
-                    CausesOfDelay hiddenContentDelayed = fields.stream()
-                            .map(fr -> typeAnalysis.hiddenContentTypeStatus())
-                            .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                    boolean dependent = fields.values().stream().anyMatch(LinkedVariables.DEPENDENT_DV::equals);
+                    if (dependent) {
+                        // ExposedArrayOfHasSize in E2ImmutableComposition_0
+                        LOGGER.debug("Assign DEPENDENT to parameter {}: dependent link on field", parameterInfo.fullyQualifiedName());
+                        parameterAnalysis.setProperty(INDEPENDENT, DEPENDENT_DV);
+                        return DONE;
+                    }
+                    CausesOfDelay hiddenContentDelayed = typeAnalysis.hiddenContentTypeStatus();
                     if (hiddenContentDelayed.isDelayed()) {
                         LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
                                 parameterInfo.fullyQualifiedName());
                         parameterAnalysis.setProperty(INDEPENDENT, hiddenContentDelayed);
                         return hiddenContentDelayed;
                     }
-                    DV minHiddenContentImmutable = fields.stream()
+                    DV minHiddenContentImmutable = fields.keySet().stream()
                             // hidden content is available, because linking has been computed(?)
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
                             .map(pt -> analyserContext.defaultImmutable(pt, false, parameterInfo.getTypeInfo()))
@@ -682,7 +685,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {
                 DV independent;
                 if (takeValueFromOverride) {
-                    independent = computeValueFromOverrides(INDEPENDENT);
+                    independent = computeValueFromOverrides(INDEPENDENT, false);
                 } else {
                     independent = NOT_INVOLVED_DV;
                 }

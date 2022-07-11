@@ -556,8 +556,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("output2".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() == 7, d.context().evaluationContext().allowBreakDelay());
-
                 if ("outputBuilder".equals(d.variableName())) {
                     String expected2 = d.iteration() <= 2 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
                     if ("2.0.0.0.1".equals(d.statementId())) {
@@ -595,7 +593,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // merge:
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("methodCall".equals(d.variableName())) {
@@ -604,7 +602,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // evaluation
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertCurrentValue(d, 10, "object/*(MethodCall)*/");
+                        assertCurrentValue(d, 17, "object/*(MethodCall)*/");
                     }
                     assertNotEquals("2", d.statementId());
                     assertNotEquals("3", d.statementId());
@@ -645,26 +643,28 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output".equals(d.methodInfo().name) && "MethodCall".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 10, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 2 ? "<m:output2>"
+                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 16 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d.p(0), 8, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 8, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("valueOf".equals(d.methodInfo().name) && "Required".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
+
         testClass("VariableScope_8", 0, 6, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -680,8 +680,6 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("output2".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() == 7, d.context().evaluationContext().allowBreakDelay());
-
                 if ("outputBuilder".equals(d.variableName())) {
                     if ("2.0.0.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<new:OutputBuilder>" : "instance type OutputBuilder";
@@ -716,24 +714,24 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         // merge:
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 17, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("output2".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() <= 2 ? "<m:output2>"
+                assertDv(d, 17, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() <= 16 ? "<m:output2>"
                         : "/*inline output2*/!(object instanceof MethodCall)||null==object?new OutputBuilder(new LinkedList<>()):instance type OutputBuilder";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d.p(0), 8, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 8, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 18, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodCall".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("VariableScope_8_1", 0, DONT_CARE, new DebugConfiguration.Builder()

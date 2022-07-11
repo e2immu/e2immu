@@ -113,7 +113,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
         DV parameterTypeIsHidden = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo())
                 .isPartOfHiddenContent(parameterInfo.parameterizedType);
         for (Property property : CHECK_WORSE_THAN_PARENT) {
-            DV valueFromOverrides = computeValueFromOverrides(property);
+            DV valueFromOverrides = computeValueFromOverrides(property, true);
             DV value = parameterAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain;
@@ -144,10 +144,11 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
         }
     }
 
-    protected DV computeValueFromOverrides(Property property) {
+    protected DV computeValueFromOverrides(Property property, boolean filter) {
         return analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                 .stream()
                 .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
+                .filter(pi -> !filter || !(property == INDEPENDENT || property == IMMUTABLE) || !pi.parameterizedType.isUnboundTypeParameter())
                 .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
                         pi, property))
                 .reduce(DV.MIN_INT_DV, DV::max);
