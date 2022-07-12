@@ -125,8 +125,9 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                                 : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        // I is independent, so no link to "link"
-                        String lvs = d.iteration() <= 1 ? "i:-1" : "";
+                        // while class "I" is independent, it is also mutable. It is the latter property that is relevant
+                        // in the "Basics_20" type
+                        String lvs = d.iteration() <= 1 ? "i:-1" : "i:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -140,7 +141,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
                         case 0, 1 -> "i:-1,list:-1";
-                        default -> "list:2";
+                        default -> "i:3,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
@@ -151,7 +152,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     String expectLv = switch (d.iteration()) {
                         case 0, 1 -> "ci:-1,i:-1,list:-1";
-                        default -> "ci:3,list:3";
+                        default -> "ci:3,i:3,list:3";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 

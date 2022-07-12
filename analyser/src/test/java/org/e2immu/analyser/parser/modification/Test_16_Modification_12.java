@@ -50,13 +50,13 @@ public class Test_16_Modification_12 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && PARENT_CLASS_SET.equals(d.variableName())) {
-                assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId()) && d.variable() instanceof This) {
                 assertEquals(PARENT_CLASS_THIS, d.variableName());
-                assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
@@ -64,7 +64,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
                 }
             }
@@ -74,7 +74,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                     assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -105,17 +105,17 @@ public class Test_16_Modification_12 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             String name = d.methodInfo().name;
             if ("clear".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() > 0) {
                     assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
                 }
                 assertTrue(d.getThisAsVariable().isRead());
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -138,7 +138,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
             }
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {

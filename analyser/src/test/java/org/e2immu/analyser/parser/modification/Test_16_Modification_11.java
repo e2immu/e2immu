@@ -186,11 +186,11 @@ public class Test_16_Modification_11 extends CommonTestRunner {
         // 2 null pointer warnings.
         // contrast to Modification_11_2, which uses a "best over all methods" to up the not null value of the fields
         testClass("Modification_11", 3, 2, new DebugConfiguration.Builder()
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  //      .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                 //       .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                 //       .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                 //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                  //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(false).build());
     }

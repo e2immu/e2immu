@@ -105,18 +105,20 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes())
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableCanBeIncreasedByTypeParameters());
 
-        if (!typeInfo.isInterface()) {
-            builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, TRANSPARENT, this::computeApprovedPreconditionsE1)
-                    .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2)
-                    .add(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE, this::analyseEffectivelyEventuallyE2Immutable)
-                    .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
-                    .add(ANALYSE_CONTAINER, this::analyseContainer)
-                    .add(ANALYSE_UTILITY_CLASS, iteration -> analyseUtilityClass())
-                    .add(ANALYSE_SINGLETON, iteration -> analyseSingleton())
-                    .add(ANALYSE_EXTENSION_CLASS, iteration -> analyseExtensionClass());
-        } else {
+        if (typeInfo.isInterface()) {
             typeAnalysis.freezeApprovedPreconditionsE1();
             typeAnalysis.freezeApprovedPreconditionsE2();
+        } else {
+            builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, TRANSPARENT, this::computeApprovedPreconditionsE1)
+                    .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2);
+        }
+        builder.add(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE, this::analyseEffectivelyEventuallyE2Immutable)
+                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
+                .add(ANALYSE_CONTAINER, this::analyseContainer);
+        if (!typeInfo.isInterface()) {
+            builder.add(ANALYSE_UTILITY_CLASS, iteration -> analyseUtilityClass())
+                    .add(ANALYSE_SINGLETON, iteration -> analyseSingleton())
+                    .add(ANALYSE_EXTENSION_CLASS, iteration -> analyseExtensionClass());
         }
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();

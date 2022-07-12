@@ -16,7 +16,6 @@ package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.MutableModifiesArguments;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;

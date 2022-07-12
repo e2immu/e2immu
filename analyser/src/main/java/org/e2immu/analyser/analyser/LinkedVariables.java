@@ -70,6 +70,16 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return value(level + 3);
     }
 
+    public static DV fromLinkedVariableToIndependent(DV linked) {
+        int value = linked.value();
+        return switch (value) {
+            case 0, 1, 2 -> MultiLevel.DEPENDENT_DV;
+            case 3 -> MultiLevel.INDEPENDENT_1_DV;
+            case 4 -> MultiLevel.INDEPENDENT_2_DV;
+            default -> MultiLevel.composeIndependent(MultiLevel.Effective.EFFECTIVE, value - 3);
+        };
+    }
+
     public boolean isDelayed() {
         if (this == NOT_YET_SET) return true;
         return variables.values().stream().anyMatch(DV::isDelayed);
@@ -91,10 +101,6 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
             case 4 -> INDEPENDENT2_DV;
             default -> new NoDelay(i);
         };
-    }
-
-    public static LinkedVariables sameValue(Stream<Variable> variables, DV value) {
-        return new LinkedVariables(variables.collect(Collectors.toMap(v -> v, v -> value)));
     }
 
     public static LinkedVariables of(Variable variable, DV value) {

@@ -519,8 +519,8 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
         testClass("Precondition_7", 0, 0,
                 new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

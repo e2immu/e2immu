@@ -48,14 +48,14 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:set1>" : "instance type HashSet<String>/*this.contains(v)&&this.size()>=1*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set1".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<String>", e.toString());

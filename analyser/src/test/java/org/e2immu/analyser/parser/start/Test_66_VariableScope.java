@@ -366,6 +366,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "typeInfo".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type TypeInfo/*@Identity*/", d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "<mod:TypeInfo>"
@@ -375,7 +376,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
                                 Property.CONTEXT_NOT_NULL);
                     }
-                    if ("1".equals(d.statementId())) {
+                    if ("1.0.2.0.0".equals(d.statementId())) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -445,10 +446,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
             }
         };
         testClass("VariableScope_5", 2, 1, new DebugConfiguration.Builder()
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                      //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceAlphabeticAnalysisInPrimaryType(true).build());
     }

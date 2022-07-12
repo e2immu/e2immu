@@ -568,7 +568,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (immutable.isDelayed()) {
             builder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         }
-        DV container = builder.getProperty(Property.CONTAINER);
+        DV container = builder.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER);
         if (container.isDelayed()) {
             builder.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
@@ -602,6 +602,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(Property.INDEPENDENT, independent);
             }
+            // fallback
+            builder.setProperty(Property.INDEPENDENT,MultiLevel.DEPENDENT_DV);
         } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
             messages.add(Message.newMessage(builder.typeInfo.newLocation(),
                     Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));

@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.MultiLevel.INDEPENDENT_DV;
+import static org.e2immu.analyser.model.MultiLevel.*;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -245,24 +245,44 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return result.minimum(LinkedVariables.ASSIGNED_DV);
     }
 
+    /*
+    important: the result has to be independence with respect to the fields!!
+
+    Example 1: parameterInfo = java.util.List.add(E):0:e, which is @Independent1.
+    This means that the argument will be part of the list's hidden content.
+    If the argument is MUTABLE, result should be Independent1, if it is E2_IMMUTABLE, the result should be Independent_2, etc.
+    See e.g. Modification_16
+
+    Example 2: parameterInfo = java.util.function.Consumer.accept(T):0:t, which is @Dependent
+    See e.g. E2ImmutableComposition_0.ExposedArrayOfHasSize
+    If we feed in an array of recursively immutable elements, like HasSize[], we want @Dependent as an outcome.
+    If we feed in the recursively immutable element HasSize, we remain independent
+
+     */
     private static DV computeIndependentFromComponents(EvaluationResult evaluationContext,
                                                        Expression value,
                                                        ParameterInfo parameterInfo) {
         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
         DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-        DV independentOnValue = evaluationContext.getProperty(value, Property.INDEPENDENT);
-        if (independentOnParameter.equals(INDEPENDENT_DV) || independentOnValue.equals(INDEPENDENT_DV)) {
+        DV immutableOfValue = evaluationContext.getProperty(value, Property.IMMUTABLE);
+
+        // shortcut: either is at max value, then there is no discussion
+        if (independentOnParameter.equals(INDEPENDENT_DV) || immutableOfValue.equals(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return INDEPENDENT_DV;
         }
-        if(parameterInfo.parameterizedType.isUnboundTypeParameter() && independentOnParameter.isDone()) {
-            /*
-             Example situation: E2ImmutableComposition_0.ExposedArrayOfHasSize: the type parameter of the method's parameter
-             is a placeholder for the value. In other situations, e.g. Collection<T> formal type vs List<String>, max() is
-             better.
-             */
-            return independentOnValue;
+
+        // any delay: wait!
+        CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
+        if(causes.isDelayed()) return causes;
+
+        int immutableLevel = MultiLevel.level(immutableOfValue);
+        if (independentOnParameter.le(DEPENDENT_DV)) {
+            if (immutableLevel == 0) return DEPENDENT_DV;
+            return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
         }
-        return independentOnParameter.max(independentOnValue);
+        int parameterLevel = MultiLevel.level(independentOnParameter); // 0 = @Independent1
+        int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
+        return MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
     }
 
     @Override

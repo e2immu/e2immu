@@ -90,10 +90,10 @@ public class JavaUtilStream {
         <TT> Stream<TT> empty();
 
         @NotNull
-        <TT> Stream<TT> of(@NotNull TT t);
+        <TT> Stream<TT> of(@NotNull @Independent1 TT t);
 
         @NotNull
-        <TT> Stream<TT> of(@NotNull TT... t);
+        <TT> Stream<TT> of(@NotNull @Independent1 TT... t);
 
         @NotNull
         <R> Stream<R> map(@Independent1 @NotNull Function<? super T, ? extends R> mapper);

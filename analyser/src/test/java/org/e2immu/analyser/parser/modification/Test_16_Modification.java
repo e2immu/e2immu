@@ -68,17 +68,17 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.parser.modification.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
-                if("0.0.0".equals(d.statementId())) {
+                if ("0.0.0".equals(d.statementId())) {
                     assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV,Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
@@ -184,13 +184,51 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test16() throws IOException {
         // one error on the method's parameter
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("addError".equals(d.methodInfo().name)) {
+                if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
+                    if (d.variable() instanceof ParameterInfo pi && "errorMessage".equals(pi.name)) {
+                        if ("1".equals(d.statementId())) {
+                            /* :3 because ErrorMessage takes the role of hidden content in List<ErrorMessage>
+                                A modification to the list does not imply a modification to the ErrorMessage
+
+                               :2 because ErrorMessage is not hidden content in FaultyImplementation
+                               A modification to the errorMessage argument does mean a modification to the field messages
+
+                               Internally, we must work with :3, because we do not want a subsequent .remove() on the
+                               list to have an effect on the errorMessage.
+                               Externally, towards the parameter, we must first ascertain whether ErrorMessage is hidden or not.
+                             */
+                            String linked = d.iteration() <= 1 ? "this.messages:-1" : "this.messages:3";
+                            assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getErrors".equals(d.methodInfo().name)) {
                 if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                }
+            }
+            if ("addError".equals(d.methodInfo().name)) {
+                if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+
+                    // 2 delays because of the computation of IMMUTABLE of ErrorMessage, which is a class which needs
+                    // the ComputedTypeAnalyser. It ends up being MUTABLE, so that the parameter becomes DEPENDENT by convention
+                    assertDv(d.p(0), 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                }
+                if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
                 }
             }
         };
@@ -201,6 +239,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
         testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

@@ -109,7 +109,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
         testClass("NotNull_3", 6, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)
                 .build());

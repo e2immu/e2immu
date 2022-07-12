@@ -321,7 +321,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_3", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+         //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

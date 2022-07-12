@@ -256,13 +256,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                        hidden content component inside the field
                      */
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    boolean dependent = fields.values().stream().anyMatch(LinkedVariables.DEPENDENT_DV::equals);
-                    if (dependent) {
-                        // ExposedArrayOfHasSize in E2ImmutableComposition_0
-                        LOGGER.debug("Assign DEPENDENT to parameter {}: dependent link on field", parameterInfo.fullyQualifiedName());
-                        parameterAnalysis.setProperty(INDEPENDENT, DEPENDENT_DV);
-                        return DONE;
-                    }
                     CausesOfDelay hiddenContentDelayed = typeAnalysis.hiddenContentTypeStatus();
                     if (hiddenContentDelayed.isDelayed()) {
                         LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
@@ -274,20 +267,70 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                             // hidden content is available, because linking has been computed(?)
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
                             .map(pt -> analyserContext.defaultImmutable(pt, false, parameterInfo.getTypeInfo()))
-                            .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                            .reduce(DV.MAX_INT_DV, DV::min);
+
+                    DV linkToFields = fields.values().stream()
+                            .map(LinkedVariables::fromLinkedVariableToIndependent)
+                            .reduce(INDEPENDENT_DV, DV::min);
+                    assert linkToFields.lt(INDEPENDENT_DV) : "There should not have been linking to the field: the link has NO_LINK level";
+
+                    DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, true,
+                            NOT_INVOLVED_DV, parameterInfo.owner.typeInfo);
+                    assert immutable.lt(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV) : "There should not have been linking to the field: parameter is recursively immutable";
+
+                    if (minHiddenContentImmutable == DV.MAX_INT_DV) {
+                        /*
+                         the parameter's type is not part of the hidden content of the fields: it is explicit.
+                         linking is either dependent: changes to the argument modify the explicit part of the field.
+                         */
+                        LOGGER.debug("Assign DEPENDENT to parameter {}: parameter's type does not belong to hidden content, link is {}",
+                                parameterInfo, linkToFields);
+                        parameterAnalysis.setProperty(INDEPENDENT, DEPENDENT_DV);
+                        return DONE;
+                    }
                     if (minHiddenContentImmutable.isDelayed()) {
                         LOGGER.debug("Delay independent in parameter {}, waiting for immutable of hidden content/transparent types",
                                 parameterInfo.fullyQualifiedName());
                         parameterAnalysis.setProperty(INDEPENDENT, minHiddenContentImmutable);
                         return minHiddenContentImmutable.causesOfDelay();
                     }
+                    /*
+                    the immutable level of parameter's type in the hidden content
+                    0 -> mutable, E1 --> @Independent1
+                    1 -> E2Immutable --> @Independent2
+                    This now needs combining with the link level to the field, which is at least @Independent1 (value 0)
+                    but less than @Independent (or there would not have been a link)
+
+                    there should be an agreement between the immutability level of the parameter's type and the link level
+                    to the field.
+                     */
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
-                    DV independent = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
+                    DV result = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
                             MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, independent);
+                    LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
+                    parameterAnalysis.setProperty(INDEPENDENT, result);
                     return DONE;
                 }
+                /*
+
+                DV immutable = parameterAnalysis.getProperty(IMMUTABLE);
+                if (immutable.isDelayed()) return AnalysisStatus.of(immutable); // we'll have to wait
+                int immutableLevel = MultiLevel.level(immutable);
+                DV independent = fields.values().stream().reduce(LinkedVariables.NO_LINKING_DV, DV::min);
+                if (independent.le(DEPENDENT_DV)) {
+                    // ExposedArrayOfHasSize in E2ImmutableComposition_0
+                    DV result = immutableLevel == 0 ? DEPENDENT_DV : MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                    LOGGER.debug("Assign {} to parameter {}: dependent link on field", result, parameterInfo.fullyQualifiedName());
+                    parameterAnalysis.setProperty(INDEPENDENT, result);
+                    return DONE;
+                }
+                int parameterLevel = MultiLevel.level(independent); // 0 = @Independent1
+                int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
+                DV result = MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
+                LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
+                parameterAnalysis.setProperty(INDEPENDENT, result);
+                return DONE;
+                 */
             }
         }
         // finally, no other alternative

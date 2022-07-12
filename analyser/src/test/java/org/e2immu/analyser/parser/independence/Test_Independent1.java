@@ -54,11 +54,11 @@ public class Test_Independent1 extends CommonTestRunner {
                             : "nullable instance type Consumer<T>/*@Identity*//*@IgnoreMods*/";
                     assertEquals(expected,
                             d.currentValue().toString());
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // not transferred to parameter
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     assertTrue(fr.scopeIsThis());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED); // because context is @Independent1 FIXME implement!
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

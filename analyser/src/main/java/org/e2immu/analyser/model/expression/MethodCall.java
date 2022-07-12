@@ -272,7 +272,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(concreteMethod);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
-        DV modified = firstInCallCycle ? DV.FALSE_DV : modifiedMethod;
+        DV modifiedBeforeCorrection = firstInCallCycle ? DV.FALSE_DV : modifiedMethod;
+
+        // see Independent1_5, functional interface as parameter has @IgnoreModification
+        // IMPORTANT: we derive @IgnoreModifications from "object" and not from "objectValue" at the moment
+        // we're assuming it is only present contractually at the moment
+        DV modified;
+        if (!modifiedBeforeCorrection.valueIsFalse()) {
+            DV ignoreMod = context.evaluationContext().getProperty(object, Property.IGNORE_MODIFICATIONS,
+                    true, true);
+            if (MultiLevel.IGNORE_MODS_DV.equals(ignoreMod)) {
+                modified = DV.FALSE_DV;
+            } else if (modifiedBeforeCorrection.valueIsTrue() && ignoreMod.isDelayed()) {
+                modified = ignoreMod; // delay
+            } else {
+                modified = modifiedBeforeCorrection;
+            }
+        } else modified = modifiedBeforeCorrection;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(concreteMethod,
@@ -305,19 +321,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
-
-        // see Independent1_5, functional interface as parameter has @IgnoreModification
-        DV correctedModified;
-        if (!modified.valueIsFalse()) {
-            DV ignoreMod = context.evaluationContext().getProperty(objectValue, Property.IGNORE_MODIFICATIONS, true, true);
-            if (MultiLevel.IGNORE_MODS_DV.equals(ignoreMod)) {
-                correctedModified = DV.FALSE_DV;
-            } else if (modified.valueIsTrue() && ignoreMod.isDelayed()) {
-                correctedModified = ignoreMod; // delay
-            } else {
-                correctedModified = modified;
-            }
-        } else correctedModified = modified;
 
         // see DGSimplified_4, backupComparator. the functional interface's CNN cannot be upgraded to content not null,
         // because it is nullable
@@ -357,7 +360,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
         if (!firstInCallCycle) {
-            incrementDelays = incrementStatementTime(methodAnalysis, builder, correctedModified);
+            incrementDelays = incrementStatementTime(methodAnalysis, builder, modified);
         } else {
             incrementDelays = CausesOfDelay.EMPTY;
         }
@@ -367,13 +370,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        CausesOfDelay delays1 = correctedModified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
+        CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay()).merge(incrementDelays);
 
 
         Expression modifiedInstance;
         ModReturn modReturn = checkCompanionMethodsModifying(identifier, builder, context,
-                concreteMethod, object, objectValue, parameterValues, this, correctedModified);
+                concreteMethod, object, objectValue, parameterValues, this, modified);
         if (modReturn != null) {
             // mod delayed or true
             if (modReturn.expression != null) {
@@ -395,7 +398,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
-                .methodValue(correctedModified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
+                .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
                         parameterValues, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
         builder.compose(mv);
 

@@ -271,6 +271,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() <= 2 ? "result:-1" : ""; // because the type "OutputElement" is @ERContainer
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -347,6 +352,9 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("OutputElement".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
@@ -377,6 +385,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if ("OutputBuilderSimplified_7".equals(t0.simpleName)) {
                     assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
                 } else fail("Add? " + d.methodInfo().fullyQualifiedName);
             }
             if ("joining".equals(d.methodInfo().name)) {
@@ -399,7 +409,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("supplier".equals(d.methodInfo().name)) {
                 assertEquals("/*inline supplier*/OutputBuilderSimplified_7::new", d.methodAnalysis().getSingleReturnValue().toString());

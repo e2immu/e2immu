@@ -46,17 +46,17 @@ public class Test_ModificationInLambda extends CommonTestRunner {
                     if ("$1".equals(thisVar.typeInfo.simpleName)) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else if ("ModificationInLambda_0".equals(thisVar.typeInfo.simpleName)) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     } else fail("Have " + thisVar.typeInfo.fullyQualifiedName);
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("accept".equals(d.methodInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("ModificationInLambda_0", 0, 0, new DebugConfiguration.Builder()

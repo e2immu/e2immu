@@ -93,7 +93,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        boolean add(@NotNull E e);
+        boolean add(@NotNull @Independent1 E e);
 
         @Modified
         boolean addAll(@Independent1 @NotNull1 java.util.Collection<? extends E> collection);
@@ -109,13 +109,13 @@ public class JavaUtil extends AnnotatedAPI {
             return i != 0 && retVal;
         }
 
-        boolean contains(@NotNull @Independent1 Object object);
+        boolean contains(@NotNull Object object);
 
         default boolean containsAll$Value$Size(int i, java.util.Collection<?> c, boolean retVal) {
             return i != 0 && retVal;
         }
 
-        boolean containsAll(@NotNull1 @Independent1 java.util.Collection<?> c);
+        boolean containsAll(@NotNull1 java.util.Collection<?> c);
 
         default boolean isEmpty$Value$Size(int i, boolean retVal) {
             return i == 0;
@@ -324,7 +324,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean removeAll(@NotNull1 @Independent Collection<?> c);
 
         @Modified
-        E set(int index, E element);
+        E set(int index, @Independent1 E element);
 
         @Independent1
         Iterator<E> spliterator();
@@ -563,7 +563,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        E push(E item) {
+        E push(@Independent1 E item) {
             return null;
         }
     }
@@ -761,13 +761,13 @@ public class JavaUtil extends AnnotatedAPI {
         V getOrDefault(@NotNull Object key, V defaultValue);
 
         @Modified
-        V put(@NotNull K key, @NotNull V value);
+        V put(@NotNull @Independent1 K key, @NotNull @Independent1 V value);
 
         @Modified
-        V merge(@NotNull K key, @NotNull V value, BiFunction<? super V, ? super V, ? extends V> remap);
+        V merge(@NotNull @Independent1 K key, @NotNull @Independent1 V value, BiFunction<? super V, ? super V, ? extends V> remap);
 
         @Modified
-        V remove(Object key);
+        V remove(@NotNull @Independent Object key);
 
         @NotNull1
         Collection<V> values();
@@ -782,7 +782,7 @@ public class JavaUtil extends AnnotatedAPI {
             V getValue();
 
             @Modified
-            V setValue(V v);
+            V setValue(@Independent1 @NotNull V v);
         }
     }
 

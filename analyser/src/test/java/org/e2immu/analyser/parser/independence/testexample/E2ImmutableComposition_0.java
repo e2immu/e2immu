@@ -23,10 +23,8 @@ import java.util.function.Supplier;
 public class E2ImmutableComposition_0 {
 
     /**
-     * This is an @E2Immutable abstract type, hiding its content.
-     * Equivalent to unbound parameter type, or java.lang.Object.
+     * Computed: @ERContainer
      */
-    @ERContainer
     interface Marker {
     }
 

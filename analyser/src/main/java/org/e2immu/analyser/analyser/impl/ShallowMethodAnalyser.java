@@ -395,23 +395,18 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
         DV value;
         ParameterizedType type = builder.getParameterInfo().parameterizedType;
-        if (type.isPrimitiveExcludingVoid()) {
+        DV immutable = builder.getProperty(Property.IMMUTABLE);
+
+        if (type.isPrimitiveExcludingVoid() || MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
             value = MultiLevel.INDEPENDENT_DV;
         } else {
             // @Modified needs to be marked explicitly
             DV modifiedMethod = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_METHOD);
             if (modifiedMethod.valueIsTrue() || methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                TypeInfo bestType = type.bestTypeInfo();
-                if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
-                    value = MultiLevel.INDEPENDENT_1_DV;
-                } else {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-                    if (typeAnalysis != null) {
-                        value = analyserContext.getTypeAnalysis(bestType).getProperty(Property.INDEPENDENT);
-                    } else {
-                        value = MultiLevel.DEPENDENT_DV;
-                    }
-                }
+                // note that an unbound type parameter is by default @Dependent, not @Independent1!!
+                if (immutable.isDelayed()) return immutable;
+                int immutableLevel = MultiLevel.level(immutable);
+                value = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             } else {
                 value = MultiLevel.INDEPENDENT_DV;
             }

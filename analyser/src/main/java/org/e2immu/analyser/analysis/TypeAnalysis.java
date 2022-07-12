@@ -120,17 +120,24 @@ public interface TypeAnalysis extends Analysis {
     }
 
     default DV getTypeProperty(Property property) {
-        boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
-
         switch (property) {
-            case IMMUTABLE, PARTIAL_IMMUTABLE,
-                    CONTAINER, PARTIAL_CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
+            case IMMUTABLE, INDEPENDENT, CONTAINER -> {
+                DV dv = getPropertyFromMapDelayWhenAbsent(property);
+                assert !getTypeInfo().shallowAnalysis() || dv.isDone() : "Shallow analysis must have set a value for " + property + " in " + getTypeInfo();
+                return dv;
+            }
+            case PARTIAL_IMMUTABLE, PARTIAL_CONTAINER -> {
+                assert !getTypeInfo().shallowAnalysis() : "Only used in CTA, type is " + getTypeInfo();
+                return getPropertyFromMapDelayWhenAbsent(property);
+            }
+            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
                 // ensure that we do not throw an exception
+                boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
+                return doNotDelay ? getPropertyFromMapNeverDelay(property)
+                        : getPropertyFromMapDelayWhenAbsent(property);
             }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
         }
-        return doNotDelay ? getPropertyFromMapNeverDelay(property)
-                : getPropertyFromMapDelayWhenAbsent(property);
     }
 
     /**

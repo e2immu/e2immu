@@ -18,8 +18,10 @@ package org.e2immu.analyser.parser.independence;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -139,6 +141,10 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Marker".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.One",
                         d.typeAnalysis().getTransparentTypes().toString());

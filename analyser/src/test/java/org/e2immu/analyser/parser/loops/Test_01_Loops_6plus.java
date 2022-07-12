@@ -180,21 +180,21 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:set>" : "instance type Set<String>";
+                        String expected = d.iteration() <= 1 ? "<vl:set>" : "instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
+                        String expected = d.iteration() <= 1
                                 ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:set>"
                                 : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertDv(d, DV.TRUE_DV, CNN_TRAVELS_TO_PRECONDITION);
                     }
