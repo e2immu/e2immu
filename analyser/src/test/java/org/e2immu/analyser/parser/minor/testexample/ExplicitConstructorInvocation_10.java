@@ -14,8 +14,12 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-// a mix of ECI and preconditions, modelled on ConditionManager
-// does not yet cause the crash...
+/*
+ a mix of ECI and preconditions, modelled on ConditionManager
+
+ Interesting case ShallowMA and Computing TypeAnalyser on Expression
+ */
+
 
 import java.util.Objects;
 
@@ -26,6 +30,8 @@ public class ExplicitConstructorInvocation_10 {
 
         boolean other();
 
+        // there is no explicit @Container on Expression, therefore
+        // the parameter is @Modified
         Expression merge(Expression condition);
     }
 

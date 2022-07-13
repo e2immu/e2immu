@@ -146,7 +146,7 @@ public class Test_04_NotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
         testClass("NotNull_2", 0, 0, new DebugConfiguration.Builder()

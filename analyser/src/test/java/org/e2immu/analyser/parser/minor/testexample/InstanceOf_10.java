@@ -15,15 +15,22 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.Nullable;
 
 public class InstanceOf_10 {
 
     private interface Expression {
 
+        @Modified
+        int setScore(int score);
     }
 
     private record Negation(Expression expression) implements Expression {
+        @Override
+        public int setScore(int score) {
+            return 0;
+        }
     }
 
     @Nullable

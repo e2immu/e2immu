@@ -206,6 +206,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
+        DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, true,
+                NOT_INVOLVED_DV, parameterInfo.owner.typeInfo);
+        // there is no restriction on immutable, because the link could have been STATICALLY_ASSIGNED
+        if (EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.equals(immutable)) {
+            LOGGER.debug("Assign INDEPENDENT to parameter {}: type is recursively immutable", parameterInfo);
+            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
+            return DONE;
+        }
 
         // in the first iteration, no statements have been analysed yet
         if (sharedState.iteration() == 0) {
@@ -273,10 +281,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                             .map(LinkedVariables::fromLinkedVariableToIndependent)
                             .reduce(INDEPENDENT_DV, DV::min);
                     assert linkToFields.lt(INDEPENDENT_DV) : "There should not have been linking to the field: the link has NO_LINK level";
-
-                    DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, true,
-                            NOT_INVOLVED_DV, parameterInfo.owner.typeInfo);
-                    assert immutable.lt(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV) : "There should not have been linking to the field: parameter is recursively immutable";
 
                     if (minHiddenContentImmutable == DV.MAX_INT_DV) {
                         /*

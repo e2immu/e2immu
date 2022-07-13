@@ -307,9 +307,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("External".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             // will only see CM in "go" in iteration 2, as it is analysed before "go" and the constructor
             if ("$1".equals(d.typeInfo().simpleName)) {

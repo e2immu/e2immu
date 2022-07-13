@@ -48,7 +48,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() <= 4 ? "<null-check>" : "null==map.getOrDefault(pos,a)";
+                    String expected = d.iteration() <= 2 ? "<null-check>" : "null==map.getOrDefault(pos,a)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -58,11 +58,11 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 if ("x".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // after breaking
-                        String expected = d.iteration() <= 4 ? "<new:X>" : "new X(a)";
+                        String expected = d.iteration() == 0 ? "<new:X>" : "new X(a)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<new:X>" : "instance type X";
+                        String expected = d.iteration() == 0 ? "<new:X>" : "instance type X";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -74,7 +74,6 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1, 2 -> "<null-check>?\"b\":<m:getOrDefault>";
-                            case 3, 4 -> "<null-check>?\"b\":map.getOrDefault(pos,a)";
                             default -> "null==map.getOrDefault(pos,a)?\"b\":map.getOrDefault(pos,a)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -82,7 +81,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     if (d.statementId().compareTo("1") >= 0) {
-                        String expected = d.iteration() <= 4 ? "<f:map>" : "instance type Map<Integer,String>";
+                        String expected = d.iteration() <= 2 ? "<f:map>" : "instance type Map<Integer,String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
@@ -94,7 +93,6 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "a:-1,pos:-1,this.map:-1,x.s:0,x:-1";
-                            case 3, 4 -> "a:-1,x.s:0,x:-1";
                             default -> "x.s:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -110,7 +108,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
                     case 1, 2 -> "constructor-to-instance@Method_method_0-E;mom@Parameter_s";
                     default -> "condition@Method_method_2:M";
                 };
-                assertDv(d, delay, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, delay, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 String linked = d.iteration() <= 2 ? "a:-1,pos:-1,s:-1,this.map:-1" : "s:0";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
             }
@@ -119,7 +117,7 @@ public class Test_00_Basics_24 extends CommonTestRunner {
             if ("X".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 String delay = d.iteration() == 0 ? "cm@Parameter_s;mom@Parameter_s" : "mom@Parameter_s";
-                assertDv(d.p(0), delay, 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), delay, 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

@@ -69,15 +69,15 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, BIG, "");
+                        assertCurrentValue(d, 12, "");
                         // IMPORTANT: CNN has to wait until we have a flow value for 3 to travel from 3.0.0 to 3
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("3".equals(d.statementId())) {
                         assertCurrentValue(d, 12, "distanceToStartingPoint.get(t)");
                         // this is the value that we cannot avoid: it cannot become NULLABLE because CNN works on the STATICALLY_ASSIGNED
                         // linking and does not wait until there are values!!
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
@@ -102,19 +102,19 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 assertEquals("0", d.statementId());
                 if (d.variable() instanceof ParameterInfo pi && "t".equals(pi.name)) {
-                    String expected = d.iteration() == 0 ? "<m:get>" : "nullable instance type T/*@Identity*/";
+                    String expected = d.iteration() <= 2 ? "<m:get>" : "nullable instance type T/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().hasEvaluation());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     String linked = d.iteration() == 0 ? "NOT_YET_SET" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("currentDistanceToT".equals(d.variableName())) {
-                    String expected = d.iteration() == 0 ? "<m:get>" : "distanceToStartingPoint.get(t)";
+                    String expected = d.iteration() <= 2 ? "<m:get>" : "distanceToStartingPoint.get(t)";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
                 if (d.variable() instanceof This thisVar && "$1".equals(thisVar.typeInfo.simpleName)) {
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -122,8 +122,8 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof This thisVar && "WGSimplified_0".equals(thisVar.typeInfo.simpleName)) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    String linked = d.iteration() == 0 ? "currentDistanceToT:-1,d:-1,distanceToN:-1,this.neutral:-1" : "";
+                    assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    String linked = d.iteration() <= 2 ? "currentDistanceToT:-1,d:-1,distanceToN:-1,this.neutral:-1" : "";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo.name)) {
@@ -139,17 +139,18 @@ public class Test_63_WGSimplified extends CommonTestRunner {
                 if ("3.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "currentDistanceToT={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}, dependsOn={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, distanceToStartingPoint={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, neutral={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=not_null:5, read=true:1}, node={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, nodeMap={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=nullable:1}, t={modified in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, not null in context=de:currentDistanceToT@Method_accept_0-E;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C}, this={modified in context=cm@Parameter_w1;cm@Parameter_w2;initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C;link@NOT_YET_SET, read=true:1}";
+                        case 1, 2 -> "currentDistanceToT={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=initial:this.neutral@Method_accept_0-C, read=true:1}, dependsOn={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=nullable:1}, distanceToStartingPoint={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=initial:this.neutral@Method_accept_0-C}, neutral={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=not_null:5, read=true:1}, node={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=nullable:1}, nodeMap={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=nullable:1}, t={modified in context=initial:this.neutral@Method_accept_0-C, not null in context=initial:this.neutral@Method_accept_0-C}, this={modified in context=initial:this.neutral@Method_accept_0-C, read=true:1}";
                         default -> "currentDistanceToT={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=content_not_null:13, read=true:1}, dependsOn={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=nullable:1}, distanceToStartingPoint={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=not_null:5}, neutral={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=not_null:5, read=true:1}, node={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=nullable:1}, nodeMap={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=nullable:1}, t={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, not null in context=not_null:5}, this={modified in context=initial:t@Method_recursivelyComputeLinks_1-E;initial:this.nodeMap@Method_recursivelyComputeLinks_1-C, read=true:1}";
                     };
                     assertEquals(expected, d.statementAnalysis().propertiesFromSubAnalysersSortedToString());
 
-                    assertEquals(d.iteration() >= BIG, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
+                    assertEquals(d.iteration() >= 12, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().isDone());
                 }
             }
             if ("accept".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
                 assertEquals("0", d.statementId());
-                assertEquals(d.iteration() > BIG, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() >= 12, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
         testClass("WGSimplified_0", 6, 2, new DebugConfiguration.Builder()

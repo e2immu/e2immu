@@ -69,9 +69,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 VariableInfo vi = d.getReturnAsVariable();
                 if (d.iteration() == 0) {
                     assertTrue(vi.isDelayed());
-                } else if (d.iteration() <= 2) {
+                } else if (d.iteration() <= 1) {
                     assertTrue(d.result().analysisStatus().isProgress());
-                } else if (d.iteration() == 3) {
+                } else if (d.iteration() == 2) {
                     // one more iteration because EXT_IMMUTABLE on "this"
                     assertSame(DONE, d.result().analysisStatus());
                 } else fail();

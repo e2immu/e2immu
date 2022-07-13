@@ -1209,6 +1209,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
                 if (!eventual && modified.isDelayed()) {
+
+                    // FIXME it may not be necessary to wait here: if the field is exposed by a method, it is completely irrelevant whether there is a local modification or not
                     LOGGER.debug("Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
                     causesFields = causesFields.merge(modified.causesOfDelay());
                     continue;

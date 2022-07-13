@@ -127,8 +127,9 @@ public interface TypeAnalysis extends Analysis {
                 return dv;
             }
             case PARTIAL_IMMUTABLE, PARTIAL_CONTAINER -> {
-                assert !getTypeInfo().shallowAnalysis() : "Only used in CTA, type is " + getTypeInfo();
-                return getPropertyFromMapDelayWhenAbsent(property);
+                boolean doNotDelay = getTypeInfo().shallowAnalysis();
+                return doNotDelay ? getPropertyFromMapNeverDelay(property)
+                        : getPropertyFromMapDelayWhenAbsent(property);
             }
             case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
                 // ensure that we do not throw an exception

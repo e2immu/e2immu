@@ -1533,6 +1533,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
+            // FIXME should we filter on those that do not depend on the field's immutability?
         }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         // IMPORTANT: use reduce, do not use filter(isDelayed).findFirst(), because mom delay has to pass (e.g. Modified_19)
 

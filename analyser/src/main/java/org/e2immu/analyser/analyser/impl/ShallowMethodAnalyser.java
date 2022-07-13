@@ -313,7 +313,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         // check formal return type
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-        DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getProperty(Property.CONTAINER);
+        DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getPropertyFromMapNeverDelay(Property.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(Property.CONTAINER);
         DV formal = MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
         if (MultiLevel.CONTAINER_DV.equals(formal)) return MultiLevel.CONTAINER_DV;
@@ -351,15 +351,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private CausesOfDelay computeParameterModified(ParameterAnalysisImpl.Builder builder) {
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.MODIFIED_VARIABLE);
-        DV typeContainer = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo).getProperty(Property.CONTAINER);
+        TypeAnalysis ownerAnalysis = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo);
+        DV typeContainer = ownerAnalysis.getPropertyFromMapNeverDelay(Property.CONTAINER);
 
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_VARIABLE);
         if (inMap.isDelayed()) {
             DV value;
             if (typeContainer.equals(MultiLevel.CONTAINER_DV)) {
                 value = DV.FALSE_DV;
-            } else if (typeContainer.isDelayed()) {
-                value = typeContainer;
             } else if (override.isDone()) {
                 value = override;
             } else {
@@ -434,7 +433,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV returnValueIndependent = computeMethodIndependentReturnValue();
 
         // typeIndependent is set by hand in AnnotatedAPI files
-        DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.INDEPENDENT);
+        DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getPropertyFromMapNeverDelay(Property.INDEPENDENT);
         DV bestOfOverrides = bestOfOverrides(Property.INDEPENDENT);
         return returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
     }

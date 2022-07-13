@@ -31,9 +31,15 @@ public class ExplicitConstructorInvocation_12 {
         }
     }
 
-    record Primitives(Expression bitwiseAnd) {
+    static class Primitives {
+        private Expression bitwiseAnd;
+
         public MethodInfo bitwiseAndOperatorInt() {
             return new MethodInfo("&", bitwiseAnd);
+        }
+
+        public void setBitwiseAnd(Expression bitwiseAnd) {
+            this.bitwiseAnd = bitwiseAnd;
         }
     }
 
@@ -85,6 +91,11 @@ public class ExplicitConstructorInvocation_12 {
             this.precedence = precedence;
             this.operator = Objects.requireNonNull(operator);
             this.primitives = primitives;
+        }
+
+        // method here to ensure that primitives is not transparent
+        MethodInfo getBitwiseAnd() {
+            return primitives == null ? null : primitives.bitwiseAndOperatorInt();
         }
     }
 

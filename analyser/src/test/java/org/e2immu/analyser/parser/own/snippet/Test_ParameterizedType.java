@@ -492,7 +492,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
-                            case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
+                            case 1 -> "<vp:TypeInfo:break_imm_delay@Method_find;cm@Parameter_fqn;mom@Parameter_fqn>";
                             default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -515,7 +515,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(3), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("find".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
@@ -524,8 +524,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("TypeInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("ParameterizedType_4", 1, 3,

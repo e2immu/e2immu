@@ -879,7 +879,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("3".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
                             String expectLinked = d.iteration() == 0 ? "data:-1,node.data:-1,node:-1,this.root:-1"
-                                    : "data:3,node.data:2,node:2,this.root:2";
+                                    : "data:4,node.data:2,node:2,this.root:2";
                             assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "initial:data@Method_add_2-E;initial:node@Method_add_1.0.1.1.0-C;initial:s@Method_add_1.0.1.1.0-E";
@@ -891,7 +891,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         if ("4".equals(d.statementId())) {
                             assertEquals(value, d.currentValue().toString());
                             String linkedVars = d.iteration() == 0 ? "data:-1,node.data:-1,node:-1,this.root:-1"
-                                    : "data:3,node.data:2,node:2,this.root:2";
+                                    : "data:4,node.data:2,node:2,this.root:2";
                             assertEquals(linkedVars, d.variableInfo().getLinkedVariables().toString());
                             String expected = switch (d.iteration()) {
                                 case 0 -> "initial:data@Method_add_2-E;initial:node@Method_add_1.0.1.1.0-C;initial:s@Method_add_1.0.1.1.0-E";
@@ -1011,7 +1011,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                 String linked = d.iteration() == 0 ? "data:-1,node.data:-1,node:-1,this.root:-1"
-                        : "data:3,node.data:2,this.root:2";
+                        : "data:4,node.data:2,this.root:2";
                 assertEquals(linked, d.fieldAnalysis().getLinkedVariables().toString());
                 String expected = switch (d.iteration()) {
                     case 0 -> "link@Field_map";

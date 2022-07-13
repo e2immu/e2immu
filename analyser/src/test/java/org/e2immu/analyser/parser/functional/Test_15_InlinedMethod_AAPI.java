@@ -302,7 +302,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD_ALT_TEMP);
 
-                String expected = d.iteration() <= 1 ? "<m:apply>" : "/*inline apply*/e.variables().stream()";
+                String expected = d.iteration() == 0 ? "<m:apply>" : "/*inline apply*/e.variables().stream()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("variables".equals(d.methodInfo().name)) {
@@ -331,7 +331,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertEquals("compare", d.methodInfo().methodResolution.get().methodsOfOwnClassReachedSorted());
                 assertEquals("", d.methodInfo().methodResolution.get().callCycleSorted());
 
-                assertDv(d, 15, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         testClass("InlinedMethod_11", 1, 5, new DebugConfiguration.Builder()
@@ -461,7 +461,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         // both warnings potential null pointer, for arguments methods(), constructors()
         // warnings are present/absent depending on the current implementation
-        testClass("InlinedMethod_15", 0, 2, new DebugConfiguration.Builder()
+        testClass("InlinedMethod_15", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
