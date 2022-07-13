@@ -299,6 +299,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         return minHiddenContentImmutable.causesOfDelay();
                     }
                     /*
+                    TODO see also ConstructorCall.computeIndependentFromComponents
+
                     the immutable level of parameter's type in the hidden content
                     0 -> mutable, E1 --> @Independent1
                     1 -> E2Immutable --> @Independent2

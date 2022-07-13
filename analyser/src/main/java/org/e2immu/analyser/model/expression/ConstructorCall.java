@@ -280,6 +280,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             if (immutableLevel == 0) return DEPENDENT_DV;
             return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
         }
+        // TODO shouldn't we use the same method as in CPA.analyseIndependentNoAssignment??
         int parameterLevel = MultiLevel.level(independentOnParameter); // 0 = @Independent1
         int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
         return MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);

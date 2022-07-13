@@ -269,6 +269,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
             }
+            // explains why we don't have an eventually E2Immutable type:
+            if ("get".equals(d.methodInfo().name) && params == 1) {
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

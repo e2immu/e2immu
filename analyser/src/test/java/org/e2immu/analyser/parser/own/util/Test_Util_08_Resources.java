@@ -109,7 +109,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("name".equals(d.variableName())) {

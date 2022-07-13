@@ -14,14 +14,18 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
 
-@E2Container(after = "frozen")
+/*
+to make this class @E2Container, we have to secure the get() methods
+and the visitor by exposing copied lists, rather than the ones belonging to the fields.
+ */
+@E1Container(after = "frozen")
 public class Trie<T> extends Freezable {
 
     private final TrieNode<T> root = new TrieNode<>();

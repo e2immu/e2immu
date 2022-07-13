@@ -97,10 +97,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -110,7 +110,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = d.iteration() <= 35 ? "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                    : "accept:3,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                                    : "accept:4,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:4";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("0".equals(d.statementId())) {
@@ -126,17 +126,27 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String lvs = d.iteration() <= 35 ? "accept:-1,copy.nodeMap:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "accept:3,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
+                                : "accept:4,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:4";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     assertEquals("copyRemove", pi.owner.name);
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() == 0 ? "newDependsOn:-1,node.dependsOn:-1,node:-1"
+                                : d.iteration() < 34 ? "newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
+                                : "newDependsOn:4,node.dependsOn:4,node:4,t:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 34, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        String linked = d.iteration() < 36 ? "copy.nodeMap:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
+                                : "copy.nodeMap:4,copy:4,newDependsOn:4,node.dependsOn:4,node:4,t:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 34, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 34, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 36, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
