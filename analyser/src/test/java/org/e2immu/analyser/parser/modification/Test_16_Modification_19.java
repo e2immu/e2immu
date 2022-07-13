@@ -76,7 +76,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         String link = switch (d.iteration()) {
-                            case 0, 1 -> "c:-1";
+                            case 0 -> "c:-1";
                             default -> "c:2";
                         };
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
@@ -87,14 +87,14 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "initial:this.s2@Method_example1_0-C";
-                            case 1 -> "cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;de:c.set@Method_example1_2-E;de:c@Method_example1_2-E;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
+                            case 1 -> "cm@Parameter_setC;mom@Parameter_setC";
                             case 2 -> "break_mom_delay@Parameter_setC;cm@Parameter_c;cm@Parameter_d;cm@Parameter_setC;de:c.set@Method_example1_2-E;de:c@Method_example1_2-E;initial:this.s2@Method_example1_0-C;mom@Parameter_setC";
                             default -> "xxx";
                         };
                         assertCurrentValue(d, 3, expectedDelay, "new C1(s2)");
 
                         String link = switch (d.iteration()) {
-                            case 0, 1 -> "this.s2:-1";
+                            case 0 -> "this.s2:-1";
                             default -> "this.s2:2";
                         };
                         assertEquals(link, d.variableInfo().getLinkedVariables().toString());
@@ -112,7 +112,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String links = d.iteration() <= 1 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
+                        String links = d.iteration() == 0 ? "c:-1,this.s2:-1" : "c:2,this.s2:2";
                         assertEquals(links, d.variableInfo().getLinkedVariables().toString());
 
                         assertNotNull(fr.scopeVariable);
@@ -172,7 +172,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
 
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };

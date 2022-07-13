@@ -64,22 +64,22 @@ public class Test_Independent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodAnalyserStream".equals(d.methodInfo().name)) {
                 if ("AnalyserContext".equals(d.methodInfo().typeInfo.simpleName)) {
-                    assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                    assertDv(d, BIG, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
             if ("getMethodInfo".equals(d.methodInfo().name) && "MethodAnalyser".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, BIG, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 18, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 18, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, BIG, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         testClass("Independent_4", 0, 4, new DebugConfiguration.Builder()

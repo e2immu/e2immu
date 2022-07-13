@@ -1132,7 +1132,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), whenEXFails);
         }
 
-        // this group of code offers a shortcut
+        /*
+         this group of code offers a shortcut, see e.g. Independent_4, MethodInfo.
+         It takes a long time to declare the field "names" @NotModified, but there as a method
+         exposing it... so no point in waiting!!
+         */
         AnalysisStatus negativeOrEventualFields = negativeAndEventuallyImmutableFields(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
         if (negativeOrEventualFields != null) return negativeOrEventualFields;
         AnalysisStatus negativeConstructors = negativeConstructors(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
@@ -1210,9 +1214,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 LOGGER.debug("Field {} is guarded by preconditions", fieldFQN);
 
             } else if (!isPrimitive) {
-                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
-                        && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
-
                 DV modified = fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
@@ -1236,6 +1237,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
                 // RULE 2: ALL NON-TRANSPARENT NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
+                    boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
+                            && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                     if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
                         throw new UnsupportedOperationException("Already in negative");
                     }
@@ -1430,7 +1433,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             } else if (!isPrimitive && !typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
                 boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
-                        && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
+                        && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
                         LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +

@@ -239,9 +239,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<null-check>" : "null==forwardInfo.guide";
+                    String expect = d.iteration() <= 1 ? "<null-check>" : "null==forwardInfo.guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -253,7 +253,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     DV exec = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
-                    if (d.iteration() == 0) {
+                    if (d.iteration() <= 1) {
                         assertTrue(exec.isDelayed());
                     } else {
                         assertEquals(FlowData.ALWAYS, exec);
@@ -358,7 +358,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -426,16 +426,16 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("Guide".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
                 assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("GuideOnStack".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);

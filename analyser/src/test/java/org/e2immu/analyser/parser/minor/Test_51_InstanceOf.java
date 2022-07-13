@@ -661,13 +661,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
                     if ("ne".equals(fr.scope.toString())) {
                         if ("2.0.0".equals(d.statementId())) {
-                            assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     }
                 }
                 if ("ne".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 3
+                        String expected = d.iteration() <= 1
                                 ? "<vp:expression:container@Record_Negation>/*(Negation)*/"
                                 : "expression/*(Negation)*/";
                         assertEquals(expected, d.currentValue().toString());
@@ -682,8 +682,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -697,11 +697,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("expression".equals(d.fieldInfo().name)) {
                 assertEquals("Negation", d.fieldInfo().owner.simpleName);
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
-                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

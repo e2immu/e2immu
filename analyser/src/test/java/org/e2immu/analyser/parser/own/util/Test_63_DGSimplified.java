@@ -92,15 +92,15 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<v:copy>" : "instance type DGSimplified_0<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, BIG, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -108,13 +108,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo.name)) {
                     if ("copy".equals(fr.scope.toString())) {
                         if ("0.0.1".equals(d.statementId())) {
-                            assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = d.iteration() <= 35 ? "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
                                     : "accept:3,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("0".equals(d.statementId())) {
-                            assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else fail("Scope " + fr.scope);
                 }
@@ -124,7 +124,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertEquals("instance type DGSimplified_0<T>", eval.getValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String lvs = d.iteration() <= 35 ? "accept:-1,copy.nodeMap:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
                                 : "accept:3,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
@@ -133,10 +133,10 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "accept".equals(pi.name)) {
                     assertEquals("copyRemove", pi.owner.name);
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 34, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 34, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -150,7 +150,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() <= 34 ? "<vl:changed>" : "instance type AtomicBoolean";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -248,7 +248,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:3";
+                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:4";
                         assertEquals(linked, eval.getLinkedVariables().toString());
                     }
                 }
@@ -258,13 +258,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:4";
                         assertEquals(linked, eval.getLinkedVariables().toString());
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

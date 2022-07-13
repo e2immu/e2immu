@@ -102,10 +102,10 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                             default -> "null==(strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root).data$3?instance type TrieNode<T>:strings.length>=1?null==node$2.map$0?new TrieNode<>():null==node$2.map$0.get(nullable instance type String)?new TrieNode<>():node$2.map$0.get(nullable instance type String):root";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
                         String lvs = d.iteration() == 0 ? "data:-1,node.data:-1,node.map:-1,this.root:0"
-                                : "data:3,node.data:2,node.map:2,this.root:0";
+                                : "data:4,node.data:2,node.map:2,this.root:0";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -123,9 +123,9 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo.name)) {
                     if ("node".equals(fr.scope.toString())) {
                         if ("4".equals(d.statementId())) {
-                            assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = d.iteration() == 0 ? "data:-1,node.map:-1,node:-1,this.root:-1"
-                                    : "data:3,node.map:2,node:2,this.root:2";
+                                    : "data:4,node.map:2,node:2,this.root:2";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                     } else {
@@ -155,7 +155,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "data".equals(pi.name)) {
                     if ("4".equals(d.statementId())) {
                         String lvs = d.iteration() == 0 ? "node.data:-1,node.map:-1,node:-1,this.root:-1"
-                                : "node.data:3,node.map:3,node:3,this.root:3";
+                                : "node.data:4,node.map:4,node:4,this.root:4";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

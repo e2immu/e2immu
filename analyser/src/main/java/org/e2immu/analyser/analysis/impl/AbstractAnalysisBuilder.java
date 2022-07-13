@@ -79,7 +79,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public DV getPropertyFromMapNeverDelay(Property property) {
-        return properties.getOrDefault(property, property.valueWhenAbsent());
+        DV v = properties.getOrDefaultNull(property);
+        return v == null || v.isDelayed() ? property.falseDv : v;
     }
 
     public void setProperty(Property property, DV i) {

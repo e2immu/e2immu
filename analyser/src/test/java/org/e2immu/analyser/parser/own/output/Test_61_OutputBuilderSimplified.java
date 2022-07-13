@@ -454,7 +454,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_9() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         testClass("OutputBuilderSimplified_9", 0, 0, new DebugConfiguration.Builder()
@@ -595,7 +595,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("list".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);

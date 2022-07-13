@@ -472,7 +472,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("4".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -492,7 +492,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
-                            case 1 -> "<vp:TypeInfo:break_imm_delay@Method_find;cm@Parameter_fqn;mom@Parameter_fqn>";
+                            case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
                             default -> "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -516,7 +516,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("find".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

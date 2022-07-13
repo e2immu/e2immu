@@ -118,7 +118,6 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,bestType:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.arrays:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
                             case 3, 4 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,AnalysisProvider_0.IMMUTABLE:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.arrays:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1,unboundIsMutable:-1";
-                            case 5, 6, 7, 8, 9, 10, 11, 12 -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_0.NOT_INVOLVED_DV:-1,baseValue:0,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType.parameters:-1,parameterizedType:-1,this:-1,typeAnalysis:-1";
                             default -> "AnalysisProvider_0.EFFECTIVELY_E1IMMUTABLE_DV:0,AnalysisProvider_0.EFFECTIVELY_E2IMMUTABLE_DV:1,AnalysisProvider_0.NOT_INVOLVED_DV:1,baseValue:0,dynamicBaseValue:1,dynamicValue:1,parameterizedType.parameters:3,parameterizedType:3,this:2,typeAnalysis:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -213,10 +212,9 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("defaultImmutable".equals(d.methodInfo().name)) {
                 if ("paramValue".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,parameterizedType.parameters:-1,parameterizedType:-1";
-                            case 3, 4, 5, 6, 7, 8 -> "parameterizedType.parameters:-1,parameterizedType:-1";
                             default -> "parameterizedType.parameters:3,parameterizedType:3";
                         };
 
@@ -225,10 +223,9 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "parameterizedType".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "AnalysisProvider_2.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,paramValue:-1,parameterizedType.parameters:-1";
-                            case 3, 4, 5, 6, 7, 8 -> "paramValue:-1,parameterizedType.parameters:-1";
                             default -> "paramValue:3,parameterizedType.parameters:2";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -325,11 +322,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0.parameters:-1,b0:-1";
-                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 -> "b0.parameters:-1,b0:-1";
                             default -> "b0.parameters:3,b0:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 10, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 } else if (d.variable() instanceof This) {
                     if ("1".equals(d.statementId())) {
@@ -346,11 +342,10 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0, 1, 2 -> "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0.parameters:-1,paramValue:-1";
-                            case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 -> "b0.parameters:-1,paramValue:-1";
                             default -> "b0.parameters:2,paramValue:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 10, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 } else if (d.variable() instanceof ParameterInfo pi && "n".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
@@ -380,20 +375,19 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String linked = d.iteration() <= 2
                                 ? "AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV:-1,b0:-1,paramValue:-1"
-                                : d.iteration() <= 14 ? "b0:-1,paramValue:-1"
                                 : "b0:2,paramValue:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 10, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 } else fail("? " + d.variableName());
             }
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     // can only be solved when "a" is fully done, which happens after "b" is fully done
-                    String expected = d.iteration() <= 16 ? "<m:a>"
+                    String expected = d.iteration() <= 4 ? "<m:a>"
                             : "this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
                     assertEquals(expected, d.currentValue().toString());
-                    String linked = d.iteration() <= 17 ? "pt:-1,this:-1" : "this:2";
+                    String linked = d.iteration() <= 5 ? "pt:-1,this:-1" : "this:2";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -404,7 +398,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDelayed());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() <= 14, d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDelayed());
+                    assertEquals(d.iteration() <= 2,
+                            d.statementAnalysis().methodLevelData().linksHaveNotYetBeenEstablished().isDelayed());
                 }
             }
         };
@@ -430,7 +425,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle()); // this one "breaks" the call cycle
 
-                String expected = d.iteration() <= 16 ? "<m:apply>"
+                String expected = d.iteration() <= 4 ? "<m:apply>"
                         : "/*inline apply*/this.sumImmutableLevels(`a0.parameters`.stream().map(instance type $2).reduce(`AnalysisProvider_3.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV`,DV::min))";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
