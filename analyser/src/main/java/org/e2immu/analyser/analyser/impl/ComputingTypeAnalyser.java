@@ -1132,6 +1132,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return delayImmutable(approvedDelays, sharedState.allowBreakDelay(), whenEXFails);
         }
 
+        // this group of code offers a shortcut
+        AnalysisStatus negativeOrEventualFields = negativeAndEventuallyImmutableFields(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+        if (negativeOrEventualFields != null) return negativeOrEventualFields;
+        AnalysisStatus negativeConstructors = negativeConstructors(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+        if (negativeConstructors != null) return negativeConstructors;
+        AnalysisStatus negativeMethods = negativeMethods(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+        if (negativeMethods != null) return negativeMethods;
+
         int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
         CausesOfDelay causesFields = CausesOfDelay.EMPTY;
 
@@ -1196,7 +1204,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL || fieldE2Immutable == MultiLevel.Effective.EVENTUAL_BEFORE) {
                 eventual = true;
                 if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
-                    typeAnalysis.addEventuallyImmutableField(fieldInfo);
+                    throw new UnsupportedOperationException("Already in negative");
                 }
             } else if (typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
                 LOGGER.debug("Field {} is guarded by preconditions", fieldFQN);
@@ -1229,10 +1237,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // RULE 2: ALL NON-TRANSPARENT NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
-                        LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
-                                        "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
-                                typeInfo.fullyQualifiedName, fieldInfo.name);
-                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                        throw new UnsupportedOperationException("Already in negative");
                     }
                 } else {
                     LOGGER.debug("Ignoring private modifier check of {}, self-referencing", fieldFQN);
@@ -1258,9 +1263,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 } else {
                     DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
                     if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-                        LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
-                                typeInfo.fullyQualifiedName);
-                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                        throw new UnsupportedOperationException("Already in negative");
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                     minLevel = Math.min(minLevel, independentLevel);
@@ -1319,9 +1322,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         }
                     }
                     if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-                        LOGGER.debug("{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                                typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                        throw new UnsupportedOperationException("Already in negative");
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                     minLevel = Math.min(minLevel, independentLevel);
@@ -1343,19 +1344,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         } else {
                             DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
                             if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-                                LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
-                                        typeInfo.fullyQualifiedName);
-                                return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                                throw new UnsupportedOperationException("Already in negative");
                             }
                             int independentLevel = MultiLevel.oneLevelMoreFrom(correctedIndependent);
                             minLevel = Math.min(minLevel, independentLevel);
                         }
                     }
                 } else {
-                    // contracted @Modified, see e.g. InlinedMethod_AAPI_3
-                    LOGGER.debug("{} is not an E2Immutable class, because method {} is modifying (even though none of our fields are)",
-                            typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                    return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                    throw new UnsupportedOperationException("Already in negative");
                 }
             } // excluded earlier in approved preconditions for E2: no idea about modification, ignored
         }
@@ -1390,6 +1386,138 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));
         LOGGER.debug("Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
         return doneImmutable(ALT_IMMUTABLE, finalValue, ALT_DONE);
+    }
+
+    private AnalysisStatus negativeAndEventuallyImmutableFields(Property ALT_IMMUTABLE, DV whenEXFails, AnalysisStatus ALT_DONE) {
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
+            FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
+            if (fieldInfo.type.bestTypeInfo() == typeInfo) {
+                continue;
+            }
+            DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
+            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(fieldImmutable);
+            if (fieldImmutable.isDelayed()) {
+                if (fieldIsOfOwnOrInnerClassType(fieldInfo)) {
+                    TypeInfo ownOrInner = fieldInfo.type.typeInfo;
+                    assert ownOrInner != null;
+                    // non-static nested types (inner types such as lambda's, anonymous)
+                    if (ownOrInner == typeInfo) {
+                        fieldE2Immutable = MultiLevel.Effective.EFFECTIVE; // doesn't matter at all
+                    } else {
+                        // inner type, try partial
+                        DV partial = analyserContext.getTypeAnalysis(ownOrInner).getProperty(Property.PARTIAL_IMMUTABLE);
+                        if (partial.isDelayed()) {
+                            continue;
+                        }
+                        fieldE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(partial);
+                    }
+                } else {
+                    // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
+                    // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
+                    ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
+                    if (concreteType != null && concreteType.typeInfo != null &&
+                            concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
+                        fieldE2Immutable = MultiLevel.Effective.EVENTUAL_AFTER; // must follow rules, but is not eventual
+                    }
+                }
+            }
+            boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
+
+            if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL || fieldE2Immutable == MultiLevel.Effective.EVENTUAL_BEFORE) {
+                if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
+                    typeAnalysis.addEventuallyImmutableField(fieldInfo);
+                }
+            } else if (!isPrimitive && !typeAnalysis.getGuardedByEventuallyImmutableFields().contains(fieldInfo)) {
+                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
+                        && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
+                if (fieldInfo.type.typeInfo != typeInfo) {
+                    if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
+                        LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
+                                        "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
+                                typeInfo.fullyQualifiedName, fieldInfo.name);
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private AnalysisStatus negativeConstructors(Property ALT_IMMUTABLE, DV whenEXFails, AnalysisStatus ALT_DONE) {
+        for (MethodAnalyser constructor : myConstructors) {
+            for (ParameterAnalysis parameterAnalysis : constructor.getParameterAnalyses()) {
+                DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                if (independent.isDone()) {
+                    DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                    if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
+                        LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
+                                typeInfo.fullyQualifiedName);
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private AnalysisStatus negativeMethods(Property ALT_IMMUTABLE, DV whenEXFails, AnalysisStatus ALT_DONE) {
+        for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
+            // in the eventual case, we only need to look at the non-modifying methods
+            // calling a modifying method will result in an error
+            if (modified.valueIsFalse()) {
+                if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
+                DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
+
+                ParameterizedType returnType;
+                Expression srv = methodAnalyser.getMethodAnalysis().getSingleReturnValue();
+                if (srv.isDone()) {
+                    // concrete
+                    returnType = srv.returnType();
+                } else {
+                    // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
+                    returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
+                }
+                boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType);
+                if (returnTypePartOfMyself) {
+                    continue;
+                }
+                if (returnTypeImmutable.isDelayed()) {
+                    continue;
+                }
+                MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel2PlusImmutable(returnTypeImmutable);
+                if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
+                    DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
+                    if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                        LOGGER.debug("{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
+                                typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
+                        return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                    }
+                }
+            } else if (modified.valueIsTrue()) {
+                if (typeAnalysis.isEventual()) {
+                    // code identical to that of constructors
+                    for (ParameterAnalysis parameterAnalysis : methodAnalyser.getParameterAnalyses()) {
+                        DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                        if (independent.isDone()) {
+                            DV correctedIndependent = correctIndependentFunctionalInterface(parameterAnalysis, independent);
+                            if (correctedIndependent.equals(MultiLevel.DEPENDENT_DV)) {
+                                LOGGER.debug("{} is not an E2Immutable class, because constructor is @Dependent",
+                                        typeInfo.fullyQualifiedName);
+                                return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                            }
+                        }
+                    }
+                } else {
+                    // contracted @Modified, see e.g. InlinedMethod_AAPI_3
+                    LOGGER.debug("{} is not an E2Immutable class, because method {} is modifying (even though none of our fields are)",
+                            typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
+                    return doneImmutable(ALT_IMMUTABLE, whenEXFails, ALT_DONE);
+                }
+            }
+        }
+        return null;
     }
 
     /*
