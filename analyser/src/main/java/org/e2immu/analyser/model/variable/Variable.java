@@ -113,4 +113,9 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
     }
+
+    /*
+    scope variable or index variable is contained in set?
+     */
+    default boolean containsAtLeastOneOf(Set<? extends Variable> variables) { return false; }
 }

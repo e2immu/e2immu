@@ -20,6 +20,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -145,5 +146,11 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         CausesOfDelay c1 = arrayExpression.causesOfDelay().merge(arrayVariable == null ? CausesOfDelay.EMPTY : arrayVariable.causesOfDelay());
         CausesOfDelay c2 = indexExpression.causesOfDelay().merge(indexVariable == null ? CausesOfDelay.EMPTY : indexVariable.causesOfDelay());
         return c1.merge(c2);
+    }
+
+    @Override
+    public boolean containsAtLeastOneOf(Set<? extends Variable> variables) {
+        return arrayVariable != null && (variables.contains(arrayVariable) || arrayVariable.containsAtLeastOneOf(variables))
+                || indexVariable != null && (variables.contains(indexVariable) || indexVariable.containsAtLeastOneOf(variables));
     }
 }

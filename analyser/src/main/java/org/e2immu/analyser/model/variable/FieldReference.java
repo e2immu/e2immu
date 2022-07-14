@@ -264,4 +264,9 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public CausesOfDelay causesOfDelay() {
         return scope.causesOfDelay().merge(scopeVariable == null ? CausesOfDelay.EMPTY : scopeVariable.causesOfDelay());
     }
+
+    @Override
+    public boolean containsAtLeastOneOf(Set<? extends Variable> variables) {
+        return scopeVariable != null && (variables.contains(scopeVariable) || scopeVariable.containsAtLeastOneOf(variables));
+    }
 }

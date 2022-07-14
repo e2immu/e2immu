@@ -818,7 +818,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         if (!viInitial.valueIsSet()) {
             LinkedVariables lv1 = viInitial.getLinkedVariables();
-            LinkedVariables lv = lv1.isEmpty() ? vic.initialLinkedVariables(): lv1;
+            LinkedVariables lv = lv1.isEmpty() ? vic.initialLinkedVariables() : lv1;
             vic.setValue(initialValue, lv, map, INITIAL);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
@@ -984,7 +984,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (fr.scopeVariable instanceof FieldReference) {
                     RenameVariableResult rvr = renameVariable(fr.scopeVariable, translationMap);
                     if (rvr != null) {
-                        throw new UnsupportedOperationException("Implement!"); // FIXME
+                        throw new UnsupportedOperationException("Implement!");
                     }
                 }
             }
@@ -1476,17 +1476,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     in an "if-else" construct, or the single branch of an "if".
      */
     private boolean oneBranchHasBecomeUnreachable() {
-        if(navigationData.hasSubBlocks()) {
+        if (navigationData.hasSubBlocks()) {
             return navigationData.blocks.get().stream()
                     .anyMatch(optSa -> optSa.isPresent() && optSa.get().flowData().isUnreachable());
         }
         return false;
     }
 
-    private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<LocalVariableReference> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {
+    private Set<Variable> touchedStream(Map<Variable, LinkedVariables> linkedVariablesMap, Set<? extends Variable> newlyCreatedScopeVariables, PrepareMerge prepareMerge) {
         return Stream.concat(newlyCreatedScopeVariables.stream(), Stream.concat(Stream.concat(linkedVariablesMap.keySet().stream(),
                                 linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream())),
-                        variables.stream().map(Map.Entry::getValue).filter(VariableInfoContainer::hasEvaluation)
+                        variables.stream().map(Map.Entry::getValue).filter(vic -> vic.hasEvaluation() ||
+                                        // the following condition is necessary to include fields with a scope in newlyCreatedScopeVariables, see e.g. InstanceOf_16
+                                        vic.current().variable().containsAtLeastOneOf(newlyCreatedScopeVariables))
                                 .map(e -> e.current().variable())))
                 .filter(v -> !prepareMerge.toRemove.contains(v)
                         && !prepareMerge.renames.containsKey(v)
