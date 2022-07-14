@@ -56,7 +56,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     @Override
     public ParameterInfo getParameterInfo() {
-        throw new UnsupportedOperationException();
+        return parameterInfo;
     }
 
     @Override

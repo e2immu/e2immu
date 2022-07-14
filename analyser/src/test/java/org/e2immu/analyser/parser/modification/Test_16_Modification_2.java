@@ -55,7 +55,7 @@ public class Test_16_Modification_2 extends CommonTestRunner {
             String name = d.fieldInfo().name;
             if (name.equals("set2ter")) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 0, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if (name.equals("set2bis")) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
@@ -64,9 +64,9 @@ public class Test_16_Modification_2 extends CommonTestRunner {
         };
 
         testClass("Modification_2", 1, 2, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
 
     }

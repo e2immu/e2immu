@@ -44,6 +44,6 @@ public class InstanceOf_10 {
             x = expression;
             lessThan = false;
         }
-        return lessThan ? x: expression;
+        return lessThan ? x : expression;
     }
 }

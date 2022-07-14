@@ -54,7 +54,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
                         String expectLv = d.iteration() == 0 ? "s:-1,this.s2:0" : "this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
@@ -109,11 +109,11 @@ public class Test_16_Modification_9 extends CommonTestRunner {
         };
 
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-            //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

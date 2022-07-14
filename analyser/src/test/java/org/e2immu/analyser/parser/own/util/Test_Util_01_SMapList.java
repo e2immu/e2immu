@@ -166,9 +166,9 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("immutable".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ReturnVariable) {
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:copyOf>" : COPY_OF_TMP;
+                    String expectValue = d.iteration() <= 1 ? "<m:copyOf>" : COPY_OF_TMP;
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         }
@@ -221,7 +221,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
         }
         if ("copy".equals(name)) {
-            assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
         }
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
@@ -234,10 +234,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {
-            String expect = d.iteration() == 0 ? "<m:immutable>" : "/*inline immutable*/" + COPY_OF_TMP;
+            String expect = d.iteration() <= 1 ? "<m:immutable>" : "/*inline immutable*/" + COPY_OF_TMP;
             assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-            assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 
@@ -253,10 +253,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(SMapList.class), 0, 0, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

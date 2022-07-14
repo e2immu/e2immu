@@ -136,7 +136,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "<m:plusRandom>" : "i+r";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:difference31>" : "instance type int-(instance type int)";
@@ -149,8 +149,8 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
 
         testClass("InlinedMethod_3_3", 0, 0, new DebugConfiguration.Builder()
-            //    .addEvaluationResultVisitor(evaluationResultVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -365,17 +365,17 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                     String expected = d.iteration() <= 2 ? "<new:Collector<Entry<T,Boolean>,UpgradableBooleanMap<T>,UpgradableBooleanMap<T>>>"
                             : "new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->t;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}}";
                     assertEquals(expected, d.currentValue().toString());
-                    assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 }
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("$3".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -400,9 +400,9 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
 
         testClass("InlinedMethod_13", 0, 0, new DebugConfiguration.Builder()
-              //  .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true) // solves all the potential null pointer warnings!
                 .setComputeFieldAnalyserAcrossAllMethods(true).build());

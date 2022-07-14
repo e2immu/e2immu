@@ -712,6 +712,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         The "EXTERNAL_CONTAINER" property can make up for that.
         This method ensures that local variables linked to parameters and fields receive the same treatment.
         See InstanceOf_14 for a practical example.
+
+        InstanceOf_10 is an example where we have to stick with the NOT_CONTAINER value.
          */
         private Variable assignedToFieldOrParameter(EvaluationContext evaluationContext, Variable variable) {
             LinkedVariables linkedVariables = evaluationContext.linkedVariables(variable);

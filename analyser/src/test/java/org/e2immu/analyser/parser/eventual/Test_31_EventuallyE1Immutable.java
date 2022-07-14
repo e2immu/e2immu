@@ -314,14 +314,14 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             if ("EventuallyE1Immutable_3".equals(d.typeInfo().simpleName)) {
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
                 assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{string=null==string}";
+                String expectE2 = d.iteration() <= 2 ? "{}" : "{string=null==string}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertDv(d, 2, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         testClass("EventuallyE1Immutable_3", 0, 0, new DebugConfiguration.Builder()
-         //       .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

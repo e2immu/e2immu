@@ -504,14 +504,14 @@ public class Test_04_Precondition extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "stack".equals(fr.fieldInfo.name)) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pop".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0
-                        ? "Precondition[expression=!<m:isEmpty>, causes=[escape]]"
+                        ? "Precondition[expression=<precondition>, causes=[escape]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
                 if (d.iteration() > 0) assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -519,8 +519,8 @@ public class Test_04_Precondition extends CommonTestRunner {
         };
         testClass("Precondition_7", 0, 0,
                 new DebugConfiguration.Builder()
-                  //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

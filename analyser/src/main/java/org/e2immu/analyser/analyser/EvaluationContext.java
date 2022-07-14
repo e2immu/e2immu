@@ -181,7 +181,7 @@ public interface EvaluationContext {
     }
 
     default DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not implemented in "+getClass());
     }
 
     default ConditionManager getConditionManager() {

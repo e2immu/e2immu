@@ -203,18 +203,19 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         case 1 -> "('['==(<v:firstChar>==<f:ARRAY_BRACKET>?<m:charAt>:<v:firstChar>==<f:MINUS_SUPER>||<v:firstChar>==<f:PLUS_EXTENDS>?signature.charAt(1):<v:firstChar>)?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,<f:ARRAY_BRACKET>,<f:MINUS_SUPER>,<f:PLUS_EXTENDS>,<m:charAt>,<too complex>])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,<v:firstChar>,firstChar$0.0.06,<f:ARRAY_BRACKET>,<f:MINUS_SUPER>,<f:PLUS_EXTENDS>,<too complex>,<m:charAt>,<too complex>])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:<new:Result>";
                         case 2 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?<new:Result>:new Result(primitivePt,1,false)";
                         case 3 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?<new:Result>:<new:Result>:([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
+                        case 4, 5, 6, 7, 8, 9, 10, 11 -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?<m:normalType>:'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
                         default -> "('['==('['==firstChar$0.0.06?signature.charAt(1+firstCharPos$0.0.06):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==firstChar$0.0.06?1+arrays$0.0.06:0):0)>=1?new Result(new ParameterizedType(primitivePt.typeInfo,arrays),arrays+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),arrays,wildCard),signature.indexOf(';')+1,false):([signature.charAt(0),signature.charAt(1),signature.charAt(1+firstCharPos$0.0.06),signature.charAt(1+('['==firstChar$0.0.06?1+firstCharPos$0.0.06:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),arrays$0.0.06,firstChar$0.0.06,instance type boolean])?instance type boolean?null:new Result(`parameterizedType`,`semiColon`+1,`typeNotFoundError`):'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):new Result(primitivePt,1,false)";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 3, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 11, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("iterativelyParseTypes".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 3 ? "<m:from>"
+                    String expected = d.iteration() < 13 ? "<m:from>"
                             : "ParameterizedType_2.from(typeContext,findType,signature.substring(0))";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 4, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() < 14, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
             if ("normalType".equals(d.methodInfo().name)) {
@@ -233,11 +234,11 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         // is used for the first time in this method in 0.0.07.0.0
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("wildCard".equals(d.variableName())) {
@@ -256,29 +257,30 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         }
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.07.0.0".equals(d.statementId())) {
                         String expected2 = switch (d.iteration()) {
                             case 0, 1, 2, 3 -> "<vl:wildCard>";
+                            case 4, 5, 6, 7, 8, 9, 10, 11, 12 -> "<mod:WildCard>";
                             default -> "'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE";
                         };
                         assertEquals(expected2, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 13, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("0.0.07.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ParameterInfo pi && "typeContext".equals(pi.name)) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if (d.variable() instanceof ParameterInfo pi && "signature".equals(pi.name)) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("arrays".equals(d.variableName())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("firstCharPos".equals(d.variableName())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 6, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("primitivePt".equals(d.variableName())) {
@@ -316,12 +318,12 @@ public class Test_ParameterizedType extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String merge = switch (d.iteration()) {
                             case 0 -> "<s:IterativeParsing>";
-                            case 1, 2, 3, 4 -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
+                            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> "'>'==<m:charAt>?instance type IterativeParsing:instance type IterativeParsing";
                             default -> "'>'==signature.charAt((ParameterizedType_2.from(typeContext,findType,signature.substring(0))).nextPos)?instance type IterativeParsing:instance type IterativeParsing";
                         };
                         assertEquals(merge, d.currentValue().toString());
-                        assertEquals(d.iteration() < 5, d.currentValue().isDelayed());
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertEquals(d.iteration() < 14, d.currentValue().isDelayed());
+                        assertDv(d, 14, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("5.0.1".equals(d.statementId())) {
                         assertEquals(expectedIn5, d.currentValue().toString());
@@ -332,9 +334,9 @@ public class Test_ParameterizedType extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("6".equals(d.statementId())) {
-                        String expected = d.iteration() < 5 ? "<s:IterativeParsing>" : "instance type IterativeParsing";
+                        String expected = d.iteration() < 14 ? "<s:IterativeParsing>" : "instance type IterativeParsing";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 14, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -346,28 +348,28 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(3), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 14, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d.p(0), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() <= 4 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/next";
+                String expected = d.iteration() < 14 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/next";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(4), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(4), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(5), 0, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("from".equals(d.methodInfo().name)) {
@@ -376,13 +378,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 4, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() <= 3 ? "<m:from>" : "<undetermined return value>"; // too complex for inline
+                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d.p(1), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() < 13 ? "<m:from>" : "<undetermined return value>"; // too complex for inline
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("primitive".equals(d.methodInfo().name)) {
                 assertFalse(methodResolution.partOfCallCycle());
@@ -401,13 +403,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("TypeContext", d.methodInfo().typeInfo.simpleName);
-                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
@@ -420,8 +422,8 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("NamedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
@@ -429,10 +431,10 @@ public class Test_ParameterizedType extends CommonTestRunner {
         // the other 3 null pointer issues are valid
         testClass("ParameterizedType_2", 4, DONT_CARE,
                 new DebugConfiguration.Builder()
-                    //    .addEvaluationResultVisitor(evaluationResultVisitor)
-                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build());
     }
 
@@ -440,18 +442,18 @@ public class Test_ParameterizedType extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 15, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 21, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 18, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 16, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("ParameterizedType_2", 2, DONT_CARE,
                 new DebugConfiguration.Builder()
-             //           .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

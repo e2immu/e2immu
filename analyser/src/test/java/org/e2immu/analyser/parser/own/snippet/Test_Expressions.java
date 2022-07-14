@@ -70,7 +70,7 @@ public class Test_Expressions extends CommonTestRunner {
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpression.get().toString());
                 }
                 if ("6".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= BIG, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
+                    assertEquals(d.iteration() >= 43, d.statementAnalysis().stateData().conditionManagerForNextStatementStatus().isDone());
                 }
                 if ("6.0.2".equals(d.statementId())) {
                     assertEquals("modified in context=true:1, not null in context=not_null:5, read=true:1",
@@ -123,14 +123,14 @@ public class Test_Expressions extends CommonTestRunner {
                             assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         }
                     } else if ("scope-sum:0".equals(fr.scopeVariable.toString())) {
-                        assertDv(d, 62, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 40, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     } else if ("product".equals(fr.scopeVariable.toString())) {
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     } else fail("Have " + fr.scopeVariable);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("7".equals(d.statementId())) {
-                        assertCurrentValue(d, 72, "expression instanceof Negation?Expressions_0.recursivelyCollectTerms(expression/*(Negation)*/.expression,new ArrayList<>()/*0==this.size()*/):(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.lhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.rhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(expression instanceof ConstantExpression<?>||expression instanceof MethodCall||expression instanceof Sum)");
+                        assertCurrentValue(d, 43, "expression instanceof Negation?Expressions_0.recursivelyCollectTerms(expression/*(Negation)*/.expression,new ArrayList<>()/*0==this.size()*/):(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.lhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(Expressions_0.recursivelyCollectTerms(expression/*(Sum)*/.rhs,terms)||expression instanceof ConstantExpression<?>||expression instanceof MethodCall)&&(expression instanceof ConstantExpression<?>||expression instanceof MethodCall||expression instanceof Sum)");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "rhs".equals(fr.fieldInfo.name)) {
@@ -168,19 +168,19 @@ public class Test_Expressions extends CommonTestRunner {
                         assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 75, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 46, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        assertDv(d, 76, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 47, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.0".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.1".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 76, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 47, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
@@ -192,20 +192,20 @@ public class Test_Expressions extends CommonTestRunner {
             if ("accept6".equals(d.methodInfo().name)) {
                 if ("xEquals".equals(d.variableName())) {
                     if ("01".equals(d.statementId())) {
-                        assertCurrentValue(d, 48, "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)");
+                        assertCurrentValue(d, 40, "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)");
                     }
                     if ("03".equals(d.statementId())) {
-                        assertCurrentValue(d, 48, "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)");
+                        assertCurrentValue(d, 40, "expressionsInX.stream().filter(/*inline test*/e instanceof Equals&&``eq`.lhs` instanceof ConstantExpression<?>&&!(``eq`.lhs` instanceof NullConstant)&&null!=e&&null!=``eq`.lhs`).map(`e/*(Equals)*/.lhs/*(ConstantExpression<?>)*/.t`/*(Number)*/.doubleValue()).findFirst().orElse(null)");
                     }
                 }
                 if ("inequality".equals(d.variableName())) {
                     if ("04.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 53, "new LinearInequalityInOneVariable(b,y,a*xEquals+c,allowEquals)");
+                        assertCurrentValue(d, 40, "new LinearInequalityInOneVariable(b,y,a*xEquals+c,allowEquals)");
                     }
                 }
                 if ("intervalX".equals(d.variableName())) {
                     if ("06".equals(d.statementId())) {
-                        String expected = d.iteration() < 76 ? "<s:Interval>" : "Interval.extractInterval1(expressionsInX)";
+                        String expected = d.iteration() < 47 ? "<s:Interval>" : "Interval.extractInterval1(expressionsInX)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -253,7 +253,7 @@ public class Test_Expressions extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
-                String srv = d.iteration() <= 75 ? "<m:extractInterval1>" : "<undetermined return value>";
+                String srv = d.iteration() <= 46 ? "<m:extractInterval1>" : "<undetermined return value>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("extractInterval2".equals(d.methodInfo().name)) {
@@ -270,7 +270,7 @@ public class Test_Expressions extends CommonTestRunner {
             }
             if ("accept3".equals(d.methodInfo().name)) {
                 assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 76 ? "<m:accept3>" : "<undetermined return value>";
+                String expected = d.iteration() < 47 ? "<m:accept3>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("accept4".equals(d.methodInfo().name)) {
@@ -287,12 +287,12 @@ public class Test_Expressions extends CommonTestRunner {
             }
             if ("accept6".equals(d.methodInfo().name)) {
                 assertDv(d, 18, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 76 ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
+                String expected = d.iteration() < 47 ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("accept1".equals(d.methodInfo().name)) {
-                assertDv(d, 76, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 76 ? "<m:accept1>" : "<undetermined return value>";
+                assertDv(d, 47, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 47 ? "<m:accept1>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -339,11 +339,11 @@ public class Test_Expressions extends CommonTestRunner {
 
         testClass("Expressions_0", 2, 16,
                 new DebugConfiguration.Builder()
-                  //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                   //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                   //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

@@ -87,6 +87,11 @@ public class TestLinkingExpression {
             public int getDepth() {
                 return 0;
             }
+
+            @Override
+            public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
+                return property.falseDv;
+            }
         };
         context = EvaluationResult.from(ec);
     }
@@ -184,7 +189,8 @@ public class TestLinkingExpression {
         MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
 
 
-        assertEquals("{0={1=independent1:3}}", addAll.crossLinks(context.getAnalyserContext()).toString());
+        assertEquals("{java.util.Collections.addAll(java.util.Collection<? super T>,T...):0:c=elements:3}",
+                addAll.crossLinks(context.getAnalyserContext()).toString());
 
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));
