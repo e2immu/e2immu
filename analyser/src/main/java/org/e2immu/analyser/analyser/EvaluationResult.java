@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -681,9 +680,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                 return;
             }
-            if (variable instanceof FieldReference || variable instanceof ParameterInfo) {
+            Variable linkedToFieldOrParameter = assignedToFieldOrParameter(evaluationContext, variable);
+            if (linkedToFieldOrParameter instanceof FieldReference || linkedToFieldOrParameter instanceof ParameterInfo) {
                 // will come back later
-                DV external = getPropertyFromInitial(variable, Property.EXTERNAL_CONTAINER);
+                DV external = getPropertyFromInitial(linkedToFieldOrParameter, Property.EXTERNAL_CONTAINER);
                 if (external.equals(MultiLevel.NOT_CONTAINER_DV) && complain) {
                     Message message = Message.newMessage(evaluationContext.getLocation(EVALUATION), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                     messages.add(message);
@@ -704,6 +704,22 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 messages.add(message);
             }
             setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
+        }
+
+        /*
+        Parameters' CONTAINER value cannot wait -- if the type is delayed, the value will be set to NOT_CONTAINER.
+        (This is decided in the StatementAnalysisImpl.create... methods.)
+        The "EXTERNAL_CONTAINER" property can make up for that.
+        This method ensures that local variables linked to parameters and fields receive the same treatment.
+        See InstanceOf_14 for a practical example.
+         */
+        private Variable assignedToFieldOrParameter(EvaluationContext evaluationContext, Variable variable) {
+            LinkedVariables linkedVariables = evaluationContext.linkedVariables(variable);
+            if (linkedVariables == null) return variable; // variable not yet known
+            return linkedVariables.variablesAssigned()
+                    .filter(v -> v instanceof FieldReference || v instanceof ParameterInfo)
+                    .findFirst()
+                    .orElse(variable);
         }
 
         public Builder assignmentToSelfIgnored(Variable variable) {
@@ -942,7 +958,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public Builder copyChangeData(EvaluationResult result, Variable variable) {
             ChangeData cd = result.changeData.get(variable);
-            if(cd != null) {
+            if (cd != null) {
                 valueChanges.put(variable, cd);
             }
             return this;
