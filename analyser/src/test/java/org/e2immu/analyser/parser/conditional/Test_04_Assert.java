@@ -71,7 +71,7 @@ public class Test_04_Assert extends CommonTestRunner {
             if ("causesOfDelay".equals(d.methodInfo().name) && "NotDelayed".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("SimpleSet.EMPTY:0", d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                    assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
             }
             if ("combine".equals(d.methodInfo().name)) {

@@ -416,7 +416,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public Properties getExternalProperties(Expression valueToWrite) {
         IsVariableExpression ive;
-        if ((ive = valueToWrite.asInstanceOf(IsVariableExpression.class)) != null) {
+        if (valueToWrite.isDelayed()) {
+            // e.g., delayed method call
+            CausesOfDelay delay = valueToWrite.causesOfDelay();
+            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
+                    EXTERNAL_IGNORE_MODIFICATIONS, delay, EXTERNAL_NOT_NULL, delay));
+        }
+        if ((ive = valueToWrite.asInstanceOf(VariableExpression.class)) != null) {
             Variable variable = ive.variable();
             VariableInfo eval = findForReading(variable, true);
             Map<Property, DV> map = new HashMap<>();
@@ -424,12 +430,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 map.put(property, eval.getProperty(property));
             }
             return Properties.of(map);
-        }
-        if (valueToWrite.isDelayed()) {
-            // e.g., delayed method call
-            CausesOfDelay delay = valueToWrite.causesOfDelay();
-            return Properties.of(Map.of(EXTERNAL_IMMUTABLE, delay, EXTERNAL_CONTAINER, delay,
-                    EXTERNAL_IGNORE_MODIFICATIONS, delay, EXTERNAL_NOT_NULL, delay));
         }
         return EXTERNALS_WHEN_ABSENT;
     }

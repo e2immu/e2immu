@@ -65,7 +65,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                     String linked = "this.i:0";
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
             }
         };

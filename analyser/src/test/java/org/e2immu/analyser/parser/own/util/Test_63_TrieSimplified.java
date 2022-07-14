@@ -553,13 +553,13 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                     // here, ENN is computed in the group 'root', 'node'
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
 
                     }
                     // from here on, the return variable is part of the equivalence group
                     // it only receives a value and proper links from iteration 3 onward
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                 }
 
@@ -568,7 +568,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String expect = d.iteration() <= 1 ? "<f:root>" : "root";
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT: the variable is not read in the loop, but we cannot know that in iteration 0
@@ -772,7 +772,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2.0.0".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
-                            case 0, 1-> "strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
+                            case 0, 1 -> "strings.length>=1?<null-check>?<new:TrieNode<T>>:<null-check>?<new:TrieNode<T>>:<m:get>:<f:root>";
                             default -> "instance type TrieNode<T>";
                         };
                         assertEquals(value, d.currentValue().toString());
