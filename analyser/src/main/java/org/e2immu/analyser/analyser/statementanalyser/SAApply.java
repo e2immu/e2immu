@@ -395,7 +395,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 externalProperties, groupPropertyValues);
         // LVs start empty, the changeData.linkedVariables will be added later
         Properties combined;
-        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+        if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in StatementAnalysisImpl.initializeFieldReference
             combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);

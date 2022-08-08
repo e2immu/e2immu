@@ -265,4 +265,17 @@ public class Test_Independent1 extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Data".equals(d.typeInfo().simpleName)) {
+                // new One[size] makes One explicit
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Independent1_7", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .build());
+    }
 }

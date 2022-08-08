@@ -757,7 +757,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     @Override
     public MethodInfo concreteMethod(Variable variable, MethodInfo abstractMethodInfo) {
-        assert abstractMethodInfo.isAbstract();
+        assert abstractMethodInfo.methodInspection.get().isAbstract();
         VariableInfo variableInfo = findForReading(variable, true);
         ParameterizedType type = variableInfo.getValue().returnType();
         if (type.typeInfo != null && !type.typeInfo.isAbstract()) {

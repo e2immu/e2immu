@@ -308,7 +308,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
         ValueExplanation fromSuperTypes = superTypes
-                .filter(TypeInfo::isPublic)
+                .filter(t -> t.typeInspection.get().isPublic())
                 .map(this::getTypeAnalysis)
                 .map(ta -> new ValueExplanation(ta.getProperty(Property.INDEPENDENT),
                         ta.getTypeInfo().fullyQualifiedName))

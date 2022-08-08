@@ -74,7 +74,8 @@ public class TestIsAssignableFromGenerics {
         String PACKAGE = "org.e2immu";
         primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         myComparable = new TypeInfo(PACKAGE, "MyComparable");
         {
@@ -91,29 +92,37 @@ public class TestIsAssignableFromGenerics {
                     .build(IP).getMethodInfo();
             myComparable.typeInspection.set(myComparableInspection
                     .setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addMethod(compareTo)
-                    .build());
+                    .build(null));
         }
         node = new TypeInfo(PACKAGE, "Node");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(node, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(new ParameterizedType(node, List.of()))))
                     .noParent(primitives);
-            node.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            node.typeInspection.set(builder
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setTypeNature(TypeNature.INTERFACE)
+                    .build(null));
         }
         sub1 = new TypeInfo(PACKAGE, "Sub1");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub1, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
-            sub1.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            sub1.typeInspection.set(builder
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setTypeNature(TypeNature.INTERFACE)
+                    .build(null));
         }
         sub2 = new TypeInfo(PACKAGE, "Sub2");
         {
             TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub2, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
-            sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
+            sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC).build(null));
         }
 
         // interface MyList1<T extends Node> extends MyComparable<MyList1<T>>
@@ -134,11 +143,12 @@ public class TestIsAssignableFromGenerics {
             add.methodResolution.set(new MethodResolution.Builder().build());
             myList1.typeInspection.set(builder
                     .setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList1, List.of(new ParameterizedType(t, 0, NONE)))
                     )))
                     .addMethod(add)
-                    .build());
+                    .build(null));
         }
         // interface MyList2<T extends Node> extends MyComparable<MyList2<? super T>>
         myList2 = new TypeInfo(PACKAGE, "MyList2");
@@ -154,7 +164,8 @@ public class TestIsAssignableFromGenerics {
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList2, List.of(new ParameterizedType(t, 0, SUPER)))
                     )))
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
         // interface MyList3<T extends Node> extends MyComparable<MyList3<? extends T>>
         myList3 = new TypeInfo(PACKAGE, "MyList3");
@@ -170,7 +181,8 @@ public class TestIsAssignableFromGenerics {
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(
                             new ParameterizedType(myList3, List.of(new ParameterizedType(t, 0, EXTENDS)))
                     )))
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
     }
 

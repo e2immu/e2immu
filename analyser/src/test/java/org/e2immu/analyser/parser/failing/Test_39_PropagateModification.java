@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.failing.testexample.Consumer_0;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.visitor.*;
@@ -69,7 +70,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         TypeInfo myConsumer = typeContext.getFullyQualified(
                 Consumer_0.class.getCanonicalName() + ".MyConsumer", true);
         MethodInfo methodInfo = myConsumer.findUniqueMethod("accept", 1);
-        assertTrue(methodInfo.isAbstract());
+        assertTrue(methodInfo.methodInspection.get().isAbstract());
         assertTrue(methodInfo.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
         ParameterAnalysis p0 = methodInfo.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
         assertTrue(p0.getProperty(Property.MODIFIED_VARIABLE).isDelayed());
@@ -136,7 +137,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
             TypeInfo map = typeMap.get(Map.class);
             FieldInfo fieldInfo = new FieldInfo(Identifier.constant("test"),
                     typeMap.getPrimitives().charParameterizedType(), "test", system);
-            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder().build());
+            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder(fieldInfo).build(typeMap));
             FieldReference fr1 = new FieldReference(typeMap, fieldInfo);
             FieldReference fr2 = new FieldReference(typeMap, fieldInfo, new VariableExpression(new This(typeMap, map)), map);
             assertEquals(fr1, fr2);
@@ -156,7 +157,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         TypeInfo classWithConsumer = typeContext.getFullyQualified(
                 "org.e2immu.analyser.parser.failing.testexample.PropagateModification_7.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
-        assertTrue(accept.isAbstract());
+        assertTrue(accept.methodInspection.get().isAbstract());
         assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
     }
 
@@ -245,7 +246,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         TypeInfo classWithConsumer = typeContext.getFullyQualified(
                 "org.e2immu.analyser.parser.failing.testexample.PropagateModification_8.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
-        assertTrue(accept.isAbstract());
+        assertTrue(accept.methodInspection.get().isAbstract());
         assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
 
         ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);

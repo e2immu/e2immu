@@ -39,7 +39,7 @@ public class OutputTypeInfo {
         }
         assert insideType != null;
 
-        String[] typeModifiers;
+        List<TypeModifier> typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
         List<MethodInfo> methods;
@@ -55,7 +55,7 @@ public class OutputTypeInfo {
             typeNature = typeInspection.typeNature().toJava();
             isInterface = typeInspection.isInterface();
             isRecord = typeInspection.typeNature() == TypeNature.RECORD;
-            typeModifiers = TypeModifier.sort(typeInspection.modifiers());
+            typeModifiers = minimalModifiers(typeInspection);
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
             methods = typeInspection.methods();
@@ -71,7 +71,7 @@ public class OutputTypeInfo {
             }
         } else {
             typeNature = "class"; // we really have no idea what it is
-            typeModifiers = new String[]{"abstract"};
+            typeModifiers = List.of(TypeModifier.ABSTRACT);
             fields = List.of();
             constructors = List.of();
             methods = List.of();
@@ -103,7 +103,7 @@ public class OutputTypeInfo {
         if (doTypeDeclaration) {
             // the class name
             afterAnnotations
-                    .add(Arrays.stream(typeModifiers).map(mod -> new OutputBuilder().add(new Text(mod)))
+                    .add(typeModifiers.stream().map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
                             .collect(OutputBuilder.joining(Space.ONE)))
                     .add(Space.ONE).add(new Text(typeNature))
                     .add(Space.ONE).add(new Text(typeInfo.simpleName));
@@ -150,6 +150,49 @@ public class OutputTypeInfo {
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
+    }
+
+    private static List<TypeModifier> minimalModifiers(TypeInspection typeInspection) {
+        Set<TypeModifier> modifiers = typeInspection.modifiers();
+        List<TypeModifier> list = new ArrayList<>();
+
+        // access
+        Inspection.Access access = typeInspection.getAccess();
+        Inspection.Access enclosedAccess = typeInspection.typeInfo().packageNameOrEnclosingType.isLeft()
+                ? Inspection.Access.PUBLIC : typeInspection.typeInfo().packageNameOrEnclosingType.getRight().typeInspection.get().getAccess();
+        if (enclosedAccess != Inspection.Access.PRIVATE && access != Inspection.Access.PACKAGE) {
+            list.add(typeModifier(access));
+        } // else there really is no point anymore to show any access modifier, let's keep it brief
+
+        // 'abstract', 'static'
+        if (typeInspection.typeNature() == TypeNature.CLASS) {
+            if (modifiers.contains(TypeModifier.ABSTRACT)) {
+                list.add(TypeModifier.ABSTRACT);
+            }
+            if (modifiers.contains(TypeModifier.STATIC)) {
+                list.add(TypeModifier.STATIC);
+            }
+            if (modifiers.contains(TypeModifier.FINAL)) {
+                list.add(TypeModifier.FINAL);
+            }
+            if (modifiers.contains(TypeModifier.SEALED)) {
+                list.add(TypeModifier.SEALED);
+            }
+            if (modifiers.contains(TypeModifier.NON_SEALED)) {
+                list.add(TypeModifier.NON_SEALED);
+            }
+        } // else: records, interfaces, annotations, primitives are always static, never abstract
+
+        return list;
+    }
+
+    private static TypeModifier typeModifier(Inspection.Access access) {
+        return switch (access) {
+            case PUBLIC -> TypeModifier.PUBLIC;
+            case PROTECTED -> TypeModifier.PROTECTED;
+            case PRIVATE -> TypeModifier.PRIVATE;
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     private static OutputBuilder outputFieldsAsParameters(Qualification qualification, List<FieldInfo> fields) {

@@ -252,7 +252,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         TranslationMap translationMap = translationMapBuilder.setRecurseIntoScopeVariables(true).build();
         List<FieldInfo> visibleFields = eciType.visibleFields(analyserContext);
         for (FieldInfo fieldInfo : visibleFields) {
-            if (!fieldInfo.isStatic(analyserContext)) {
+            FieldInspection fieldInspection = analyserContext.getFieldInspection(fieldInfo);
+            if (!fieldInspection.isStatic()) {
                 boolean assigned = false;
                 for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {

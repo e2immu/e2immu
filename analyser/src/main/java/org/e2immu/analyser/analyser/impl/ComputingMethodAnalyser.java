@@ -96,9 +96,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (block.isEmpty()) {
             firstStatementAnalyser = null;
         } else {
-            boolean inSyncBlock = methodInfo.isSynchronized()
+            MethodInspection methodInspection = methodInfo.methodInspection.get();
+            boolean inSyncBlock = methodInspection.isSynchronized()
                     || methodInfo.inConstruction()
-                    || methodInfo.methodInspection.get().isStaticBlock();
+                    || methodInspection.isStaticBlock();
             firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements(), "", true, inSyncBlock);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);

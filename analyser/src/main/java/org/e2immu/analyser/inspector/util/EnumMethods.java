@@ -72,8 +72,8 @@ public class EnumMethods {
         var nameBuilder = new MethodInspectionImpl.Builder(enumType, "name")
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType())
-                .addModifier(MethodModifier.PUBLIC)
-                .addModifier(MethodModifier.ABSTRACT) // no code -> shallow method analyser
+                .setAccess(Inspection.Access.PUBLIC)
+                .setAbstractMethod()
                 .addAnnotation(notNullContract)
                 .addAnnotation(eRContainer)
                 .addAnnotation(notModifiedContract);
@@ -97,7 +97,7 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(valuesReturnType)
                 .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .setInspectedBlock(valuesBlock);
         valuesBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(valuesBuilder);
@@ -109,7 +109,7 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(enumType.asParameterizedType(typeContext))
                 .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(
@@ -127,7 +127,7 @@ public class EnumMethods {
             valueOfBuilder.setInspectedBlock(codeBlock);
         } else {
             // we have no idea what the immutability will be!
-            valueOfBuilder.addModifier(MethodModifier.ABSTRACT); // no code
+            valueOfBuilder.setAbstractMethod();
         }
 
         typeContext.typeMap.registerMethodInspection(valueOfBuilder);
@@ -221,13 +221,14 @@ public class EnumMethods {
         var builder = typeContext.typeMap.add(lambdaType, BY_HAND);
         builder.setTypeNature(TypeNature.CLASS)
                 .setSynthetic(true)
+                .setAccess(Inspection.Access.PRIVATE)
                 .addInterfaceImplemented(functionalInterfaceType)
                 .noParent(primitives);
 
         var predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
                 .setSynthetic(true)
                 .setReturnType(primitives.booleanParameterizedType())
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addAnnotation(notModifiedContract);
 
         var predicate0Builder = predicate.newParameterInspectionBuilder

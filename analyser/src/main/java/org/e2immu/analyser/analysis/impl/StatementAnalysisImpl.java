@@ -1785,7 +1785,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference);
         boolean wroteExtIgnMod;
-        if (myself && !fieldReference.fieldInfo.isStatic()) {
+        if (myself && !fieldReference.fieldInfo.fieldInspection.get().isStatic()) {
             // captures self-referencing instance fields (but not static fields, as in Enum_)
             // a similar check exists in SAApply
             combined = evaluationContext.ensureMyselfValueProperties(properties);
@@ -1885,7 +1885,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
         if (ignoreModifications.equals(IGNORE_MODS_DV)
                 && type.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
+                && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
             properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV));
             properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_1_DV));
         } else {

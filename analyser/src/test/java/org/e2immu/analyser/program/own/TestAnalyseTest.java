@@ -37,7 +37,7 @@ public class TestAnalyseTest {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo trie = typeMap.get(Trie.class);
-            assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, trie.typeAnalysis.get().getProperty(Property.IMMUTABLE));
 
             TypeInfo trieNode = trie.typeInspection.get().subTypes().stream()
                     .filter(st -> "TrieNode".equals(st.simpleName)).findFirst().orElseThrow();

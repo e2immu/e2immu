@@ -12,31 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.resolver.testexample;
 
-import com.github.javaparser.ast.Modifier;
+public interface Basics_6 {
 
-public enum FieldModifier {
-
-    PRIVATE, PUBLIC, PROTECTED,
-
-    STATIC,
-
-    FINAL,
-    VOLATILE,
-
-    TRANSIENT,
-    ;
-
-
-    public static FieldModifier from(Modifier m) {
-        return FieldModifier.valueOf(m.getKeyword().toString().toUpperCase());
-    }
-
-    public String toJava() {
-        return name().toLowerCase();
-    }
-
-    public final static FieldModifier[] NON_ACCESS_SORTED = {STATIC, FINAL, VOLATILE, TRANSIENT};
-
+    String name();
 }

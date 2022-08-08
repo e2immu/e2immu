@@ -12,31 +12,36 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
-
-import com.github.javaparser.ast.Modifier;
-
-public enum FieldModifier {
-
-    PRIVATE, PUBLIC, PROTECTED,
-
-    STATIC,
-
-    FINAL,
-    VOLATILE,
-
-    TRANSIENT,
-    ;
+package org.e2immu.analyser.parser.independence.testexample;
 
 
-    public static FieldModifier from(Modifier m) {
-        return FieldModifier.valueOf(m.getKeyword().toString().toUpperCase());
+import java.util.Map;
+
+public interface Independent1_7 {
+    interface MethodInfo {
+        String name();
+
+        String fullyQualifiedName();
     }
 
-    public String toJava() {
-        return name().toLowerCase();
-    }
+    void visit(Data data);
 
-    public final static FieldModifier[] NON_ACCESS_SORTED = {STATIC, FINAL, VOLATILE, TRANSIENT};
+    record Data(int iteration,
+                MethodInfo methodInfo,
+                Map<String, Integer> statuses) {
+
+        public Data {
+            assert methodInfo != null;
+        }
+
+        public String label() {
+            return methodInfo.name();
+        }
+
+        public Integer getStatus(String key) {
+            if (statuses == null) return null;
+            return statuses.get(key);
+        }
+    }
 
 }

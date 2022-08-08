@@ -22,14 +22,11 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -132,8 +129,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet() && !asParameter) {
             FieldInspection inspection = this.fieldInspection.get();
-            outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers()))
-                    .map(mod -> new OutputBuilder().add(new Text(mod)))
+            outputBuilder.add(minimalModifiers(inspection).stream()
+                    .map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
                     .collect(OutputBuilder.joining(Space.ONE)));
             if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
         }
@@ -155,14 +152,27 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 Guide.generatorForAnnotationList()));
     }
 
-    public boolean isStatic() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
+    private List<FieldModifier> minimalModifiers(FieldInspection fieldInspection) {
+        Set<FieldModifier> modifiers = fieldInspection.getModifiers();
+        List<FieldModifier> list = new ArrayList<>();
+        Inspection.Access access = fieldInspection.getAccess();
+        Inspection.Access ownerAccess = owner.typeInspection.get().getAccess();
+        if(access.le(ownerAccess) && access != Inspection.Access.PACKAGE) {
+            list.add(toFieldModifier(access));
+        }
+        for (FieldModifier fm : FieldModifier.NON_ACCESS_SORTED) {
+            if (modifiers.contains(fm)) list.add(fm);
+        }
+        return list;
     }
 
-    public boolean isStatic(InspectionProvider inspectionProvider) {
-        FieldInspection inspection = inspectionProvider.getFieldInspection(this);
-        assert inspection != null : "No field inspection known for " + fullyQualifiedName();
-        return inspection.getModifiers().contains(FieldModifier.STATIC);
+    private static FieldModifier toFieldModifier(Inspection.Access access) {
+        return switch(access) {
+            case PUBLIC -> FieldModifier.PUBLIC;
+            case PRIVATE -> FieldModifier.PRIVATE;
+            case PROTECTED -> FieldModifier.PROTECTED;
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     @Override
@@ -188,20 +198,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public boolean isExplicitlyFinal() {
         return fieldInspection.get().getModifiers().contains(FieldModifier.FINAL);
-    }
-
-    public boolean isAccessibleOutsideOfPrimaryType() {
-        return !fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) &&
-                !owner.isPrivateOrEnclosingIsPrivate();
-    }
-
-    public boolean isPublic() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.PUBLIC) &&
-                owner.isPublic();
-    }
-
-    public boolean isPrivate() {
-        return fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE);
     }
 
     @Override

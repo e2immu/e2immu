@@ -54,11 +54,13 @@ public class TestParameterizedType {
 
         primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
         primitives.integerTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.integerTypeInfo(), BY_HAND)
                 .noParent(primitives)
                 .setTypeNature(TypeNature.CLASS)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         // Map<K, V>
         map = new TypeInfo(PACKAGE, "Map");
@@ -68,9 +70,10 @@ public class TestParameterizedType {
 
             TypeInspection.Builder mapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addTypeParameter(mapK)
                     .addTypeParameter(mapV);
-            map.typeInspection.set(mapInspection.build());
+            map.typeInspection.set(mapInspection.build(null));
         }
         // HashMap<K, V> implements Map<K, V>
         hashMap = new TypeInfo(PACKAGE, "HashMap");
@@ -80,12 +83,13 @@ public class TestParameterizedType {
 
             TypeInspection.Builder hashMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addInterfaceImplemented(new ParameterizedType(map,
                             List.of(new ParameterizedType(hashMapK, 0, NONE),
                                     new ParameterizedType(hashMapV, 0, NONE))))
                     .addTypeParameter(hashMapK)
                     .addTypeParameter(hashMapV);
-            hashMap.typeInspection.set(hashMapInspection.build());
+            hashMap.typeInspection.set(hashMapInspection.build(null));
         }
         // StringMap<V> extends HashMap<String, V>
         stringMap = new TypeInfo(PACKAGE, "StringMap");
@@ -96,14 +100,17 @@ public class TestParameterizedType {
                     .setParentClass(new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType(),
                             new ParameterizedType(stringMapV, 0, NONE))))
                     .addTypeParameter(stringMapV);
-            stringMap.typeInspection.set(stringMapInspection.build());
+            stringMap.typeInspection.set(stringMapInspection
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
         // Table extends StringMap<Integer>
         table = new TypeInfo(PACKAGE, "Table");
         {
             TypeInspection.Builder tableInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .setParentClass(new ParameterizedType(stringMap, List.of(primitives.integerTypeInfo().asParameterizedType(IP))));
-            table.typeInspection.set(tableInspection.build());
+            table.typeInspection.set(tableInspection
+                    .setAccess(Inspection.Access.PUBLIC).build(null));
         }
         function = new TypeInfo(PACKAGE, "Function");
         {
@@ -119,11 +126,12 @@ public class TestParameterizedType {
             TypeInspection.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
                     .noParent(primitives)
                     .setTypeNature(TypeNature.INTERFACE)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addAnnotation(primitives.functionalInterfaceAnnotationExpression())
                     .addTypeParameter(functionT)
                     .addTypeParameter(functionR)
                     .addMethod(apply);
-            function.typeInspection.set(functionInspection.build());
+            function.typeInspection.set(functionInspection.build(null));
         }
         // A<K, V>
         a = new TypeInfo(PACKAGE, "A");
@@ -133,9 +141,10 @@ public class TestParameterizedType {
 
             TypeInspection.Builder aInspection = new TypeInspectionImpl.Builder(a, BY_HAND)
                     .noParent(primitives)
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addTypeParameter(aK)
                     .addTypeParameter(aV);
-            a.typeInspection.set(aInspection.build());
+            a.typeInspection.set(aInspection.build(null));
         }
         // B<X> extends A<String, X>
         b = new TypeInfo(PACKAGE, "B");
@@ -146,8 +155,9 @@ public class TestParameterizedType {
                     .setParentClass(new ParameterizedType(a, List.of(
                             primitives.stringParameterizedType(),
                             new ParameterizedType(bX, 0, NONE))))
+                    .setAccess(Inspection.Access.PUBLIC)
                     .addTypeParameter(bX);
-            b.typeInspection.set(bInspection.build());
+            b.typeInspection.set(bInspection.build(null));
         }
         // C extends B<Integer>
         c = new TypeInfo(PACKAGE, "C");
@@ -155,7 +165,8 @@ public class TestParameterizedType {
             TypeInspection.Builder cInspection = new TypeInspectionImpl.Builder(c, BY_HAND)
                     .setParentClass(new ParameterizedType(b, List.of(
                             primitives.integerTypeInfo().asParameterizedType(IP))));
-            c.typeInspection.set(cInspection.build());
+            c.typeInspection.set(cInspection
+                    .setAccess(Inspection.Access.PUBLIC).build(null));
         }
     }
 

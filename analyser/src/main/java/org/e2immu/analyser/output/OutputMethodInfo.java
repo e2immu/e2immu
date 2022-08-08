@@ -45,10 +45,11 @@ public class OutputMethodInfo {
         }
 
         OutputBuilder afterAnnotations = new OutputBuilder();
-        afterAnnotations.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers()))
-                .map(mod -> new OutputBuilder().add(new Text(mod)))
+        List<MethodModifier> modifiers = inspection.minimalModifiers();
+        afterAnnotations.add(modifiers.stream()
+                .map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
                 .collect(OutputBuilder.joining(Space.ONE)));
-        if (!inspection.getModifiers().isEmpty()) afterAnnotations.add(Space.ONE);
+        if (!modifiers.isEmpty()) afterAnnotations.add(Space.ONE);
 
         if (!inspection.getTypeParameters().isEmpty()) {
             afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);

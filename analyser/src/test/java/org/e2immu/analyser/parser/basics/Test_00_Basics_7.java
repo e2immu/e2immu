@@ -279,7 +279,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("increment".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().isSynchronized());
+                assertTrue(d.methodInfo().methodInspection.get().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {

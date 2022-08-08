@@ -418,7 +418,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
            being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
 
          */
-        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
+        if (methodInfo.methodInspection.get().isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
             TypeInfo typeInfo = expression.typeInfoOfReturnType();

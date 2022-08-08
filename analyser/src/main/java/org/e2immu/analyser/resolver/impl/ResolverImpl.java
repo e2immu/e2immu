@@ -375,7 +375,7 @@ public class ResolverImpl implements Resolver {
                 methodFieldSubTypeGraph.addNode(fieldInfo, List.of());
             }
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
-            fieldInfo.fieldInspection.set(fieldInspection.build());
+            fieldInfo.fieldInspection.set(fieldInspection.build(expressionContext.typeContext()));
             LOGGER.debug("Set field inspection of " + fieldInfo.fullyQualifiedName());
 
             doAnnotations(fieldInspection.getAnnotations(), expressionContext);
@@ -591,7 +591,8 @@ public class ResolverImpl implements Resolver {
         return blockBuilder -> {
             int i = 0;
             for (FieldInfo fieldInfo : typeInspection.fields()) {
-                if (!fieldInfo.isStatic(inspectionProvider)) {
+                FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
+                if (!fieldInspection.isStatic()) {
                     VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
                     VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                     Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
@@ -824,7 +825,7 @@ public class ResolverImpl implements Resolver {
      */
     private int methodRank(MethodInfo methodInfo) {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface()) return 0;
-        if (methodInfo.isPrivate()) return 1;
+        if (methodInfo.methodInspection.get().isPrivate()) return 1;
         return 2;
     }
 
@@ -847,13 +848,15 @@ public class ResolverImpl implements Resolver {
         // first part of allowsInterrupt computation: look locally
         boolean allowsInterrupt;
         boolean delays;
-        if (methodInspection.getModifiers().contains(MethodModifier.PRIVATE)) {
-            allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate(inspectionProvider) ||
-                    methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
-                    builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
-            delays = !doNotDelay && methodsReached.stream().anyMatch(reached -> reached.isPrivate(inspectionProvider) &&
-                    builders.containsKey(reached) &&
-                    !builders.get(reached).allowsInterrupts.isSet());
+        if (methodInspection.getParsedModifiers().contains(MethodModifier.PRIVATE)) {
+            allowsInterrupt = methodsReached.stream().anyMatch(reached ->
+                    !inspectionProvider.getMethodInspection(reached).isPrivate() ||
+                            methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
+                            builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
+            delays = !doNotDelay && methodsReached.stream().anyMatch(reached ->
+                    !inspectionProvider.getMethodInspection(reached).isPrivate() &&
+                            builders.containsKey(reached) &&
+                            !builders.get(reached).allowsInterrupts.isSet());
             if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
                 allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
@@ -906,13 +909,15 @@ public class ResolverImpl implements Resolver {
                                                  MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
-            if (!other.isPrivate() && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
+            if (!other.methodInspection.get().isPrivate() &&
+                    builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
+            FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
+            if (!fieldInspection.isPrivate() && fieldInspection.fieldInitialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
                         builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).getMethodsOfOwnClassReached().contains(methodInfo)) {
                     return true;
@@ -961,7 +966,7 @@ public class ResolverImpl implements Resolver {
         if (methodInfo.isConstructor) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
-        if (!methodInfo.isPrivate(inspectionProvider)) {
+        if (!inspectionProvider.getMethodInspection(methodInfo).isPrivate()) {
             return MethodResolution.CallStatus.NON_PRIVATE;
         }
         if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
@@ -1059,9 +1064,9 @@ public class ResolverImpl implements Resolver {
                                          boolean inSameCompilationUnit, boolean inSamePackage) {
         if (inSameCompilationUnit) return true;
         TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
-        return inspection.access() == TypeModifier.PUBLIC ||
-                inSamePackage && inspection.access() == TypeModifier.PACKAGE ||
-                !inSamePackage && inspection.access() == TypeModifier.PROTECTED;
+        return inspection.isPublic() ||
+                inSamePackage && inspection.isPackageProtected() ||
+                !inSamePackage && inspection.isProtected();
     }
 
 
@@ -1126,9 +1131,8 @@ public class ResolverImpl implements Resolver {
         if (inSameCompilationUnit) return true;
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
         if (staticFieldsOnly && !inspection.isStatic()) return false;
-        FieldModifier access = inspection.getAccess();
-        return access == FieldModifier.PUBLIC ||
-                inSamePackage && access != FieldModifier.PRIVATE ||
-                !inSamePackage && access == FieldModifier.PROTECTED;
+        return inspection.isPublic() ||
+                inSamePackage && inspection.isPrivate() ||
+                !inSamePackage && inspection.isProtected();
     }
 }

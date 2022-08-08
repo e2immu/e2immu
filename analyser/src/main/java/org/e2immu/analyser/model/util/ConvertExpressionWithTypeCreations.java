@@ -46,7 +46,7 @@ public class ConvertExpressionWithTypeCreations {
 
         builder.setSynthetic(true);
         builder.setTypeNature(TypeNature.CLASS);
-        builder.addTypeModifier(TypeModifier.PRIVATE);
+        builder.setAccess(Inspection.Access.PRIVATE);
         builder.addInterfaceImplemented(supplierType);
         builder.noParent(typeContext.getPrimitives());
 
@@ -55,6 +55,7 @@ public class ConvertExpressionWithTypeCreations {
         methodBuilder.setReturnType(supplierReturnType);
         methodBuilder.setStatic(fieldIsStatic);
         methodBuilder.setSynthetic(true);
+        methodBuilder.setAccess(Inspection.Access.PUBLIC); // implements supplier
         methodBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(methodBuilder);
 

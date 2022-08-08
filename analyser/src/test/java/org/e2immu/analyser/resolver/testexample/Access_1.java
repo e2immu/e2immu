@@ -12,31 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.resolver.testexample;
 
-import com.github.javaparser.ast.Modifier;
+import org.e2immu.analyser.resolver.testexample.access.AccessExample_1;
 
-public enum FieldModifier {
+public class Access_1 {
 
-    PRIVATE, PUBLIC, PROTECTED,
-
-    STATIC,
-
-    FINAL,
-    VOLATILE,
-
-    TRANSIENT,
-    ;
-
-
-    public static FieldModifier from(Modifier m) {
-        return FieldModifier.valueOf(m.getKeyword().toString().toUpperCase());
+    public static void main(String[] args) {
+        //AccessExample_1.I1.I2 unreachable
+        //AccessExample_1.I1.I unreachable
+        //AccessExample_1.I3.L unreachable
+        //AccessExample_1.I3.M unreachable
+        AccessExample_1.I3 ac = new AccessExample_1.I3();
+        System.out.println("Access example is: " + ac);
     }
 
-    public String toJava() {
-        return name().toLowerCase();
+    static class Sub extends AccessExample_1.I3 {
+        @Override
+        public String toString() {
+            // not accessible: AccessExample_1.I3.L;
+            return "n = " + N; //!! but this one is
+        }
     }
-
-    public final static FieldModifier[] NON_ACCESS_SORTED = {STATIC, FINAL, VOLATILE, TRANSIENT};
 
 }

@@ -208,7 +208,6 @@ public class MethodInspectorImpl implements MethodInspector {
             LOGGER.debug("Nothing to be done; there is no need for this compact constructor");
             return false;
         }
-        builder.addModifier(MethodModifier.PUBLIC);
         if (ccd != null) {
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, typeInfo.simpleName);
@@ -305,7 +304,13 @@ public class MethodInspectorImpl implements MethodInspector {
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
                 addModifiers(builder, md.getModifiers());
-                if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
+                boolean haveBody = md.getBody().isPresent();
+                if (!haveBody) {
+                    assert isInterface && !builder.isDefault() && !builder.isStatic()
+                            || !isInterface && builder.getParsedModifiers().contains(MethodModifier.ABSTRACT);
+                    builder.setAbstractMethod();
+                }
+
                 addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext());
                 ParameterizedType pt = ParameterizedTypeFactory.from(newContext.typeContext(), md.getType());
                 builder.setReturnType(pt);
@@ -315,7 +320,9 @@ public class MethodInspectorImpl implements MethodInspector {
                 if (md.getBody().isPresent()) {
                     builder.setBlock(md.getBody().get());
                 }
+                builder.computeAccess(newContext.typeContext());
             }
+
         } catch (RuntimeException e) {
             LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;

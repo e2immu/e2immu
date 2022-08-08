@@ -293,7 +293,7 @@ public class Parser {
         messages.addAll(annotatedAPIAnalyser.analyse());
 
         assert types.stream()
-                .filter(TypeInfo::isPublic)
+                .filter(t -> t.typeInspection.get().isPublic())
                 .allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
                         typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                                 .filter(m -> m.methodInspection.get().isPublic())
@@ -324,7 +324,7 @@ public class Parser {
             typeMap.visit(packagePrefixArray, (prefix, types) -> types.stream().filter(t ->
                     (allowSubPackages || t.primaryType().packageName().equals(packagePrefix)) &&
                             t.typeInspection.isSet() &&
-                            t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add));
+                            t.isPrimaryType() && t.typeInspection.get().isPublic()).forEach(typesToWrite::add));
         }
         LOGGER.info("Returning composer data with {} types", typesToWrite.size());
         return new ComposerData(typesToWrite, typeMap);

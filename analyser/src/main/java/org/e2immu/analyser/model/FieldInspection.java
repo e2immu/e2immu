@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Fluent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -30,8 +32,6 @@ public interface FieldInspection extends Inspection {
         return getFieldInitialiser() != null;
     }
 
-    FieldModifier getAccess();
-
     default boolean isStatic() {
         return getModifiers().contains(FieldModifier.STATIC);
     }
@@ -44,6 +44,7 @@ public interface FieldInspection extends Inspection {
         public FieldInitialiser {
             Objects.requireNonNull(initialiser);
         }
+
         public FieldInitialiser(Expression initialiser, Identifier identifier) {
             this(initialiser, null, null, false, identifier);
         }
@@ -60,7 +61,7 @@ public interface FieldInspection extends Inspection {
         @Fluent
         Builder setInspectedInitialiserExpression(Expression expression);
 
-        FieldInspection build();
+        FieldInspection build(InspectionProvider inspectionProvider);
 
         void setInitialiserExpression(com.github.javaparser.ast.expr.Expression initialiserExpression);
 
@@ -69,5 +70,7 @@ public interface FieldInspection extends Inspection {
 
         @Fluent
         Builder addModifiers(List<FieldModifier> modifiers);
+
+        void computeAccess(InspectionProvider inspectionProvider);
     }
 }

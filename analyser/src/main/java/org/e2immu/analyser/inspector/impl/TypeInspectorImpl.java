@@ -106,6 +106,7 @@ public class TypeInspectorImpl implements TypeInspector {
         } else {
             builder.setParentClass(typeImplemented);
         }
+        builder.setAccess(Inspection.Access.PRIVATE);
         continueInspection(withSubTypes, members, false, null, null);
     }
 
@@ -181,6 +182,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 for (Modifier modifier : typeDeclaration.getModifiers()) {
                     builder.addTypeModifier(TypeModifier.from(modifier));
                 }
+                builder.computeAccess(typeContext);
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught runtime exception while parsing type declaration at line " + typeDeclaration.getBegin());
                 throw rte;
@@ -261,7 +263,7 @@ public class TypeInspectorImpl implements TypeInspector {
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType(), varargs, null);
             FieldInfo fieldInfo = new FieldInfo(Identifier.from(parameter), type, parameter.getNameAsString(), typeInfo);
 
-            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PRIVATE);
@@ -291,7 +293,7 @@ public class TypeInspectorImpl implements TypeInspector {
             FieldInfo fieldInfo = new FieldInfo(Identifier.from(enumConstantDeclaration),
                     typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
-            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            FieldInspection.Builder fieldBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
@@ -392,6 +394,7 @@ public class TypeInspectorImpl implements TypeInspector {
         builder.noParent(expressionContext.typeContext().getPrimitives());
         doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
+        builder.setAccess(Inspection.Access.PRIVATE);
         continueInspection(expressionContext, cid.getMembers(), false, null, null);
     }
 
@@ -489,7 +492,7 @@ public class TypeInspectorImpl implements TypeInspector {
         }
 
         LOGGER.debug("Setting type inspection of {}", typeInfo.fullyQualifiedName);
-        typeInfo.typeInspection.set(builder.build());
+        typeInfo.typeInspection.set(builder.build(typeContext));
         return dollarTypes;
     }
 
@@ -559,7 +562,7 @@ public class TypeInspectorImpl implements TypeInspector {
         FieldInspection inMap = typeContext.getFieldInspection(fieldInfo);
         FieldInspection.Builder fieldInspectionBuilder;
         if (inMap == null) {
-            fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+            fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
             typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
         } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
         else throw new UnsupportedOperationException();

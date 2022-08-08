@@ -80,7 +80,7 @@ public class ShallowFieldAnalyser {
                     typeIsContainer = typeAnalysis.getProperty(Property.CONTAINER);
                 } else {
                     typeIsContainer = Property.CONTAINER.falseDv;
-                    if (fieldInfo.isPublic()) {
+                    if (fieldInfo.fieldInspection.get().isPublic()) {
                         messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                                 fieldAnalysisBuilder.bestType.fullyQualifiedName));
                     }

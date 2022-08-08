@@ -185,7 +185,7 @@ public class TypeMapImpl implements TypeMap {
 
             typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
                 if (typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
-                    typeInfo.typeInspection.set(typeInspectionBuilder.build());
+                    typeInfo.typeInspection.set(typeInspectionBuilder.build(this));
                 }
             });
 
@@ -197,7 +197,7 @@ public class TypeMapImpl implements TypeMap {
             });
             fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
                 if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
-                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
+                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build(this));
                 }
             });
 
@@ -479,7 +479,7 @@ public class TypeMapImpl implements TypeMap {
                 builder.addTypeParameter(typeParameter);
                 tps.add(typeParameter);
             }
-            builder.addTypeModifier(TypeModifier.PUBLIC);
+            builder.setAccess(Inspection.Access.PUBLIC);
             builder.addAnnotation(primitives.functionalInterfaceAnnotationExpression);
             ParameterizedType returnType = isVoid ? primitives.voidParameterizedType :
                     new ParameterizedType(tps.get(numberOfParameters), 0, NONE);
@@ -492,11 +492,11 @@ public class TypeMapImpl implements TypeMap {
                         new ParameterizedType(tps.get(i), 0, NONE), "p" + i, i));
             }
             m.readyToComputeFQN(this);
-            m.addModifier(MethodModifier.PUBLIC);
+            m.setAccess(Inspection.Access.PUBLIC);
             MethodInspection mi = m.build(this);
             registerMethodInspection(m);
             builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(true);
-            typeInfo.typeInspection.set(builder.build());
+            typeInfo.typeInspection.set(builder.build(null));
             return typeInfo;
         }
 

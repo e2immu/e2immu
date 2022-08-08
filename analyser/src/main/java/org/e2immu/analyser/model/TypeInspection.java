@@ -64,9 +64,6 @@ public interface TypeInspection extends Inspection {
     List<ParameterizedType> interfacesImplemented();
 
     @NotNull
-    TypeModifier access();
-
-    @NotNull
     Inspector inspector();
 
     /**
@@ -301,7 +298,9 @@ public interface TypeInspection extends Inspection {
 
         boolean finishedInspection();
 
-        TypeInspection build();
+        void computeAccess(InspectionProvider inspectionProvider);
+
+        TypeInspection build(InspectionProvider inspectionProvider);
 
         void setInspectionState(InspectionState startingBytecode);
 

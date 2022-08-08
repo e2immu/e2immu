@@ -445,7 +445,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
             if ("s".equals(d.fieldInfo().name)) {
-                assertTrue(d.fieldInfo().owner.isPrivate());
+                assertTrue(d.fieldInfo().owner.typeInspection.get().isPrivate());
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("s", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));

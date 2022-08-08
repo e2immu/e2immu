@@ -145,6 +145,7 @@ public class MyClassVisitor extends ClassVisitor {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
         }
+        typeInspectionBuilder.computeAccess(typeContext);
 
         String parentFqName = superName == null ? null : pathToFqn(superName);
         if (signature == null) {
@@ -285,7 +286,7 @@ public class MyClassVisitor extends ClassVisitor {
                 signature != null ? signature : descriptor).parameterizedType;
 
         FieldInfo fieldInfo = new FieldInfo(Identifier.generate("asm field"), type, name, currentType);
-        FieldInspection.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+        FieldInspection.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
         typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
 
         if ((access & Opcodes.ACC_STATIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
@@ -344,12 +345,12 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_PROTECTED) != 0) methodInspectionBuilder.addModifier(MethodModifier.PROTECTED);
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
         boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
-        if (currentTypeIsInterface && !isAbstract) {
+        if (isAbstract) {
+            methodInspectionBuilder.setAbstractMethod();
+        } else if (currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(isStatic ? MethodModifier.STATIC : MethodModifier.DEFAULT);
         }
-        if (isAbstract && (!currentTypeIsInterface || isStatic)) {
-            methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
-        }
+
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
         TypeContext methodContext = new TypeContext(typeContext);
@@ -415,11 +416,7 @@ public class MyClassVisitor extends ClassVisitor {
                 }
                 if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
                     checkTypeFlags(access, subTypeInspection);
-                    /* seems unnecessary
-                    if(subTypeInspection.needsPackageOrEnclosing()) {
-                       subTypeInspection.setEnclosingType(stepDown ? currentType: typeInspectionBuilder.packageNameOrEnclosingType().getRight());
-                    }
-                    */
+
                     if (stepDown) {
                         enclosingTypes.push(currentType);
                     }

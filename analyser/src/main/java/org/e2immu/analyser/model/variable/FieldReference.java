@@ -72,7 +72,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 fieldInfo.type.inferConcreteFieldTypeFromConcreteScope(inspectionProvider,
                         fieldInfo.owner.asParameterizedType(inspectionProvider), scope.returnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
-        this.isStatic = fieldInfo.isStatic(inspectionProvider);
+        this.isStatic = inspectionProvider.getFieldInspection(fieldInfo).isStatic();
         if (this.isStatic) {
             Identifier identifier = fieldInfo.owner.getIdentifier();
             this.scope = new TypeExpression(identifier, fieldInfo.owner.asSimpleParameterizedType(), Diamond.NO);

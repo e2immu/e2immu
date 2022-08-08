@@ -71,6 +71,12 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
         MethodResolution methodResolution = toLowerCase.methodResolution.get();
         assertFalse(methodResolution.allowsInterrupts());
+
+        MethodInspection methodInspection = toLowerCase.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertTrue(methodInspection.isAbstract());
+        assertFalse(methodInspection.isDefault());
+        assertFalse(methodInspection.isStatic());
     }
 
     @Test

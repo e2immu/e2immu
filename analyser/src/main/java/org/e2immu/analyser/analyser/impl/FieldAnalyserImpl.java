@@ -116,8 +116,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
-        fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isAccessibleOutsideOfPrimaryType() &&
-                !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
+        fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
+                !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
         AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
 
@@ -683,8 +683,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private AnalysisStatus fieldErrors() {
-        if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
-            if (!fieldInfo.isStatic()) {
+        if (fieldInspection.isPrivate()) {
+            if (!fieldInspection.isStatic()) {
                 boolean readInMethods = allMethodsAndConstructors(false)
                         .anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
@@ -783,7 +783,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         DV staticallyImmutable = analyserContext.defaultImmutable(fieldInfo.type, false, fieldInfo.owner);
-        if(staticallyImmutable.isDelayed()) {
+        if (staticallyImmutable.isDelayed()) {
             LOGGER.debug("Delaying @Immutable on {} until we know about statically immutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return staticallyImmutable.causesOfDelay(); //DELAY EXIT POINT
@@ -898,7 +898,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (effective != MultiLevel.Effective.EVENTUAL_BEFORE) return immutable;
 
         DV corrected = MultiLevel.eventuallyImmutable(MultiLevel.level(immutable));
-        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
+        if (!fieldInfo.fieldInspection.get().isPrivate()) {
             return corrected;
         }
         DV linkedToMe = exposureViaMethods();
@@ -932,7 +932,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private static Stream<MethodAnalyser> filterForExposure(Stream<MethodAnalyser> stream) {
         return stream
-                .filter(ma -> !ma.getMethodInfo().isPrivate() && ma.getMethodInfo().hasReturnValue())
+                .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate() && ma.getMethodInfo().hasReturnValue())
                 .filter(ma -> ma instanceof ComputingMethodAnalyser cma && cma.methodLevelData() != null)
                 .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue());
     }
@@ -1584,7 +1584,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return eventualDelay.causesOfDelay(); //DELAY EXIT POINT
         }
         boolean exposed;
-        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
+        if (!fieldInfo.fieldInspection.get().isPrivate()) {
             exposed = true;
         } else {
             DV exposedViaMethods = exposureViaMethods();

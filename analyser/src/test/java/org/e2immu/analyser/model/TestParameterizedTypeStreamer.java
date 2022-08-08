@@ -72,8 +72,9 @@ public class TestParameterizedTypeStreamer {
         TypeInspection.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(t)
-                .addTypeParameter(s);
-        clazz.typeInspection.set(clazzInspection.build());
+                .addTypeParameter(s)
+                .setAccess(Inspection.Access.PUBLIC);
+        clazz.typeInspection.set(clazzInspection.build(null));
         ParameterizedType clazzTS = new ParameterizedType(clazz, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
@@ -82,8 +83,9 @@ public class TestParameterizedTypeStreamer {
         TypeInfo sub = new TypeInfo(clazz, "Sub");
 
         TypeInspection.Builder subInspection = new TypeInspectionImpl.Builder(sub, InspectionState.BY_HAND)
+                .setAccess(Inspection.Access.PUBLIC)
                 .noParent(primitives);
-        sub.typeInspection.set(subInspection.build());
+        sub.typeInspection.set(subInspection.build(null));
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
@@ -97,8 +99,9 @@ public class TestParameterizedTypeStreamer {
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeInspection.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, InspectionState.BY_HAND)
                 .noParent(primitives)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addTypeParameter(t);
-        clazz.typeInspection.set(clazzInspection.build());
+        clazz.typeInspection.set(clazzInspection.build(null));
         ParameterizedType clazzT = new ParameterizedType(clazz, List.of(new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE)));
         assertEquals("a.b.Clazz<T>", clazzT.detailedString());
 
@@ -106,8 +109,9 @@ public class TestParameterizedTypeStreamer {
         TypeParameter s = new TypeParameterImpl(sub, "S", 0);
         TypeInspection.Builder subInspection = new TypeInspectionImpl.Builder(sub, InspectionState.BY_HAND)
                 .noParent(primitives)
+                .setAccess(Inspection.Access.PUBLIC)
                 .addTypeParameter(s);
-        sub.typeInspection.set(subInspection.build());
+        sub.typeInspection.set(subInspection.build(null));
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));

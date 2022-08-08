@@ -192,7 +192,8 @@ public abstract class CommonAbstractValue {
         if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
             PRIMITIVES.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo(), InspectionState.BY_HAND)
                     .noParent(PRIMITIVES)
-                    .build());
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .build(null));
         }
         TypeInfo someType = new TypeInfo("some", "type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
@@ -208,7 +209,8 @@ public abstract class CommonAbstractValue {
         someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, InspectionState.BY_HAND)
                 .noParent(PRIMITIVES)
                 .addMethod(methodInfo)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
         return p0;
     }
 

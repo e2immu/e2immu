@@ -45,8 +45,13 @@ public interface MethodInspection extends Inspection {
     @NotNull1
     List<ParameterInfo> getParameters();
 
+    /*
+    These are the modifiers that were found in the source code or byte code; do not use them to
+    compute essential properties of the method! E.g., an abstract method in an interface may not contain
+    the ABSTRACT method modifier.
+     */
     @NotNull1
-    Set<MethodModifier> getModifiers();
+    Set<MethodModifier> getParsedModifiers();
 
     @NotNull1
     List<TypeParameter> getTypeParameters();
@@ -63,19 +68,10 @@ public interface MethodInspection extends Inspection {
 
     boolean isVarargs();
 
-    default boolean isPrivate() {
-        return getModifiers().contains(MethodModifier.PRIVATE);
-    }
-
-    default boolean isPublic() {
-        return isPublic(InspectionProvider.DEFAULT);
-    }
-
-    default boolean isPublic(InspectionProvider inspectionProvider) {
-        return getMethodInfo().typeInfo.isPublic(inspectionProvider) &&
-                (getModifiers().contains(MethodModifier.PUBLIC) ||
-                        getMethodInfo().typeInfo.isInterface(inspectionProvider));
-    }
+    /**
+    Returns the minimally required modifiers needed in the output for this method. Avoids being verbose!!
+     */
+    List<MethodModifier> minimalModifiers();
 
     boolean isCompactConstructor();
 
@@ -98,13 +94,7 @@ public interface MethodInspection extends Inspection {
                 .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(Finalizer.class.getCanonicalName()));
     }
 
-    default boolean isAbstract() {
-        return getModifiers().contains(MethodModifier.ABSTRACT);
-    }
-
-    default boolean hasStatements() {
-        return getMethodBody() != null && !getMethodBody().isEmpty();
-    }
+    boolean isAbstract();
 
     default boolean isFactoryMethod() {
         assert isStatic();
@@ -127,6 +117,10 @@ public interface MethodInspection extends Inspection {
         if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
         return "toString".equals(getMethodInfo().name) && getParameters().size() == 0;
     }
+
+    boolean isSynchronized();
+
+    boolean isFinal();
 
     interface Builder extends InspectionBuilder<Builder>, MethodInspection {
 
@@ -186,5 +180,14 @@ public interface MethodInspection extends Inspection {
         ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate,
                                                                   ParameterizedType concreteTypeOfParameter,
                                                                   String name, int index);
+
+        @Fluent
+        Builder setAbstractMethod();
+
+        @Fluent
+        Builder computeAccess(InspectionProvider inspectionProvider);
+
+        @Fluent
+        Builder setAccess(Access access);
     }
 }

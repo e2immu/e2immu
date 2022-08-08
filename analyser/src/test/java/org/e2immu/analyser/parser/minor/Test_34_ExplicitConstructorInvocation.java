@@ -611,7 +611,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_13() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().isConstructor && d.methodInfo().isPrivate()) {
+            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().isPrivate()) {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
                 assertEquals(10, n);
 
@@ -627,7 +627,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (d.methodInfo().isConstructor && d.methodInfo().isPrivate()) {
+            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().isPrivate()) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };

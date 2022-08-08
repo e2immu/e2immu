@@ -133,4 +133,18 @@ public class TestBasics extends CommonTest {
             } else fail();
         } else fail();
     }
+
+    @Test
+    public void test_6() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Basics_6.class);
+        TypeInfo typeInfo = typeMap.get(Basics_6.class.getCanonicalName());
+        assertTrue(typeInfo.isInterface());
+        MethodInfo name = typeInfo.findUniqueMethod("name", 0);
+        assertTrue(typeInfo.typeInspection.get().isPublic());
+
+        MethodInspection nameInspection = name.methodInspection.get();
+        assertTrue(nameInspection.isAbstract());
+        assertTrue(nameInspection.isPublic()); // computed, on type
+        assertFalse(nameInspection.isDefault()); // modifier
+    }
 }

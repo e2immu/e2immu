@@ -225,27 +225,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodResolution.get().overrides().isEmpty();
     }
 
-    public boolean isPrivate() {
-        return methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE);
-    }
-
-    public boolean isPrivate(InspectionProvider inspectionProvider) {
-        return inspectionProvider.getMethodInspection(this).getModifiers().contains(MethodModifier.PRIVATE);
-    }
-
     public boolean isVoid() {
         return returnType().isVoidOrJavaLangVoid();
-    }
-
-    public boolean isSynchronized() {
-        return methodInspection.get().getModifiers().contains(MethodModifier.SYNCHRONIZED);
-    }
-
-    public boolean isAbstract() {
-        if (typeInfo.typeInspection.get().isInterface()) {
-            return !methodInspection.get().getModifiers().contains(MethodModifier.DEFAULT);
-        }
-        return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
     }
 
     public boolean isNotATestMethod() {
@@ -268,7 +249,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean explicitlyEmptyMethod() {
         if (hasStatements()) return false;
-        boolean empty = !typeInfo.shallowAnalysis() && !isAbstract();
+        boolean empty = !typeInfo.shallowAnalysis() && !methodInspection.get().isAbstract();
         assert !empty || noReturnValue();
         return empty;
     }
@@ -300,7 +281,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
             MethodInspection methodInspection = inspectionProvider.getMethodInspection(this);
-            return methodInspection.isPublic(inspectionProvider);
+            return methodInspection.isPublic();
         }
         return true; // by hand, java parsing
     }
@@ -362,7 +343,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public MethodInfo implementationIn(TypeInfo typeInfo) {
-        if (isAbstract()) {
+        if (methodInspection.get().isAbstract()) {
             return implementations.getOrDefaultNull(typeInfo);
         }
         return this;

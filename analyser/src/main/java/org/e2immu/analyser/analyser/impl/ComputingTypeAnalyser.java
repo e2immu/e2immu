@@ -553,7 +553,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return DONE;
         }
         CausesOfDelay modificationDelays = myMethodAnalysersExcludingSAMs.stream()
-                .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().isAbstract())
+                .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().methodInspection.get().isAbstract())
                 .map(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                         .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -562,7 +562,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (modificationDelays.isDelayed()) {
             if (sharedState.allowBreakDelay()) {
                 exclude = myMethodAnalysersExcludingSAMs.stream()
-                        .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().isAbstract())
+                        .filter(methodAnalyser -> !methodAnalyser.getMethodInfo().methodInspection.get().isAbstract())
                         .filter(methodAnalyser -> methodAnalyser.getMethodAnalysis()
                                 .getProperty(Property.MODIFIED_METHOD_ALT_TEMP).isDelayed())
                         .collect(Collectors.toUnmodifiableSet());
@@ -646,7 +646,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
             FieldReference fieldReference = new FieldReference(analyserContext, fieldInfo);
-            if (fieldInfo.isPrivate() && !tempApproved.containsKey(fieldReference)) {
+            if (fieldInfo.fieldInspection.get().isPrivate() && !tempApproved.containsKey(fieldReference)) {
                 Set<MethodInfo> methodsAssigned;
                 DV finalDv = fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL);
                 if (finalDv.valueIsFalse()) {
@@ -836,14 +836,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         boolean inconclusive = false;
         DV valueFromFields = myFieldAnalysers.stream()
-                .filter(fa -> !fa.getFieldInfo().isPrivate())
+                .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
                 .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
             if (sharedState.allowBreakDelay()) {
                 valueFromFields = myFieldAnalysers.stream()
-                        .filter(fa -> !fa.getFieldInfo().isPrivate())
+                        .filter(fa -> !fa.getFieldInfo().fieldInspection.get().isPrivate())
                         .filter(fa -> !typeInfo.isMyself(fa.getFieldInfo().type, InspectionProvider.DEFAULT))
                         .map(fa -> independenceOfField(fa.getFieldAnalysis()))
                         .filter(DV::isDone)
@@ -861,14 +861,14 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             valueFromMethodParameters = MultiLevel.DEPENDENT_DV; // no need to compute anymore, at bottom anyway
         } else {
             valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
-                    .filter(ma -> !ma.getMethodInfo().isPrivate(analyserContext))
+                    .filter(ma -> !analyserContext.getMethodInspection(ma.getMethodInfo()).isPrivate())
                     .flatMap(ma -> ma.getParameterAnalyses().stream())
                     .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
                 if (sharedState.allowBreakDelay()) {
                     valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
-                            .filter(ma -> !ma.getMethodInfo().isPrivate(analyserContext))
+                            .filter(ma -> !analyserContext.getMethodInspection(ma.getMethodInfo()).isPrivate())
                             .flatMap(ma -> ma.getParameterAnalyses().stream())
                             .map(pa -> correctIndependentFunctionalInterface(pa, pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT)))
                             .filter(DV::isDone)
@@ -887,7 +887,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             valueFromMethodReturnValue = MultiLevel.DEPENDENT_DV;
         } else {
             valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
-                    .filter(ma -> !ma.getMethodInfo().isPrivate()
+                    .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate()
                             && ma.getMethodInfo().hasReturnValue()
                             && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType()))
                     .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
@@ -895,7 +895,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (valueFromMethodReturnValue.isDelayed()) {
                 if (sharedState.allowBreakDelay()) {
                     valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
-                            .filter(ma -> !ma.getMethodInfo().isPrivate()
+                            .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate()
                                     && ma.getMethodInfo().hasReturnValue()
                                     && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType()))
                             .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
@@ -1236,7 +1236,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
                             && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
-                    if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
+                    if (!fieldInfo.fieldInspection.get().isPrivate() && fieldRequiresRules) {
                         throw new UnsupportedOperationException("Already in negative");
                     }
                 } else {
@@ -1432,7 +1432,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
                         && fieldImmutable.isDone() && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                 if (fieldInfo.type.typeInfo != typeInfo) {
-                    if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
+                    if (!fieldInfo.fieldInspection.get().isPrivate() && fieldRequiresRules) {
                         LOGGER.debug("{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
@@ -1555,7 +1555,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV ignoreModification = parameterAnalysis.getProperty(Property.IGNORE_MODIFICATIONS);
         if (ignoreModification.equals(MultiLevel.IGNORE_MODS_DV)
                 && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().isPrivate()) {
+                && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
             LOGGER.debug("Incoming functional interface on non-private method");
             correctedIndependent = independent.max(MultiLevel.INDEPENDENT_1_DV);
         } else {
@@ -1620,7 +1620,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         // system 1: private constructors
 
-        boolean allConstructorsPrivate = typeInspection.constructors().stream().allMatch(MethodInfo::isPrivate);
+        boolean allConstructorsPrivate = typeInspection.constructors().stream()
+                .allMatch(m -> m.methodInspection.get().isPrivate());
         if (allConstructorsPrivate) {
             // no method can call the constructor(s)
             boolean doNotCallMyOwnConstructFromMethod = typeInspection.methodStream(TypeInspection.Methods.INCLUDE_SUBTYPES)
@@ -1659,8 +1660,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             VariableExpression ve;
             if (!precondition.isEmpty() && (ve = variableExpressionOrNegated(precondition.expression())) != null
                     && ve.variable() instanceof FieldReference fr
-                    && fr.fieldInfo.isStatic()
-                    && fr.fieldInfo.isPrivate()
+                    && fr.fieldInfo.fieldInspection.get().isStatic()
+                    && fr.fieldInfo.fieldInspection.get().isPrivate()
                     && fr.fieldInfo.type.isBoolean()) {
                 // one thing that's left is that there is an assignment in the constructor, and no assignment anywhere else
                 boolean wantAssignmentToTrue = precondition.expression() instanceof Negation;
@@ -1721,7 +1722,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
         for (MethodInfo methodInfo : typeInspection.methods()) {
-            if (methodInfo.methodInspection.get().isStatic() && !methodInfo.isPrivate()) {
+            if (methodInfo.methodInspection.get().isStatic() && !methodInfo.methodInspection.get().isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().getParameters();
                 ParameterizedType typeOfFirstParameter;
                 if (parameters.isEmpty()) {
@@ -1797,7 +1798,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         // this is technically enough, but we'll verify the constructors (should be private)
         for (MethodInfo constructor : typeInspection.constructors()) {
-            if (!constructor.isPrivate()) {
+            if (!constructor.methodInspection.get().isPrivate()) {
                 LOGGER.debug("Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
@@ -1842,7 +1843,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             Set<MethodInfo> privateConstructors = new HashSet<>();
             boolean haveNonPrivateConstructors = false;
             for (MethodAnalyser constructorAnalyser : myConstructors) {
-                if (constructorAnalyser.getMethodInfo().isPrivate()) {
+                if (constructorAnalyser.getMethodInfo().methodInspection.get().isPrivate()) {
                     privateConstructors.add(constructorAnalyser.getMethodInfo());
                 } else {
                     haveNonPrivateConstructors = true;

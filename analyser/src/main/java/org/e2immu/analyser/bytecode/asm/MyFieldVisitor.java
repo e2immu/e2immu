@@ -52,6 +52,7 @@ public class MyFieldVisitor extends FieldVisitor {
 
     @Override
     public void visitEnd() {
+        fieldInspectionBuilder.computeAccess(typeContext);
         typeInspectionBuilder.addField(fieldInfo);
         // do not build the type already!
     }

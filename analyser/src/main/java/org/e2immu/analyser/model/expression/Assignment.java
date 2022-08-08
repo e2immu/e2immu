@@ -302,7 +302,7 @@ public class Assignment extends BaseExpression implements Expression {
         ForwardEvaluationInfo fwd = fwdBuilder.build();
 
         EvaluationResult valueResult;
-        if(evaluationOfValue != null) {
+        if (evaluationOfValue != null) {
             valueResult = evaluationOfValue;
         } else {
             valueResult = value.evaluate(context, fwd);
@@ -446,7 +446,7 @@ public class Assignment extends BaseExpression implements Expression {
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
                     checkIllAdvisedAssignment(fieldReference, context.getCurrentType(),
-                            fieldReference.fieldInfo.isStatic(context.getAnalyserContext()))) {
+                            context.getAnalyserContext().getFieldInspection(fieldReference.fieldInfo).isStatic())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
             }
 

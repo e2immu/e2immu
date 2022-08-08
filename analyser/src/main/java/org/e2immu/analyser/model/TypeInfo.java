@@ -371,22 +371,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return packageNameOrEnclosingType.isRight();
     }
 
-    public boolean isPrivate() {
-        return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
-    }
-
-    public boolean isPublic() {
-        return isPublic(InspectionProvider.DEFAULT);
-    }
-
-    public boolean isPublic(InspectionProvider inspectionProvider) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
-        if (!typeInspection.modifiers().contains(TypeModifier.PUBLIC)) return false;
-        if (packageNameOrEnclosingType.isRight()) {
-            return packageNameOrEnclosingType.getRight().isPublic(inspectionProvider);
-        }
-        return true;
-    }
 
     public boolean isEnclosedIn(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
@@ -404,11 +388,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
 
     public boolean isPrivateNested() {
-        return isNestedType() && isPrivate();
+        return isNestedType() && typeInspection.get().isPrivate();
     }
 
     public boolean isPrivateOrEnclosingIsPrivate() {
-        if (isPrivate()) return true;
+        if (typeInspection.get().isPrivate()) return true;
         if (packageNameOrEnclosingType.isLeft()) return false;
         return packageNameOrEnclosingType.getRight().isPrivateOrEnclosingIsPrivate();
     }
@@ -460,7 +444,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
-        if (foundHere != null && !foundHere.isAbstract()
+        if (foundHere != null && !foundHere.methodInspection.get().isAbstract()
                 && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
         TypeInspection inspection = typeInspection.get();
         ParameterizedType parentClass = inspection.parentClass();

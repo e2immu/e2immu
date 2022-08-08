@@ -51,7 +51,9 @@ public class TestTypeInfoStream {
     @Test
     public void test() {
         Primitives primitives = new PrimitivesImpl();
-        primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND).build());
+        primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         InspectionProvider IP = InspectionProvider.DEFAULT;
         TypeInfo genericContainer = new TypeInfo(MODEL, "GenericContainer");
@@ -60,7 +62,8 @@ public class TestTypeInfoStream {
 
         genericContainer.typeInspection.set(new TypeInspectionImpl.Builder(genericContainer, BY_HAND)
                 .addTypeParameter(genericContainerTypeParameterT)
-                .noParent(primitives).build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .noParent(primitives).build(null));
 
         TypeInfo testTypeInfo = new TypeInfo(MODEL, "TestTypeInfoStream");
         TypeInfo loggerTypeInfo = new TypeInfo("org.slf4j", "Logger");
@@ -118,19 +121,23 @@ public class TestTypeInfoStream {
         TypeInfo map = new TypeInfo(JAVA_UTIL, "Map");
         map.typeInspection.set(new TypeInspectionImpl.Builder(map, BY_HAND)
                 .noParent(primitives)
-                .setTypeNature(TypeNature.INTERFACE).build()
+                .setTypeNature(TypeNature.INTERFACE)
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null)
         );
         TypeInfo mapEntry = new TypeInfo(map, "Entry");
         mapEntry.typeInspection.set(new TypeInspectionImpl.Builder(mapEntry, BY_HAND)
                 .setTypeNature(TypeNature.INTERFACE)
                 .noParent(primitives)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
-        logger.fieldInspection.set(new FieldInspectionImpl.Builder()
+        logger.fieldInspection.set(new FieldInspectionImpl.Builder(logger)
                 .addModifier(FieldModifier.PRIVATE)
                 .addModifier(FieldModifier.STATIC)
                 .addModifier(FieldModifier.FINAL)
-                .build());
+                .setAccess(Inspection.Access.PRIVATE)
+                .build(null));
         LocalVariable mapLocalVariable = new LocalVariable.Builder()
                 .setOwningType(testTypeInfo)
                 .setName("map")
@@ -178,24 +185,29 @@ public class TestTypeInfoStream {
         put.methodResolution.set(new MethodResolution.Builder().build());
 
         FieldInfo intFieldInContainer = new FieldInfo(newId(), primitives.intParameterizedType(), "i", containerTypeInfo);
-        intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
+        intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder(intFieldInContainer)
                 .setInspectedInitialiserExpression(new IntConstant(primitives, 27))
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         FieldInfo doubleFieldInContainer = new FieldInfo(newId(), primitives.doubleParameterizedType(), "d", containerTypeInfo);
-        doubleFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
-                .addModifier(FieldModifier.PRIVATE).build());
+        doubleFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder(doubleFieldInContainer)
+                .addModifier(FieldModifier.PRIVATE)
+                .setAccess(Inspection.Access.PRIVATE)
+                .build(null));
 
         FieldInfo stringFieldInContainer = new FieldInfo(newId(), primitives.stringParameterizedType(), "s", containerTypeInfo);
-        stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
+        stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder(stringFieldInContainer)
                 .addModifier(FieldModifier.FINAL)
+                .setAccess(Inspection.Access.PROTECTED)
                 .setInspectedInitialiserExpression(new StringConstant(primitives, "first value"))
-                .build());
+                .build(null));
 
         FieldInfo tInContainer = new FieldInfo(newId(), typeT, "t", containerTypeInfo);
-        tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
+        tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder(tInContainer)
+                .setAccess(Inspection.Access.PRIVATE)
                 .setInspectedInitialiserExpression(NullConstant.NULL_CONSTANT)
-                .build());
+                .build(null));
 
         TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
@@ -209,7 +221,8 @@ public class TestTypeInfoStream {
                 .addMethod(emptyContainerConstructor)
                 .addTypeParameter(typeParameterT)
                 .addInterfaceImplemented(new ParameterizedType(genericContainer, List.of(genericContainerT)))
-                .build();
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null);
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
         TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
@@ -222,7 +235,8 @@ public class TestTypeInfoStream {
                 .noParent(primitives)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
-                .build());
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null));
 
         MethodInspection.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
                 .setReturnType(primitives.intParameterizedType()).setStatic(true);
@@ -263,7 +277,8 @@ public class TestTypeInfoStream {
                 .addConstructor(emptyTestConstructor)
                 .addMethod(toStringMethodInfo)
                 .addMethod(intSum)
-                .build();
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(null);
         testTypeInfo.typeInspection.set(testTypeInspection);
 
         String stream = testTypeInfo.output().toString();

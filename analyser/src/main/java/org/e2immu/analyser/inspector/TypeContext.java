@@ -221,7 +221,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
-                    .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
+                    .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo)));
         }
         return map;
@@ -348,7 +348,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance
                         // add a penalty for shallowly analysed, non-public methods
                         // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                        + (shallowAnalysis && !m.isPublic(this) ? 100 : 0)))
+                        + (shallowAnalysis && !m.isPublic() ? 100 : 0)))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();

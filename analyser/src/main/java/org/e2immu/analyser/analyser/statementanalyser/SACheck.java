@@ -187,7 +187,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
             }
             if (fluent.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
-            if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
+            if (modified.isDelayed() && !methodCall.methodInfo.methodInspection.get().isAbstract()) {
                 LOGGER.debug("Delaying unused return value in {} {}, waiting for @Modified of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return modified.causesOfDelay();
