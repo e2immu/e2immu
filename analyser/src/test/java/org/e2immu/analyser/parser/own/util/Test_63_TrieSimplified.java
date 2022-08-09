@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -301,9 +302,21 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-
-        testClass("TrieSimplified_2", 0, 2, new DebugConfiguration.Builder()
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("data".equals(d.fieldInfo().name)) {
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE));
+                }
+            }
+            if ("map".equals(d.fieldInfo().name)) {
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE));
+                }
+            }
+        };
+        testClass("TrieSimplified_2", 2, 2, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

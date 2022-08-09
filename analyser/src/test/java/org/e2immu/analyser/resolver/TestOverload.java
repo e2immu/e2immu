@@ -15,10 +15,7 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
@@ -88,5 +85,42 @@ public class TestOverload extends CommonTest {
         // we'd rather not have java.lang.AbstractStringBuilder.length(), because that method is not accessible,
         // and we decorated the one in CharSequence
         assertEquals("java.lang.CharSequence.length()", methodInfo.fullyQualifiedName);
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_6.class);
+        TypeInfo typeInfo = typeMap.get(CharSequence.class);
+        TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);
+        assertFalse(typeInspection.isFunctionalInterface());
+        assertTrue(typeInspection.isInterface());
+        assertTrue(typeInspection.isPublic());
+        assertTrue(typeInspection.isStatic());
+        assertFalse(typeInspection.isRecord());
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod(typeMap, "length", 0);
+        MethodInspection methodInspection = typeMap.getMethodInspection(methodInfo);
+        assertTrue(methodInspection.isAbstract());
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isDefault());
+        assertFalse(methodInspection.isStatic());
+    }
+    @Test
+    public void test_6_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_6.class);
+        TypeInfo typeInfo = typeMap.get("java.lang.AbstractStringBuilder");
+        TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);
+        assertFalse(typeInspection.isFunctionalInterface());
+        assertFalse(typeInspection.isInterface());
+        assertFalse(typeInspection.isPublic());
+        assertTrue(typeInspection.isStatic());
+        assertFalse(typeInspection.isRecord());
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod(typeMap, "length", 0);
+        MethodInspection methodInspection = typeMap.getMethodInspection(methodInfo);
+        assertFalse(methodInspection.isAbstract());
+        assertTrue(methodInspection.isPublic()); // FIXME but is not accessible...
+        assertFalse(methodInspection.isDefault());
+        assertFalse(methodInspection.isStatic());
     }
 }

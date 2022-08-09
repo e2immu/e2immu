@@ -42,6 +42,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     public static final String IMMUTABLE_CAN_BE_INCREASED = "immutableCanBeIncreased";
 
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
+    private final SetOnce<List<TypeAnalyser>> implementingAnalysers = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
     public AggregatingTypeAnalyser(TypeInfo typeInfo,
@@ -71,8 +72,10 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     @Override
     public void initialize() {
         Stream<TypeInfo> implementations = obtainImplementingTypes();
-        List<TypeAnalysis> analysers = implementations.map(analyserContext::getTypeAnalysis).toList();
-        implementingAnalyses.set(analysers);
+        List<TypeAnalyser> analysers = implementations.map(analyserContext::getTypeAnalyser).toList();
+        implementingAnalysers.set(analysers);
+        List<TypeAnalysis> analyses = analysers.stream().map(TypeAnalyser::getTypeAnalysis).toList();
+        implementingAnalyses.set(analyses);
     }
 
     private Stream<TypeInfo> obtainImplementingTypes() {
@@ -84,6 +87,11 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         assert generated != null : typeInfo.fullyQualifiedName
                 + " is not a sealed class, so it must have a unique generated implementation";
         return Stream.of(generated);
+    }
+
+    @Override
+    public Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes() {
+       return implementingAnalysers.get().stream().flatMap(TypeAnalyser::allMethodAnalysersIncludingSubTypes);
     }
 
     @Override

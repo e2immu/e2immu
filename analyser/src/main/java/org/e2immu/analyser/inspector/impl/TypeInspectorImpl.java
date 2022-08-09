@@ -581,6 +581,7 @@ public class TypeInspectorImpl implements TypeInspector {
             if (vd.getInitializer().isPresent()) {
                 fieldInspectionBuilder.setInitialiserExpression(vd.getInitializer().get());
             }
+            fieldInspectionBuilder.computeAccess(typeContext);
             builder.addField(fieldInfo);
         }
     }

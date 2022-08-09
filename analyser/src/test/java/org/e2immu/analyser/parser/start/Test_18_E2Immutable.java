@@ -485,7 +485,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_10_2() throws IOException {
-        testClass("E2Immutable_10", 1, 0, new DebugConfiguration.Builder()
+        testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }

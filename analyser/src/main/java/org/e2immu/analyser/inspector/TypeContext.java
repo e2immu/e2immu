@@ -348,7 +348,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance
                         // add a penalty for shallowly analysed, non-public methods
                         // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                        + (shallowAnalysis && !m.isPublic() ? 100 : 0)))
+                        + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0)))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();

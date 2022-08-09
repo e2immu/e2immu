@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -279,7 +280,14 @@ public class Test_00_Basics_7 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("increment".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().methodInspection.get().isSynchronized());
+                MethodInspection methodInspection = d.methodInfo().methodInspection.get();
+                assertTrue(methodInspection.isSynchronized());
+                assertTrue(methodInspection.isPackagePrivate());
+                assertFalse(methodInspection.isFinal());
+                assertFalse(methodInspection.isDefault());
+                assertFalse(methodInspection.isAbstract());
+                assertFalse(methodInspection.isStatic());
+                assertFalse(methodInspection.isStaticBlock());
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 String expect = switch (d.iteration()) {

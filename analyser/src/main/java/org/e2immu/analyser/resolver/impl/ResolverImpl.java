@@ -1065,7 +1065,7 @@ public class ResolverImpl implements Resolver {
         if (inSameCompilationUnit) return true;
         TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
         return inspection.isPublic() ||
-                inSamePackage && inspection.isPackageProtected() ||
+                inSamePackage && inspection.isPackagePrivate() ||
                 !inSamePackage && inspection.isProtected();
     }
 
@@ -1132,7 +1132,7 @@ public class ResolverImpl implements Resolver {
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
         if (staticFieldsOnly && !inspection.isStatic()) return false;
         return inspection.isPublic() ||
-                inSamePackage && inspection.isPrivate() ||
+                inSamePackage && !inspection.isPrivate() ||
                 !inSamePackage && inspection.isProtected();
     }
 }

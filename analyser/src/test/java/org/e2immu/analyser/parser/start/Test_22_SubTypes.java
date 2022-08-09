@@ -347,7 +347,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 assertNotNull(d.haveError(Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
             }
             if ("unusedInnerField".equals(d.fieldInfo().name)) {
-                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE));
+                }
             }
         };
 

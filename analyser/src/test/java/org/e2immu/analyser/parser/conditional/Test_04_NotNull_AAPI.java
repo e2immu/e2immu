@@ -173,7 +173,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
             }
         };
 
-        testClass("NotNull_4", 1, 0, new DebugConfiguration.Builder()
+        testClass("NotNull_4", 2, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -183,7 +183,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
 
     @Test
     public void test_4_1() throws IOException {
-        testClass("NotNull_4_1", 2, 1, new DebugConfiguration.Builder()
+        testClass("NotNull_4_1", 3, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 

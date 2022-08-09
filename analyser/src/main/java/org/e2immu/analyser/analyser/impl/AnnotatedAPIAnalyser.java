@@ -126,7 +126,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             AtomicBoolean hasFinalizers = new AtomicBoolean();
             typeInfo.typeInspection.get()
                     .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                    .filter(methodInfo -> methodInfo.methodInspection.get().isPublic()
+                    .filter(methodInfo -> methodInfo.methodInspection.get().isPubliclyAccessible()
                             // the Object.clone() method is protected, but has to be accessible because it can be called on arrays
                             // see Independent1_5
                             || methodInfo.typeInfo.isJavaLangObject())
@@ -300,7 +300,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private ValueExplanation computeIndependent(TypeInfo typeInfo) {
         ValueExplanation myMethods =
                 typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .filter(m -> m.methodInspection.get().isPublic())
+                        .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                         .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(Property.INDEPENDENT),
                                 m.fullyQualifiedName))
                         .min(Comparator.comparing(p -> p.value.value()))
@@ -591,7 +591,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
-                            .filter(m -> m.methodInspection.get().isPublic())
+                            .filter(m -> m.methodInspection.get().isPubliclyAccessible())
                             .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveExcludingVoid())
                                     && m.methodInspection.get().getParameters().stream().allMatch(p -> p.parameterizedType.isPrimitiveExcludingVoid()));
             if (allMethodsOnlyPrimitives) {

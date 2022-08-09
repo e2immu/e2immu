@@ -143,7 +143,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add(ANALYSE_MODIFIED, this::analyseModified)
                 .add(ANALYSE_BEFORE_MARK, sharedState -> analyseBeforeMark())
-                .add(FIELD_ERRORS, sharedState -> fieldErrors())
+                .add(FIELD_ERRORS, this::fieldErrors)
                 .setLimitCausesOfDelay(true)
                 .build();
     }
@@ -682,14 +682,32 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return worstOverValues;
     }
 
-    private AnalysisStatus fieldErrors() {
+    private AnalysisStatus fieldErrors(SharedState sharedState) {
         if (fieldInspection.isPrivate()) {
             if (!fieldInspection.isStatic()) {
-                boolean readInMethods = allMethodsAndConstructors(false)
-                        .anyMatch(this::isReadInMethod);
-                if (!readInMethods) {
-                    analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
-                            Message.Label.PRIVATE_FIELD_NOT_READ, fieldInfo.name));
+                if (sharedState.iteration() == 0) {
+                    // we can't do this in the first iteration, locallyCreatedPrimaryTypeAnalysers not yet filled up
+                    return AnalysisStatus.of(fieldInfo.delay(CauseOfDelay.Cause.NOT_YET_EXECUTED));
+                }
+                if (fieldInfo.owner.typeInspection.get().isPrivate()) {
+                    TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner.primaryType());
+                    Stream<MethodAnalyser> allMethodsInPrimaryType = typeAnalyser.allMethodAnalysersIncludingSubTypes();
+                    boolean readAcrossPrimaryType = allMethodsInPrimaryType
+                            // filter out my own constructors
+                            .filter(ma -> !(ma.getMethodInfo().isConstructor && ma.getMethodInfo().typeInfo == fieldInfo.owner))
+                            .anyMatch(this::isReadInMethod);
+                    if (!readAcrossPrimaryType) {
+                        analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                                Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE, fieldInfo.name));
+                    }
+                } else {
+                    // non-private subtype
+                    boolean readInMethods = allMethodsAndConstructors(false)
+                            .anyMatch(this::isReadInMethod);
+                    if (!readInMethods) {
+                        analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                                Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE, fieldInfo.name));
+                    }
                 }
                 return DONE;
             }
@@ -713,7 +731,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private boolean isReadInMethod(MethodAnalyser methodAnalyser) {
-        return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
+        boolean read = methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
+        if (read) return true;
+        return methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().flatMap(AnalyserContext::methodAnalyserStream)
+                .anyMatch(this::isReadInMethod);
     }
 
     /*

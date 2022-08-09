@@ -69,7 +69,7 @@ public interface MethodInspection extends Inspection {
     boolean isVarargs();
 
     /**
-    Returns the minimally required modifiers needed in the output for this method. Avoids being verbose!!
+     * Returns the minimally required modifiers needed in the output for this method. Avoids being verbose!!
      */
     List<MethodModifier> minimalModifiers();
 
@@ -121,6 +121,16 @@ public interface MethodInspection extends Inspection {
     boolean isSynchronized();
 
     boolean isFinal();
+
+    default boolean isPubliclyAccessible() {
+        return isPubliclyAccessible(InspectionProvider.DEFAULT);
+    }
+
+    default boolean isPubliclyAccessible(InspectionProvider inspectionProvider) {
+        if (!isPublic()) return false;
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(getMethodInfo().typeInfo);
+        return typeInspection.isPublic();
+    }
 
     interface Builder extends InspectionBuilder<Builder>, MethodInspection {
 

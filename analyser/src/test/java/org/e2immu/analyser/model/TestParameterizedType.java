@@ -122,6 +122,7 @@ public class TestParameterizedType {
                     .setReturnType(new ParameterizedType(functionR, 0, NONE))
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("apply"),
                             new ParameterizedType(functionT, 0, NONE), "t", 0))
+                    .setAccess(Inspection.Access.PUBLIC)
                     .build(IP).getMethodInfo();
             TypeInspection.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
                     .noParent(primitives)

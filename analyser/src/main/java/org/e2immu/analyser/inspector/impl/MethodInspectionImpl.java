@@ -62,8 +62,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  String fullyQualifiedName,
                                  String distinguishingName,
                                  boolean synthetic,
-                                 boolean finalMethod,
                                  boolean synchronizedMethod,
+                                 boolean finalMethod,
                                  Access access,
                                  MethodType methodType,
                                  Set<MethodModifier> parsedModifiers,
@@ -628,7 +628,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             } else {
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
                 boolean isInterface = typeInspection.isInterface();
-                if (isInterface && isAbstract) {
+                if (isInterface && (isAbstract || isDefault() || isStatic())) {
                     setAccess(Access.PUBLIC);
                 } else {
                     Access fromModifier = accessFromMethodModifier();

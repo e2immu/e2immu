@@ -65,7 +65,7 @@ public class Test_14_Warnings extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             // ERROR: b is never read
             if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
-                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
+                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_OWNER_TYPE));
             }
         };
 

@@ -460,7 +460,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        testClass("ParameterizedType_3", 2, 7,
+        testClass("ParameterizedType_3", 7, 7,
                 new DebugConfiguration.Builder().build());
     }
 

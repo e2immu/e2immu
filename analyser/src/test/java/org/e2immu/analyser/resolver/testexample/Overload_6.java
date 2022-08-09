@@ -12,21 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.TypeInfo;
-
-import java.util.stream.Stream;
-
-public interface TypeAnalyser extends Analyser {
-    boolean ignorePrivateConstructorsForFieldValue();
-
-    TypeInfo getTypeInfo();
-
-    TypeAnalysis getTypeAnalysis();
-
-    TypeInfo getPrimaryType();
-
-    Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes();
+public class Overload_6 {
+    boolean test() {
+        StringBuilder sb = new StringBuilder("abc").append(3).append("-");
+        CharSequence cs = sb;
+        return cs.length() == 3;
+    }
 }

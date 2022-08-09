@@ -194,6 +194,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
+    public Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes() {
+        Stream<MethodAnalyser> subTypes = typeInspection.subTypes().stream()
+                .flatMap(st -> analyserContext.getTypeAnalyser(st).allMethodAnalysersIncludingSubTypes());
+        return Stream.concat(myMethodAnalysers.stream(), subTypes);
+    }
+
+    @Override
     public AnalyserResult analyse(SharedState sharedState) {
         assert !isUnreachable();
         int iteration = sharedState.iteration();

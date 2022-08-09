@@ -410,7 +410,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("scope-perPackage:1".equals(d.variableName())) {
                     assertEquals("1", d.statementId());
-                    assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

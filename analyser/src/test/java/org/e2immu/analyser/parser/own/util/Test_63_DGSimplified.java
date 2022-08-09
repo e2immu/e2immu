@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -324,9 +325,17 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("DGSimplified_2", 1, 0, new DebugConfiguration.Builder()
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE));
+                }
+            }
+        };
+        testClass("DGSimplified_2", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -399,8 +408,14 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 // value of the parameter
                 assertEquals("dependsOn", d.fieldAnalysis().getValue().toString());
             }
+            if ("t".equals(d.fieldInfo().name)) {
+                if (d.iteration() > 0) {
+                    assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ_IN_PRIMARY_TYPE));
+                }
+            }
         };
-        testClass("DGSimplified_3", 0, 2, new DebugConfiguration.Builder()
+
+        testClass("DGSimplified_3", 1, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -627,7 +642,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d, 49, MultiLevel.INDEPENDENT_1_INCONCLUSIVE, Property.INDEPENDENT);
             }
         };
-        testClass("DGSimplified_4", 0, 3, new DebugConfiguration.Builder()
+        testClass("DGSimplified_4", 1, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

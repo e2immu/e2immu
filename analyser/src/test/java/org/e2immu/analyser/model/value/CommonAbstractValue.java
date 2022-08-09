@@ -201,7 +201,9 @@ public abstract class CommonAbstractValue {
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(Identifier.generate("test"),
                 PRIMITIVES.stringParameterizedType(), "p", 0);
-        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType()).addParameter(pi);
+        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType())
+                .setAccess(Inspection.Access.PUBLIC)
+                .addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));

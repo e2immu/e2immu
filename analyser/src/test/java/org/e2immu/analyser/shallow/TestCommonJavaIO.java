@@ -19,14 +19,17 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 import java.io.Writer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaIO extends CommonAnnotatedAPI {
 
@@ -59,6 +62,15 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
         TypeInfo objectTypeInfo = typeContext.getPrimitives().objectTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("println", objectTypeInfo);
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isAbstract());
+        assertFalse(methodInspection.isDefault());
+        assertTrue(methodInspection.isPubliclyAccessible());
+        assertFalse(methodInspection.isStatic());
+
+        MethodResolution methodResolution = methodInfo.methodResolution.get();
+        assertTrue(methodResolution.allowsInterrupts()); // statement time will increase
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));

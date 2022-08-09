@@ -26,7 +26,7 @@ import java.util.List;
 public interface Inspection {
 
     enum Access {
-        PRIVATE(0), PROTECTED(1), PACKAGE(2), PUBLIC(3);
+        PRIVATE(0), PACKAGE(1),  PROTECTED(2), PUBLIC(3);
 
         private final int level;
 
@@ -60,7 +60,7 @@ public interface Inspection {
         return getAccess() == Access.PROTECTED;
     }
 
-    default boolean isPackageProtected() {
+    default boolean isPackagePrivate() {
         return getAccess() == Access.PACKAGE;
     }
 

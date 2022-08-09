@@ -418,7 +418,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private void checkMethodIndependent() {
         DV finalValue = methodAnalysis.getProperty(Property.INDEPENDENT);
         DV overloads = methodInfo.methodResolution.get().overrides().stream()
-                .filter(mi -> mi.methodInspection.get().isPublic())
+                .filter(mi -> mi.methodInspection.get().isPubliclyAccessible())
                 .map(analyserContext::getMethodAnalysis)
                 .map(ma -> ma.getProperty(Property.INDEPENDENT))
                 .reduce(DV.MAX_INT_DV, DV::min);

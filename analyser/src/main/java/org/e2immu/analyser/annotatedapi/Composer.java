@@ -123,7 +123,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             }
         }
 
-        TypeInspection builtType = typeBuilder.setFunctionalInterface(false).build(typeMap);
+        TypeInspection builtType = typeBuilder.setFunctionalInterface(false)
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(typeMap);
         TypeInfo typeInfo = builtType.typeInfo();
         typeInfo.typeInspection.set(builtType);
         packageBuilder.addSubType(typeInfo);
@@ -146,7 +148,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             builder.setInspectedInitialiserExpression(bestType == null ?
                     NullConstant.NULL_CONSTANT : ConstantExpression.nullValue(typeMap.getPrimitives(), bestType));
         }
-        newField.fieldInspection.set(builder.build(typeMap));
+        newField.fieldInspection.set(builder
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(typeMap));
         return newField;
     }
 
@@ -179,7 +183,9 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             }
             builder.addParameter(newParameterBuilder);
         }
-        MethodInfo newMethod = builder.build(InspectionProvider.DEFAULT).getMethodInfo();
+        MethodInfo newMethod = builder
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(InspectionProvider.DEFAULT).getMethodInfo();
         newMethod.methodResolution.set(new MethodResolution.Builder().build());
         return newMethod;
     }

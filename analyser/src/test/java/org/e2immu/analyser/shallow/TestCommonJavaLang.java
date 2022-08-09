@@ -74,7 +74,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
         MethodInspection methodInspection = toLowerCase.methodInspection.get();
         assertTrue(methodInspection.isPublic());
-        assertTrue(methodInspection.isAbstract());
+        assertFalse(methodInspection.isAbstract());
         assertFalse(methodInspection.isDefault());
         assertFalse(methodInspection.isStatic());
     }
@@ -205,6 +205,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testCollectionForEach() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Iterable.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("forEach", 1);
+        assertEquals("java.lang.Iterable.forEach(java.util.function.Consumer<? super T>)",
+                methodInfo.fullyQualifiedName);
+
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertTrue(methodInspection.isPublic());
+        assertFalse(methodInspection.isAbstract());
+        assertTrue(methodInspection.isDefault());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
@@ -221,6 +229,16 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSystemOut() {
         TypeInfo typeInfo = typeContext.getFullyQualified(System.class);
         FieldInfo out = typeInfo.getFieldByName("out", true);
+        FieldInspection fieldInspection = out.fieldInspection.get();
+        assertTrue(fieldInspection.isPublic());
+        assertTrue(fieldInspection.isStatic());
+
+        // just to be sure
+        assertFalse(fieldInspection.isPrivate());
+        assertFalse(fieldInspection.isPackagePrivate());
+        assertFalse(fieldInspection.isProtected());
+        assertFalse(fieldInspection.isSynthetic());
+
         FieldAnalysis fieldAnalysis = out.fieldAnalysis.get();
         assertEquals(MultiLevel.IGNORE_MODS_DV, fieldAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));

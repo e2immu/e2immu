@@ -76,13 +76,17 @@ public class TestTypeInfoStream {
 
         ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
-        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo).build(IP).getMethodInfo();
+        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo)
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(IP).getMethodInfo();
 
-        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo).build(IP).getMethodInfo();
+        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo)
+                .setAccess(Inspection.Access.PACKAGE)
+                .build(IP).getMethodInfo();
         emptyContainerConstructor.methodResolution.set(new MethodResolution.Builder().build());
 
         MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(testTypeInfo, "toString")
-                .addModifier(MethodModifier.PUBLIC)
+                .setAccess(Inspection.Access.PUBLIC)
                 .setReturnType(primitives.stringParameterizedType()).build(IP).getMethodInfo();
         toStringMethodInfo.methodResolution.set(new MethodResolution.Builder().build());
 
@@ -143,13 +147,16 @@ public class TestTypeInfoStream {
                 .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType(), typeT)))
                 .build();
-        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
+        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap)
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(IP).getMethodInfo();
         Expression creationExpression = ConstructorCall.objectCreation(newId(), hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(newId(), typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)
                 .addParameter(p0)
+                .setAccess(Inspection.Access.PUBLIC)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setInspectedBlock(
@@ -230,6 +237,7 @@ public class TestTypeInfoStream {
         MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
                 .setReturnType(primitives.stringParameterizedType())
                 .setInspectedBlock(new Block.BlockBuilder(newId()).build())
+                .setAccess(Inspection.Access.PACKAGE)
                 .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .noParent(primitives)
@@ -261,6 +269,7 @@ public class TestTypeInfoStream {
                 .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(
                         new MemberValuePair(MemberValuePair.VALUE, new StringConstant(primitives, "hello")))))
+                .setAccess(Inspection.Access.PRIVATE)
                 .setInspectedBlock(
                         new Block.BlockBuilder(newId()).addStatement(
                                 new ReturnStatement(newId(),
@@ -293,7 +302,7 @@ public class TestTypeInfoStream {
         assertTrue(stream.contains("final String s"));
         assertFalse(stream.contains("import java.lang"));
         assertTrue(stream.contains("TestTypeInfoStream(){"));
-        assertTrue(stream.contains("public static int sum(int x,int y) throws MyException{"));
+        assertTrue(stream.contains("private static int sum(int x,int y) throws MyException{"));
         assertTrue(stream.contains("T put(T value)"));
     }
 }

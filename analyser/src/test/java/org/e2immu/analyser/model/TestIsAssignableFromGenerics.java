@@ -87,6 +87,8 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
             MethodInfo compareTo = compareToBuilder
                     .setReturnType(primitives.intParameterizedType())
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("compareTo"),
                             new ParameterizedType(myComparableT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
@@ -137,6 +139,8 @@ public class TestIsAssignableFromGenerics {
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
             add = addBuilder
                     .setReturnType(primitives.voidParameterizedType())
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setAbstractMethod()
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate("add"),
                             new ParameterizedType(t, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
@@ -195,14 +199,14 @@ public class TestIsAssignableFromGenerics {
 
     @Test
     public void testOutput() {
-        assertTrue(myComparable.output().toString().contains("interface MyComparable<T>{int compareTo(T t){}}"),
+        assertTrue(myComparable.output().toString().contains("interface MyComparable<T>{int compareTo(T t);}"),
                 () -> myComparable.output().toString());
         assertTrue(node.output().toString().contains("interface Node extends MyComparable<Node>{"),
                 () -> node.output().toString());
         assertTrue(sub1.output().toString().contains("interface Sub1 extends Node{"), () -> sub1.output().toString());
         assertTrue(sub2.output().toString().contains("interface Sub2 extends Node{"), () -> sub2.output().toString());
         assertTrue(myList1.output().toString()
-                        .contains("interface MyList1<T extends Node> extends MyComparable<MyList1<T>>{void add(T t){}}"),
+                        .contains("interface MyList1<T extends Node> extends MyComparable<MyList1<T>>{void add(T t);}"),
                 () -> myList1.output().toString());
         assertTrue(myList2.output().toString()
                         .contains("interface MyList2<T extends Node> extends MyComparable<MyList2<? super T>>{"),

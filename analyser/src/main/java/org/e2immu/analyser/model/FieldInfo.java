@@ -129,10 +129,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet() && !asParameter) {
             FieldInspection inspection = this.fieldInspection.get();
-            outputBuilder.add(minimalModifiers(inspection).stream()
+            List<FieldModifier> fieldModifiers = minimalModifiers(inspection);
+            outputBuilder.add(fieldModifiers.stream()
                     .map(mod -> new OutputBuilder().add(new Text(mod.toJava())))
                     .collect(OutputBuilder.joining(Space.ONE)));
-            if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
+            if (!fieldModifiers.isEmpty()) outputBuilder.add(Space.ONE);
         }
         outputBuilder
                 .add(type.output(qualification))
@@ -157,7 +158,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         List<FieldModifier> list = new ArrayList<>();
         Inspection.Access access = fieldInspection.getAccess();
         Inspection.Access ownerAccess = owner.typeInspection.get().getAccess();
-        if(access.le(ownerAccess) && access != Inspection.Access.PACKAGE) {
+
+        /*
+        if the owner access is private, we don't write any modifier
+         */
+        if(access.le(ownerAccess) && access != Inspection.Access.PACKAGE && ownerAccess != Inspection.Access.PRIVATE) {
             list.add(toFieldModifier(access));
         }
         for (FieldModifier fm : FieldModifier.NON_ACCESS_SORTED) {

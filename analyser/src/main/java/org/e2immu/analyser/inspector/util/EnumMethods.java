@@ -125,9 +125,6 @@ public class EnumMethods {
             var codeBlock = returnValueOf(expressionContext, identifier, enumType, valuesBuilder,
                     nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
             valueOfBuilder.setInspectedBlock(codeBlock);
-        } else {
-            // we have no idea what the immutability will be!
-            valueOfBuilder.setAbstractMethod();
         }
 
         typeContext.typeMap.registerMethodInspection(valueOfBuilder);

@@ -247,8 +247,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return hasStatements();
     }
 
+    /*
+    Enum.valueOf() is a static, synthetic method, which can have code or not, depending on the availability of
+    certain types (see EnumMethods). It is, however, never semantically "explicitlyEmpty".
+     */
     public boolean explicitlyEmptyMethod() {
-        if (hasStatements()) return false;
+        if (hasStatements() || methodInspection.get().isStatic() && methodInspection.get().isSynthetic()) return false;
         boolean empty = !typeInfo.shallowAnalysis() && !methodInspection.get().isAbstract();
         assert !empty || noReturnValue();
         return empty;
@@ -281,7 +285,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
             MethodInspection methodInspection = inspectionProvider.getMethodInspection(this);
-            return methodInspection.isPublic();
+            return methodInspection.isPubliclyAccessible(inspectionProvider);
         }
         return true; // by hand, java parsing
     }

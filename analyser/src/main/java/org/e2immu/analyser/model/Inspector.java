@@ -21,14 +21,16 @@ For now, the only relevant thing we can deduce is whether the type's statements 
 (So we could have put a simple boolean in TypeInspection, rather than this object.)
 
 Note that "synthetic" is not quite equivalent to "BY_HAND". The byte code inspector can add synthetic
-fields and methods; at the moment it cannot add synthetic types but it may do so later?
+fields and methods; at the moment it cannot add synthetic types.
+
+the label is there for clarity when debugging.
  */
-public record Inspector(boolean statements) {
+public record Inspector(boolean statements, String label) {
 
-    public static final Inspector BYTE_CODE_INSPECTION = new Inspector(false);
-    public static final Inspector JAVA_PARSER_INSPECTION = new Inspector(true);
+    public static final Inspector BYTE_CODE_INSPECTION = new Inspector(false, "Byte code");
+    public static final Inspector JAVA_PARSER_INSPECTION = new Inspector(true, "Java parser");
 
-    public static final Inspector BY_HAND = new Inspector(true);
-    public static final Inspector BY_HAND_WITHOUT_STATEMENTS = new Inspector(false);
+    public static final Inspector BY_HAND = new Inspector(true, "By hand");
+    public static final Inspector BY_HAND_WITHOUT_STATEMENTS = new Inspector(false, "By hand");
 
 }
