@@ -357,7 +357,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 assertDv(d, DV.FALSE_DV, Property.IDENTITY);
-                assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
 
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

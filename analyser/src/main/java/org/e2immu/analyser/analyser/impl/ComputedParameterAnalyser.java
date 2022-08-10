@@ -263,85 +263,51 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                        either it is dependent, or the value of independence (from 1 to infinity) is determined by the size of the
                        hidden content component inside the field
                      */
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    CausesOfDelay hiddenContentDelayed = typeAnalysis.hiddenContentTypeStatus();
-                    if (hiddenContentDelayed.isDelayed()) {
-                        LOGGER.debug("Delay independent in parameter {}, waiting for hidden content/transparent types",
-                                parameterInfo.fullyQualifiedName());
-                        parameterAnalysis.setProperty(INDEPENDENT, hiddenContentDelayed);
-                        return hiddenContentDelayed;
-                    }
-                    DV minHiddenContentImmutable = fields.keySet().stream()
-                            // hidden content is available, because linking has been computed(?)
-                            .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
-                            .map(pt -> analyserContext.defaultImmutable(pt, false, parameterInfo.getTypeInfo()))
-                            .reduce(DV.MAX_INT_DV, DV::min);
-
-                    DV linkToFields = fields.values().stream()
-                            .map(LinkedVariables::fromLinkedVariableToIndependent)
-                            .reduce(INDEPENDENT_DV, DV::min);
-                    assert linkToFields.lt(INDEPENDENT_DV) : "There should not have been linking to the field: the link has NO_LINK level";
-
-                    if (minHiddenContentImmutable == DV.MAX_INT_DV) {
-                        /*
-                         the parameter's type is not part of the hidden content of the fields: it is explicit.
-                         linking is either dependent: changes to the argument modify the explicit part of the field.
-                         */
-                        LOGGER.debug("Assign DEPENDENT to parameter {}: parameter's type does not belong to hidden content, link is {}",
-                                parameterInfo, linkToFields);
-                        parameterAnalysis.setProperty(INDEPENDENT, DEPENDENT_DV);
-                        return DONE;
-                    }
-                    if (minHiddenContentImmutable.isDelayed()) {
-                        LOGGER.debug("Delay independent in parameter {}, waiting for immutable of hidden content/transparent types",
-                                parameterInfo.fullyQualifiedName());
-                        parameterAnalysis.setProperty(INDEPENDENT, minHiddenContentImmutable);
-                        return minHiddenContentImmutable.causesOfDelay();
-                    }
-                    /*
-                    TODO see also ConstructorCall.computeIndependentFromComponents
-
-                    the immutable level of parameter's type in the hidden content
-                    0 -> mutable, E1 --> @Independent1
-                    1 -> E2Immutable --> @Independent2
-                    This now needs combining with the link level to the field, which is at least @Independent1 (value 0)
-                    but less than @Independent (or there would not have been a link)
-
-                    there should be an agreement between the immutability level of the parameter's type and the link level
-                    to the field.
-                     */
-                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
-                    DV result = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
-                            MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, result);
-                    return DONE;
+                    DV independent = independenceOfFields(fields);
+                    parameterAnalysis.setProperty(INDEPENDENT, independent);
+                    return AnalysisStatus.of(independent);
                 }
-                /*
-
-                DV immutable = parameterAnalysis.getProperty(IMMUTABLE);
-                if (immutable.isDelayed()) return AnalysisStatus.of(immutable); // we'll have to wait
-                int immutableLevel = MultiLevel.level(immutable);
-                DV independent = fields.values().stream().reduce(LinkedVariables.NO_LINKING_DV, DV::min);
-                if (independent.le(DEPENDENT_DV)) {
-                    // ExposedArrayOfHasSize in E2ImmutableComposition_0
-                    DV result = immutableLevel == 0 ? DEPENDENT_DV : MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    LOGGER.debug("Assign {} to parameter {}: dependent link on field", result, parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, result);
-                    return DONE;
-                }
-                int parameterLevel = MultiLevel.level(independent); // 0 = @Independent1
-                int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
-                DV result = MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
-                LOGGER.debug("Assign {} to parameter {}", result, parameterInfo.fullyQualifiedName());
-                parameterAnalysis.setProperty(INDEPENDENT, result);
-                return DONE;
-                 */
             }
         }
         // finally, no other alternative
         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
         return DONE;
+    }
+
+    /*
+    See also ComputingMethodAnalyser.computeIndependent; ConstructorCall.computeIndependentFromComponents
+     */
+    private DV independenceOfFields(Map<FieldReference, DV> fields) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
+
+        /*
+        Is any of the fields that this parameter links to, transparent in the type? If so, those fields must contribute
+        INDEPENDENT_1.
+        Link == assignment, then the field and parameter are of transparent type.
+        Link >= dependent, then the parameter must be of transparent type, and the field cannot be: the dependence must
+          arise from a method call making the field's type explicit
+         */
+        DV transparent = typeAnalysis.isTransparent(parameterInfo.parameterizedType);
+        if (transparent.isDelayed()) {
+            LOGGER.debug("Delay independent on parameter {}, waiting for transparent types", parameterInfo);
+            return transparent;
+        }
+        if (transparent.valueIsTrue()) {
+            return INDEPENDENT_1_DV;
+        }
+
+        int immutableLevel = fields.entrySet().stream().mapToInt(e -> {
+            DV immutableField = analyserContext.defaultImmutable(e.getKey().parameterizedType, false, parameterInfo.owner.typeInfo);
+            int level = MultiLevel.level(immutableField);
+            if (level < Level.IMMUTABLE_2.level && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV)) {
+                return Level.IMMUTABLE_2.level;
+            }
+            return level;
+        }).reduce(MAX_LEVEL, Math::min);
+
+        DV result = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+        LOGGER.debug("Assign {} to parameter {}", result, parameterInfo);
+        return result;
     }
 
     /**
@@ -451,7 +417,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
                 if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    if (typeAnalysis.hiddenContentTypeStatus().isDone()) {
+                    if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) {
                         SetOfTypes transparent = typeAnalysis.getTransparentTypes();
                         if (transparent.contains(parameterInfo.parameterizedType)) {
                             parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
@@ -480,7 +446,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                 changed = true;
                             }
                         }
-                    } else delays = delays.merge(typeAnalysis.hiddenContentTypeStatus());
+                    } else delays = delays.merge(typeAnalysis.transparentAndExplicitTypeComputationDelays());
                 }
             }
         }

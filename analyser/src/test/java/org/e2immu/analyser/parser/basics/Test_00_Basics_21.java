@@ -66,7 +66,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:4";
+                    String expectLv = d.iteration() <= 1 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
@@ -90,7 +90,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         };
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -113,7 +113,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                                 .getProperty(CONTEXT_IMMUTABLE));
                         assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, CONTEXT_IMMUTABLE);
 
-                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:4";
+                        String expectLinked = d.iteration() <= 1 ? "this:-1" : "this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);

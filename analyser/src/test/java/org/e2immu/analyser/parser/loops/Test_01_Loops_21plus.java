@@ -266,6 +266,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     }
                     if ("4.0.0".equals(d.statementId())) {
                         assertDv(d, 4, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 5, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
                 if ("x".equals(d.variableName())) {
@@ -275,6 +276,8 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("4.0.0".equals(d.statementId())) {
+                        assertDv(d, 5, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+
                         String linked = d.iteration() <= 4 ? "this.xes:-1" : "this.xes:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);

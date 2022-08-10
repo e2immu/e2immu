@@ -68,7 +68,7 @@ public class Test_48_Store extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // EVAL level
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("", eval.getLinkedVariables().toString());
+                        assertEquals("body:2", eval.getLinkedVariables().toString());
                         assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                     }

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record AnnotationXmlConfiguration(boolean writeAnnotationXml,
                                          List<String> writeAnnotationXmlPackages,
                                          List<String> readAnnotationXmlPackages,

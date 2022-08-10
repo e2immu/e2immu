@@ -111,7 +111,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
 
     private void checkWorseThanParent() {
         DV parameterTypeIsHidden = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo())
-                .isPartOfHiddenContent(parameterInfo.parameterizedType);
+                .isTransparent(parameterInfo.parameterizedType);
         for (Property property : CHECK_WORSE_THAN_PARENT) {
             DV valueFromOverrides = computeValueFromOverrides(property, true);
             DV value = parameterAnalysis.getProperty(property);

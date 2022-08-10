@@ -59,4 +59,8 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         set.retainAll(other.types);
         return new SetOfTypes(set);
     }
+
+    public int size() {
+        return types.size();
+    }
 }

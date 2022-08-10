@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.MultiLevel.*;
+import static org.e2immu.analyser.model.MultiLevel.INDEPENDENT_DV;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -258,32 +258,40 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     If we feed in an array of recursively immutable elements, like HasSize[], we want @Dependent as an outcome.
     If we feed in the recursively immutable element HasSize, we remain independent
 
+    Code similar to computeIndependent in ComputingMethodAnalyser; see also analyseIndependentNoAssignment
+    in ComputingParameterAnalyser.
      */
-    private static DV computeIndependentFromComponents(EvaluationResult evaluationContext,
+    private static DV computeIndependentFromComponents(EvaluationResult context,
                                                        Expression value,
                                                        ParameterInfo parameterInfo) {
-        ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+        ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
         DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-        DV immutableOfValue = evaluationContext.getProperty(value, Property.IMMUTABLE);
+        DV immutableOfValue = context.getProperty(value, Property.IMMUTABLE);
 
         // shortcut: either is at max value, then there is no discussion
-        if (independentOnParameter.equals(INDEPENDENT_DV) || immutableOfValue.equals(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        if (independentOnParameter.equals(INDEPENDENT_DV)
+                || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfValue)) {
             return INDEPENDENT_DV;
         }
 
         // any delay: wait!
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
-        if(causes.isDelayed()) return causes;
+        if (causes.isDelayed()) return causes;
 
-        int immutableLevel = MultiLevel.level(immutableOfValue);
-        if (independentOnParameter.le(DEPENDENT_DV)) {
-            if (immutableLevel == 0) return DEPENDENT_DV;
-            return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+        DV typeTransparent = context.getAnalyserContext().getTypeAnalysis(context.getCurrentType())
+                .isTransparent(parameterInfo.parameterizedType);
+        if (typeTransparent.isDelayed()) return typeTransparent;
+        if (typeTransparent.valueIsTrue()) {
+            return MultiLevel.INDEPENDENT_1_DV;
         }
-        // TODO shouldn't we use the same method as in CPA.analyseIndependentNoAssignment??
-        int parameterLevel = MultiLevel.level(independentOnParameter); // 0 = @Independent1
-        int resultLevel = Math.min(MultiLevel.MAX_LEVEL, immutableLevel + parameterLevel + 1);
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(resultLevel);
+        int immutableLevel = MultiLevel.level(immutableOfValue);
+
+        if (independentOnParameter.ge(MultiLevel.INDEPENDENT_1_DV)
+                && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
+            // mutable, but linked content-wise
+            return MultiLevel.INDEPENDENT_1_DV;
+        }
+        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 
     @Override

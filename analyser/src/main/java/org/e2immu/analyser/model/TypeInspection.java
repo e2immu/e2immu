@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -254,11 +255,11 @@ public interface TypeInspection extends Inspection {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider));
+        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider).types());
         return typesOfFields;
     }
 
-    default Set<ParameterizedType> typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
+    default SetOfTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
@@ -268,7 +269,7 @@ public interface TypeInspection extends Inspection {
                 result.add(parameterInfo.parameterizedType);
             }
         }
-        return result;
+        return new SetOfTypes(result);
     }
 
     static String createStaticBlockMethodName(int identifier) {

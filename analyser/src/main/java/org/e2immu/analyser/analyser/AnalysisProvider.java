@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -115,34 +114,6 @@ public interface AnalysisProvider {
         return property.falseDv;
     }
 
-    default DV isTransparentOrAtLeastEventuallyE2Immutable(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
-        if (parameterizedType.arrays > 0) return DV.FALSE_DV;
-        DV atLeastEventuallyE2Immutable = isAtLeastEventuallyE2Immutable(parameterizedType);
-        if (atLeastEventuallyE2Immutable.valueIsTrue()) return DV.TRUE_DV;
-        DV transparent = isTransparent(parameterizedType, typeBeingAnalysed);
-        if (transparent.valueIsTrue()) return DV.TRUE_DV;
-        if (transparent.isDelayed() || atLeastEventuallyE2Immutable.isDelayed()) {
-            return transparent.min(atLeastEventuallyE2Immutable);
-        }
-        return DV.FALSE_DV;
-    }
-
-    private DV isAtLeastEventuallyE2Immutable(ParameterizedType parameterizedType) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType == null) return DV.FALSE_DV;
-        DV immutable = getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
-        if (immutable.isDelayed()) return immutable;
-        return DV.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
-    }
-
-    default DV isTransparent(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
-        TypeAnalysis typeAnalysis = getTypeAnalysis(typeBeingAnalysed);
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return DelayFactory.createDelay(typeBeingAnalysed.newLocation(),
-                CauseOfDelay.Cause.HIDDEN_CONTENT);
-        return DV.fromBoolDv(hiddenContentTypes.contains(parameterizedType));
-    }
-
     default DV cannotBeModifiedInThisClass(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType == null) return DV.FALSE_DV;
@@ -187,49 +158,6 @@ public interface AnalysisProvider {
         return baseValue;
     }
 
-    default DV immutableOfHiddenContent(ParameterizedType parameterizedType, boolean returnValueOfMethod,
-                                        TypeInfo currentType) {
-        // FIXME ? include and move to AnalyserContext
-        /*
-         if (type.isFunctionalInterface(analyserContext)) {
-            ParameterizedType returnType = type.findSingleAbstractMethodOfInterface(analyserContext)
-                    .getConcreteReturnType(analyserContext.getPrimitives());
-            return findHiddenContentType(analyserContext, returnType);
-        }
-
-         */
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (parameterizedType.arrays > 0) {
-            ParameterizedType withoutArrays = parameterizedType.copyWithoutArrays();
-            return defaultImmutable(withoutArrays, returnValueOfMethod, currentType);
-        }
-        if (bestType == null) {
-            return returnValueOfMethod ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
-        }
-
-        // the type itself
-        TypeAnalysis currentTA = getTypeAnalysis(currentType);
-        DV partOfHiddenContent = currentTA.isPartOfHiddenContent(parameterizedType);
-        if (partOfHiddenContent.isDelayed()) {
-            return partOfHiddenContent;
-        }
-        if (partOfHiddenContent.valueIsTrue()) {
-            return MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
-        }
-        // look inside the type
-        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return typeAnalysisNotAvailable(bestType);
-        }
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(parameterizedType);
-        if (hiddenContentTypes == null) {
-            return bestType.delay(CauseOfDelay.Cause.HIDDEN_CONTENT);
-        }
-        return hiddenContentTypes.types().stream()
-                .map(pt -> defaultImmutable(pt, returnValueOfMethod, currentType))
-                .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
-    }
-
     default DV defaultImmutable(ParameterizedType parameterizedType, boolean unboundIsMutable, TypeInfo currentType) {
         return defaultImmutable(parameterizedType, unboundIsMutable, MultiLevel.NOT_INVOLVED_DV, currentType);
     }
@@ -252,7 +180,7 @@ public interface AnalysisProvider {
         }
         if (currentType != null) {
             TypeAnalysis typeAnalysisOfCurrentType = getTypeAnalysis(currentType);
-            DV partOfHiddenContent = typeAnalysisOfCurrentType.isPartOfHiddenContent(parameterizedType);
+            DV partOfHiddenContent = typeAnalysisOfCurrentType.isTransparent(parameterizedType);
             if (partOfHiddenContent.valueIsTrue()) {
                 return unboundIsMutable ? MultiLevel.MUTABLE_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
             }

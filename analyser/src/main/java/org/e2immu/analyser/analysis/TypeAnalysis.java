@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public interface TypeAnalysis extends Analysis {
 
@@ -57,6 +56,8 @@ public interface TypeAnalysis extends Analysis {
     @NotNull
     CausesOfDelay approvedPreconditionsStatus(boolean e2);
 
+    boolean approvedPreconditionsIsNotEmpty(boolean e2);
+
     @NotNull1
     Set<FieldInfo> getEventuallyImmutableFields();
 
@@ -85,38 +86,6 @@ public interface TypeAnalysis extends Analysis {
         getApprovedPreconditionsE2().keySet().stream()
                 .map(this::translateToVisibleField).filter(Objects::nonNull).forEach(res::add);
         return res;
-    }
-
-    /**
-     * Returns the hidden content types
-     *
-     * @return null when not yet set
-     */
-    @Nullable
-    SetOfTypes getTransparentTypes();
-
-    /**
-     * Hidden content types, concretely (type parameters are substituted)
-     * <p>
-     * IMPROVE probably too simplistic
-     *
-     * @param concreteType the concrete type used to substitute
-     * @return a set of concrete hidden content types
-     */
-    @Nullable
-    default SetOfTypes getTransparentTypes(ParameterizedType concreteType) {
-        SetOfTypes transparentTypes = getTransparentTypes();
-        if (transparentTypes == null) return null;
-        return new SetOfTypes(transparentTypes.types().stream()
-                .map(pt -> {
-                    if (pt.typeParameter != null) {
-                        int index = pt.typeParameter.getIndex();
-                        if (index < concreteType.parameters.size()) {
-                            return concreteType.parameters.get(index);
-                        }
-                    }
-                    return pt;
-                }).collect(Collectors.toUnmodifiableSet()));
     }
 
     default DV getTypeProperty(Property property) {
@@ -151,31 +120,47 @@ public interface TypeAnalysis extends Analysis {
         return getAspects().containsKey(aspect);
     }
 
-    default DV maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, Property property) {
-        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
-                .stream().filter(TypeInfo::isInterface);
-        return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .map(typeAnalysis -> typeAnalysis.getTypeProperty(property))
-                .reduce(DV.MIN_INT_DV, DV::max);
+    default void setAspect(String aspect, MethodInfo mainMethod) {
+        throw new UnsupportedOperationException();
     }
 
+    /* ******* methods dealing with explicit and transparent types in the object graph of the fields *************** */
+
     /*
-    Optional<T> is @E2Immutable. In general T can be mutable; it is part of the immutable content of Optional.
+    Optional<T> is @E2Immutable. In general T can be mutable; it is part of the hidden content of Optional.
     Optional<Integer> is @ERImmutable, because Integer is so.
      */
     DV immutableCanBeIncreasedByTypeParameters();
 
-    /*
-    too simple an implementation, we should do real bookkeeping: which fields hold which types?
+    /**
+     * IMPROVE too simple an implementation, we should do real bookkeeping: which fields hold which types?
+     *
+     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
      */
-    default Set<ParameterizedType> hiddenContentLinkedTo(FieldInfo fieldInfo) {
-        return getTransparentTypes().types();
+    default SetOfTypes transparentTypesOf(FieldInfo fieldInfo) {
+        return getTransparentTypes();
     }
 
-    Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
+    /**
+     * Returns the transparent types: types in the object graph of the fields that are never accessed.
+     * Any unbound type parameter is always transparent as a type in the object graph.
+     * Ensure that none of 'this' and 'super' types are transparent!
+     *
+     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+     */
+    @Nullable
+    SetOfTypes getTransparentTypes();
 
-    default DV isPartOfHiddenContent(ParameterizedType type) {
-        CausesOfDelay status = hiddenContentTypeStatus();
+    /**
+     * The explicit types are those types in the object graph of the fields that are accessed.
+     * By definition, the sets of explicit types and transparent types are disjoint.
+     *
+     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+     */
+    SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider);
+
+    default DV isTransparent(ParameterizedType type) {
+        CausesOfDelay status = transparentAndExplicitTypeComputationDelays();
         if (status.isDone()) {
             return DV.fromBoolDv(getTransparentTypes().contains(type.withoutTypeParameters()));
         }
@@ -183,11 +168,5 @@ public interface TypeAnalysis extends Analysis {
     }
 
     @NotNull
-    CausesOfDelay hiddenContentTypeStatus();
-
-    boolean approvedPreconditionsIsNotEmpty(boolean e2);
-
-    default void setAspect(String aspect, MethodInfo mainMethod) {
-        throw new UnsupportedOperationException();
-    }
+    CausesOfDelay transparentAndExplicitTypeComputationDelays();
 }

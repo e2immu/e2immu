@@ -437,8 +437,9 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
-    public Set<ParameterizedType> explicitTypesOfJLO() {
-        return Set.of(stringParameterizedType, objectParameterizedType, classTypeInfo.asSimpleParameterizedType());
+    public SetOfTypes explicitTypesOfJLO() {
+        return new SetOfTypes(Set.of(stringParameterizedType, objectParameterizedType,
+                classTypeInfo.asSimpleParameterizedType()));
     }
 
     @Override

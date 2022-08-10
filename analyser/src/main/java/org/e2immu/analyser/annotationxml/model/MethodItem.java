@@ -24,7 +24,6 @@ import org.e2immu.annotation.E2Immutable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@E2Immutable(after = "freeze")
 public class MethodItem extends HasAnnotations implements Comparable<MethodItem> {
     public final String name;
     public final String returnType;

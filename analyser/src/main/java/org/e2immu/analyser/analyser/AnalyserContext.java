@@ -27,6 +27,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -41,7 +43,10 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     // gives access to primitives
     Primitives getPrimitives();
 
-    default ImportantClasses importantClasses() { throw new UnsupportedOperationException(); }
+    default ImportantClasses importantClasses() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Used by ConditionalValue, isFact().
      *
@@ -197,10 +202,38 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         }
         return null;
     }
-/*
-    default Stream<MethodAnalyser> parallelMethodAnalyserStream() {
-        return methodAnalyserStream();
+
+    default DV immutableOfHiddenContentInTypeParameters(ParameterizedType parameterizedType, TypeInfo currentType) {
+        SetOfTypes hiddenContentTypes = typeParametersOf(parameterizedType);
+        return hiddenContentTypes.types().stream()
+                .map(pt -> defaultImmutable(pt, true, currentType))
+                .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
     }
 
- */
+    private SetOfTypes typeParametersOf(ParameterizedType parameterizedType) {
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (bestType == null) {
+            // unbound type parameter, with or without arrays
+            return new SetOfTypes(Set.of(parameterizedType.copyWithoutArrays()));
+        }
+        /*
+        archetypal situation 1: pt == Set<String>; we want to return String
+
+        Formally, the type has formal type parameters. They must be part of the hidden
+        content; so we return the values of the concrete parameters
+         */
+        TypeInspection typeInspection = getTypeInspection(bestType);
+        Set<ParameterizedType> result = new HashSet<>();
+        for (TypeParameter tp : typeInspection.typeParameters()) {
+            if (tp.isUnbound() && parameterizedType.parameters.size() > tp.getIndex()) {
+                result.add(parameterizedType.parameters.get(tp.getIndex()));
+            }
+        }
+        return new SetOfTypes(result);
+    }
+
+    private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
+        return bestType.delay(CauseOfDelay.Cause.TYPE_ANALYSIS);
+    }
+
 }

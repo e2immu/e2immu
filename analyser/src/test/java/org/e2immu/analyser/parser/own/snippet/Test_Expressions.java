@@ -168,10 +168,10 @@ public class Test_Expressions extends CommonTestRunner {
                         assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertDv(d, 46, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 45, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        assertDv(d, 47, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 46, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0.0.2.0.0".equals(d.statementId())) {
                         assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -180,7 +180,7 @@ public class Test_Expressions extends CommonTestRunner {
                         assertDv(d, 21, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 47, DV.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 46, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "expression".equals(pi.name)) {
@@ -205,7 +205,7 @@ public class Test_Expressions extends CommonTestRunner {
                 }
                 if ("intervalX".equals(d.variableName())) {
                     if ("06".equals(d.statementId())) {
-                        String expected = d.iteration() < 47 ? "<s:Interval>" : "Interval.extractInterval1(expressionsInX)";
+                        String expected = d.iteration() < 46 ? "<s:Interval>" : "Interval.extractInterval1(expressionsInX)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -253,7 +253,7 @@ public class Test_Expressions extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(expected, d.methodAnalysis().getPreconditionForEventual().toString());
-                String srv = d.iteration() <= 46 ? "<m:extractInterval1>" : "<undetermined return value>";
+                String srv = d.iteration() <= 45 ? "<m:extractInterval1>" : "<undetermined return value>";
                 assertEquals(srv, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("extractInterval2".equals(d.methodInfo().name)) {
@@ -270,7 +270,7 @@ public class Test_Expressions extends CommonTestRunner {
             }
             if ("accept3".equals(d.methodInfo().name)) {
                 assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 47 ? "<m:accept3>" : "<undetermined return value>";
+                String expected = d.iteration() < 46 ? "<m:accept3>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("accept4".equals(d.methodInfo().name)) {
@@ -287,12 +287,12 @@ public class Test_Expressions extends CommonTestRunner {
             }
             if ("accept6".equals(d.methodInfo().name)) {
                 assertDv(d, 18, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 47 ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
+                String expected = d.iteration() < 46 ? "<m:accept6>" : "/*inline accept6*/instance type boolean";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("accept1".equals(d.methodInfo().name)) {
-                assertDv(d, 47, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                String expected = d.iteration() < 47 ? "<m:accept1>" : "<undetermined return value>";
+                assertDv(d, 46, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expected = d.iteration() < 46 ? "<m:accept1>" : "<undetermined return value>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "$6".equals(d.methodInfo().typeInfo.simpleName)) {

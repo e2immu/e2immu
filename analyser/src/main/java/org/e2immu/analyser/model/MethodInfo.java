@@ -27,8 +27,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -36,8 +34,6 @@ import org.e2immu.support.SetOnceMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Container
-@E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
     public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
     public final Identifier identifier;

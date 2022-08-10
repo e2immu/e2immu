@@ -281,7 +281,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
      */
     private AnalysisStatus analyseTransparentTypes() {
-        if (typeAnalysis.hiddenContentTypeStatus().isDone()) return DONE;
+        if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) return DONE;
 
         // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
 
@@ -291,11 +291,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .filter(TypeInfo::isStatic)
                     .map(st -> {
                         TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                        if (stAna.hiddenContentTypeStatus().isDelayed()) {
+                        if (stAna.transparentAndExplicitTypeComputationDelays().isDelayed()) {
                             ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
                             typeAnalyser.analyseTransparentTypes();
                         }
-                        return stAna.hiddenContentTypeStatus();
+                        return stAna.transparentAndExplicitTypeComputationDelays();
                     })
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
@@ -313,7 +313,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 staticEnclosing = staticEnclosing.packageNameOrEnclosingType.getRight();
             }
             TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
-            CausesOfDelay delays = typeAnalysisStaticEnclosing.hiddenContentTypeStatus();
+            CausesOfDelay delays = typeAnalysisStaticEnclosing.transparentAndExplicitTypeComputationDelays();
             if (delays.isDone()) {
                 typeAnalysis.setTransparentTypes(typeAnalysisStaticEnclosing.getTransparentTypes());
                 typeAnalysis.copyExplicitTypes(typeAnalysisStaticEnclosing);
@@ -333,12 +333,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .filter(TypeInfo::isStatic)
                 .flatMap(st -> {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(st);
-                    return typeAnalysis.getExplicitTypes(analyserContext).stream();
+                    return typeAnalysis.getExplicitTypes(analyserContext).types().stream();
                 }).collect(Collectors.toUnmodifiableSet());
 
         // STEP 5: ensure + collect from parent
 
-        Set<ParameterizedType> explicitTypesFromParent;
+        SetOfTypes explicitTypesFromParent;
         {
             TypeInfo parentClass = typeInspection.parentClass().typeInfo;
             // IMPORTANT: skip aggregated, otherwise infinite loop
@@ -346,13 +346,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
-                CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
+                CausesOfDelay delays = typeAnalysis.transparentAndExplicitTypeComputationDelays();
                 // third clause to avoid cycles
                 if (delays.isDelayed() && typeInfo.primaryType() == parentClass.primaryType() && !typeInfo.isEnclosedIn(parentClass)) {
                     ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
                     typeAnalyser.analyseTransparentTypes();
                 }
-                CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
+                CausesOfDelay delays2 = typeAnalysis.transparentAndExplicitTypeComputationDelays();
                 if (delays2.isDone()) {
                     explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
                 } else {
@@ -372,13 +372,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 // 2nd clause to avoid cycles
                 if (!ifTypeInfo.isAggregated() && !typeInfo.isEnclosedIn(ifTypeInfo)) {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
-                    CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
+                    CausesOfDelay delays = typeAnalysis.transparentAndExplicitTypeComputationDelays();
                     if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
                         ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
                         typeAnalyser.analyseTransparentTypes();
                         causes = causes.merge(delays);
                     }
-                    CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
+                    CausesOfDelay delays2 = typeAnalysis.transparentAndExplicitTypeComputationDelays();
                     if (delays2.isDelayed()) {
                         LOGGER.debug("Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
                                 ifTypeInfo.simpleName);
@@ -397,10 +397,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .filter(i -> !i.typeInfo.isAggregated())
                 .flatMap(i -> {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
-                    Set<ParameterizedType> explicitTypes = typeAnalysis.getExplicitTypes(analyserContext);
+                    SetOfTypes explicitTypes = typeAnalysis.getExplicitTypes(analyserContext);
                     if (explicitTypes == null)
                         return Stream.of(); // FIXME is this correct? if we cause a delay, will it cause cycles?
-                    return explicitTypes.stream();
+                    return explicitTypes.types().stream();
                 })
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -421,7 +421,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         Set<ParameterizedType> allExplicitTypes = new HashSet<>(explicitTypes.keySet());
         allExplicitTypes.addAll(explicitTypesFromInterfaces);
-        allExplicitTypes.addAll(explicitTypesFromParent);
+        allExplicitTypes.addAll(explicitTypesFromParent.types());
         allExplicitTypes.addAll(explicitTypesFromSubTypes);
 
         LOGGER.debug("All explicit types: {}", explicitTypes);

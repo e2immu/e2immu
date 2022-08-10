@@ -30,7 +30,6 @@ import java.util.Set;
  * all libraries. Not changing JRE, not restricting
  * Upload activated, not writing XML, not writing annotation API files
  */
-@E2Immutable
 public record Configuration(InputConfiguration inputConfiguration,
                             Set<String> logTargets,
                             boolean quiet,

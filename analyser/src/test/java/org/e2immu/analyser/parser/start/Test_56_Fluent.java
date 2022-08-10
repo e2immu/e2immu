@@ -153,7 +153,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("build".equals(d.methodInfo().name)) {
                 assertDv(d, 17, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("from".equals(d.methodInfo().name)) {
@@ -165,7 +165,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d, 10, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, 10, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 8, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
@@ -221,7 +221,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
-                assertEquals("", d.typeAnalysis().hiddenContentTypeStatus().toString());
+                assertEquals("", d.typeAnalysis().transparentAndExplicitTypeComputationDelays().toString());
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
                 assertEquals(16, d.typeAnalysis().getExplicitTypes(null).size());
 
@@ -231,7 +231,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
-                assertEquals("", d.typeAnalysis().hiddenContentTypeStatus().toString());
+                assertEquals("", d.typeAnalysis().transparentAndExplicitTypeComputationDelays().toString());
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
                 assertEquals(16, d.typeAnalysis().getExplicitTypes(null).size());
             }

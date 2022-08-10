@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@E2Immutable
 public final class MethodCallErasure extends BaseExpression implements ErasureExpression {
     private final Set<ParameterizedType> returnTypes;
     private final String methodName;

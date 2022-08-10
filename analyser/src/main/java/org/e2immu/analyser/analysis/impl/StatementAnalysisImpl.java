@@ -1712,7 +1712,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         TypeInfo currentType = context.getCurrentType();
         TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(currentType);
-        DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
+        DV partOfHiddenContent = typeAnalysis.isTransparent(arrayBaseType);
         if (partOfHiddenContent.isDelayed()) {
             return partOfHiddenContent;
         }
@@ -2194,7 +2194,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private DV minimumLinking(EvaluationContext evaluationContext, ParameterizedType concreteType) {
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, true,
+        // unbound should give E2Immutable
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(concreteType, false,
                 getCurrentType());
         return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable);
     }

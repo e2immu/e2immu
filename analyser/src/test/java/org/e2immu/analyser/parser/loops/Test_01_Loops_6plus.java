@@ -644,12 +644,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "key:-1,this.kvStore:-1" : "";
+                        String expectLv = d.iteration() == 0 ? "key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,key:-1,this.kvStore:-1" : "this.kvStore:2";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -658,14 +658,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
 
-                        String linkedE = d.iteration() == 0 ? "entry:-1,key:-1" : "";
+                        String linkedE = d.iteration() == 0 ? "entry:-1,key:-1" : "entry:2";
                         assertEquals(linkedE, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
 
-                        String linkedE = d.iteration() == 0 ? "entry:-1" : "";
+                        String linkedE = d.iteration() == 0 ? "entry:-1" : "entry:2";
                         assertEquals(linkedE, eval.getLinkedVariables().toString());
 
                         assertTrue(d.variableInfoContainer().hasMerge());

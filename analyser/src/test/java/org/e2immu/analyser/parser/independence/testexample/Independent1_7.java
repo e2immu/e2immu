@@ -14,20 +14,34 @@
 
 package org.e2immu.analyser.parser.independence.testexample;
 
+import org.e2immu.annotation.E2Container;
+import org.e2immu.support.SetOnce;
 
 import java.util.Map;
+/*
+mimics code in MethodAnalyserVisitor, try to catch a bug brought by TestAnalyseTest
+ */
 
 public interface Independent1_7 {
-    interface MethodInfo {
-        String name();
 
-        String fullyQualifiedName();
+    @E2Container(after = "data,name")
+    class MethodInfo<X> {
+        public final SetOnce<String> name = new SetOnce<>();
+        public final SetOnce<X> data = new SetOnce<>();
+
+        public String name() {
+            return name.getOrDefault("not yet set");
+        }
+
+        public X getX() {
+            return data.getOrDefaultNull();
+        }
     }
 
-    void visit(Data data);
+    void visit(Data<?> data);
 
-    record Data(int iteration,
-                MethodInfo methodInfo,
+    record Data<X>(int iteration,
+                MethodInfo<X> methodInfo,
                 Map<String, Integer> statuses) {
 
         public Data {

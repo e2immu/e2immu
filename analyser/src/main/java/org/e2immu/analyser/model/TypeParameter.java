@@ -61,4 +61,8 @@ public interface TypeParameter extends NamedType {
     default TypeInfo primaryType() {
         return getOwner().isLeft() ? getOwner().getLeft().primaryType() : getOwner().getRight().primaryType();
     }
+
+    default boolean isUnbound() {
+        return getTypeBounds().isEmpty();
+    }
 }

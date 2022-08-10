@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
  For a lambda, counts will be {(n, true), (n, false)}, with n the number of parameters
  For a method reference, we'll have one entry per candidate method, where isVoid=false counts as one parameter.
  */
-@E2Immutable
 public final class LambdaExpressionErasures extends BaseExpression implements ErasureExpression {
     private final Set<Count> counts;
     private final Location location;

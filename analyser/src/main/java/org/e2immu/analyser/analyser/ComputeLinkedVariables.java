@@ -194,7 +194,7 @@ public class ComputeLinkedVariables {
         Function<Variable, DV> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED_DV :
                 analysisProvider.defaultImmutable(v.parameterizedType(), false, evaluationContext.getCurrentType());
         Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
-                analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true, evaluationContext.getCurrentType());
+                evaluationContext.getAnalyserContext().immutableOfHiddenContentInTypeParameters(v.parameterizedType(), evaluationContext.getCurrentType());
         Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
             TypeInfo bestType = v.parameterizedType().bestTypeInfo();
             if (bestType == null) return DV.TRUE_DV;

@@ -23,7 +23,6 @@ import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -154,6 +153,8 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         if (analyserProgram.accepts(ALL)) {
             if (!methodInfo.isConstructor) {
                 if (!methodInfo.isVoid()) {
+                    internalCheckImmutableIndependent();
+
                     check(NotNull.class, e2.notNull);
                     check(NotNull1.class, e2.notNull1);
                     check(Fluent.class, e2.fluent);
@@ -190,6 +191,16 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         getParameterAnalysers().forEach(ParameterAnalyser::check);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::check);
 
+    }
+
+    private void internalCheckImmutableIndependent() {
+        DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
+        // @Independent is always possible, regardless of the immutable value
+        if (independent.lt(MultiLevel.INDEPENDENT_DV)) {
+            DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);
+            assert MultiLevel.independentConsistentWithImmutable(independent, immutable)
+                    : "Have method %s, independent %s, immutable %s".formatted(methodInfo.fullyQualifiedName, independent, immutable);
+        }
     }
 
     private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(Property.NOT_NULL_EXPRESSION,

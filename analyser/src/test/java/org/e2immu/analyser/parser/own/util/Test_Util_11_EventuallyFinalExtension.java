@@ -33,7 +33,7 @@ public class Test_Util_11_EventuallyFinalExtension extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testSupportAndUtilClasses(List.of(EventuallyFinalExtension.class),
-                1, 1, new DebugConfiguration.Builder()
+                0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 

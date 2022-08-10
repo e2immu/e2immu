@@ -56,7 +56,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getV".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("Pair".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);

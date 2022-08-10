@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record UploadConfiguration(boolean upload, String annotationServerUrl, String projectName,
                                   List<String> uploadPackages) {
     public static final String DEFAULT_ANNOTATION_SERVER_URL = "http://localhost:8281/v1";

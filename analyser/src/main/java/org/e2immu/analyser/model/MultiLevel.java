@@ -362,8 +362,10 @@ public class MultiLevel {
         return (levelImmutable == levelIndependent + 1) && effectiveIndependent == EFFECTIVE;
     }
 
-    public static boolean isRecursivelyImmutable(DV immutable) {
-        int levelImmutable = MultiLevel.level(immutable);
-        return levelImmutable == MAX_LEVEL;
+    /*
+    "yes" to eventually, "yes" to eventually_after but "no" to eventually_before
+     */
+    public static boolean isAtLeastEventuallyRecursivelyImmutable(DV immutable) {
+        return immutable.ge(EVENTUALLY_RECURSIVELY_IMMUTABLE_DV);
     }
 }

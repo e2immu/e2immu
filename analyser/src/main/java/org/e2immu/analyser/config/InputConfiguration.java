@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record InputConfiguration(List<String> sources,
                                  List<String> classPathParts,
                                  List<String> restrictSourceToPackages,

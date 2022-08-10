@@ -423,7 +423,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private AnalysisStatus computeTransparentType() {
         assert fieldAnalysis.isTransparentType().isDelayed();
-        CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().hiddenContentTypeStatus();
+        CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().transparentAndExplicitTypeComputationDelays();
         if (causes.isDelayed()) {
             return causes; //DELAY EXIT POINT
         }

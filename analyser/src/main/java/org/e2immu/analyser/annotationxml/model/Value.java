@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.annotation.E2Immutable;
 
-@E2Immutable
 public class Value {
     public final String name; // can be null, technically == "value", the default
     public final String val;

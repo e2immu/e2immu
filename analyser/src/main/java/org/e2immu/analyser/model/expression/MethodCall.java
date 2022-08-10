@@ -1190,8 +1190,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
 
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                if (typeAnalysis.hiddenContentTypeStatus().isDelayed()) {
-                    return typeAnalysis.hiddenContentTypeStatus();
+                if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDelayed()) {
+                    return typeAnalysis.transparentAndExplicitTypeComputationDelays();
                 }
                 SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
                 return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, context);

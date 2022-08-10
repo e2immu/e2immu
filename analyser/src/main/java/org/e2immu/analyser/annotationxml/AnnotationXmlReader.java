@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@E2Immutable
 public class AnnotationXmlReader implements AnnotationStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationXmlReader.class);
     public static final String ANNOTATIONS_XML = "annotations.xml";

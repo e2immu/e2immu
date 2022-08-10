@@ -91,13 +91,14 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
 
     @Override
     public Stream<MethodAnalyser> allMethodAnalysersIncludingSubTypes() {
-       return implementingAnalysers.get().stream().flatMap(TypeAnalyser::allMethodAnalysersIncludingSubTypes);
+        return implementingAnalysers.get().stream().flatMap(TypeAnalyser::allMethodAnalysersIncludingSubTypes);
     }
 
     @Override
     public AnalyserResult analyse(SharedState sharedState) {
         AnalysisStatus analysisStatus = analyserComponents.run(sharedState.iteration());
-        if(analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL)) typeAnalysis.internalAllDoneCheck();
+        if (analysisStatus.isDone() && analyserContext.getConfiguration().analyserConfiguration().analyserProgram().accepts(ALL))
+            typeAnalysis.internalAllDoneCheck();
         analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
         List<TypeAnalyserVisitor> visitors = analyserContext.getConfiguration()
@@ -138,15 +139,15 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     private AnalysisStatus aggregateTransparent() {
-        if (typeAnalysis.hiddenContentTypeStatus().isDone()) return DONE;
-        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentTypeStatus().causesOfDelay())
+        if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) return DONE;
+        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.transparentAndExplicitTypeComputationDelays().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delays.isDelayed()) {
             typeAnalysis.setHiddenContentTypesDelay(delays);
             return delays;
         }
         SetOfTypes union = implementingAnalyses.get().stream()
-                .map(a -> new SetOfTypes(a.getExplicitTypes(analyserContext)))
+                .map(a -> a.getExplicitTypes(analyserContext))
                 .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
         typeAnalysis.setExplicitTypes(union);
         SetOfTypes intersection = implementingAnalyses.get().stream()

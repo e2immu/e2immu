@@ -51,8 +51,8 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                 assertEquals("Type java.util.Map.Entry<T,java.lang.Boolean>, Type param T, Type param T, Type param T, Type param T, Type param T, Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 7, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
-                assertDv(d, 9, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                assertDv(d, 10, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
 
             if ("$1".equals(d.typeInfo().simpleName)) {
@@ -71,11 +71,11 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 if ("upgradableBooleanMap".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 7 ? "<new:UpgradableBooleanMap<T>>" : "new UpgradableBooleanMap<>()";
+                        String expected = d.iteration() <= 3 ? "<new:UpgradableBooleanMap<T>>" : "new UpgradableBooleanMap<>()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 7 ? "<new:UpgradableBooleanMap<T>>" : "instance type UpgradableBooleanMap<T>";
+                        String expected = d.iteration() <= 3 ? "<new:UpgradableBooleanMap<T>>" : "instance type UpgradableBooleanMap<T>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -84,10 +84,10 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 8, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 8, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -115,13 +115,13 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 9, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
-                String expected = d.iteration() <= 7 ? "<m:of>"
+                String expected = d.iteration() <= 3 ? "<m:of>"
                         : "/*inline of*/null==maps||maps.length<=0?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 8) {
+                if (d.iteration() >= 4) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("maps", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();

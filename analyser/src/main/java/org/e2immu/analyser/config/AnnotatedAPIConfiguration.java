@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@E2Immutable
 public record AnnotatedAPIConfiguration(boolean disabled,
                                         // read
                                         List<String> annotatedAPISourceDirs,

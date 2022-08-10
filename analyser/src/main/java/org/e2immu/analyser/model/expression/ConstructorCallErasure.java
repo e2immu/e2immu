@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@E2Immutable
 public final class ConstructorCallErasure extends BaseExpression implements ErasureExpression {
     private final ParameterizedType formalType;
 

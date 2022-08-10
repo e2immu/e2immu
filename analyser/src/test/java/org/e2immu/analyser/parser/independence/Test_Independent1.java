@@ -271,11 +271,19 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Data".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
-                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param X", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("methodInfo".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
+                assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            //    assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
         testClass("Independent1_7", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

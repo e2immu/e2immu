@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 
 /*
 Compute the list of types which cannot be replaced by an unbound parameter type (which are not transparent)
+The types are added as PT rather than TypeInfo!
 
 Extra: abstract types on which ONLY abstract methods without modification status are called, are also transparent.
 */
@@ -36,7 +37,7 @@ public class ExplicitTypes {
 
     public enum UsedAs {
         METHOD, ASSIGN_TO_NEW_OBJECT, CONSTRUCTOR_CALL, FIELD_ACCESS, FOR_EACH, SWITCH, CAST, CAST_DELAY, CAST_SELF,
-        EXPLICIT_RETURN_TYPE, CATCH, LAMBDA,
+        EXPLICIT_RETURN_TYPE, CATCH, LAMBDA, MYSELF,
     }
 
     private final InspectionProvider inspectionProvider;
@@ -50,6 +51,8 @@ public class ExplicitTypes {
     }
 
     public ExplicitTypes go(TypeInspection typeInspection) {
+        add(typeBeingAnalysed.asParameterizedType(inspectionProvider), UsedAs.MYSELF);
+
         // handles SAMs of fields as well
         typeInspection.methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
                 .forEach(this::explicitTypes);
@@ -100,7 +103,7 @@ public class ExplicitTypes {
             }
 
             MethodReference mr;
-            if((mr = element.asInstanceOf(MethodReference.class)) != null && mr.methodInfo.isConstructor) {
+            if ((mr = element.asInstanceOf(MethodReference.class)) != null && mr.methodInfo.isConstructor) {
                 add(mr.scope.returnType(), UsedAs.CONSTRUCTOR_CALL);
             }
 

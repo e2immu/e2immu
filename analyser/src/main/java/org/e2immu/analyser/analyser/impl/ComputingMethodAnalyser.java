@@ -968,14 +968,20 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return AnalysisStatus.of(independent);
     }
 
+    /*
+    Code similar to computeIndependentFromComponents in ConstructorCall; see also analyseIndependentNoAssignment
+    in ComputingParameterAnalyser
+     */
     static DV computeIndependent(VariableInfo variableInfo,
                                  DV immutable,
                                  ParameterizedType type,
                                  TypeInfo currentType,
                                  AnalysisProvider analysisProvider) {
-        if (immutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        // recursively immutable -> @Independent
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
             return MultiLevel.INDEPENDENT_DV;
         }
+        // compute link to fields
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
         if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
         DV minFields = linkedVariables.variables().entrySet().stream()
@@ -985,19 +991,23 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .reduce(DV.MAX_INT_DV, DV::min);
 
         if (minFields.isDelayed()) return minFields;
-        if (minFields != DV.MAX_INT_DV) {
-            DV typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
-            if (typeHidden.isDelayed()) return typeHidden;
-            if (typeHidden.valueIsFalse() && minFields.le(LinkedVariables.DEPENDENT_DV)) {
-                return MultiLevel.DEPENDENT_DV;
-            }
+
+        // not linked to fields -> @Independent
+        if (minFields == DV.MAX_INT_DV) {
+            return MultiLevel.INDEPENDENT_DV;
         }
-        // on the sliding scale now
-        //combination of statically immutable (type) and dynamically immutable (value property)
+
+        int immutableLevel;
+        DV typeTransparent = analysisProvider.getTypeAnalysis(currentType).isTransparent(type);
+        if (typeTransparent.isDelayed()) return typeTransparent;
+        if (typeTransparent.valueIsTrue()) {
+            return MultiLevel.INDEPENDENT_1_DV;
+        }
         if (immutable.isDelayed()) return immutable;
-        int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
-            if(minFields == DV.MAX_INT_DV) return MultiLevel.INDEPENDENT_DV;
+        immutableLevel = MultiLevel.level(immutable);
+
+        if (minFields.ge(LinkedVariables.INDEPENDENT1_DV) && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
+            // mutable, but linked content-wise
             return MultiLevel.INDEPENDENT_1_DV;
         }
         return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);

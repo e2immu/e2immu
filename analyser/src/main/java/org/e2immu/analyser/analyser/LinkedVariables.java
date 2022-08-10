@@ -55,29 +55,22 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         if (independent.isDelayed()) return independent;
         if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.NO_LINKING_DV;
         if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.DEPENDENT_DV;
-        int level = MultiLevel.level(independent);
-        // INDEPENDENT_1 == level 0 -> 3
-        return value(level + 3);
+        return INDEPENDENT1_DV;
     }
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
-        if (MultiLevel.isRecursivelyImmutable(immutable)) return LinkedVariables.NO_LINKING_DV;
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.NO_LINKING_DV;
         int level = MultiLevel.level(immutable);
-        // MUTABLE -> INDEPENDENT_1
-        // E2IMM -> INDEPENDENT_2
-        return value(level + 3);
+        if (level == 0) return DEPENDENT_DV;
+        return INDEPENDENT1_DV;
     }
 
     public static DV fromLinkedVariableToIndependent(DV linked) {
         int value = linked.value();
-        return switch (value) {
-            case 0, 1, 2 -> MultiLevel.DEPENDENT_DV;
-            case 3 -> MultiLevel.INDEPENDENT_1_DV;
-            case 4 -> MultiLevel.INDEPENDENT_2_DV;
-            default -> MultiLevel.composeIndependent(MultiLevel.Effective.EFFECTIVE, value - 3);
-        };
+        if (value <= 2) return DEPENDENT_DV;
+        return INDEPENDENT1_DV;
     }
 
     public boolean isDelayed() {
@@ -89,19 +82,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     public static final DV ASSIGNED_DV = new NoDelay(1, "assigned");
     public static final DV DEPENDENT_DV = new NoDelay(2, "dependent");
     public static final DV INDEPENDENT1_DV = new NoDelay(3, "independent1");
-    public static final DV INDEPENDENT2_DV = new NoDelay(4, "independent2");
     public static final DV NO_LINKING_DV = new NoDelay(MultiLevel.MAX_LEVEL, "no");
-
-    public static DV value(int i) {
-        return switch (i) {
-            case 0 -> STATICALLY_ASSIGNED_DV;
-            case 1 -> ASSIGNED_DV;
-            case 2 -> DEPENDENT_DV;
-            case 3 -> INDEPENDENT1_DV;
-            case 4 -> INDEPENDENT2_DV;
-            default -> new NoDelay(i);
-        };
-    }
 
     public static LinkedVariables of(Variable variable, DV value) {
         return new LinkedVariables(Map.of(variable, value));
@@ -327,10 +308,24 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                 DV targetImmutable = computeImmutable.apply(target);
                 if (targetImmutable.isDelayed()) {
                     result.put(target, targetImmutable);
-                } else if (targetImmutable.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+                } else if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(targetImmutable)) {
+                    // targetImmutable is @ERImmutable; only assignments kept
+                    if (linkLevel.le(ASSIGNED_DV)) {
+                        result.put(target, linkLevel);
+                    }
+                } else {
                     if (linkLevel.le(DEPENDENT_DV)) {
                         result.put(target, linkLevel);
                     } else { // INDEPENDENT1+
+                        /*
+                         so we may have a mutable object linked at content level to the variable
+                         e.g. this.set = new HashSet<>(inputSet)
+
+                         if this set is a set of recursively immutable objects, the linking disappears
+                         if the set contains level 2 immutable objects, the linking should go to a higher level than
+                         independent_1, but we're not worried about that right now
+                         */
+
                         DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
                         if (canIncrease.isDelayed()) {
                             result.put(target, canIncrease);
@@ -338,17 +333,12 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                             DV immutableHidden = computeImmutableHiddenContent.apply(target);
                             if (immutableHidden.isDelayed()) {
                                 result.put(target, immutableHidden);
-                            } else if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
-                                result.put(target, linkLevel);
+                            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
+                                result.put(target, LinkedVariables.INDEPENDENT1_DV);
                             }
                         } else {
-                            result.put(target, linkLevel);
+                            result.put(target, LinkedVariables.INDEPENDENT1_DV);
                         }
-                    }
-                } else {
-                    // targetImmutable is @ERImmutable
-                    if (linkLevel.le(ASSIGNED_DV)) {
-                        result.put(target, linkLevel);
                     }
                 }
             }

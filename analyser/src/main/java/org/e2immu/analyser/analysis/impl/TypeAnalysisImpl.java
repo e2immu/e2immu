@@ -152,12 +152,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     // AnnotatedAPI situation. We simply collect the types visible in the API.
     @Override
-    public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
+    public SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider) {
         return typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
     }
 
     @Override
-    public CausesOfDelay hiddenContentTypeStatus() {
+    public CausesOfDelay transparentAndExplicitTypeComputationDelays() {
         return CausesOfDelay.EMPTY;
     }
 
@@ -172,7 +172,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public String toString() {
-            return "{" + nonModified.stream().map(m -> m.name).sorted().collect(Collectors.joining(",")) +(modified.isSet() ? "_M" : "") + "}";
+            return "{" + nonModified.stream().map(m -> m.name).sorted().collect(Collectors.joining(",")) + (modified.isSet() ? "_M" : "") + "}";
         }
     }
 
@@ -408,17 +408,19 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         // you'll need its explicit types. They may reach further than what we've investigated, so
         // those get filtered out. See e.g. Enum_0, which extends implicitly from java.lang.Enum
         @Override
-        public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
+        public SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider) {
             if (!explicitTypes.isSet()) {
                 if (getTypeInfo().shallowAnalysis()) {
-                    Set<ParameterizedType> set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
-                    Set<ParameterizedType> filtered = set.stream().filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet()).collect(Collectors.toUnmodifiableSet());
+                    SetOfTypes set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
+                    Set<ParameterizedType> filtered = set.types().stream()
+                            .filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet())
+                            .collect(Collectors.toUnmodifiableSet());
                     explicitTypes.set(new SetOfTypes(filtered));
-                    return filtered;
+                    return new SetOfTypes(filtered);
                 }
                 return null; // not yet set
             }
-            return explicitTypes.get(typeInfo.fullyQualifiedName).types();
+            return explicitTypes.get(typeInfo.fullyQualifiedName);
         }
 
         public void setExplicitTypes(SetOfTypes explicitTypes) {
@@ -430,7 +432,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public CausesOfDelay hiddenContentTypeStatus() {
+        public CausesOfDelay transparentAndExplicitTypeComputationDelays() {
             if (hiddenContentTypes.isSet()) return CausesOfDelay.EMPTY;
             return hiddenContentTypes.getFirst();
         }
