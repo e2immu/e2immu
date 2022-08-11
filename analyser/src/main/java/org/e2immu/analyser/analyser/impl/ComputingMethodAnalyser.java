@@ -1005,7 +1005,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (immutable.isDelayed()) return immutable;
 
         int immutableLevel = MultiLevel.level(immutable);
-        if (minFields.ge(LinkedVariables.INDEPENDENT1_DV) && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
+        if (minFields.ge(LinkedVariables.LINK_INDEPENDENT1) && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
             // mutable, but linked content-wise
             return MultiLevel.INDEPENDENT_1_DV;
         }

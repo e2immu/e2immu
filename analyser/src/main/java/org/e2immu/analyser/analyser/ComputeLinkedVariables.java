@@ -154,8 +154,8 @@ public class ComputeLinkedVariables {
             }
         }
         ClusterResult cr = computeClusters(weightedGraph, variables,
-                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
-                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV,
+                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : DV.MIN_INT_DV,
+                staticallyAssigned ? LinkedVariables.LINK_STATICALLY_ASSIGNED : LinkedVariables.LINK_DEPENDENT,
                 !staticallyAssigned,
                 encounteredNotYetSet.get());
 
@@ -230,7 +230,7 @@ public class ComputeLinkedVariables {
         Set<Variable> variables = fr.scope.variablesWithoutCondition().stream()
                 .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
-        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.DEPENDENT_DV;
+        DV link = fr.scope.isDelayed() ? fr.scope.causesOfDelay() : LinkedVariables.LINK_DEPENDENT;
         Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
         return LinkedVariables.of(map);
     }
@@ -577,7 +577,7 @@ public class ComputeLinkedVariables {
         }
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
         if (staticallyAssigned != null) {
-            staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.STATICALLY_ASSIGNED_DV));
+            staticallyAssigned.forEach(v -> map.put(v, LinkedVariables.LINK_STATICALLY_ASSIGNED));
         }
         map.remove(variable); // no self references
         if (map.isEmpty()) {

@@ -40,6 +40,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Map<FieldReference, Expression> approvedPreconditionsE2;
 
     private final SetOfTypes hiddenContentTypes;
+    private final SetOfTypes transparentTypes;
     private final Map<String, MethodInfo> aspects;
     private final Set<FieldInfo> eventuallyImmutableFields;
     private final Set<FieldInfo> guardedByEventuallyImmutableFields;
@@ -55,6 +56,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Set<FieldInfo> eventuallyImmutableFields,
                              Set<FieldInfo> guardedByEventuallyImmutableFields,
                              SetOfTypes hiddenContentTypes,
+                             SetOfTypes transparentTypes,
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields,
                              boolean immutableCanBeIncreasedByTypeParameters) {
@@ -62,7 +64,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
         this.approvedPreconditionsE2 = approvedPreconditionsE2;
-        this.hiddenContentTypes = hiddenContentTypes;
+        this.hiddenContentTypes = Objects.requireNonNull(hiddenContentTypes);
+        this.transparentTypes = Objects.requireNonNull(transparentTypes);
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
         this.guardedByEventuallyImmutableFields = guardedByEventuallyImmutableFields;
@@ -142,6 +145,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public SetOfTypes getTransparentTypes() {
+        return transparentTypes;
+    }
+
+    @Override
+    public SetOfTypes getHiddenContentTypes() {
         return hiddenContentTypes;
     }
 
@@ -194,6 +202,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final AddOnceSet<FieldInfo> guardedByEventuallyImmutableFields = new AddOnceSet<>();
 
         private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
+        private final VariableFirstThen<CausesOfDelay, SetOfTypes> transparentTypes;
         private final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
@@ -217,6 +226,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             assert approvedPreconditionsE1.isFrozen();
             assert immutableCanBeIncreasedByTypeParameters.isSet();
             assert hiddenContentTypes.isSet();
+            assert transparentTypes.isSet();
             assert explicitTypes.isSet();
         }
 
@@ -234,6 +244,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
             CausesOfDelay initialDelay = initialDelay(typeInfo);
             hiddenContentTypes = new VariableFirstThen<>(initialDelay);
+            transparentTypes = new VariableFirstThen<>(initialDelay);
             immutableCanBeIncreasedByTypeParameters = new VariableFirstThen<>(initialDelay);
             approvedPreconditionsE2Delays = initialDelay;
             approvedPreconditionsE1Delays = initialDelay;
@@ -359,6 +370,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public SetOfTypes getTransparentTypes() {
+            return transparentTypes.get();
+        }
+
+        @Override
+        public SetOfTypes getHiddenContentTypes() {
             return hiddenContentTypes.get();
         }
 
@@ -452,6 +468,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         public void setTransparentTypes(SetOfTypes setOfTypes) {
+            transparentTypes.set(setOfTypes);
+        }
+
+        public void setTransparentTypesDelay(CausesOfDelay causes) {
+            transparentTypes.setFirst(causes);
+        }
+
+        public void setHiddenContentTypes(SetOfTypes setOfTypes) {
             hiddenContentTypes.set(setOfTypes);
         }
 
@@ -468,6 +492,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     eventuallyImmutableFields.toImmutableSet(),
                     guardedByEventuallyImmutableFields.toImmutableSet(),
                     hiddenContentTypes.isSet() ? hiddenContentTypes.get() : SetOfTypes.EMPTY,
+                    transparentTypes.isSet() ? transparentTypes.get() : SetOfTypes.EMPTY,
                     getAspects(),
                     visibleFields,
                     immutableCanBeIncreasedByTypeParameters.getOrDefault(false));

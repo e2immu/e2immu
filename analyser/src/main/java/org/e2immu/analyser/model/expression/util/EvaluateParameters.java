@@ -271,7 +271,7 @@ public class EvaluateParameters {
             return false;
         }
         if (dvLink.isDone() && parameterValue.isDone() && contextModified.valueIsTrue()) {
-            if (dvLink.le(LinkedVariables.DEPENDENT_DV)) {
+            if (dvLink.le(LinkedVariables.LINK_DEPENDENT)) {
                 Expression varVal = context.currentValue(variable);
                 ConstructorCall cc;
                 Expression newInstance;

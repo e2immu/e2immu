@@ -150,6 +150,22 @@ public interface TypeAnalysis extends Analysis {
      */
     SetOfTypes getExplicitTypes(InspectionProvider inspectionProvider);
 
+    /**
+     * The hidden content of a type as computed. Contains all the transparent types, and those
+     * explicit types that are at least level 2 immutable, but not recursively immutable.
+     * As a result, this set does not contain any primitives or JLO.
+     * By convention, neither does it contain the type itself, nor any of the types in its hierarchy.
+     *
+     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
+     */
+    SetOfTypes getHiddenContentTypes();
+
+    /**
+     * Helper method, but does not do the whole job
+     *
+     * @param type is this type transparent? look at implementations on how to trim it down
+     * @return a delay when the computation is not done yet
+     */
     default DV isTransparent(ParameterizedType type) {
         CausesOfDelay status = transparentAndExplicitTypeComputationDelays();
         if (status.isDone()) {

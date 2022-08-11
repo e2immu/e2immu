@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
+import org.e2immu.analyser.analyser.util.HiddenContentTypes;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
@@ -316,6 +317,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             CausesOfDelay delays = typeAnalysisStaticEnclosing.transparentAndExplicitTypeComputationDelays();
             if (delays.isDone()) {
                 typeAnalysis.setTransparentTypes(typeAnalysisStaticEnclosing.getTransparentTypes());
+                typeAnalysis.setHiddenContentTypes(typeAnalysisStaticEnclosing.getHiddenContentTypes());
                 typeAnalysis.copyExplicitTypes(typeAnalysisStaticEnclosing);
             } else {
                 LOGGER.debug("Hidden content of inner class {} computed together with that of enclosing class {}",
@@ -430,17 +432,37 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .flatMap(pt -> pt.concreteSuperTypes(analyserContext))
                 .collect(Collectors.toUnmodifiableSet());
         allExplicitTypes.addAll(superTypesOfExplicitTypes);
-
-        allTypes.removeAll(allExplicitTypes);
-        allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.isBoxedExcludingVoid()
-                || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
-
         typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
+
+        /*
+        Now for the computation of transparent and hidden content types.
+
+        The transparent types are those types that remain after removing the explicit types, and any recursively
+        immutable types.
+
+        The hidden content types are the transparent types, plus the hidden content types of the fields.
+        This is a recursive definition, which we need to be careful to apply!
+         */
+
+        SetOfTypes transparentTypes;
         if (typeInfo.isInterface()) {
-            typeAnalysis.setTransparentTypes(SetOfTypes.EMPTY);
+            Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
+                    .filter(TypeParameter::isUnbound)
+                    .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
+            transparentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
         } else {
-            typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
+            allTypes.removeAll(allExplicitTypes);
+            allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.isBoxedExcludingVoid()
+                    || pt.typeInfo == typeInfo || pt.isUnboundWildcard() ||
+                    MultiLevel.isAtLeastEventuallyRecursivelyImmutable(analyserContext.defaultImmutable(pt, true, null)));
+
+            transparentTypes = new SetOfTypes(allTypes);
         }
+        typeAnalysis.setTransparentTypes(transparentTypes);
+
+        SetOfTypes hiddenContentTypes = new HiddenContentTypes(typeInfo, analyserContext).go(transparentTypes).build();
+        typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
+
         LOGGER.debug("Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);
         return DONE;
     }

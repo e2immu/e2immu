@@ -180,12 +180,12 @@ public interface AnalysisProvider {
         }
         if (currentType != null) {
             TypeAnalysis typeAnalysisOfCurrentType = getTypeAnalysis(currentType);
-            DV partOfHiddenContent = typeAnalysisOfCurrentType.isTransparent(parameterizedType);
-            if (partOfHiddenContent.valueIsTrue()) {
+            DV transparent = typeAnalysisOfCurrentType.isTransparent(parameterizedType);
+            if (transparent.valueIsTrue()) {
                 return unboundIsMutable ? MultiLevel.MUTABLE_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
             }
-            if (partOfHiddenContent.isDelayed()) {
-                return partOfHiddenContent;
+            if (transparent.isDelayed()) {
+                return transparent;
             }
         }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);

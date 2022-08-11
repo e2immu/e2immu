@@ -209,7 +209,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
 
                 EvaluationResult context = EvaluationResult.from(evaluationContext);
-                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+                LinkedVariables newLv = e.getValue().linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
                 LinkedVariables originalLv = e.getKey().linkedVariables(context);
                 LinkedVariables lv = originalLv.merge(newLv);
                 Expression currentValue = evaluationContext.currentValue(ve.variable());

@@ -814,7 +814,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         private void removeFromLinkedVariables(Variable variable, Variable assignmentTarget) {
-            LinkedVariables removeLv = LinkedVariables.of(assignmentTarget, LinkedVariables.ASSIGNED_DV);
+            LinkedVariables removeLv = LinkedVariables.of(assignmentTarget, LinkedVariables.LINK_ASSIGNED);
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {

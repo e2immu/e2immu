@@ -53,24 +53,24 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public static DV fromIndependentToLinkedVariableLevel(DV independent) {
         if (independent.isDelayed()) return independent;
-        if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.NO_LINKING_DV;
-        if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.DEPENDENT_DV;
-        return INDEPENDENT1_DV;
+        if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_NONE;
+        if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_DEPENDENT;
+        return LINK_INDEPENDENT1;
     }
 
     public static DV fromImmutableToLinkedVariableLevel(DV immutable) {
         if (immutable.isDelayed()) return immutable;
         // REC IMM -> NO_LINKING
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.NO_LINKING_DV;
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_NONE;
         int level = MultiLevel.level(immutable);
-        if (level == 0) return DEPENDENT_DV;
-        return INDEPENDENT1_DV;
+        if (level == 0) return LINK_DEPENDENT;
+        return LINK_INDEPENDENT1;
     }
 
     public static DV fromLinkedVariableToIndependent(DV linked) {
         int value = linked.value();
-        if (value <= 2) return DEPENDENT_DV;
-        return INDEPENDENT1_DV;
+        if (value <= 2) return LINK_DEPENDENT;
+        return LINK_INDEPENDENT1;
     }
 
     public boolean isDelayed() {
@@ -78,11 +78,11 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         return variables.values().stream().anyMatch(DV::isDelayed);
     }
 
-    public static final DV STATICALLY_ASSIGNED_DV = new NoDelay(0, "statically_assigned");
-    public static final DV ASSIGNED_DV = new NoDelay(1, "assigned");
-    public static final DV DEPENDENT_DV = new NoDelay(2, "dependent");
-    public static final DV INDEPENDENT1_DV = new NoDelay(3, "independent1");
-    public static final DV NO_LINKING_DV = new NoDelay(MultiLevel.MAX_LEVEL, "no");
+    public static final DV LINK_STATICALLY_ASSIGNED = new NoDelay(0, "statically_assigned");
+    public static final DV LINK_ASSIGNED = new NoDelay(1, "assigned");
+    public static final DV LINK_DEPENDENT = new NoDelay(2, "dependent");
+    public static final DV LINK_INDEPENDENT1 = new NoDelay(3, "independent1");
+    public static final DV LINK_NONE = new NoDelay(MultiLevel.MAX_LEVEL, "no");
 
     public static LinkedVariables of(Variable variable, DV value) {
         return new LinkedVariables(Map.of(variable, value));
@@ -97,11 +97,11 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public static boolean isNotIndependent(DV assignedOrLinked) {
-        return assignedOrLinked.ge(STATICALLY_ASSIGNED_DV) && assignedOrLinked.lt(NO_LINKING_DV);
+        return assignedOrLinked.ge(LINK_STATICALLY_ASSIGNED) && assignedOrLinked.lt(LINK_NONE);
     }
 
     public static boolean isAssigned(DV level) {
-        return level.equals(STATICALLY_ASSIGNED_DV) || level.equals(ASSIGNED_DV);
+        return level.equals(LINK_STATICALLY_ASSIGNED) || level.equals(LINK_ASSIGNED);
     }
 
     public LinkedVariables mergeDelay(LinkedVariables other, DV whenMissing) {
@@ -113,7 +113,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                 map.put(v, whenMissing);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                DV merged = inMap.equals(STATICALLY_ASSIGNED_DV) ? STATICALLY_ASSIGNED_DV : whenMissing;
+                DV merged = inMap.equals(LINK_STATICALLY_ASSIGNED) ? LINK_STATICALLY_ASSIGNED : whenMissing;
                 map.put(v, merged);
             }
         });
@@ -147,8 +147,8 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                 map.put(v, newValue);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                DV merged = newValue.equals(STATICALLY_ASSIGNED_DV) || inMap.equals(STATICALLY_ASSIGNED_DV)
-                        ? STATICALLY_ASSIGNED_DV : newValue.min(inMap);
+                DV merged = newValue.equals(LINK_STATICALLY_ASSIGNED) || inMap.equals(LINK_STATICALLY_ASSIGNED)
+                        ? LINK_STATICALLY_ASSIGNED : newValue.min(inMap);
                 map.put(v, merged);
             }
         });
@@ -214,7 +214,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public Stream<Variable> independent1Variables() {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue().gt(DEPENDENT_DV))
+                .filter(e -> e.getValue().gt(LINK_DEPENDENT))
                 .map(Map.Entry::getKey);
     }
 
@@ -231,7 +231,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         assert delay.isDelayed();
         Map<Variable, DV> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue().equals(STATICALLY_ASSIGNED_DV) ? STATICALLY_ASSIGNED_DV : delay.min(e.getValue())));
+                        e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED) ? LINK_STATICALLY_ASSIGNED : delay.min(e.getValue())));
         return of(map);
     }
 
@@ -257,7 +257,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         Map<Variable, DV> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> {
                     DV lv = e.getValue();
-                    return STATICALLY_ASSIGNED_DV.equals(lv) ? STATICALLY_ASSIGNED_DV : delay.max(lv);
+                    return LINK_STATICALLY_ASSIGNED.equals(lv) ? LINK_STATICALLY_ASSIGNED : delay.max(lv);
                 }));
         return of(map);
     }
@@ -298,8 +298,8 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
             // level 2+ -> remove all @Dependent
             boolean recursivelyImmutable = sourceImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             adjustedSource = variables.entrySet().stream()
-                    .filter(e -> recursivelyImmutable ? e.getValue().le(ASSIGNED_DV) :
-                            !e.getValue().equals(DEPENDENT_DV))
+                    .filter(e -> recursivelyImmutable ? e.getValue().le(LINK_ASSIGNED) :
+                            !e.getValue().equals(LINK_DEPENDENT))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } else {
             adjustedSource = variables;
@@ -308,7 +308,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         for (Map.Entry<Variable, DV> entry : adjustedSource.entrySet()) {
             DV linkLevel = entry.getValue();
             Variable target = entry.getKey();
-            if (myself.test(target) || linkLevel.equals(STATICALLY_ASSIGNED_DV) || sourceTransparent.valueIsTrue()) {
+            if (myself.test(target) || linkLevel.equals(LINK_STATICALLY_ASSIGNED) || sourceTransparent.valueIsTrue()) {
                 result.put(target, linkLevel);
             } else {
                 DV targetImmutable = computeImmutable.apply(target);
@@ -316,11 +316,11 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                     result.put(target, targetImmutable);
                 } else if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(targetImmutable)) {
                     // targetImmutable is @ERImmutable; only assignments kept
-                    if (linkLevel.le(ASSIGNED_DV)) {
+                    if (linkLevel.le(LINK_ASSIGNED)) {
                         result.put(target, linkLevel);
                     }
                 } else {
-                    if (linkLevel.le(DEPENDENT_DV)) {
+                    if (linkLevel.le(LINK_DEPENDENT)) {
                         result.put(target, linkLevel);
                     } else { // INDEPENDENT1+
                         /*
@@ -335,7 +335,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                         if (transparent.isDelayed()) {
                             result.put(target, transparent);
                         } else if (transparent.valueIsTrue()) {
-                            result.put(target, INDEPENDENT1_DV);
+                            result.put(target, LINK_INDEPENDENT1);
                         } else {
                             DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
                             if (canIncrease.isDelayed()) {
@@ -345,10 +345,10 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                                 if (immutableHidden.isDelayed()) {
                                     result.put(target, immutableHidden);
                                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
-                                    result.put(target, INDEPENDENT1_DV);
+                                    result.put(target, LINK_INDEPENDENT1);
                                 }
                             } else {
-                                result.put(target, INDEPENDENT1_DV);
+                                result.put(target, LINK_INDEPENDENT1);
                             }
                         }
                     }
@@ -359,7 +359,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     }
 
     public static boolean isAssignedOrLinked(DV dependent) {
-        return dependent.ge(STATICALLY_ASSIGNED_DV) && dependent.le(DEPENDENT_DV);
+        return dependent.ge(LINK_STATICALLY_ASSIGNED) && dependent.le(LINK_DEPENDENT);
     }
 
     public static final CausesOfDelay NOT_YET_SET_DELAY = DelayFactory.createDelay(Location.NOT_YET_SET,
@@ -390,7 +390,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     private List<Variable> staticallyAssigned() {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue().equals(STATICALLY_ASSIGNED_DV))
+                .filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .map(Map.Entry::getKey).sorted().toList();
     }
 
@@ -407,7 +407,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
 
     public Set<Variable> directAssignmentVariables() {
         if (isEmpty() || this == NOT_YET_SET) return Set.of();
-        return variables.entrySet().stream().filter(e -> e.getValue().equals(STATICALLY_ASSIGNED_DV))
+        return variables.entrySet().stream().filter(e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
     }
 }

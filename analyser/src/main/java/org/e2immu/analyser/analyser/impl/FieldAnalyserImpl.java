@@ -942,7 +942,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
                         DV link = linkedVariables.value(me);
-                        if (link != null && link.le(LinkedVariables.DEPENDENT_DV)) return true;
+                        if (link != null && link.le(LinkedVariables.LINK_DEPENDENT)) return true;
                     }
                     return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)

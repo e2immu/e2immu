@@ -309,13 +309,13 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
                         setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
                         if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
-                            linkLevel = LinkedVariables.DEPENDENT_DV;
+                            linkLevel = LinkedVariables.LINK_DEPENDENT;
                             linkParameters = annotationExpression.extract("parameters", INT_ARRAY);
                         }
                     } else if (e2ImmuAnnotationExpressions.independent1.typeInfo() == t) {
                         levelIndependent = MultiLevel.Level.INDEPENDENT_1;
                         if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
-                            linkLevel = LinkedVariables.INDEPENDENT1_DV;
+                            linkLevel = LinkedVariables.LINK_INDEPENDENT1;
                             linkParameters = annotationExpression.extract("parameters", INT_ARRAY);
                         }
                     } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {

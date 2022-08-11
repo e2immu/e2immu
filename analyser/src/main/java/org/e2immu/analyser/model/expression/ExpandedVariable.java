@@ -141,7 +141,7 @@ public class ExpandedVariable extends BaseExpression {
         a substitution. See EvaluateMethodCall.delay
          */
         if (variable instanceof FieldReference fr && fr.scopeIsRecursivelyThis()) {
-            return LinkedVariables.of(fr.thisInScope(), LinkedVariables.DEPENDENT_DV);
+            return LinkedVariables.of(fr.thisInScope(), LinkedVariables.LINK_DEPENDENT);
         }
         return LinkedVariables.EMPTY;
     }

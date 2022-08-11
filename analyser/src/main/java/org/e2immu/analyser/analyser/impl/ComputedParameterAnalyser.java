@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
-import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
@@ -308,7 +308,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         int immutableLevel = fields.entrySet().stream().mapToInt(e -> {
             DV immutableField = analyserContext.defaultImmutable(e.getKey().parameterizedType, false, parameterInfo.owner.typeInfo);
             int level = MultiLevel.level(immutableField);
-            if (level < Level.IMMUTABLE_2.level && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV)) {
+            if (level < Level.IMMUTABLE_2.level && e.getValue().ge(LinkedVariables.LINK_INDEPENDENT1)) {
                 /*
                 FIXME problem: set.add(t) -> t is linked to set at content level (i.e. independent_1)
                   now when t is of explicit mutable type, we we still want indep1, or dependent?
@@ -347,7 +347,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private static List<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
-        if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return List.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked.equals(LinkedVariables.LINK_DEPENDENT)) return List.of(MODIFIED_OUTSIDE_METHOD);
         return List.of();
     }
 
@@ -445,7 +445,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                 int levelImmutable = MultiLevel.level(immutable);
                                 DV typeIndependent;
                                 if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
-                                    if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
+                                    if (assignedOrLinked.le(LinkedVariables.LINK_DEPENDENT)) {
                                         typeIndependent = DEPENDENT_DV;
                                     } else {
                                         typeIndependent = INDEPENDENT_1_DV;
@@ -601,7 +601,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             // == parameterInfo works fine unless a super(...) has been used
             if ((ve = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null && ve.variable() == parameterInfo) {
-                return ASSIGNED_DV;
+                return LINK_ASSIGNED;
             }
             // the case of multiple constructors
             if (effectivelyFinal instanceof MultiValue multiValue &&
@@ -611,7 +611,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                 return (ve2 = e.asInstanceOf(VariableExpression.class)) != null
                                         && ve2.variable() == parameterInfo;
                             })) {
-                return ASSIGNED_DV;
+                return LINK_ASSIGNED;
             }
             // the case of this(...) or super(...)
             StatementAnalysis firstStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getFirstStatement();
@@ -621,14 +621,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 Expression param = eci.structure.updaters().get(pi.index);
                 VariableExpression ve2;
                 if ((ve2 = param.asInstanceOf(VariableExpression.class)) != null && ve2.variable() == parameterInfo) {
-                    return ASSIGNED_DV;
+                    return LINK_ASSIGNED;
                 }
             }
         }
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.NO_LINKING_DV);
+        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.LINK_NONE);
     }
 
     public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,

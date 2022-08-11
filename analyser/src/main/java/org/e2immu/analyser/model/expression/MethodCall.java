@@ -342,7 +342,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         LinkedVariables linkedVariables = objectValue.linkedVariables(context);
         if (object instanceof IsVariableExpression ive) {
             linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(),
-                    LinkedVariables.STATICALLY_ASSIGNED_DV));
+                    LinkedVariables.LINK_STATICALLY_ASSIGNED));
         }
         List<LinkedVariables> linkedVariablesOfParameters = ConstructorCall.computeLinkedVariablesOfParameters(context,
                 parameterExpressions, parameterValues);
@@ -629,11 +629,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                List<LinkedVariables> linkedVariables) {
         DV immutableOfHiddenContent = context.getAnalyserContext().defaultImmutable(typeOfHiddenContent,
                 true, context.getCurrentType());
-        DV correctedLevel = LinkedVariables.INDEPENDENT1_DV.equals(level)
+        DV correctedLevel = LinkedVariables.LINK_INDEPENDENT1.equals(level)
                 && MultiLevel.isAtLeastEffectivelyE2Immutable(immutableOfHiddenContent)
                 ? LinkedVariables.fromImmutableToLinkedVariableLevel(immutableOfHiddenContent)
                 : level;
-        if (!LinkedVariables.NO_LINKING_DV.equals(correctedLevel)) {
+        if (!LinkedVariables.LINK_NONE.equals(correctedLevel)) {
             linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
             if (targetIsVarArgs) {
                 for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
@@ -790,7 +790,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Variable variable = e.getKey();
                 if (ive == null || !variable.equals(ive.variable())) {
                     if (dv.isDone()) {
-                        if (dv.le(LinkedVariables.DEPENDENT_DV)) {
+                        if (dv.le(LinkedVariables.LINK_DEPENDENT)) {
                             ConstructorCall cc;
                             Expression i;
                             Expression varVal = context.currentValue(variable);
@@ -1268,13 +1268,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 2: @Identity links to the 1st parameter
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
-            return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+            return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
         }
         if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
             return object.linkedVariables(context)
                     .merge(parameterExpressions.get(0).linkedVariables(context))
-                    .minimum(LinkedVariables.ASSIGNED_DV)
+                    .minimum(LinkedVariables.LINK_ASSIGNED)
                     .changeNonStaticallyAssignedToDelay(identity);
         }
 
@@ -1290,7 +1290,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
         // note the minimum() call: 0 is only used for static, direct assignments
-        LinkedVariables linkedVariablesOfScope = object.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+        LinkedVariables linkedVariablesOfScope = object.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
 
         DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         if (methodIndependent.isDelayed()) {

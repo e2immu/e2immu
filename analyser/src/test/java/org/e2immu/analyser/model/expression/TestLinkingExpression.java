@@ -211,9 +211,9 @@ public class TestLinkingExpression {
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(context);
         methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
-                List.of(LinkedVariables.of(Map.of(i, LinkedVariables.INDEPENDENT1_DV, j, LinkedVariables.INDEPENDENT1_DV)),
-                        LinkedVariables.of(Map.of(v, LinkedVariables.INDEPENDENT1_DV)),
-                        LinkedVariables.of(Map.of(v, LinkedVariables.INDEPENDENT1_DV))));
+                List.of(LinkedVariables.of(Map.of(i, LinkedVariables.LINK_INDEPENDENT1, j, LinkedVariables.LINK_INDEPENDENT1)),
+                        LinkedVariables.of(Map.of(v, LinkedVariables.LINK_INDEPENDENT1)),
+                        LinkedVariables.of(Map.of(v, LinkedVariables.LINK_INDEPENDENT1))));
         // v links @Independent1 to i and j
         assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());

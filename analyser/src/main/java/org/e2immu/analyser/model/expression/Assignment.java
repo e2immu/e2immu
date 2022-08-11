@@ -492,14 +492,14 @@ public class Assignment extends BaseExpression implements Expression {
 
         We choose the former approach! this has repercussions...
          */
-        LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.ASSIGNED_DV);
+        LinkedVariables lvExpression = resultOfExpression.linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
         LinkedVariables linkedVariables;
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = directAssignmentVariables != null ? directAssignmentVariables
                     : value.directAssignmentVariables();
             if (!directAssignment.isEmpty()) {
                 Map<Variable, DV> map = directAssignment.stream()
-                        .collect(Collectors.toMap(v -> v, v -> LinkedVariables.STATICALLY_ASSIGNED_DV));
+                        .collect(Collectors.toMap(v -> v, v -> LinkedVariables.LINK_STATICALLY_ASSIGNED));
                 linkedVariables = lvExpression.merge(LinkedVariables.of(map));
             } else {
                 linkedVariables = lvExpression;

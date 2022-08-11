@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.HiddenContentTypes;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -549,9 +550,22 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
         typeAnalysisBuilder.freezeApprovedPreconditionsE2();
 
+        /*
+        The computation of transparent and hidden content types proceeds as follows:
+        1. all unbound type parameters are transparent and hidden content
+        2. to the hidden content we add all public field types, method return types and method parameter types
+           that are at least level 2 immutable or. We exclude the type itself, any primitives, and JLO.
+
+        This computation does not make a difference between interfaces (which provide a specification only) and classes
+        which provide specification and implementation: we cannot see inside the class anyway in this analyser.
+         */
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
+                .filter(TypeParameter::isUnbound)
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        typeAnalysisBuilder.setTransparentTypes(new SetOfTypes(typeParametersAsParameterizedTypes));
+        SetOfTypes transparentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
+        typeAnalysisBuilder.setTransparentTypes(transparentTypes);
+        SetOfTypes immutableTypes = new HiddenContentTypes(typeInfo, this).go(transparentTypes).build();
+        typeAnalysisBuilder.setHiddenContentTypes(transparentTypes.union(immutableTypes));
 
         ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
         simpleComputeIndependent(typeAnalysisBuilder);
@@ -603,7 +617,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 builder.setProperty(Property.INDEPENDENT, independent);
             }
             // fallback
-            builder.setProperty(Property.INDEPENDENT,MultiLevel.DEPENDENT_DV);
+            builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
         } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
             messages.add(Message.newMessage(builder.typeInfo.newLocation(),
                     Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));

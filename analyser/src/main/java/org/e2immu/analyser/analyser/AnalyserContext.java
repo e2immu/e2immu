@@ -231,9 +231,4 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         }
         return new SetOfTypes(result);
     }
-
-    private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
-        return bestType.delay(CauseOfDelay.Cause.TYPE_ANALYSIS);
-    }
-
 }

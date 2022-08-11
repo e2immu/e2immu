@@ -40,6 +40,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+
+        assertEquals("Type param E", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -109,6 +112,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                 "Got: " + errors.stream()
                         .filter(m -> ((LocationImpl) m.location()).info != null)
                         .filter(m -> ((LocationImpl) m.location()).info.getTypeInfo().equals(typeInfo)).toList());
+
+        assertEquals("Type param E", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -195,6 +201,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+
+        assertEquals("Type param E", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -246,6 +255,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         // because an array is always a container...
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+
+        assertTrue(typeAnalysis.getTransparentTypes().isEmpty());
+        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
     }
 
     @Test
@@ -273,6 +285,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findConstructor(0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
+
+        assertEquals("Type param E", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -312,6 +327,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER)); // Collections.addAll
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT)); // no data
+
+        assertTrue(typeAnalysis.getTransparentTypes().isEmpty());
+        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
     }
 
 
@@ -431,6 +449,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+
+        assertEquals("Type param K, Type param V", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param K, Type param V", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -501,6 +522,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+
+        assertEquals("Type param E", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
 
@@ -553,6 +577,14 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
     }
 
+    @Test
+    public void testOptional() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Optional.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals("Type param T", typeAnalysis.getTransparentTypes().toString());
+        assertEquals("Type param T", typeAnalysis.getHiddenContentTypes().toString());
+    }
 
     @Test
     public void testOptionalEmpty() {

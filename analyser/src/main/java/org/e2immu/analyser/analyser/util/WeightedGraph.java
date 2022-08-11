@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 
-import static org.e2immu.analyser.analyser.LinkedVariables.STATICALLY_ASSIGNED_DV;
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 
 /**
  * In-house implementation of a directed graph that is used to model the links between objects.
@@ -60,7 +60,7 @@ public class WeightedGraph extends Freezable {
     @Independent
     public Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed) {
         Map<Variable, DV> result = new TreeMap<>();
-        result.put(v, STATICALLY_ASSIGNED_DV);
+        result.put(v, LINK_STATICALLY_ASSIGNED);
         recursivelyComputeLinks(v, result, maxWeight, followDelayed);
         return result;
     }
@@ -105,8 +105,8 @@ public class WeightedGraph extends Freezable {
     }
 
     private DV min(DV d1, DV d2) {
-        if (d1.equals(STATICALLY_ASSIGNED_DV) || d2.equals(STATICALLY_ASSIGNED_DV)) {
-            return STATICALLY_ASSIGNED_DV;
+        if (d1.equals(LINK_STATICALLY_ASSIGNED) || d2.equals(LINK_STATICALLY_ASSIGNED)) {
+            return LINK_STATICALLY_ASSIGNED;
         }
         return d1.min(d2);
     }

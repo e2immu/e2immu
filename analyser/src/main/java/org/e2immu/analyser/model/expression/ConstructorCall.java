@@ -242,7 +242,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
             i++;
         }
-        return result.minimum(LinkedVariables.ASSIGNED_DV);
+        return result.minimum(LinkedVariables.LINK_ASSIGNED);
     }
 
     /*
@@ -561,7 +561,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                 fieldAnalysis.getLinkedVariables().variables().forEach((v, lv) -> {
                                     if (v instanceof ParameterInfo pi
                                             && pi.owner == constructor
-                                            && lv.equals(LinkedVariables.STATICALLY_ASSIGNED_DV)) {
+                                            && lv.equals(LinkedVariables.LINK_STATICALLY_ASSIGNED)) {
                                         // the field has been statically assigned to pi
                                         Expression original = parameterExpressions.get(pi.index);
                                         Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,
