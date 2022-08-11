@@ -296,10 +296,23 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             return INDEPENDENT_1_DV;
         }
 
+        /*
+        Possible link values for the fields are STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, INDEPENDENT_1.
+        If the immutable level of the parameter is
+        - recursively immutable, then the link value is immaterial, and the result must be INDEPENDENT.
+        - at least level 2 immutable, then it is part of the hidden content (it need not be transparent at all);
+          it follows that the result must be INDEPENDENT_1 (linked to the hidden content of the type) regardless of the link value
+        - mutable or level 1 immutable, and not transparent -> part of explicit content, DEPENDENT
+        - mutable or level 1 immutable, but transparent -> INDEPENDENT_1, caught higher up.
+         */
         int immutableLevel = fields.entrySet().stream().mapToInt(e -> {
             DV immutableField = analyserContext.defaultImmutable(e.getKey().parameterizedType, false, parameterInfo.owner.typeInfo);
             int level = MultiLevel.level(immutableField);
             if (level < Level.IMMUTABLE_2.level && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV)) {
+                /*
+                FIXME problem: set.add(t) -> t is linked to set at content level (i.e. independent_1)
+                  now when t is of explicit mutable type, we we still want indep1, or dependent?
+                 */
                 return Level.IMMUTABLE_2.level;
             }
             return level;

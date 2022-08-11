@@ -18,10 +18,8 @@ package org.e2immu.analyser.parser.independence;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -99,6 +97,15 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                         assertEquals("Type org.e2immu.analyser.parser.independence.testexample.E2ImmutableComposition_0.HasSize[]",
                                 d.variableInfo().variable().parameterizedType().toString());
                         assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
+            }
+            if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        // One is transparent, so we're filling the 'ones' array with the equivalent of an unbound parameter type
+                        String linked = d.iteration() < 3 ? "this.ones:-1" : "this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

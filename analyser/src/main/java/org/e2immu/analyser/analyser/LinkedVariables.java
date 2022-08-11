@@ -277,14 +277,20 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
     we prune a linked variables map, based on immutable values.
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
-    public LinkedVariables removeIncompatibleWithImmutable(DV sourceImmutable,
+    public LinkedVariables removeIncompatibleWithImmutable(Variable source,
                                                            Predicate<Variable> myself,
                                                            Function<Variable, DV> computeImmutable,
                                                            Function<Variable, DV> immutableCanBeIncreasedByTypeParameters,
-                                                           Function<Variable, DV> computeImmutableHiddenContent) {
+                                                           Function<Variable, DV> computeImmutableHiddenContent,
+                                                           Function<Variable, DV> computeTransparent) {
         if (isEmpty() || this == NOT_YET_SET) return this;
+        DV sourceImmutable = computeImmutable.apply(source);
         if (sourceImmutable.isDelayed()) {
             return changeToDelay(sourceImmutable); // but keep the 0
+        }
+        DV sourceTransparent = computeTransparent.apply(source);
+        if (sourceTransparent.isDelayed()) {
+            return changeToDelay(sourceTransparent);
         }
 
         Map<Variable, DV> adjustedSource;
@@ -302,7 +308,7 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
         for (Map.Entry<Variable, DV> entry : adjustedSource.entrySet()) {
             DV linkLevel = entry.getValue();
             Variable target = entry.getKey();
-            if (myself.test(target) || linkLevel.equals(STATICALLY_ASSIGNED_DV)) {
+            if (myself.test(target) || linkLevel.equals(STATICALLY_ASSIGNED_DV) || sourceTransparent.valueIsTrue()) {
                 result.put(target, linkLevel);
             } else {
                 DV targetImmutable = computeImmutable.apply(target);
@@ -325,19 +331,25 @@ public class LinkedVariables implements Comparable<LinkedVariables> {
                          if the set contains level 2 immutable objects, the linking should go to a higher level than
                          independent_1, but we're not worried about that right now
                          */
-
-                        DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
-                        if (canIncrease.isDelayed()) {
-                            result.put(target, canIncrease);
-                        } else if (canIncrease.valueIsTrue()) {
-                            DV immutableHidden = computeImmutableHiddenContent.apply(target);
-                            if (immutableHidden.isDelayed()) {
-                                result.put(target, immutableHidden);
-                            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
-                                result.put(target, LinkedVariables.INDEPENDENT1_DV);
-                            }
+                        DV transparent = computeTransparent.apply(target);
+                        if (transparent.isDelayed()) {
+                            result.put(target, transparent);
+                        } else if (transparent.valueIsTrue()) {
+                            result.put(target, INDEPENDENT1_DV);
                         } else {
-                            result.put(target, LinkedVariables.INDEPENDENT1_DV);
+                            DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
+                            if (canIncrease.isDelayed()) {
+                                result.put(target, canIncrease);
+                            } else if (canIncrease.valueIsTrue()) {
+                                DV immutableHidden = computeImmutableHiddenContent.apply(target);
+                                if (immutableHidden.isDelayed()) {
+                                    result.put(target, immutableHidden);
+                                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableHidden)) {
+                                    result.put(target, INDEPENDENT1_DV);
+                                }
+                            } else {
+                                result.put(target, INDEPENDENT1_DV);
+                            }
                         }
                     }
                 }

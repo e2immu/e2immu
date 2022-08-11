@@ -191,6 +191,14 @@ public class Test_Independent1 extends CommonTestRunner {
                     assertCurrentValue(d, 2, "generator.get()");
                 }
             }
+            if ("ImmutableArrayOfTransparentOnes".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("first".equals(d.methodInfo().name)) {
@@ -278,7 +286,7 @@ public class Test_Independent1 extends CommonTestRunner {
             if ("methodInfo".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
                 assertDv(d, 3, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
-            //    assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+                //    assertDv(d, 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
         testClass("Independent1_7", 0, 0, new DebugConfiguration.Builder()

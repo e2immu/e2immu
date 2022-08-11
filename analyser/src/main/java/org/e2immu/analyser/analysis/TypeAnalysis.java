@@ -133,15 +133,6 @@ public interface TypeAnalysis extends Analysis {
     DV immutableCanBeIncreasedByTypeParameters();
 
     /**
-     * IMPROVE too simple an implementation, we should do real bookkeeping: which fields hold which types?
-     *
-     * @return null when not yet set, use transparentAndExplicitTypeComputationDelays to check
-     */
-    default SetOfTypes transparentTypesOf(FieldInfo fieldInfo) {
-        return getTransparentTypes();
-    }
-
-    /**
      * Returns the transparent types: types in the object graph of the fields that are never accessed.
      * Any unbound type parameter is always transparent as a type in the object graph.
      * Ensure that none of 'this' and 'super' types are transparent!

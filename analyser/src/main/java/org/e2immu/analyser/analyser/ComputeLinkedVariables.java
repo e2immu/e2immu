@@ -195,16 +195,19 @@ public class ComputeLinkedVariables {
                 analysisProvider.defaultImmutable(v.parameterizedType(), false, evaluationContext.getCurrentType());
         Function<Variable, DV> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED_DV :
                 evaluationContext.getAnalyserContext().immutableOfHiddenContentInTypeParameters(v.parameterizedType(), evaluationContext.getCurrentType());
+        Function<Variable, DV> computeTransparent = v -> {
+            TypeAnalysis typeAnalysisOfCurrentType = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
+            return typeAnalysisOfCurrentType.isTransparent(v.parameterizedType());
+        };
         Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
             TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-            if (bestType == null) return DV.TRUE_DV;
-            TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-            return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            if (bestType == null) return DV.FALSE_DV; // would be a weird situation
+            TypeAnalysis typeAnalysisOfBestType = analysisProvider.getTypeAnalysis(bestType);
+            return typeAnalysisOfBestType.immutableCanBeIncreasedByTypeParameters();
         };
 
-        DV sourceImmutable = computeImmutable.apply(variable);
-        curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent);
+        curatedBeforeIgnore = refToScope.removeIncompatibleWithImmutable(variable, computeMyself, computeImmutable,
+                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent, computeTransparent);
 
         LinkedVariables curated = curatedBeforeIgnore
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));

@@ -111,7 +111,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         if ("0.0.1".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             String lvs = d.iteration() <= 35 ? "accept:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                    : "accept:4,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:4";
+                                    : "accept:3,copy:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                             assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         }
                         if ("0".equals(d.statementId())) {
@@ -127,7 +127,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0.0.1".equals(d.statementId())) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         String lvs = d.iteration() <= 35 ? "accept:-1,copy.nodeMap:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "accept:4,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:4";
+                                : "accept:3,copy.nodeMap:2,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -136,13 +136,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String linked = d.iteration() == 0 ? "newDependsOn:-1,node.dependsOn:-1,node:-1"
                                 : d.iteration() < 34 ? "newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "newDependsOn:4,node.dependsOn:4,node:4,t:3";
+                                : "newDependsOn:3,node.dependsOn:3,node:3,t:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         String linked = d.iteration() < 36 ? "copy.nodeMap:-1,copy:-1,newDependsOn:-1,node.dependsOn:-1,node:-1,t:-1"
-                                : "copy.nodeMap:4,copy:4,newDependsOn:4,node.dependsOn:4,node:4,t:3";
+                                : "copy.nodeMap:3,copy:3,newDependsOn:3,node.dependsOn:3,node:3,t:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 34, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -259,7 +259,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:4";
+                        String linked = d.iteration() == 0 ? "node.dependsOn:-1,node:-1,t:-1,this.nodeMap:-1" : "t:3";
                         assertEquals(linked, eval.getLinkedVariables().toString());
                     }
                 }
@@ -269,13 +269,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:4";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
                         assertEquals(linked, eval.getLinkedVariables().toString());
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:4";
+                        String linked = d.iteration() == 0 ? "NOT_YET_SET" : "t:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -605,7 +605,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertDv(d.p(0), 40, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(0), 40, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertDv(d, 50, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 50, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 19, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 // priority 4
                 assertEquals(d.iteration() >= 50, d.methodAnalysis().getSingleReturnValue().isDone());
                 if (d.iteration() >= 50) {

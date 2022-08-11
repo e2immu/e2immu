@@ -156,8 +156,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     };
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
-                    String expectLv = d.iteration() == 0 ? "this.xs:-1" : "this.xs:3";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this.xs:3", d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);

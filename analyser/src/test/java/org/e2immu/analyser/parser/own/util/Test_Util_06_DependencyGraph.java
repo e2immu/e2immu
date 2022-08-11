@@ -128,7 +128,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
                                 : "toDo$3.isEmpty()?new ArrayList<>(nodeMap.size())/*0==this.size()*/:instance type List<T>";
                         assertEquals(expected, d.currentValue().toString());
                         String lvs = d.iteration() <= 34 ? "backupComparator:-1,done:-1,reportIndependent:-1,reportPartOfCycle:-1,scope-230:40:-1,scope-scope-230:40:3.0.1.dependsOn:-1,scope-scope-230:40:3.0.1:-1,this.nodeMap:-1,this:-1,toDo:-1"
-                                : "done:4,reportIndependent:4,scope-230:40:4,scope-scope-230:40:3.0.1.dependsOn:4,scope-scope-230:40:3.0.1:4,this.nodeMap:4,toDo:4";
+                                : "done:3,reportIndependent:3,scope-230:40:3,scope-scope-230:40:3.0.1.dependsOn:3,scope-scope-230:40:3.0.1:3,this.nodeMap:3,toDo:3";
                         assertEquals(lvs, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 28, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -304,7 +304,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
             if ("reverse".equals(methodName)) {
                 assertDv(d, 35, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 35, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong
+                assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT); // FIXME wrong
                 assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String pre = switch (d.iteration()) {
                     case 0, 1, 2 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";

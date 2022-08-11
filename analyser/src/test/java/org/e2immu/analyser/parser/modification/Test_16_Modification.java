@@ -75,15 +75,27 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
+            if ("Modification_13".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_13".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+            }
+        };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -206,6 +218,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getErrors".equals(d.methodInfo().name)) {
                 if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -232,16 +245,25 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("messages".equals(d.fieldInfo().name)) {
                 assertEquals("instance type ArrayList<ErrorMessage>", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+            }
+        };
+
         testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

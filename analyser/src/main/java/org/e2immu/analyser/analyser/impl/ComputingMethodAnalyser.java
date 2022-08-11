@@ -997,15 +997,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return MultiLevel.INDEPENDENT_DV;
         }
 
-        int immutableLevel;
         DV typeTransparent = analysisProvider.getTypeAnalysis(currentType).isTransparent(type);
         if (typeTransparent.isDelayed()) return typeTransparent;
         if (typeTransparent.valueIsTrue()) {
             return MultiLevel.INDEPENDENT_1_DV;
         }
         if (immutable.isDelayed()) return immutable;
-        immutableLevel = MultiLevel.level(immutable);
 
+        int immutableLevel = MultiLevel.level(immutable);
         if (minFields.ge(LinkedVariables.INDEPENDENT1_DV) && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
             // mutable, but linked content-wise
             return MultiLevel.INDEPENDENT_1_DV;

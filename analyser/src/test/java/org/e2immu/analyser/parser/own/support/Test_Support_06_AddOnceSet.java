@@ -88,6 +88,13 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                     fail("In statement: " + d.statementId());
                 }
             }
+            if ("forEach".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    String linked = d.iteration() == 0 ? "this.set:-1" : "this.set:3";
+                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
