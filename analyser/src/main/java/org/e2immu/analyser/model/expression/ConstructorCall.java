@@ -213,6 +213,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         return result;
     }
 
+    /*
+    Compute the links between the newly created object (constructor call) or the object (method call) and the
+    parameters of the constructor/method.
+
+     */
     static LinkedVariables linkedVariablesFromParameters(EvaluationResult evaluationContext,
                                                          MethodInspection methodInspection,
                                                          List<Expression> parameterExpressions,
@@ -277,6 +282,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // any delay: wait!
         CausesOfDelay causes = immutableOfValue.causesOfDelay().merge(independentOnParameter.causesOfDelay());
         if (causes.isDelayed()) return causes;
+
 
         DV typeTransparent = context.getAnalyserContext().getTypeAnalysis(context.getCurrentType())
                 .isTransparent(parameterInfo.parameterizedType);

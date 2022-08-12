@@ -234,6 +234,28 @@ public class Test_Independent1 extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "one:-1,this.ones:-1" : "one:3,this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("ImmutableArrayOfOnes".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "generator".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String linked = d.iteration() < 2 ? "this.ones:-1" : "this.ones:3";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("ImmutableArrayOfOnes", d.methodInfo().typeInfo.simpleName);
@@ -249,12 +271,17 @@ public class Test_Independent1 extends CommonTestRunner {
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("One".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+            }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit, however, T remains transparent
                 assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
         testClass("Independent1_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());

@@ -38,20 +38,26 @@ public class ComputeIndependent {
      * @param b         one of the two types, can be equal to a
      * @return the value for the INDEPENDENT property
      */
-    public DV compute(DV linkLevel, ParameterizedType a, ParameterizedType b) {
-        assert a != null;
-        assert b != null;
-
+    public DV compute(DV linkLevel, ParameterizedType a, DV immutableA, ParameterizedType b) {
         if (LinkedVariables.LINK_NONE.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
+
         ParameterizedType oneType;
+        DV immutableOneType;
+        boolean aUnboundTypeParameter = a.isUnboundTypeParameter();
+        boolean bUnboundTypeParameter = b.isUnboundTypeParameter();
+
         if (a == b || a.equals(b)) {
             oneType = a;
-        } else if (a.isAssignableFrom(analyserContext, b)) {
+            immutableOneType = immutableA;
+        } else if (!aUnboundTypeParameter && a.isAssignableFrom(analyserContext, b)) {
             oneType = a;
-        } else if (b.isAssignableFrom(analyserContext, a)) {
+            immutableOneType = immutableA;
+        } else if (!bUnboundTypeParameter && b.isAssignableFrom(analyserContext, a)) {
             oneType = b;
+            immutableOneType = null;
         } else {
             oneType = null;
+            immutableOneType = null;
         }
 
         if (LINK_STATICALLY_ASSIGNED.equals(linkLevel) || LINK_ASSIGNED.equals(linkLevel)) {
@@ -59,7 +65,8 @@ public class ComputeIndependent {
             assert oneType != null : "Assignment?";
 
             // the 'defaultImmutable' call contains the transparent check
-            DV immutable = analyserContext.defaultImmutable(oneType, false, currentType);
+            DV immutable = immutableOneType != null ? immutableOneType
+                    : analyserContext.defaultImmutable(oneType, false, currentType);
             if (immutable.isDelayed()) return immutable;
             int immutableLevel = MultiLevel.level(immutable);
             return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
@@ -92,19 +99,19 @@ public class ComputeIndependent {
             throw new UnsupportedOperationException();
         }
         // now 2 different, non-assignable types remain...
-        if (a.isUnboundTypeParameter() && b.isUnboundTypeParameter()) {
+        if (aUnboundTypeParameter && bUnboundTypeParameter) {
             return MultiLevel.INDEPENDENT_DV;
         }
-        if (a.isUnboundTypeParameter()) {
+        if (aUnboundTypeParameter) {
             return verifyIncludedInHiddenContentOf(linkLevel, a, b, MultiLevel.INDEPENDENT_DV);
         }
-        if (b.isUnboundTypeParameter()) {
+        if (bUnboundTypeParameter) {
             return verifyIncludedInHiddenContentOf(linkLevel, b, a, MultiLevel.INDEPENDENT_DV);
         }
         DV aInB = verifyIncludedInHiddenContentOf(linkLevel, a, b, null);
-        if (aInB != null) return null;
+        if (aInB != null) return aInB;
         DV bInA = verifyIncludedInHiddenContentOf(linkLevel, b, a, null);
-        if (bInA != null) return null;
+        if (bInA != null) return bInA;
 
         return intersection(linkLevel, a, b);
     }
@@ -118,21 +125,27 @@ public class ComputeIndependent {
         CausesOfDelay causes = ta.transparentAndExplicitTypeComputationDelays().causesOfDelay()
                 .merge(tb.transparentAndExplicitTypeComputationDelays().causesOfDelay());
         if (causes.isDelayed()) return causes;
-        SetOfTypes hiddenA = ta.getHiddenContentTypes();
-        SetOfTypes hiddenB = tb.getHiddenContentTypes();
+        SetOfTypes hiddenA = ta.getHiddenContentTypes(a);
+        SetOfTypes hiddenB = tb.getHiddenContentTypes(b);
         SetOfTypes intersection = hiddenA.intersection(hiddenB);
         if (intersection.isEmpty()) return MultiLevel.INDEPENDENT_DV;
         return MultiLevel.INDEPENDENT_1_DV;
     }
 
     private DV verifyIncludedInHiddenContentOf(DV linkLevel, ParameterizedType a, ParameterizedType b, DV onFail) {
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(b.bestTypeInfo());
+        TypeInfo typeInfo = b.bestTypeInfo();
+        if (typeInfo == null) {
+            // T and T[], for example
+            assert a.arrays != b.arrays;
+            return MultiLevel.INDEPENDENT_1_DV;
+        }
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfo);
         if (typeAnalysis == null) return MultiLevel.INDEPENDENT_DV;
         CausesOfDelay causes = typeAnalysis.transparentAndExplicitTypeComputationDelays();
         if (causes.isDelayed()) {
             return causes;
         }
-        SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes();
+        SetOfTypes hiddenB = typeAnalysis.getHiddenContentTypes(b);
         if (hiddenB.contains(a)) {
             if (LINK_DEPENDENT.equals(linkLevel)) return MultiLevel.DEPENDENT_DV;
             return MultiLevel.INDEPENDENT_1_DV; // even if "a" is mutable!!

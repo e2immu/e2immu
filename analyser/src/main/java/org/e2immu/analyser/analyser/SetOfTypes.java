@@ -63,4 +63,17 @@ public record SetOfTypes(Set<ParameterizedType> types) {
     public int size() {
         return types.size();
     }
+
+    public SetOfTypes applyTypeParameters(ParameterizedType b) {
+        if (b.isUnboundTypeParameter()) return this;
+        return new SetOfTypes(types.stream()
+                .map(t -> {
+                    if (t.isTypeParameter() && t.typeParameter.getOwner().isLeft() &&
+                            t.typeParameter.getOwner().getLeft() == b.typeInfo) {
+                        return b.parameters.get(t.typeParameter.getIndex());
+                    }
+                    return t;
+                })
+                .collect(Collectors.toUnmodifiableSet()));
+    }
 }

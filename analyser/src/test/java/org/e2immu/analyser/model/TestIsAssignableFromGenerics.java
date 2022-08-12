@@ -198,6 +198,39 @@ public class TestIsAssignableFromGenerics {
     }
 
     @Test
+    public void testArrayTypeParam() {
+        // T[] <- T is not possible
+        // T <- T[] is not possible
+        TypeParameter tp = myList1.typeInspection.get().typeParameters().get(0);
+        ParameterizedType tArray = new ParameterizedType(tp, 1, NONE);
+        assertEquals("Type param T[]", tArray.toString());
+        ParameterizedType t = new ParameterizedType(tp, 0, NONE);
+        assertEquals("Type param T", t.toString());
+
+        assertFalse(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        assertFalse(t.isAssignableFrom(InspectionProvider.DEFAULT, tArray));
+    }
+
+    @Test
+    public void testArrayTypeParam2() {
+        // T[] <- S is not possible
+        // T <- S[] is possible
+        TypeParameter tp1 = myList1.typeInspection.get().typeParameters().get(0);
+        ParameterizedType tArray = new ParameterizedType(tp1, 1, NONE);
+        assertEquals("Type param T[]", tArray.toString());
+        assertNotNull(tArray.typeParameter);
+        assertEquals("[org.e2immu.MyList1|null]", tArray.typeParameter.getOwner().toString());
+        TypeParameter tp2 = myList2.typeInspection.get().typeParameters().get(0);
+        ParameterizedType t = new ParameterizedType(tp2, 0, NONE);
+        assertEquals("Type param T", t.toString());
+        assertNotNull(t.typeParameter);
+        assertEquals("[org.e2immu.MyList2|null]", t.typeParameter.getOwner().toString());
+
+        assertFalse(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        assertTrue(t.isAssignableFrom(InspectionProvider.DEFAULT, tArray));
+    }
+
+    @Test
     public void testOutput() {
         assertTrue(myComparable.output().toString().contains("interface MyComparable<T>{int compareTo(T t);}"),
                 () -> myComparable.output().toString());

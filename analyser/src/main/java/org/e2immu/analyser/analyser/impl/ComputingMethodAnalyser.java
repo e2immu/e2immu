@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
@@ -960,56 +961,23 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         DV immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
-        VariableInfo variableInfo = getReturnAsVariable();
-        ParameterizedType type = methodInspection.getReturnType();
-        DV independent = computeIndependent(variableInfo, immutable, type, sharedState.evaluationContext().getCurrentType(),
-                analyserContext);
+        DV independent;
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+            independent = MultiLevel.INDEPENDENT_DV;
+        } else {
+            VariableInfo variableInfo = getReturnAsVariable();
+            ParameterizedType returnType = methodInfo.returnType();
+            LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
+            if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
+            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, methodInfo.typeInfo);
+            independent = linkedVariables.stream()
+                    .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
+                            || e.getKey() instanceof This)
+                    .map(e -> computeIndependent.compute(e.getValue(), returnType, immutable, e.getKey().parameterizedType()))
+                    .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
+        }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return AnalysisStatus.of(independent);
-    }
-
-    /*
-    Code similar to computeIndependentFromComponents in ConstructorCall; see also analyseIndependentNoAssignment
-    in ComputingParameterAnalyser
-     */
-    static DV computeIndependent(VariableInfo variableInfo,
-                                 DV immutable,
-                                 ParameterizedType type,
-                                 TypeInfo currentType,
-                                 AnalysisProvider analysisProvider) {
-        // recursively immutable -> @Independent
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-            return MultiLevel.INDEPENDENT_DV;
-        }
-        // compute link to fields
-        LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
-        if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
-        DV minFields = linkedVariables.variables().entrySet().stream()
-                .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
-                        || e.getKey() instanceof This)
-                .map(Map.Entry::getValue)
-                .reduce(DV.MAX_INT_DV, DV::min);
-
-        if (minFields.isDelayed()) return minFields;
-
-        // not linked to fields -> @Independent
-        if (minFields == DV.MAX_INT_DV) {
-            return MultiLevel.INDEPENDENT_DV;
-        }
-
-        DV typeTransparent = analysisProvider.getTypeAnalysis(currentType).isTransparent(type);
-        if (typeTransparent.isDelayed()) return typeTransparent;
-        if (typeTransparent.valueIsTrue()) {
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
-        if (immutable.isDelayed()) return immutable;
-
-        int immutableLevel = MultiLevel.level(immutable);
-        if (minFields.ge(LinkedVariables.LINK_INDEPENDENT1) && immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) {
-            // mutable, but linked content-wise
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 
     @Override

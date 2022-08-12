@@ -19,10 +19,10 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -255,15 +255,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     parameterAnalysis.setProperty(INDEPENDENT, delay);
                     return delay;
                 }
-                Map<FieldReference, DV> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference)
-                        .collect(Collectors.toUnmodifiableMap(e -> (FieldReference) e.getKey(), Map.Entry::getValue));
+                Map<FieldInfo, DV> fields = vi.getLinkedVariables().variables().entrySet().stream()
+                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis())
+                        .collect(Collectors.toUnmodifiableMap(e -> ((FieldReference) e.getKey()).fieldInfo, Map.Entry::getValue));
                 if (!fields.isEmpty()) {
                     /* so we know the parameter is (content) linked to some fields
                        either it is dependent, or the value of independence (from 1 to infinity) is determined by the size of the
                        hidden content component inside the field
                      */
-                    DV independent = independenceOfFields(fields);
+                    DV independent = independentFromFields(immutable, fields);
                     parameterAnalysis.setProperty(INDEPENDENT, independent);
                     return AnalysisStatus.of(independent);
                 }
@@ -274,53 +274,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return DONE;
     }
 
-    /*
-    See also ComputingMethodAnalyser.computeIndependent; ConstructorCall.computeIndependentFromComponents
-     */
-    private DV independenceOfFields(Map<FieldReference, DV> fields) {
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-
-        /*
-        Is any of the fields that this parameter links to, transparent in the type? If so, those fields must contribute
-        INDEPENDENT_1.
-        Link == assignment, then the field and parameter are of transparent type.
-        Link >= dependent, then the parameter must be of transparent type, and the field cannot be: the dependence must
-          arise from a method call making the field's type explicit
-         */
-        DV transparent = typeAnalysis.isTransparent(parameterInfo.parameterizedType);
-        if (transparent.isDelayed()) {
-            LOGGER.debug("Delay independent on parameter {}, waiting for transparent types", parameterInfo);
-            return transparent;
-        }
-        if (transparent.valueIsTrue()) {
-            return INDEPENDENT_1_DV;
-        }
-
-        /*
-        Possible link values for the fields are STATICALLY_ASSIGNED, ASSIGNED, DEPENDENT, INDEPENDENT_1.
-        If the immutable level of the parameter is
-        - recursively immutable, then the link value is immaterial, and the result must be INDEPENDENT.
-        - at least level 2 immutable, then it is part of the hidden content (it need not be transparent at all);
-          it follows that the result must be INDEPENDENT_1 (linked to the hidden content of the type) regardless of the link value
-        - mutable or level 1 immutable, and not transparent -> part of explicit content, DEPENDENT
-        - mutable or level 1 immutable, but transparent -> INDEPENDENT_1, caught higher up.
-         */
-        int immutableLevel = fields.entrySet().stream().mapToInt(e -> {
-            DV immutableField = analyserContext.defaultImmutable(e.getKey().parameterizedType, false, parameterInfo.owner.typeInfo);
-            int level = MultiLevel.level(immutableField);
-            if (level < Level.IMMUTABLE_2.level && e.getValue().ge(LinkedVariables.LINK_INDEPENDENT1)) {
-                /*
-                FIXME problem: set.add(t) -> t is linked to set at content level (i.e. independent_1)
-                  now when t is of explicit mutable type, we we still want indep1, or dependent?
-                 */
-                return Level.IMMUTABLE_2.level;
-            }
-            return level;
-        }).reduce(MAX_LEVEL, Math::min);
-
-        DV result = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-        LOGGER.debug("Assign {} to parameter {}", result, parameterInfo);
-        return result;
+    private DV independentFromFields(DV immutable, Map<FieldInfo, DV> fields) {
+        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, parameterInfo.owner.typeInfo);
+        DV independent = fields.entrySet().stream()
+                .map(e -> computeIndependent.compute(e.getValue(), parameterInfo.parameterizedType,
+                        immutable, e.getKey().type))
+                .reduce(INDEPENDENT_DV, DV::min);
+        LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
+        return independent;
     }
 
     /**
@@ -427,43 +388,23 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         }
                     }
                 }
-
-                if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    if (typeAnalysis.transparentAndExplicitTypeComputationDelays().isDone()) {
-                        SetOfTypes transparent = typeAnalysis.getTransparentTypes();
-                        if (transparent.contains(parameterInfo.parameterizedType)) {
-                            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
-                            LOGGER.debug("Set parameter to @Independent1: {} because transparent and linked/assigned to field {}",
-                                    parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                            changed = true;
-                        } else {
-                            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.getTypeInfo());
-                            if (immutable.isDelayed()) {
-                                delays = delays.merge(immutable.causesOfDelay());
-                            } else {
-                                int levelImmutable = MultiLevel.level(immutable);
-                                DV typeIndependent;
-                                if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
-                                    if (assignedOrLinked.le(LinkedVariables.LINK_DEPENDENT)) {
-                                        typeIndependent = DEPENDENT_DV;
-                                    } else {
-                                        typeIndependent = INDEPENDENT_1_DV;
-                                    }
-                                } else {
-                                    typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
-                                }
-                                parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
-                                LOGGER.debug("Set @Dependent on parameter {}: linked/assigned to field {}",
-                                        parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                                changed = true;
-                            }
-                        }
-                    } else delays = delays.merge(typeAnalysis.transparentAndExplicitTypeComputationDelays());
-                }
             }
         }
 
+        if (!parameterAnalysis.properties.isDone(INDEPENDENT) && !map.isEmpty()
+                && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
+            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false, parameterInfo.owner.typeInfo);
+            DV independent = independentFromFields(immutable, map);
+            parameterAnalysis.setProperty(INDEPENDENT, independent);
+            if (independent.isDelayed()) {
+                LOGGER.debug("Delaying @Independent on parameter {}", parameterInfo);
+                delays = delays.merge(independent.causesOfDelay());
+            } else {
+                LOGGER.debug("Set @Independent on parameter {}: linked/assigned to fields {}", parameterInfo,
+                        map.keySet());
+                changed = true;
+            }
+        }
 
         for (Property property : PROPERTY_LIST) {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
